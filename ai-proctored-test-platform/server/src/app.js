@@ -23,10 +23,26 @@ const { registerSocketHandlers } = require('./sockets/socketHandler');
 const app = express();
 const server = http.createServer(app);
 
+// ── Dynamic CORS Origin Check ──────────────────────────────────────────────────
+const allowedOriginCheck = (origin, callback) => {
+  if (
+    !origin ||
+    origin.startsWith('http://localhost:') ||
+    origin.startsWith('http://127.0.0.1:') ||
+    origin === process.env.CLIENT_URL ||
+    origin === process.env.CORS_ORIGIN ||
+    origin === process.env.SOCKET_CORS_ORIGIN
+  ) {
+    callback(null, true);
+  } else {
+    callback(new Error('Not allowed by CORS'));
+  }
+};
+
 // ── Socket.io setup (Section 10) ──────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: process.env.SOCKET_CORS_ORIGIN || '*',
+    origin: (origin, callback) => allowedOriginCheck(origin, callback),
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -38,7 +54,7 @@ app.set('io', io);
 // ── Middleware ─────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: allowedOriginCheck,
   credentials: true,
 }));
 app.use(morgan('combined'));

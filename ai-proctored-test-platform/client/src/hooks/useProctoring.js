@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { FilesetResolver, FaceDetector } from '@mediapipe/tasks-vision';
+import html2canvas from 'html2canvas';
 import api from '../services/apiClient';
 import { emitTabSwitch, emitFullscreenExit } from '../services/socketClient';
 import { getScreenStream } from '../services/screenStreamManager';
@@ -15,7 +16,7 @@ import { getScreenStream } from '../services/screenStreamManager';
  * 4. Fullscreen lock & exit detection (FR-5.2, FR-5.3)
  * 5. Tab switch / blur detection (FR-5.3)
  * 6. Copy-paste / right-click prevention (FR-5.4)
- * 7. Live screen-share capture for TAB_SWITCH and FULLSCREEN_EXIT proof (BUG-13)
+ * 7. Live screen-share capture for TAB_SWITCH and FULLSCREEN_EXIT proof (BUG-13, Rolling Buffer & DOM Snapshot)
  */
 export function useProctoring({
   testId,
@@ -112,6 +113,73 @@ export function useProctoring({
     };
   }, [unlockKeyboard]);
 
+  // Rolling last-good-frame screen cache (Approach 3: stores the most recent live screen frame before any transition or blur)
+  const lastGoodScreenCanvasRef = useRef(null);
+  const lastGoodScreenTimeRef = useRef(0);
+
+  const captureLatestScreenFrame = useCallback(async () => {
+    try {
+      // 1. Try screen share video
+      let video = screenVideoRef.current;
+      if (!video) {
+        const stream = getScreenStream();
+        if (stream && stream.active) {
+          video = document.getElementById('__proctoring_screen_video');
+        }
+      }
+      if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        const sw = video.videoWidth;
+        const sh = video.videoHeight;
+        if (!lastGoodScreenCanvasRef.current) {
+          lastGoodScreenCanvasRef.current = document.createElement('canvas');
+        }
+        const canvas = lastGoodScreenCanvasRef.current;
+        if (canvas.width !== sw || canvas.height !== sh) {
+          canvas.width = sw;
+          canvas.height = sh;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, sw, sh);
+        lastGoodScreenTimeRef.current = Date.now();
+        return;
+      }
+
+      // 2. DOM Snapshot fallback via html2canvas (guarantees candidate's actual test screen, question, and code editor are captured)
+      if (typeof window !== 'undefined' && document.body) {
+        const rootEl = document.getElementById('root') || document.body;
+        const domCanvas = await html2canvas(rootEl, {
+          logging: false,
+          useCORS: true,
+          scale: 1,
+          ignoreElements: (el) => el.id === '__proctoring_screen_video' || el.classList?.contains('proctor-toast')
+        });
+        if (domCanvas && domCanvas.width > 0 && domCanvas.height > 0) {
+          lastGoodScreenCanvasRef.current = domCanvas;
+          lastGoodScreenTimeRef.current = Date.now();
+        }
+      }
+    } catch (err) {
+      console.debug('[Proctoring] captureLatestScreenFrame caught:', err);
+    }
+  }, []);
+
+  // Initialize rolling capture interval on mount
+  useEffect(() => {
+    if (!enabled) return;
+    const initTimer = setTimeout(() => {
+      captureLatestScreenFrame();
+    }, 1200);
+
+    const rollingInterval = setInterval(() => {
+      captureLatestScreenFrame();
+    }, 2500);
+
+    return () => {
+      clearTimeout(initTimer);
+      clearInterval(rollingInterval);
+    };
+  }, [enabled, captureLatestScreenFrame]);
+
   // ── Helper: Capture Real-time Proof Screenshot for any Violation ──────────────
   const captureViolationProof = useCallback((violationType, timestampDate = new Date()) => {
     try {
@@ -123,37 +191,51 @@ export function useProctoring({
         violationType === 'CAMERA_DISCONNECTED' ||
         violationType === 'OTHER';
 
-      // 1. Screen Monitor Capture for TAB_SWITCH, FULLSCREEN_EXIT, and OTHER (BUG-13)
-      if (isScreenViolation && screenVideoRef.current && screenVideoRef.current.readyState >= 2) {
-        const sw = screenVideoRef.current.videoWidth || 1280;
-        const sh = screenVideoRef.current.videoHeight || 720;
+      // 1. Screen Monitor Capture for TAB_SWITCH, FULLSCREEN_EXIT, and OTHER (BUG-13, Rolling Buffer & DOM Fallback)
+      if (isScreenViolation) {
+        let source = null;
+        let sw = 0;
+        let sh = 0;
 
-        const canvas = document.createElement('canvas');
-        canvas.width = sw;
-        canvas.height = sh;
-        const ctx = canvas.getContext('2d');
+        if (screenVideoRef.current && screenVideoRef.current.readyState >= 2 && screenVideoRef.current.videoWidth > 0) {
+          source = screenVideoRef.current;
+          sw = screenVideoRef.current.videoWidth;
+          sh = screenVideoRef.current.videoHeight;
+        } else if (lastGoodScreenCanvasRef.current && lastGoodScreenCanvasRef.current.width > 0) {
+          // Use rolling cached frame from immediately before the transition event
+          source = lastGoodScreenCanvasRef.current;
+          sw = lastGoodScreenCanvasRef.current.width;
+          sh = lastGoodScreenCanvasRef.current.height;
+        }
 
-        // Draw live screen capture frame (captures active monitor / tab)
-        ctx.drawImage(screenVideoRef.current, 0, 0, sw, sh);
+        if (source && sw > 0 && sh > 0) {
+          const canvas = document.createElement('canvas');
+          canvas.width = sw;
+          canvas.height = sh;
+          const ctx = canvas.getContext('2d');
 
-        // Overlay proctoring violation watermark header
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-        ctx.fillRect(0, 0, sw, 44);
+          // Draw genuine screen content behind watermark
+          ctx.drawImage(source, 0, 0, sw, sh);
 
-        ctx.fillStyle = '#EF4444';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')} (SCREEN CAPTURE)`, 16, 28);
+          // Overlay proctoring violation watermark header
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+          ctx.fillRect(0, 0, sw, 48);
 
-        // Timestamp & metadata footer
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(0, sh - 30, sw, 30);
-        ctx.fillStyle = '#E2E8F0';
-        ctx.font = '12px monospace';
-        const displayTime = timestampDate.toLocaleTimeString();
-        const displayDate = timestampDate.toLocaleDateString();
-        ctx.fillText(`Time: ${displayTime} · ${displayDate} | Candidate: ${candidateId} | Screen Monitor Capture`, 16, sh - 10);
+          ctx.fillStyle = '#EF4444';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')} (SCREEN CAPTURE)`, 18, 30);
 
-        return canvas.toDataURL('image/jpeg', 0.85);
+          // Timestamp & metadata footer
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.fillRect(0, sh - 34, sw, 34);
+          ctx.fillStyle = '#E2E8F0';
+          ctx.font = '13px monospace';
+          const displayTime = timestampDate.toLocaleTimeString();
+          const displayDate = timestampDate.toLocaleDateString();
+          ctx.fillText(`Time: ${displayTime} · ${displayDate} | Candidate: ${candidateId} | Room: ${roomId} | Screen Evidence`, 18, sh - 12);
+
+          return canvas.toDataURL('image/jpeg', 0.85);
+        }
       }
 
       // 2. Webcam Capture for PHONE_DETECTED, MULTIPLE_FACES, NO_FACE_15MIN (or fallback)
@@ -258,10 +340,8 @@ export function useProctoring({
     await sendViolationApi(violationType, proof, detectedAt);
   }, [captureViolationProof, sendViolationApi]);
 
-  // ── BUG-31: 1-Second Delayed Screen-Share Capture for TAB_SWITCH & FULLSCREEN_EXIT ──
-  // Immediately logs the violation, fires socket event and candidate warning banner,
-  // then waits 1 second for the screen/window transition to settle before grabbing proof.
-  const triggerDelayedScreenViolation = useCallback((violationType, onImmediate) => {
+  // ── Immediate Pre-Transition Screen-Share Capture for TAB_SWITCH & FULLSCREEN_EXIT ──
+  const triggerDelayedScreenViolation = useCallback(async (violationType, onImmediate) => {
     const now = Date.now();
     const lastTime = lastViolationTimeRef.current[violationType] || 0;
     if (now - lastTime < 5000) {
@@ -282,16 +362,13 @@ export function useProctoring({
       }
     }
 
-    // 3. Wait 1000ms before capturing the screen-share frame to let the screen state settle
-    const timerId = setTimeout(() => {
-      delayedViolationTimeoutsRef.current.delete(timerId);
-      console.log(`[Proctoring] 1s settling delay elapsed for ${violationType}. Grabbing screen proof...`);
-      const proof = captureViolationProof(violationType, new Date(detectedAt));
-      sendViolationApi(violationType, proof, detectedAt);
-    }, 1000);
+    // 3. Ensure we have the latest screen frame
+    await captureLatestScreenFrame();
+    const proof = captureViolationProof(violationType, new Date(now));
 
-    delayedViolationTimeoutsRef.current.add(timerId);
-  }, [captureViolationProof, sendViolationApi]);
+    // 4. Send API violation immediately with genuine pre-transition screen proof
+    sendViolationApi(violationType, proof, detectedAt);
+  }, [captureLatestScreenFrame, captureViolationProof, sendViolationApi]);
 
   /* ==========================================================================
    * ARCHITECTURAL DIRECTIVE & REGRESSION GUARD: WEBCAM DISCONNECT VS NO FACE
@@ -866,13 +943,14 @@ export function useProctoring({
     };
   }, [enabled, isMediaReady, testId]);
 
-  // ── 3.5. Screen Sharing Stream & Termination Monitor (BUG-13) ───────────────
+  // ── 3.5. Screen Sharing Stream & Termination Monitor (BUG-13, BUG-50) ───────────────
   useEffect(() => {
     if (!enabled) return;
 
+    let rollingInterval = null;
     const stream = getScreenStream();
     if (stream && stream.active) {
-      // Connect hidden video element to DOM to guarantee continuous live frame decoding in Chromium compositor
+      // Connect hidden video element to DOM with non-zero dimensions to guarantee continuous live frame decoding in Chromium compositor
       let video = document.getElementById('__proctoring_screen_video');
       if (!video) {
         video = document.createElement('video');
@@ -881,11 +959,11 @@ export function useProctoring({
         video.muted = true;
         video.playsInline = true;
         video.style.position = 'fixed';
-        video.style.top = '-9999px';
-        video.style.left = '-9999px';
-        video.style.width = '1px';
-        video.style.height = '1px';
-        video.style.opacity = '0';
+        video.style.top = '0px';
+        video.style.left = '0px';
+        video.style.width = '320px';
+        video.style.height = '180px';
+        video.style.opacity = '0.001';
         video.style.pointerEvents = 'none';
         video.style.zIndex = '-9999';
         document.body.appendChild(video);
@@ -893,6 +971,11 @@ export function useProctoring({
       video.srcObject = stream;
       video.play().catch((err) => console.debug('[Proctoring] Screen stream play caught:', err.message));
       screenVideoRef.current = video;
+
+      // Start rolling background capture every 1000ms
+      rollingInterval = setInterval(() => {
+        captureLatestScreenFrame();
+      }, 1000);
 
       // Detect mid-test screen share revocation (Requirement 4)
       const track = stream.getVideoTracks()[0];
@@ -908,6 +991,7 @@ export function useProctoring({
     }
 
     return () => {
+      if (rollingInterval) clearInterval(rollingInterval);
       const el = document.getElementById('__proctoring_screen_video');
       if (el) {
         el.srcObject = null;
@@ -915,7 +999,7 @@ export function useProctoring({
       }
       screenVideoRef.current = null;
     };
-  }, [enabled, captureViolationProof, reportViolation]);
+  }, [enabled, captureLatestScreenFrame, captureViolationProof, reportViolation]);
 
   // ── Keyboard Lock API Helpers (Disables Alt+Tab, Escape, Meta in Fullscreen) ──
   // BUG-33: Guard with isKeyboardLockedRef to prevent redundant navigator.keyboard.lock() calls,
