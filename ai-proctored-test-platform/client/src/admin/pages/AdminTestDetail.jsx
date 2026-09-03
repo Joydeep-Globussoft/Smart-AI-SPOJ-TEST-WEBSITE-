@@ -602,40 +602,7 @@ export default function AdminTestDetail() {
           </div>
         </div>
 
-        {/* ASSUMPTION (BUG-30 Part A): Advisory banner when test has no active rooms accepting joins */}
-        {test.status === 'LIVE' && rooms.length > 0 && rooms.every((r) => r.status === 'CLOSED' || (r.passwordValidUntil && new Date() > new Date(r.passwordValidUntil))) && (
-          <div
-            style={{
-              background: '#FEF3C7',
-              border: '1px solid #F59E0B',
-              borderRadius: 8,
-              padding: '12px 18px',
-              marginBottom: 24,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: 12,
-              color: '#92400E',
-              fontSize: '0.875rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-              <span>
-                <strong>All Room Passwords Expired:</strong> No rooms are accepting new candidate joins.
-                If all candidates have finished their test, this test can be ended.
-              </span>
-            </div>
-            <button
-              onClick={() => setShowEndModal(true)}
-              className="btn btn-sm btn-danger"
-              style={{ fontWeight: 600, padding: '4px 12px' }}
-            >
-              ⏹ End Test Now
-            </button>
-          </div>
-        )}
+
 
         {/* 2-Column Grid: Config / Dynamic Thresholds & Room Management */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.3fr)', gap: 24 }}>

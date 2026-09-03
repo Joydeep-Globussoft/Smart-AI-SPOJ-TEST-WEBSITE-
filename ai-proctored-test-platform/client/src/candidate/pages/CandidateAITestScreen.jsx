@@ -427,6 +427,22 @@ export default function CandidateAITestScreen() {
 
   const activeQuestion = session?.questions?.[activeQuestionIdx];
 
+  // ── Client-Side AI Proctoring (FR-5.2, FR-5.3, FR-5.4, FR-6.1, FR-7.1, FR-7.2) ──
+  // Declared here (before handleSelectQuestion) to avoid TDZ — handleSelectQuestion references proctoring in its body and deps.
+  // allowInternalCopyPaste: true allows candidate to copy code from Kimi Chat into Monaco files (FR-6.1)
+  const handleProctorWarning = useCallback((msg) => {
+    showWarning(msg);
+  }, [showWarning]);
+
+  const proctoring = useProctoring({
+    testId: session?.test?._id,
+    roomId: session?.room?._id,
+    candidateId: user?.id || user?._id,
+    enabled: Boolean(session && user && !disqualified),
+    allowInternalCopyPaste: true,
+    onWarning: handleProctorWarning,
+  });
+
   // ── Question Switch Handler (Preserve code/preview per question & autosave) ──
   const handleSelectQuestion = useCallback((newIdx) => {
     if (!session?.questions || newIdx < 0 || newIdx >= session.questions.length) return;
@@ -509,20 +525,7 @@ export default function CandidateAITestScreen() {
     return () => clearInterval(heartbeatRef.current);
   }, [session, user, activeQuestion, submittedQuestions]);
 
-  // ── Client-Side AI Proctoring (FR-5.2, FR-5.3, FR-5.4, FR-6.1, FR-7.1, FR-7.2) ──
-  // allowInternalCopyPaste: true allows candidate to copy code from Kimi Chat into Monaco files (FR-6.1)
-  const handleProctorWarning = useCallback((msg) => {
-    showWarning(msg);
-  }, [showWarning]);
-
-  const proctoring = useProctoring({
-    testId: session?.test?._id,
-    roomId: session?.room?._id,
-    candidateId: user?.id || user?._id,
-    enabled: Boolean(session && user && !disqualified),
-    allowInternalCopyPaste: true,
-    onWarning: handleProctorWarning,
-  });
+  // (proctoring is now declared above handleSelectQuestion to avoid TDZ — see comment above handleSelectQuestion)
 
   // Socket proctor warnings / disqualifications
   useEffect(() => {

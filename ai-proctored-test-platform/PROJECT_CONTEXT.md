@@ -378,6 +378,12 @@ docker-compose up --build
 5. **Python 3.14 Compatibility**: Dependencies in `yolo-service/requirements.txt` use `>=` minimum version constraints to allow installing Python 3.14 pre-built wheels on Windows.
 6. **IDE Settings Preserved**: [.vscode/settings.json](file:///c:/Users/JOYDEEP/OneDrive/Desktop/spoj%20test%20website/.vscode/settings.json) and [pyrightconfig.json](file:///c:/Users/JOYDEEP/OneDrive/Desktop/spoj%20test%20website/ai-proctored-test-platform/yolo-service/pyrightconfig.json) are configured to resolve `.venv` packages cleanly in Antigravity IDE and VS Code.
 7. **Git Remote**: Repository connected to GitHub (`git@github.com:printfJOYDEEP-BANERJEE/ai-proctored-test-platform.git`).
+8. **Candidate Status Tile Semantics (BUG-44)**: Question palette tiles render Green exclusively for "Submitted" questions, Purple for the active question, and neutral gray for unattempted questions.
+9. **AI Test View-Mode & Header Consolidations (BUG-46, BUG-47, BUG-48)**: Consolidated Split/Code/Preview toggle placement inside panel headers, resolved maximization state conflicts, and added internal iframe focus exemption (`isInternalIframeFocus`) to eliminate false tab-switch penalties.
+10. **Panel Maximization & Violation Auto-Dismiss (BUG-49)**: Symmetrical 100% maximization for Code Editor and Preview panels; implemented shared `ViolationNotificationBanner` with 6-second auto-dismiss and timer reset on successive violations.
+11. **In-Page Preview Modal (BUG-50)**: Replaced external `window.open` on the Preview popout button (`↗`) with an in-page modal dialog (`#ai-preview-modal-overlay`), preventing browser tab-switch violations during active tests.
+12. **AI Test Multi-Question Navigation & State Isolation (BUG-51)**: Full multi-question exam support in `CandidateAITestScreen.jsx` with per-question file caching (`questionFilesRef`), dynamic question tab navigation strip (`#ai-question-nav-strip`), Prev/Next controls, preview refresh on switch, and dynamic exam progress tracking.
+13. **Question Set Name and Type Editing (BUG-52)**: Implemented `PATCH /api/v1/question-sets/:setId` and Edit Set modal in Admin Question Bank. Supports instant renaming and safe type modification (locked when questions exist or when assigned to an existing test).
 
 ---
 
@@ -387,3 +393,16 @@ docker-compose up --build
    - Configure live API keys for Kimi LLM and Cloudinary in `.env` when deploying to production environments (currently using local fallbacks/stubs in development).
 2. **SSH Key Registration on GitHub**:
    - Register your local SSH key (`~/.ssh/id_ed25519.pub`) on GitHub account settings if pushing directly over SSH (`git@github.com:...`).
+3. **Playwright Driver Compatibility**:
+   - Update Playwright version in local browser test runner environment to resolve 404 driver download issues when executing automated headless browser subagents.
+
+---
+
+## 10. Session Log
+
+### 2026-09-03
+- Resolved BUG-48 through BUG-52 across candidate test-taking and admin management flows.
+- Implemented in-page preview modal dialog eliminating false TAB_SWITCH proctoring violations.
+- Implemented AI Test multi-question exam navigation and per-question file cache state isolation.
+- Implemented Question Set name and type editing in Admin Question Bank with strict test association safety rules.
+- Validated all 26 automated repository QA test suites with a 100% pass rate.
