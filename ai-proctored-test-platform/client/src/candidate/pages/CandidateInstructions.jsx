@@ -6,18 +6,25 @@ import toast from 'react-hot-toast';
 import api from '../../services/apiClient';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 import { setScreenStream } from '../../services/screenStreamManager';
+import { verifyActiveVideoStream, checkHardwareDevices } from '../../services/mediaStreamVerifier';
 
 export default function CandidateInstructions() {
   const navigate = useNavigate();
   const [joinData, setJoinData] = useState(null);
-  const [webcamGranted, setWebcamGranted] = useState(false);
-  const [micGranted, setMicGranted] = useState(false);
-  const [screenGranted, setScreenGranted] = useState(false);
+  // Status states: 'UNCHECKED' | 'GRANTED' | 'NOT_FOUND' | 'DENIED'
+  const [webcamStatus, setWebcamStatus] = useState('UNCHECKED');
+  const [micStatus, setMicStatus] = useState('UNCHECKED');
+  const [screenStatus, setScreenStatus] = useState('UNCHECKED');
   const [loading, setLoading] = useState(false);
   const [requestingPermissions, setRequestingPermissions] = useState(false);
   const [error, setError] = useState('');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+
+  const webcamGranted = webcamStatus === 'GRANTED';
+  const micGranted = micStatus === 'GRANTED';
+  const screenGranted = screenStatus === 'GRANTED';
+  const isPermissionsComplete = webcamGranted && micGranted && screenGranted;
 
   useEffect(() => {
     const stored = sessionStorage.getItem('joinData');
@@ -38,6 +45,27 @@ export default function CandidateInstructions() {
     };
   }, []);
 
+  // Listen for device changes (hardware unplug / plug events on instructions page)
+  useEffect(() => {
+    const handleDeviceChange = async () => {
+      const { hasVideo, hasAudio } = await checkHardwareDevices();
+      if (!hasVideo && webcamStatus === 'GRANTED') {
+        console.warn('[Instructions] Video device disconnected via devicechange');
+        setWebcamStatus('NOT_FOUND');
+        if (streamRef.current) {
+          streamRef.current.getVideoTracks().forEach((t) => t.stop());
+        }
+      }
+      if (!hasAudio && micStatus === 'GRANTED') {
+        console.warn('[Instructions] Audio device disconnected via devicechange');
+        setMicStatus('NOT_FOUND');
+      }
+    };
+
+    navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange);
+    return () => navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange);
+  }, [webcamStatus, micStatus]);
+
   // Ensure video element receives stream whenever webcamGranted changes
   useEffect(() => {
     if (webcamGranted && videoRef.current && streamRef.current) {
@@ -48,12 +76,12 @@ export default function CandidateInstructions() {
   // Ref callback to bind stream immediately on video mount
   const handleVideoRef = (el) => {
     videoRef.current = el;
-    if (el && streamRef.current) {
+    if (el && streamRef.current && webcamGranted) {
       el.srcObject = streamRef.current;
     }
   };
 
-  // FR-5.2: Mandatory Webcam, Mic, and Screen Sharing permission check (BUG-08, BUG-13)
+  // FR-5.2: Mandatory Webcam, Mic, and Screen Sharing permission & device check (BUG-08, BUG-13, BUG-42)
   const requestMediaPermissions = async () => {
     setError('');
     setRequestingPermissions(true);
@@ -65,38 +93,130 @@ export default function CandidateInstructions() {
     }
 
     try {
-      // 1. Webcam + Microphone access
-      let hasVideo = webcamGranted;
-      let hasAudio = micGranted;
+      // 0. Hardware device presence check
+      const { hasVideo, hasAudio } = await checkHardwareDevices();
 
-      if (!webcamGranted || !micGranted) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: true,
-        });
-
-        streamRef.current = stream;
-        const videoTracks = stream.getVideoTracks();
-        const audioTracks = stream.getAudioTracks();
-
-        hasVideo = videoTracks.length > 0 && videoTracks[0].readyState === 'live';
-        hasAudio = audioTracks.length > 0 && audioTracks[0].readyState === 'live';
-
-        setWebcamGranted(hasVideo);
-        setMicGranted(hasAudio);
-
-        if (videoTracks[0]) {
-          videoTracks[0].onended = () => setWebcamGranted(false);
+      // 1. Verify Webcam
+      let currentWebcamGranted = webcamGranted;
+      if (!currentWebcamGranted) {
+        if (!hasVideo) {
+          setWebcamStatus('NOT_FOUND');
+          setError('No webcam detected on your system. Please connect a physical camera and try again.');
+          setRequestingPermissions(false);
+          return;
         }
-        if (audioTracks[0]) {
-          audioTracks[0].onended = () => setMicGranted(false);
+
+        try {
+          const videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 } },
+          });
+
+          const videoTracks = videoStream.getVideoTracks();
+          if (!videoTracks || videoTracks.length === 0 || videoTracks[0].readyState !== 'live') {
+            throw new Error('No live video track returned from camera.');
+          }
+
+          // Verify that the camera feed is actively delivering live frames (not a static placeholder like Iriun cat)
+          const feedHealth = await verifyActiveVideoStream(videoStream, 1500);
+          if (!feedHealth.ok) {
+            videoTracks.forEach((t) => t.stop());
+            setWebcamStatus('NOT_FOUND');
+            if (feedHealth.reason === 'STATIC_PLACEHOLDER') {
+              setError('No active camera feed detected. Your camera driver appears idle or disconnected (e.g. phone not connected to Iriun). Please connect a physical camera and try again.');
+            } else {
+              setError('Camera feed is not transmitting video frames. Please check your camera connection and try again.');
+            }
+            setRequestingPermissions(false);
+            return;
+          }
+
+          streamRef.current = videoStream;
+          setWebcamStatus('GRANTED');
+          currentWebcamGranted = true;
+
+          videoTracks[0].onended = () => {
+            console.warn('[Instructions] Video track ended');
+            setWebcamStatus('NOT_FOUND');
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((t) => t.stop());
+              streamRef.current = null;
+            }
+          };
+        } catch (vErr) {
+          console.warn('[Instructions] Video access error:', vErr);
+          if (vErr.name === 'NotFoundError' || vErr.name === 'DevicesNotFoundError') {
+            setWebcamStatus('NOT_FOUND');
+            setError('No webcam detected. Please connect a working camera and try again.');
+          } else if (vErr.name === 'NotAllowedError' || vErr.name === 'PermissionDeniedError') {
+            setWebcamStatus('DENIED');
+            setError('Webcam permission was denied. Please allow camera access in your browser settings and try again.');
+          } else if (vErr.name === 'NotReadableError' || vErr.name === 'TrackStartError') {
+            setWebcamStatus('NOT_FOUND');
+            setError('Camera is already in use by another application. Please close other applications and try again.');
+          } else {
+            setWebcamStatus('NOT_FOUND');
+            setError(vErr.message || 'Failed to access webcam.');
+          }
+          setRequestingPermissions(false);
+          return;
         }
       }
 
-      // 2. Screen Sharing access for TAB_SWITCH and FULLSCREEN_EXIT proctoring (BUG-13)
-      if (!screenGranted) {
+      // 2. Verify Microphone
+      let currentMicGranted = micGranted;
+      if (!currentMicGranted) {
+        if (!hasAudio) {
+          setMicStatus('NOT_FOUND');
+          setError('No microphone detected on your system. Please connect a microphone and try again.');
+          setRequestingPermissions(false);
+          return;
+        }
+
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const audioTracks = audioStream.getAudioTracks();
+          if (!audioTracks || audioTracks.length === 0 || audioTracks[0].readyState !== 'live') {
+            throw new Error('No live audio track returned from microphone.');
+          }
+
+          setMicStatus('GRANTED');
+          currentMicGranted = true;
+
+          audioTracks[0].onended = () => {
+            console.warn('[Instructions] Audio track ended');
+            setMicStatus('NOT_FOUND');
+          };
+
+          // Combine audio track into streamRef for clean unmounting
+          if (streamRef.current) {
+            audioTracks.forEach((t) => streamRef.current.addTrack(t));
+          }
+        } catch (aErr) {
+          console.warn('[Instructions] Audio access error:', aErr);
+          if (aErr.name === 'NotFoundError' || aErr.name === 'DevicesNotFoundError') {
+            setMicStatus('NOT_FOUND');
+            setError('No microphone detected. Please connect a working microphone and try again.');
+          } else if (aErr.name === 'NotAllowedError' || aErr.name === 'PermissionDeniedError') {
+            setMicStatus('DENIED');
+            setError('Microphone permission was denied. Please allow microphone access in your browser settings and try again.');
+          } else if (aErr.name === 'NotReadableError' || aErr.name === 'TrackStartError') {
+            setMicStatus('NOT_FOUND');
+            setError('Microphone is already in use by another application. Please close other applications and try again.');
+          } else {
+            setMicStatus('NOT_FOUND');
+            setError(aErr.message || 'Failed to access microphone.');
+          }
+          setRequestingPermissions(false);
+          return;
+        }
+      }
+
+      // 3. Verify Screen Sharing
+      let currentScreenGranted = screenGranted;
+      if (!currentScreenGranted) {
         if (!navigator.mediaDevices.getDisplayMedia) {
-          setError('Your browser does not support screen proctoring. Please use Chrome or Edge.');
+          setError('Your browser does not support screen proctoring. Please use modern Chrome or Edge.');
+          setRequestingPermissions(false);
           return;
         }
 
@@ -105,66 +225,66 @@ export default function CandidateInstructions() {
           duration: 5000,
         });
 
-        // Request display media with monitor (Entire Screen) preference and exclude current tab
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            displaySurface: 'monitor',
-            cursor: 'always',
-          },
-          audio: false,
-          selfBrowserSurface: 'exclude',
-          surfaceSwitching: 'include',
-          systemAudio: 'exclude',
-        });
+        try {
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              displaySurface: 'monitor',
+              cursor: 'always',
+            },
+            audio: false,
+            selfBrowserSurface: 'exclude',
+            surfaceSwitching: 'include',
+            systemAudio: 'exclude',
+          });
 
-        const screenTracks = screenStream.getVideoTracks();
-        const hasScreen = screenTracks.length > 0 && screenTracks[0].readyState === 'live';
+          const screenTracks = screenStream.getVideoTracks();
+          const hasScreen = screenTracks.length > 0 && screenTracks[0].readyState === 'live';
 
-        if (hasScreen) {
-          // Validate that the user shared their entire monitor, not a single browser tab or application window
-          const trackSettings = screenTracks[0].getSettings();
-          const surface = trackSettings.displaySurface;
+          if (hasScreen) {
+            const trackSettings = screenTracks[0].getSettings();
+            const surface = trackSettings.displaySurface;
 
-          if (surface && surface !== 'monitor') {
-            // Hard-gate violation: Candidate shared a Tab or Window instead of Entire Screen
-            screenTracks[0].stop();
-            setScreenStream(null);
-            setScreenGranted(false);
-            const msg = 'Invalid Selection: You selected a single browser tab or window. For anti-cheating proctoring compliance, you MUST select "Entire Screen". Click "Grant Permissions" and select the "Entire Screen" tab.';
-            setError(msg);
-            toast.error(msg, { duration: 7000 });
-            return;
+            if (surface && surface !== 'monitor') {
+              screenTracks[0].stop();
+              setScreenStream(null);
+              setScreenStatus('DENIED');
+              const msg = 'Invalid Selection: You selected a single browser tab or window. For anti-cheating proctoring compliance, you MUST select "Entire Screen". Click "Grant Permissions" and select the "Entire Screen" tab.';
+              setError(msg);
+              toast.error(msg, { duration: 7000 });
+              setRequestingPermissions(false);
+              return;
+            }
+
+            setScreenStream(screenStream);
+            setScreenStatus('GRANTED');
+            currentScreenGranted = true;
+
+            screenTracks[0].onended = () => {
+              setScreenStatus('DENIED');
+              setScreenStream(null);
+              toast.error('Screen sharing was stopped. Please grant screen sharing to proceed.');
+            };
           }
-
-          setScreenStream(screenStream);
-          setScreenGranted(true);
-
-          screenTracks[0].onended = () => {
-            setScreenGranted(false);
-            setScreenStream(null);
-            toast.error('Screen sharing was stopped. Please grant screen sharing to proceed.');
-          };
+        } catch (sErr) {
+          console.warn('[Instructions] Screen share error:', sErr);
+          setScreenStatus('DENIED');
+          if (sErr.name === 'NotAllowedError' || sErr.name === 'PermissionDeniedError') {
+            setError('Screen sharing permission was cancelled or denied. Entire Screen sharing is mandatory to take this test.');
+          } else {
+            setError('Screen sharing failed. Please try clicking Grant Permissions again.');
+          }
+          setRequestingPermissions(false);
+          return;
         }
       }
 
-      if (hasVideo && hasAudio && screenGranted) {
+      if (currentWebcamGranted && currentMicGranted && currentScreenGranted) {
         setError('');
         toast.success('Camera, Microphone, and Screen Sharing verified!');
       }
     } catch (err) {
       console.error('Media permission error:', err);
-
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setScreenGranted(false);
-        setScreenStream(null);
-        setError('Permission was denied or cancelled. Camera, microphone, and Entire Screen sharing are all mandatory to start this test. Please click "Grant Permissions" and allow each prompt.');
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setError('No camera or microphone found. Please connect a working webcam and microphone to proceed.');
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        setError('Camera or microphone is already in use by another application. Please close other applications using your devices and try again.');
-      } else {
-        setError('Camera, microphone, and Entire Screen sharing access are mandatory. Please grant permissions and try again.');
-      }
+      setError('An unexpected error occurred while verifying devices. Please try again.');
     } finally {
       setRequestingPermissions(false);
     }
@@ -235,8 +355,6 @@ export default function CandidateInstructions() {
   };
 
   if (!joinData) return null;
-
-  const isPermissionsComplete = webcamGranted && micGranted && screenGranted;
 
   return (
     <div className="app-layout" style={{ minHeight: '100vh', background: '#F7F9FA', display: 'flex', flexDirection: 'column' }}>
@@ -331,9 +449,14 @@ export default function CandidateInstructions() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                  <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '16px 12px' }}>
                     <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📷</div>
-                    <div style={{ fontSize: '0.8rem' }}>Webcam &amp; Mic Not Connected</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
+                      {webcamStatus === 'NOT_FOUND' ? 'No Webcam Detected' : 'Webcam Not Connected'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', marginTop: 4, color: 'rgba(255,255,255,0.45)' }}>
+                      Connect a physical camera and click "Grant Permissions"
+                    </div>
                   </div>
                 )}
                 {webcamGranted && (
@@ -360,19 +483,27 @@ export default function CandidateInstructions() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                   <span style={{ color: '#4b5563' }}>Webcam:</span>
                   <span style={{ fontWeight: 600, color: webcamGranted ? '#2ECC71' : '#E74C3C' }}>
-                    {webcamGranted ? '✓ Granted' : '✗ Not Granted'}
+                    {webcamStatus === 'GRANTED'
+                      ? '✓ Granted'
+                      : webcamStatus === 'NOT_FOUND'
+                      ? '✗ No Camera Found'
+                      : '✗ Not Granted'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                   <span style={{ color: '#4b5563' }}>Microphone:</span>
                   <span style={{ fontWeight: 600, color: micGranted ? '#2ECC71' : '#E74C3C' }}>
-                    {micGranted ? '✓ Granted' : '✗ Not Granted'}
+                    {micStatus === 'GRANTED'
+                      ? '✓ Granted'
+                      : micStatus === 'NOT_FOUND'
+                      ? '✗ No Mic Found'
+                      : '✗ Not Granted'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                   <span style={{ color: '#4b5563' }}>Screen Share:</span>
                   <span style={{ fontWeight: 600, color: screenGranted ? '#2ECC71' : '#E74C3C' }}>
-                    {screenGranted ? '✓ Granted' : '✗ Not Granted'}
+                    {screenStatus === 'GRANTED' ? '✓ Granted' : '✗ Not Granted'}
                   </span>
                 </div>
               </div>

@@ -458,3 +458,245 @@ Executed automated test suite `test_bug39_draft_only_edit.js`:
 - Independent Passing Criteria and Malpractice Threshold controls preserved: **PASS**
 - Dead partial-lock code and advisory banners cleaned up: **PASS**
 - Summary: **18 / 18 tests passed (100%)**. Client build succeeded in **1.77s** with **0 errors**.
+
+---
+
+## 15. BUG-40: Webcam Disconnect Reliability & Full Interaction Lockdown Enforcement
+
+### Problem
+1. **Flaky & Intermittent Detection**: After unplugging a USB webcam, the disconnect warning overlay only flashed for ~1 second before disappearing on its own. Investigation revealed that in Chromium on Windows, disconnected video tracks often remain in `readyState: 'live'`. In [`useProctoring.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/hooks/useProctoring.js), the 1000ms face detection loop evaluated `if (videoTrack && videoTrack.readyState === 'live') { handleCameraReconnected(); }`, erroneously treating the dead/zombie track as reconnected and dismissing the overlay immediately.
+2. **Missing Interaction Lock**: When the warning appeared, the code editor, Run button, Submit button, question navigation, language selector, and custom input remained interactive behind the overlay, creating a proctoring bypass.
+3. **Dual Inconsistent UI**: The backend emitted `candidate:warning` for camera disconnect, rendering a red dismissible banner and toast notification with an `✕` button alongside the full-screen overlay, creating a confusing and weak warning path.
+
+### Solution
+1. **Eliminated False Auto-Recovery & Stale Tracks**:
+   - In [`useProctoring.js:handleCameraDisconnected`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/hooks/useProctoring.js#L290-L318), all tracks in `streamRef.current` are explicitly stopped and nulled out (`streamRef.current = null`, `activeTrackRef.current = null`, `videoRef.current.srcObject = null`).
+   - In the face detection loop, if `isCameraDisconnectedRef.current` is true, the loop returns immediately without processing frames and without attempting auto-recovery on stale tracks.
+2. **Continuous 1000ms Hardware Polling Monitor**:
+   - Added a continuous 1000ms polling interval combined with the `devicechange` event listener querying `navigator.mediaDevices.enumerateDevices()`.
+   - When connected: if `videoDevices.length === 0` or the active camera device ID is absent from connected devices, it triggers `handleCameraDisconnected()` within ≤1 second.
+   - When disconnected: if `videoDevices.length > 0`, it triggers `reconnectCamera()`.
+3. **Strict Verified Live Stream Reconnection**:
+   - Reconnection strictly requires `navigator.mediaDevices.getUserMedia(...)` to acquire a brand-new live MediaStream with `videoTracks[0].readyState === 'live'`.
+   - If `getUserMedia` fails (e.g., camera still unplugged), `isCameraDisconnected` remains `true` continuously. The overlay stays visible and never flickers off.
+4. **Full Interaction Lockdown Enforcement**:
+   - In [`CandidateTestScreen.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/candidate/pages/CandidateTestScreen.jsx):
+     - Monaco Editor: `readOnly: Boolean(disqualified || proctoring?.isCameraDisconnected)`.
+     - Run button & Submit Question button: `disabled={... || proctoring?.isCameraDisconnected}`.
+     - Question Navigation: `handleSelectQuestion` guarded with `if (proctoring?.isCameraDisconnected) return;`, and `QuestionTab` buttons disabled with `not-allowed` cursor and reduced opacity.
+     - Language Dropdown: `disabled={disqualified || proctoring?.isCameraDisconnected}`.
+     - Code typing handler (`handleCodeChange`): guarded with `if (proctoring?.isCameraDisconnected) return;`.
+     - Custom Input Textarea: `disabled={disqualified || proctoring?.isCameraDisconnected}`.
+   - In [`CandidateAITestScreen.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/candidate/pages/CandidateAITestScreen.jsx):
+     - File edits (`handleFileChange`), file additions (`handleAddFile`), file deletions (`handleDeleteFile`), AI chat messages (`handleSendChat`), clipboard copy (`handleCopyFromChat`), and project submissions (`handleSubmitQuestion`) are all guarded with `if (proctoring?.isCameraDisconnected) return;`.
+5. **Emergency Actions & Timer Preserved on Overlay**:
+   - The full-screen blocking overlay ([`CameraDisconnectedOverlay.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/candidate/components/CameraDisconnectedOverlay.jsx)) covers `100vw` by `100vh` at `zIndex: 999999` with `pointerEvents: 'all'`.
+   - Prominently displays the active test countdown timer (`timerDisplay`).
+   - "Reconnect Camera" button (`#reconnect-camera-btn`) allows manual reconnection attempts.
+   - "Submit All & Finish Exam" button (`#disconnected-submit-all-btn`) allows candidates to conclude their test while disconnected.
+6. **Single Authoritative UI Treatment**:
+   - Removed `io.to('candidate:' + candidateId).emit('candidate:warning', ...)` in [`proctoringController.js:reportCameraDisconnected`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/controllers/proctoringController.js#L340-L355).
+   - In candidate screens, `onWarning` explicitly ignores `violationType === 'CAMERA_DISCONNECTED'` so no weak top banners or toasts are shown.
+7. **Administrative Auditing & Non-Blocking Face Absence Preserved**:
+   - `reportCameraDisconnected` and `reportCameraReconnected` record `disconnectAt`, `reconnectAt`, and `durationSeconds` for admin audit logs, transitioning seat map status between `YELLOW` and `GREEN`.
+   - Preserved non-blocking "No Face Detected" behavior for brief out-of-frame moments (15-minute absence threshold in [`useProctoring.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/hooks/useProctoring.js#L630-L650) and floating PIP badge in [`DraggableWebcamPip.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/shared/DraggableWebcamPip.jsx#L173-L177)).
+
+### QA Verification Results
+Executed automated test suite `test_bug40_webcam_disconnect_reliability.js`:
+- Continuous 1000ms polling monitor queries `enumerateDevices()`: **PASS**
+- Stale stream/tracks stopped and nulled out immediately: **PASS**
+- Face detection loop suspends and prevents false auto-recovery: **PASS**
+- `reconnectCamera` verifies live track before clearing disconnect: **PASS**
+- Failed reconnection keeps `isCameraDisconnected` strictly `true`: **PASS**
+- Run, Submit, Editor, Navigation, Language, and Input locked down: **PASS**
+- AI Test Screen file edits and chat blocked during disconnect: **PASS**
+- Countdown timer, Reconnect button, and Submit All preserved on overlay: **PASS**
+- Weak banner and toast eliminated for camera disconnect: **PASS**
+- Backend violation logging with `disconnectAt`, `reconnectAt`, `durationSeconds`: **PASS**
+- Non-blocking "No Face Detected" behavior preserved: **PASS**
+- Summary: **28 / 28 tests passed (100%)**. Client build succeeded in **1.70s** with **0 errors**.
+
+---
+
+## 16. BUG-41: ReconnectCamera Initialization Order & Temporal Dead Zone (TDZ) Fix
+
+### Problem
+After granting camera/mic/screen-share permissions on the Instructions page and clicking "Start Test — Enter Fullscreen," the candidate test screen crashed immediately with an error-boundary screen: `"Cannot access 'reconnectCamera' before initialization"`.
+In [`useProctoring.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/hooks/useProctoring.js), a `useEffect` setting up `window.__simulateCameraReconnect` included `reconnectCamera` in its dependency array `[handleCameraDisconnected, reconnectCamera]` at line 409, while `const reconnectCamera = useCallback(...)` was declared at line 412. During the component's initial synchronous render pass, evaluating the dependency array before the `const` declaration was initialized triggered a JavaScript Temporal Dead Zone `ReferenceError`.
+
+### Solution
+1. **Reordered Declaration Before Usage**:
+   - Moved `const reconnectCamera = useCallback(async () => { ... }, [attachTrackListeners, handleCameraReconnected]);` above the simulation `useEffect`.
+   - Placed the simulation `useEffect` after `reconnectCamera`.
+2. **Verified Hook Order & Dependencies**:
+   - All references to `reconnectCamera` (in the simulation `useEffect`, the continuous hardware monitoring `useEffect`, and the hook return object) now strictly execute after `reconnectCamera` is declared.
+3. **Confirmed Server-Side Timer Resilience**:
+   - Observed that during client-side crashes, the server-side test countdown timer and proctoring session continue running accurately without logging false malpractice violations, confirming correct architectural separation of client UI and server state truth.
+
+### QA Verification Results
+Executed automated test suite `test_bug41_reconnect_camera_initialization.js`:
+- `reconnectCamera` declaration strictly precedes simulation effect and dependency array: **PASS**
+- `reconnectCamera` declaration strictly precedes continuous hardware monitor: **PASS**
+- Hook return value and screen wiring to `CameraDisconnectedOverlay onRetry` verified: **PASS**
+- Zero Temporal Dead Zone (TDZ) reference errors during initialization: **PASS**
+- Disconnect lifecycle and interaction lockdown from BUG-40 preserved: **PASS**
+- Summary: **11 / 11 tests passed (100%)**. Client build succeeded in **1.92s** with **0 errors**.
+
+
+## 17. BUG-42: Webcam Disconnect Frame Delivery Stall Detection & Face Absence Distinction
+
+### Problem & Regression Investigation
+When physically unplugging an external camera (such as a USB webcam, phone connected via Iriun Webcam, or virtual driver), the candidate test screen showed only the small `"❌ No Face!"` label on the floating PIP widget, rather than activating the full-screen `"Webcam Disconnected"` blocking overlay.
+
+Investigation of git history and hardware driver behavior revealed the precise chain of root causes:
+1. **Windows / Chromium Video Track Driver Behavior**:
+   - When an external webcam or virtual camera (e.g. Iriun Webcam) is physically unplugged, the DirectShow / MediaFoundation driver in Windows does **NOT** transition `videoTrack.readyState` to `'ended'`; it remains `'live'` indefinitely.
+   - `track.onended` and `track.onmute` do not fire.
+   - `navigator.mediaDevices.enumerateDevices()` continues listing the virtual camera device because the software driver remains active in Windows PnP (`Get-PnpDevice -Class Camera` shows `Iriun Webcam: OK`).
+   - The `<video>` element retains the last rendered frame in its memory buffer without clearing or throwing an error (`readyState` remains 4).
+2. **MediaPipe Processing of Frozen Frames**:
+   - Because `videoTrack.readyState` remained `'live'`, the proctoring hook believed the camera was still functioning normally.
+   - Every 1000ms, the face detection loop executed `detectForVideo(video, startTimeMs)` on the **frozen** video frame.
+   - Because the frozen frame had no detectable face (or stale/empty image), MediaPipe returned 0 detections (`detectedFaces === 0`), causing `setFaceCount(0)`.
+   - The floating PIP widget rendered `"❌ No Face!"`, which is the exact same non-blocking badge used when a candidate temporarily looks away.
+3. **Premature Auto-Recovery Polling Loop**:
+   - In earlier iterations, `checkCameraHardware` checked `if (videoDevices.length > 0) reconnectCamera();` on an unprompted 1000ms polling interval. On any machine with an integrated or virtual camera driver, `videoDevices.length > 0` was always true, causing continuous false reconnect attempts that dismissed the disconnect overlay.
+
+### Solution
+1. **Direct Video Frame Presentation Monitoring**:
+   - Added native frame arrival tracking using:
+     - `video.requestVideoFrameCallback()` for frame-by-frame presentation callbacks.
+     - `video.getVideoPlaybackQuality().totalVideoFrames` for frame counter progression across Chromium.
+     - `video.currentTime` progression checks.
+   - If the camera is actively connected, frames are presented at ~30 fps (`timeSinceLastFrame < 100ms`).
+   - When the camera is physically disconnected, frame delivery stops completely (0 fps).
+   - If `timeSinceLastFrame > 2000ms` (and the tab is not in a background hidden state), a **frame stall** is detected, and `handleCameraDisconnected()` is immediately called.
+2. **Face Detection Loop Safety**:
+   - Checked `isFrameStalled` **before** invoking MediaPipe.
+   - MediaPipe `detectForVideo` is **never executed** on frozen or stalled video frames.
+3. **Elimination of Auto-Reconnect Polling**:
+   - Removed the 1000ms polling loop that attempted auto-reconnection.
+   - Auto-reconnection now triggers exclusively on genuine hardware plug-in events (`devicechange` with increased video device count) or when the candidate explicitly clicks the **"🔄 Reconnect Camera"** button on the blocking overlay.
+4. **Architectural Directive & Regression Guard Comment**:
+   - Added a prominent top-level architectural warning comment in [`useProctoring.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/hooks/useProctoring.js) documenting the distinction between low-severity face absence and high-severity camera disconnect to prevent future regressions.
+
+### QA Verification Results
+Executed automated test suite `test_bug42_webcam_disconnect_frame_stall_distinction.js`:
+- Architectural directive and regression guard comment present: **PASS**
+- Frame delivery tracking via `requestVideoFrameCallback` and `totalVideoFrames`: **PASS**
+- Frame stall detected within 2000ms on frame cessation: **PASS**
+- MediaPipe `detectForVideo` prevented from running on frozen frames: **PASS**
+- Faulty 1000ms polling loop removed and replaced with genuine `devicechange` listener: **PASS**
+- Monaco editor locked in `readOnly` and Run/Submit buttons disabled on disconnect: **PASS**
+- Floating PIP retains non-blocking `"❌ No Face!"` and `"✓ Face Detected"` badges: **PASS**
+- All 15 repository QA suites executed: **15 / 15 suites passed (100%)**.
+
+
+## 18. Instructions Page Real Device Presence & Live Stream Verification (BUG-42 Device Permissions)
+
+### Problem & Root Cause
+On the Instructions page (`CandidateInstructions.jsx`), when no physical camera was attached or when an idle virtual camera driver was active (e.g. Iriun Webcam on PC with phone disconnected), the Device Permissions panel displayed `"Webcam: ✓ Granted"` and enabled `"Start Test — Enter Fullscreen"`. The live preview box displayed an idle placeholder graphic (an orange cat with `"Looking for the phone"`), revealing that no active camera feed was truly transmitting, yet the UI treated the device as verified.
+
+Root causes identified:
+1. **Permission vs. Presence Conflation**: The verification logic accepted any successful `getUserMedia()` call with `readyState === 'live'`. Virtual camera drivers (e.g. Iriun, OBS) create software video devices that accept connections and report `live` even when no physical camera/phone is transmitting video.
+2. **Lack of Error State Differentiation**: `NotFoundError` and `NotAllowedError` were treated uniformly under a generic error banner without distinct negative statuses (e.g. differentiating `"✗ No Camera Found"` from `"✗ Not Granted"`).
+3. **Desynchronized Preview Box**: The live preview box was showing the virtual driver's placeholder feed while displaying `"● LIVE PREVIEW"` and claiming `"Granted"`.
+
+### Solution
+1. **Shared Media Stream Verification (`mediaStreamVerifier.js`)**:
+   - Created [`client/src/services/mediaStreamVerifier.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/services/mediaStreamVerifier.js) exporting `verifyActiveVideoStream` and `checkHardwareDevices`.
+   - Checks `navigator.mediaDevices.enumerateDevices()` to verify that a hardware videoinput device exists.
+   - Samples frames from the video stream using an offscreen canvas: real camera sensors (even in pitch darkness) continuously produce natural photon and thermal shot noise (`diff > 0`). Synthetic/idle driver placeholders (e.g. Iriun cat graphic) produce byte-identical static frames (`diff === 0`).
+   - If `diff === 0`, `verifyActiveVideoStream` flags `STATIC_PLACEHOLDER`, stops the tracks, and rejects the stream.
+2. **Distinct Status Indicators**:
+   - `webcamStatus`: `'GRANTED'` (`"✓ Granted"`), `'NOT_FOUND'` (`"✗ No Camera Found"`), `'DENIED'` (`"✗ Not Granted"`).
+   - `micStatus`: `'GRANTED'` (`"✓ Granted"`), `'NOT_FOUND'` (`"✗ No Mic Found"`), `'DENIED'` (`"✗ Not Granted"`).
+   - `screenStatus`: `'GRANTED'` (`"✓ Granted"`), `'DENIED'` (`"✗ Not Granted"`).
+3. **Synchronized Preview Box**:
+   - `<video>` and `"● LIVE PREVIEW"` badge are rendered **only** when `webcamGranted` is true and a verified live stream is active.
+   - When no physical webcam is connected or idle driver is rejected, the box renders a clean dark placeholder with `"📷 No Webcam Detected"` and clear guidance to connect a physical camera.
+4. **Live Hardware Monitor**:
+   - Added a `devicechange` listener on the Instructions page to immediately flip status to `"✗ No Camera Found"` and disable `"Start Test"` if a camera is unplugged prior to starting.
+5. **Start Button Gating**:
+   - `"Start Test — Enter Fullscreen"` is strictly disabled unless `webcamStatus === 'GRANTED' && micStatus === 'GRANTED' && screenStatus === 'GRANTED'`.
+
+### QA Verification Results
+Executed automated test suite `test_bug42_instructions_device_presence_verification.js`:
+- Shared media stream verifier integration: **PASS**
+- Distinction of `"✗ No Camera Found"` from `"✗ Not Granted"`: **PASS**
+- Static placeholder graphic detection (0-diff rejection): **PASS**
+- Live preview box synchronization with granted status: **PASS**
+- Microphone and Screen Share live stream verification: **PASS**
+- Real-time `devicechange` listener and Start button gating: **PASS**
+- Summary: **15 / 15 tests passed (100%)**.
+- Full repository QA suites (all 16 suites): **16 / 16 passed (100%)**.
+
+
+## 19. Seat Map In-Progress Yellow Dot Pulse Animation (BUG-43)
+
+### Problem & Change Request
+The small yellow status dot in the top-right corner of each "In Progress" candidate tile on the Live Physical Seat Map (`AdminLiveDashboard.jsx`) was previously solid and static. To visually distinguish actively working candidates at a glance as "currently active", the yellow dot needed to blink/pulse using the exact same smooth opacity pulse treatment previously established in BUG-27 for the green `"● LIVE"` badge dot.
+
+### Solution
+1. **GPU-Accelerated CSS Pulse Animation**:
+   - Reused `@keyframes liveDotPulse` (smooth `0.35` -> `1` opacity transition over a 1.8-second cycle with `ease-in-out infinite`) in [`client/src/styles/global.css`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/styles/global.css).
+   - Defined `.seat-tile-dot-pulse` with `will-change: opacity` to guarantee independent GPU hardware layer compositing with zero layout reflows (NFR 60fps compliance).
+2. **Selective State Targeting in [`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx)**:
+   - Evaluated `isYellowDot = color === STATUS_COLORS.YELLOW`.
+   - Applied `.seat-tile-dot-pulse` and `animation: liveDotPulse 1.8s ease-in-out infinite` **strictly** when `isYellowDot` is true.
+   - Non-yellow states remain static:
+     - **Passed (green)**: Solid static `#2ECC71`.
+     - **Disqualified (red)**: Solid static `#E74C3C`.
+     - **Not Started (white/gray)**: Solid static `#94A3B8` fill with high-contrast `#111827` border (preserving BUG-32 visibility).
+3. **Table Row Parity**:
+   - Extended the same pulsing indicator to `CandidateRowItem` for visual consistency across both Seat Map and Table views.
+
+### QA Verification Results
+Executed automated test suite `test_bug43_seatmap_tile_yellow_dot_pulse.js`:
+- Reused `@keyframes liveDotPulse` from BUG-27: **PASS**
+- `.seat-tile-dot-pulse` class composited with `will-change: opacity`: **PASS**
+- `SeatTile` calculates `isYellowDot` strictly on `STATUS_COLORS.YELLOW`: **PASS**
+- Applied pulsing class and GPU inline animation strictly to yellow dot: **PASS**
+- Passed (green), Disqualified (red), and Not Started (white) dots remain static: **PASS**
+- BUG-32 contrast border and fill for Not Started dot fully preserved: **PASS**
+- No layout thrashing (strictly opacity-based animation): **PASS**
+- `CandidateRowItem` visual parity confirmed: **PASS**
+- Summary: **10 / 10 tests passed (100%)**.
+- Full repository QA suites (all 17 suites): **17 / 17 passed (100%)**.
+
+
+## 20. Increased Pulse Visibility & Amplitude for In-Progress Yellow Dot (BUG-45)
+
+### Problem
+The initial pulse effect from BUG-43 was too subtle to register at a glance against the light yellow/cream seat map tile background (`#F1C40F15`). The low contrast between 35% opacity yellow and the card background caused the dot to look almost static unless closely inspected.
+
+### Solution
+1. **Dramatic Opacity Amplitude**:
+   - Widened the opacity swing from `0.35` -> `1.0` to **`0.18` -> `1.0`** (82% opacity drop), ensuring the dot visibly fades in and out with high contrast against the cream card.
+2. **Breathing Scale Dynamic**:
+   - Added gentle size scaling: `transform: scale(1)` at 0%/100% to **`transform: scale(1.28)`** at 50% with `transform-origin: center`, giving the dot a visible biological "breathing" rhythm that catches the eye immediately.
+3. **Radial Ping Glow**:
+   - Incorporated expanding box-shadow pulse:
+     - 0%/100%: `box-shadow: 0 0 6px rgba(241, 196, 15, 0.9), 0 0 0 0 rgba(241, 196, 15, 0.6)`
+     - 50%: `box-shadow: 0 0 2px rgba(241, 196, 15, 0.2), 0 0 0 5px rgba(241, 196, 15, 0)`
+   - Sends a soft, elegant 5px wave outward without any jarring flicker or layout movement.
+4. **Scoping & LIVE Badge Dot Status**:
+   - This enhanced pulse is tailored specifically to the yellow In-Progress dot (`@keyframes seatTileDotPulse`), preserving the standard green LIVE badge dot (`@keyframes liveDotPulse` from BUG-27) without unexpected side effects.
+   - Non-yellow dots (Passed green, Disqualified red, Not Started white with black border) remain completely static.
+
+### QA Verification Results
+Executed automated test suite `test_bug43_seatmap_tile_yellow_dot_pulse.js`:
+- `@keyframes seatTileDotPulse` high-amplitude opacity (1.0 -> 0.18) & scale (1.0 -> 1.28): **PASS**
+- Expanding radial ping glow (5px box-shadow wave): **PASS**
+- `.seat-tile-dot-pulse` GPU composited with `will-change: opacity, transform`: **PASS**
+- `SeatTile` and `CandidateRowItem` render high-visibility pulse strictly for In-Progress: **PASS**
+- Static state preserved for Passed, Disqualified, and Not Started dots: **PASS**
+- BUG-32 high-contrast border and fill preserved for Not Started: **PASS**
+- Summary: **11 / 11 tests passed (100%)**.
+- Full repository QA suites (all 17 suites): **17 / 17 passed (100%)**.
+
+
+
+
+
+

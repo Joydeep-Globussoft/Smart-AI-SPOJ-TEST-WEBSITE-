@@ -342,11 +342,8 @@ const reportCameraDisconnected = async (req, res, next) => {
       currentCount: malpracticeCount,
     });
 
-    io.to(`candidate:${candidateId}`).emit('candidate:warning', {
-      violationType: 'CAMERA_DISCONNECTED',
-      message: '⚠️ Camera Disconnected! Reconnect your camera immediately. Timer is still running.',
-    });
-
+    // BUG-40: Candidate UI is governed strictly by the full-screen blocking CameraDisconnectedOverlay.
+    // Do NOT emit candidate:warning here to avoid weak/dismissible banners or toasts.
     io.to(`test:${testId}:admin`).emit('seatmap:status', {
       candidateId,
       roomId,

@@ -437,8 +437,12 @@ export default function CandidateAITestScreen() {
 
   // Socket proctor warnings / disqualifications
   useEffect(() => {
-    const onWarning = ({ message }) => {
+    const onWarning = ({ violationType, message }) => {
       if (isSubmittingAll.current) return;
+      if (violationType === 'CAMERA_DISCONNECTED') {
+        // BUG-40: Camera disconnect is handled exclusively by the full-screen blocking overlay.
+        return;
+      }
       setWarningMessage(message);
       toast.error(`⚠️ ${message}`, { duration: 8000 });
     };
@@ -466,20 +470,21 @@ export default function CandidateAITestScreen() {
   // Autosave files every 30s (NFR §13 Availability)
   useAutosave(
     useCallback(async () => {
-      if (!activeQuestion || !files || disqualified) return;
+      if (!activeQuestion || !files || disqualified || proctoring?.isCameraDisconnected) return;
       try {
         setIsSaving(true);
         await api.saveFiles(activeQuestion._id, { filesJson: files });
       } catch (_) {} finally {
         setIsSaving(false);
       }
-    }, [activeQuestion, files, disqualified]),
+    }, [activeQuestion, files, disqualified, proctoring?.isCameraDisconnected]),
     30000,
     !!session && !disqualified
   );
 
   // File operations
   const handleFileChange = (newContent) => {
+    if (proctoring?.isCameraDisconnected) return;
     setFiles((prev) => ({
       ...prev,
       [activeFile]: newContent || '',
@@ -488,6 +493,7 @@ export default function CandidateAITestScreen() {
 
   const handleAddFile = (e) => {
     e.preventDefault();
+    if (proctoring?.isCameraDisconnected) return;
     const trimmed = newFileName.trim();
     if (!trimmed) return;
     if (files[trimmed]) {
@@ -502,6 +508,7 @@ export default function CandidateAITestScreen() {
   };
 
   const handleDeleteFile = (fileName) => {
+    if (proctoring?.isCameraDisconnected) return;
     if (Object.keys(files).length <= 1) {
       toast.error('Cannot delete the only file');
       return;
@@ -519,6 +526,7 @@ export default function CandidateAITestScreen() {
   // ── FR-6.1 & FR-6.2: Send chat message to Kimi ───────────────────────────────
   const handleSendChat = async (e) => {
     e.preventDefault();
+    if (proctoring?.isCameraDisconnected) return;
     const msg = chatInput.trim();
     if (!msg || isAiTyping || !activeQuestion) return;
 
@@ -544,6 +552,7 @@ export default function CandidateAITestScreen() {
 
   // Copy AI response to internal clipboard (User decision: allow within-interface copy paste)
   const handleCopyFromChat = (text) => {
+    if (proctoring?.isCameraDisconnected) return;
     internalClipboard.current = text;
     // Also copy to standard clipboard for user convenience
     navigator.clipboard?.writeText(text).catch(() => {});
@@ -552,6 +561,7 @@ export default function CandidateAITestScreen() {
 
   // Submit AI Test question
   const handleSubmitQuestion = async () => {
+    if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || isSubmitting) return;
     setIsSubmitting(true);
     try {

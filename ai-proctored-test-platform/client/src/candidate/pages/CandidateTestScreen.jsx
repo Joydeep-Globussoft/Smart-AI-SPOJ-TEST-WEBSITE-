@@ -29,7 +29,7 @@ const LANGUAGE_MAP = {
 };
 
 // ── Memoized question list item (NFR: React.memo for 60fps list updates, supports collapsed view) ──────
-const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTotal, isSubmitted, isCollapsed, onClick }) => {
+const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTotal, isSubmitted, isCollapsed, onClick, disabled }) => {
   const progress = visibleTotal > 0 ? visiblePassed / visibleTotal : 0;
   const isFullyPassed = visibleTotal > 0 && visiblePassed === visibleTotal;
 
@@ -37,7 +37,8 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
     return (
       <button
         type="button"
-        onClick={onClick}
+        onClick={disabled ? undefined : onClick}
+        disabled={disabled}
         title={`Q${index + 1}. ${question.title} (${question.difficulty || 'N/A'}) - ${visiblePassed}/${visibleTotal} passed${isSubmitted ? ' (Submitted)' : ''}`}
         style={{
           width: '100%',
@@ -45,7 +46,8 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
           background: isActive ? 'rgba(14, 124, 134, 0.12)' : 'transparent',
           border: 'none',
           borderLeft: isActive ? '3px solid #0E7C86' : '3px solid transparent',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -87,7 +89,8 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       style={{
         width: '100%',
         textAlign: 'left',
@@ -95,7 +98,8 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
         background: isActive ? 'rgba(14, 124, 134, 0.1)' : 'transparent',
         border: 'none',
         borderLeft: isActive ? '3px solid #0E7C86' : '3px solid transparent',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
         transition: 'all 200ms',
         fontFamily: 'Inter, sans-serif',
       }}
@@ -489,6 +493,11 @@ export default function CandidateTestScreen() {
   useEffect(() => {
     const onWarning = ({ violationType, message }) => {
       if (isSubmittingAll.current) return;
+      if (violationType === 'CAMERA_DISCONNECTED') {
+        // BUG-40: Camera disconnect is handled exclusively by the full-screen blocking overlay.
+        // Do not display a separate, dismissible top banner or toast.
+        return;
+      }
       setWarningMessage(message);
       toast.error(`⚠️ ${message}`, { duration: 8000 });
     };
@@ -554,24 +563,27 @@ export default function CandidateTestScreen() {
 
   // ── Question Switch Handler (Requirement 1: Autosave before navigating away) ──
   const handleSelectQuestion = useCallback((newIdx) => {
+    if (proctoring?.isCameraDisconnected) return;
     if (newIdx === activeQuestionIdx) return;
     if (activeQuestionRef.current && codeRef.current !== undefined) {
       saveCodeToBackend(activeQuestionRef.current._id, languageRef.current, codeRef.current);
     }
     setActiveQuestionIdx(newIdx);
-  }, [activeQuestionIdx, saveCodeToBackend]);
+  }, [activeQuestionIdx, saveCodeToBackend, proctoring?.isCameraDisconnected]);
 
   // ── Language Change Handler (Requirement 2: Autosave code under current language before switching) ──
   const handleLanguageChange = useCallback((newLang) => {
+    if (proctoring?.isCameraDisconnected) return;
     if (newLang === languageRef.current) return;
     if (activeQuestionRef.current && codeRef.current !== undefined) {
       saveCodeToBackend(activeQuestionRef.current._id, languageRef.current, codeRef.current);
     }
     setLanguage(newLang);
-  }, [saveCodeToBackend]);
+  }, [saveCodeToBackend, proctoring?.isCameraDisconnected]);
 
   // ── Code Change Handler (Debounced typing autosave + instant synchronous local persistence) ──
   const handleCodeChange = useCallback((val) => {
+    if (proctoring?.isCameraDisconnected) return;
     const newCode = val || '';
     setCode(newCode);
     codeRef.current = newCode;
@@ -603,6 +615,7 @@ export default function CandidateTestScreen() {
 
   // ── Run code against visible test cases ──────────────────────────────────────
   const handleRun = async () => {
+    if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || !code) return;
     saveCodeToBackend(activeQuestion._id, language, code);
     setIsRunning(true);
@@ -624,6 +637,7 @@ export default function CandidateTestScreen() {
 
   // ── Submit single question ────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || !code || isSubmitting) return;
     setIsSubmitting(true);
     try {
@@ -934,6 +948,7 @@ export default function CandidateTestScreen() {
                 visibleTotal={questionProgress[q._id]?.total || q.visibleTestCases?.length || 0}
                 isSubmitted={submittedQuestions.has(q._id)}
                 isCollapsed={isCollapsed}
+                disabled={Boolean(proctoring?.isCameraDisconnected)}
                 onClick={() => handleSelectQuestion(idx)}
               />
             ))
@@ -1104,10 +1119,11 @@ export default function CandidateTestScreen() {
                   id="language-select"
                   value={language}
                   onChange={(e) => handleLanguageChange(e.target.value)}
+                  disabled={disqualified || proctoring?.isCameraDisconnected}
                   style={{
                     background: '#2d2d44', color: 'white', border: '1px solid #444',
                     borderRadius: 6, padding: '4px 10px', fontSize: '0.85rem',
-                    fontFamily: 'monospace', cursor: 'pointer',
+                    fontFamily: 'monospace', cursor: proctoring?.isCameraDisconnected ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {(session.test.supportedLanguages || ['python']).map((lang) => (
@@ -1255,11 +1271,13 @@ export default function CandidateTestScreen() {
                   onCopy={preventCopyPaste}
                   onPaste={preventCopyPaste}
                   onContextMenu={preventCopyPaste}
+                  disabled={disqualified || proctoring?.isCameraDisconnected}
                   placeholder="Enter custom input here..."
                   style={{
                     flex: 1, resize: 'none', background: '#1e1e2e', color: '#cdd6f4',
                     border: 'none', padding: 12, fontFamily: 'monospace', fontSize: '0.8rem',
                     outline: 'none',
+                    cursor: proctoring?.isCameraDisconnected ? 'not-allowed' : 'text',
                   }}
                 />
               </div>

@@ -52,6 +52,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
   const isCandidateInProgress = candidate.status === 'IN_PROGRESS';
   const color = STATUS_COLORS[candidate.colorStatus] || (isCandidateInProgress ? STATUS_COLORS.YELLOW : STATUS_COLORS.WHITE);
   const isWhite = color === STATUS_COLORS.WHITE && !isCandidateInProgress;
+  const isYellowDot = color === STATUS_COLORS.YELLOW;
   const malpracticeCount = candidate.malpracticeCount || 0;
 
   const remainingMs = getCandidateRemainingMs(candidate, now);
@@ -132,8 +133,9 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
           </span>
         </div>
 
-        {/* Status dot / badge (BUG-32: clearly visible on all tile backgrounds) */}
+        {/* Status dot / badge (BUG-32: clearly visible on all tile backgrounds; BUG-43, BUG-45: high-visibility pulse for in-progress yellow dot) */}
         <span
+          className={isYellowDot ? 'seat-tile-dot-pulse' : ''}
           style={{
             width: 10,
             height: 10,
@@ -143,6 +145,9 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
             display: 'inline-block',
             boxShadow: isWhite ? 'none' : `0 0 6px ${color}`,
             flexShrink: 0,
+            transformOrigin: 'center',
+            animation: isYellowDot ? 'seatTileDotPulse 1.8s ease-in-out infinite' : 'none',
+            willChange: isYellowDot ? 'opacity, transform' : 'auto',
           }}
           title={`Status: ${candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : 'NOT_STARTED')}`}
         />
@@ -173,6 +178,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
   const isCandidateInProgress = candidate.status === 'IN_PROGRESS';
   const color = STATUS_COLORS[candidate.colorStatus] || (isCandidateInProgress ? STATUS_COLORS.YELLOW : STATUS_COLORS.WHITE);
   const isWhite = color === STATUS_COLORS.WHITE && !isCandidateInProgress;
+  const isYellowDot = color === STATUS_COLORS.YELLOW;
   const malpracticeCount = candidate.malpracticeCount || 0;
 
   const remainingMs = getCandidateRemainingMs(candidate, now);
@@ -215,6 +221,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       {/* Candidate Name + Persistent Malpractice Counter (FR-7.3) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
         <span
+          className={isYellowDot ? 'seat-tile-dot-pulse' : ''}
           style={{
             width: 8,
             height: 8,
@@ -223,6 +230,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             border: isWhite ? '1.5px solid #111827' : `1px solid ${color}`,
             flexShrink: 0,
             boxShadow: isCandidateInProgress ? `0 0 6px ${color}` : 'none',
+            transformOrigin: 'center',
+            animation: isYellowDot ? 'seatTileDotPulse 1.8s ease-in-out infinite' : 'none',
+            willChange: isYellowDot ? 'opacity, transform' : 'auto',
           }}
         />
         <strong style={{ color: '#1A2B3C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
