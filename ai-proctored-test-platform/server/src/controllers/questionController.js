@@ -2,6 +2,7 @@
 // Implements all endpoints from Section 9.4 exactly
 const QuestionSet = require('../models/QuestionSet');
 const Question = require('../models/Question');
+const Test = require('../models/Test');
 
 // ── POST /question-sets ───────────────────────────────────────────────────────
 const createQuestionSet = async (req, res, next) => {
@@ -30,6 +31,60 @@ const getQuestionSets = async (req, res, next) => {
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 });
     res.json({ questionSets });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /question-sets/:setId ───────────────────────────────────────────────
+const updateQuestionSet = async (req, res, next) => {
+  try {
+    const { setId } = req.params;
+    const { name, testType } = req.body;
+
+    const questionSet = await QuestionSet.findById(setId);
+    if (!questionSet) {
+      return res.status(404).json({ error: 'QuestionSet not found' });
+    }
+
+    // 1. Validate and update name if provided
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: 'Question Set name cannot be empty' });
+      }
+      questionSet.name = name.trim();
+    }
+
+    // 2. Validate and update testType if changed
+    if (testType !== undefined && testType !== questionSet.testType) {
+      const validTypes = ['SPOJ', 'REACT', 'JAVASCRIPT', 'AI_TEST'];
+      if (!validTypes.includes(testType)) {
+        return res.status(400).json({ error: `Invalid testType. Must be one of: ${validTypes.join(', ')}` });
+      }
+
+      // Check if this Question Set is already assigned to any existing Test
+      const assignedTest = await Test.findOne({ questionSetId: setId });
+      if (assignedTest) {
+        return res.status(400).json({
+          error: `Cannot change test type: This Question Set is assigned to test "${assignedTest.title}" (${assignedTest.testType}).`,
+        });
+      }
+
+      // Check if this Question Set already contains questions
+      const questionCount = await Question.countDocuments({ questionSetId: setId });
+      if (questionCount > 0) {
+        return res.status(400).json({
+          error: `Cannot change test type: This Question Set contains ${questionCount} existing question(s).`,
+        });
+      }
+
+      questionSet.testType = testType;
+    }
+
+    await questionSet.save();
+    await questionSet.populate('createdBy', 'name email');
+
+    res.json({ questionSet });
   } catch (err) {
     next(err);
   }
@@ -151,6 +206,7 @@ const deleteQuestion = async (req, res, next) => {
 module.exports = {
   createQuestionSet,
   getQuestionSets,
+  updateQuestionSet,
   createQuestion,
   getQuestions,
   updateQuestion,

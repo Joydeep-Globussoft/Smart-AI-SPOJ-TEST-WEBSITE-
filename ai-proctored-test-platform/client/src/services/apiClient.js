@@ -97,6 +97,7 @@ export const api = {
   // Question Sets
   createQuestionSet: (data) => axios.post('/question-sets', data),
   getQuestionSets: () => axios.get('/question-sets'),
+  updateQuestionSet: (setId, data) => axios.patch(`/question-sets/${setId}`, data),
   createQuestion: (setId, data) => axios.post(`/question-sets/${setId}/questions`, data),
   getQuestions: (setId) => axios.get(`/question-sets/${setId}/questions`),
   updateQuestion: (qId, data) => axios.patch(`/questions/${qId}`, data),

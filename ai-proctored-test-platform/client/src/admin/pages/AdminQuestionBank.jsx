@@ -30,6 +30,14 @@ export default function AdminQuestionBank() {
     testType: 'SPOJ',
   });
 
+  // Edit Question Set Modal State (BUG-XX)
+  const [showEditSetModal, setShowEditSetModal] = useState(false);
+  const [editingSet, setEditingSet] = useState(false);
+  const [editSetData, setEditSetData] = useState({
+    name: '',
+    testType: 'SPOJ',
+  });
+
   // Question Modal State (Create / Edit)
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
@@ -120,6 +128,48 @@ export default function AdminQuestionBank() {
       toast.error(err.response?.data?.error || 'Failed to create question set');
     } finally {
       setCreatingSet(false);
+    }
+  };
+
+  // Open Edit Question Set Modal (BUG-XX)
+  const handleOpenEditSet = () => {
+    if (!selectedSet) return;
+    setEditSetData({
+      name: selectedSet.name || '',
+      testType: selectedSet.testType || 'SPOJ',
+    });
+    setShowEditSetModal(true);
+  };
+
+  // Handle Edit Question Set Submit (BUG-XX)
+  const handleEditSetSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedSet?._id) return;
+    const trimmedName = editSetData.name.trim();
+    if (!trimmedName) {
+      return toast.error('Question Set name is required');
+    }
+
+    try {
+      setEditingSet(true);
+      const res = await api.updateQuestionSet(selectedSet._id, {
+        name: trimmedName,
+        testType: editSetData.testType,
+      });
+
+      const updatedSet = res.data.questionSet;
+      toast.success(`Updated Question Set "${updatedSet.name}"`);
+      setShowEditSetModal(false);
+
+      // Update state in place immediately
+      setSelectedSet(updatedSet);
+      setQuestionSets((prev) =>
+        prev.map((s) => (s._id === updatedSet._id ? updatedSet : s))
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update question set');
+    } finally {
+      setEditingSet(false);
     }
   };
 
@@ -392,11 +442,28 @@ export default function AdminQuestionBank() {
                 {/* Selected Set Header Card */}
                 <div className="card" style={{ padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <h2 style={{ fontSize: '1.3rem', color: '#1A2B3C' }}>{selectedSet.name}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <h2 style={{ fontSize: '1.3rem', color: '#1A2B3C', margin: 0 }}>{selectedSet.name}</h2>
                       <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
                         {selectedSet.testType}
                       </span>
+                      <button
+                        type="button"
+                        id="edit-question-set-btn"
+                        onClick={handleOpenEditSet}
+                        className="btn btn-secondary btn-sm"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '3px 10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer',
+                        }}
+                        title="Edit Question Set Name and Type"
+                      >
+                        ✏ Edit Set
+                      </button>
                     </div>
                     <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 4 }}>
                       Contains {questions.length} question(s) · Created by {selectedSet.createdBy?.name || 'Admin'}
@@ -676,6 +743,81 @@ export default function AdminQuestionBank() {
                     disabled={creatingSet}
                   >
                     {creatingSet ? 'Creating...' : 'Create Set'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Edit Question Set Modal (BUG-XX) ── */}
+        {showEditSetModal && (
+          <div className="modal-backdrop" onClick={() => !editingSet && setShowEditSetModal(false)}>
+            <div className="modal-container" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title">Edit Question Set</h3>
+                <button
+                  type="button"
+                  id="close-edit-set-modal-btn"
+                  onClick={() => setShowEditSetModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleEditSetSubmit}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label">Question Set Name *</label>
+                    <input
+                      type="text"
+                      id="edit-set-name-input"
+                      className="form-control"
+                      placeholder="e.g. SDE-1 Core DSA Problem Set"
+                      value={editSetData.name}
+                      onChange={(e) => setEditSetData((p) => ({ ...p, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Test Type *</label>
+                    <select
+                      id="edit-set-type-select"
+                      className="form-select"
+                      value={editSetData.testType}
+                      onChange={(e) => setEditSetData((p) => ({ ...p, testType: e.target.value }))}
+                      disabled={questions.length > 0}
+                      required
+                    >
+                      {TEST_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                    {questions.length > 0 && (
+                      <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: 4 }}>
+                        ℹ Test Type cannot be changed while this set contains {questions.length} question(s).
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    id="cancel-edit-set-btn"
+                    onClick={() => setShowEditSetModal(false)}
+                    className="btn btn-secondary"
+                    disabled={editingSet}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    id="save-edit-set-btn"
+                    className="btn btn-primary"
+                    disabled={editingSet}
+                  >
+                    {editingSet ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>

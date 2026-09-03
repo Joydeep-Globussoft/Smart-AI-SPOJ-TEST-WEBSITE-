@@ -972,6 +972,52 @@ Executed automated test suite `test_bug51_ai_test_multi_question_navigation.js`:
 - Full repository QA suites (all 25 suites): **25 / 25 passed (100%)**.
 
 
+## 29. Question Set Name and Type Editing (BUG-XX / BUG-52)
+
+### Problem
+In Admin → Question Bank, selecting a Question Set displayed the set's name and type badge, but lacked any Edit action. Admins could not update the Question Set name or change its test type, nor was there any backend `PATCH` endpoint for Question Sets.
+
+### Solution
+1. **Backend Route & Controller (`questionRoutes.js`, `questionController.js`)**:
+   - Added `PATCH /api/v1/question-sets/:setId` route protected by `verifyToken, requireAdmin` middleware.
+   - Implemented `updateQuestionSet`:
+     - Validates non-empty `name` (trims whitespace, rejects empty names with 400).
+     - Validates `testType` against allowed types: `SPOJ`, `REACT`, `JAVASCRIPT`, `AI_TEST`.
+     - **Test Association Safety**: If the Question Set is assigned to an existing Test, changing its `testType` is blocked with a descriptive error (`Cannot change test type: This Question Set is assigned to test ...`).
+     - **Question Schema Safety**: If the Question Set contains existing questions, changing its `testType` is blocked (`Cannot change test type: This Question Set contains ... existing question(s)`).
+     - Allows safe `testType` modification when the set has 0 questions and is unassigned.
+     - Preserves MongoDB `_id` and existing `questionIds`.
+2. **Frontend Service & UI (`apiClient.js`, `AdminQuestionBank.jsx`)**:
+   - Added `updateQuestionSet: (setId, data) => axios.patch(\`/question-sets/\${setId}\`, data)` in `apiClient.js`.
+   - Added `✏ Edit Set` button (`#edit-question-set-btn`) in the Question Set Header Card next to the name and type badge.
+   - Added Edit Question Set Modal (`#edit-set-name-input`, `#edit-set-type-select`, `#save-edit-set-btn`, `#cancel-edit-set-btn`).
+   - Automatically disables `testType` dropdown in the modal if the set contains existing questions, with clear guidance text.
+   - Updates `selectedSet` and `questionSets` state in-place on successful save, immediately updating both the details card and the sidebar set list without full page reload.
+
+### QA Verification Results
+Executed automated test suite `test_bug52_edit_question_set_name_and_type.js`:
+- `apiClient` exports `updateQuestionSet`: **PASS**
+- `AdminQuestionBank` renders Edit Set button with click handler: **PASS**
+- `AdminQuestionBank` contains Edit modal and form submit handler: **PASS**
+- `AdminQuestionBank` disables `testType` select when set contains questions: **PASS**
+- `AdminQuestionBank` updates state in-place on save: **PASS**
+- Route registers `PATCH /question-sets/:setId` with `verifyToken` & `requireAdmin`: **PASS**
+- Controller validates assigned tests and question count before allowing type changes: **PASS**
+- Admin successfully updates Question Set name: **PASS**
+- Question Set MongoDB `_id` is preserved: **PASS**
+- Server rejects empty Question Set name with 400: **PASS**
+- Admin successfully updates `testType` when unassigned and 0 questions: **PASS**
+- Server rejects invalid `testType` with 400: **PASS**
+- Server blocks changing `testType` when assigned to an existing Test: **PASS**
+- Admin can safely update name even when assigned to a Test: **PASS**
+- Server blocks changing `testType` when set contains existing questions: **PASS**
+- Server rejects non-admin / candidate updates with 403: **PASS**
+- Server returns 404 for non-existent Question Set ID: **PASS**
+- Summary: **18 / 18 tests passed (100%)**.
+- Full repository QA suites (all 26 suites): **26 / 26 passed (100%)**.
+
+
+
 
 
 
