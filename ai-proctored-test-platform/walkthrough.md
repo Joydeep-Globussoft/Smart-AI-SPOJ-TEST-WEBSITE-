@@ -901,6 +901,79 @@ Executed automated test suite `test_bug49_violation_auto_dismiss.js`:
 - Full repository QA suites (all 23 suites): **23 / 23 passed (100%)**.
 
 
+## 27. Preview Section External/Open Icon In-Page Modal (BUG-XX / BUG-50)
+
+### Problem
+1. In the Preview section of the AI Test screen, clicking the external/open icon (`↗`) located in the navigation address bar called `window.open(url, '_blank')`.
+2. Opening an external browser tab switched browser focus away from the proctored test, causing `document.hidden` to become `true` and triggering an immediate `TAB_SWITCH` violation.
+3. This penalized candidates for invoking an intended platform feature.
+
+### Solution
+1. **Elimination of `window.open` and External Navigation**:
+   - Completely removed `window.open` and blob URL external window creation from [`CandidateAITestScreen.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/candidate/pages/CandidateAITestScreen.jsx).
+2. **In-Page Full Application Preview Modal**:
+   - Connected the `↗` button to toggle an in-page modal dialog: `setIsPreviewModalOpen(true)`.
+   - Renders a clean full-screen modal overlay (`id="ai-preview-modal-overlay"`, `role="dialog"`, `zIndex: 950`) within the candidate test page context.
+   - Includes simulated browser address bar (`http://localhost:3000`), a reload button `↻` (`id="ai-preview-modal-reload-btn"`), and an explicit `✕ Close Preview` button (`id="ai-preview-modal-close-btn"`).
+   - Added keyboard Escape handler (`useEffect`) so candidates can close the modal by pressing `Esc`.
+3. **Proctoring Integrity Uncompromised**:
+   - The modal iframe is tagged with `data-preview-iframe="true"`, ensuring focus within the preview does not trigger false tab switch warnings.
+   - The webcam PiP (`DraggableWebcamPip`, `zIndex: 1000`) and fullscreen blocking overlay (`zIndex: 9999`) sit above the modal, maintaining uninterrupted candidate monitoring.
+   - Standard browser tab-switching (`document.hidden`, Alt-Tab) detection remains 100% active and unweakened.
+
+### QA Verification Results
+Executed automated test suite `test_bug50_preview_inpage_modal_no_tabswitch.js`:
+- Elimination of `window.open` and `target="_blank"`: **PASS**
+- In-page full preview modal overlay with `role="dialog"`: **PASS**
+- Reload button and interactive "✕ Close Preview" / Escape handler: **PASS**
+- Modal iframe tagged with `data-preview-iframe="true"`: **PASS**
+- Standard proctoring TAB_SWITCH detection remains intact for genuine tab switches: **PASS**
+- Summary: **18 / 18 tests passed (100%)**.
+- Full repository QA suites (all 24 suites): **24 / 24 passed (100%)**.
+
+
+## 28. AI Test Multi-Question Support and Navigation (BUG-XX / BUG-51)
+
+### Problem
+1. When an AI_TEST question set contained multiple questions (e.g. Q1 "Frontend" and Q2 "Login page"), starting the test exam displayed only Q1 in the candidate view.
+2. The backend (`submissionController.js`) correctly populated and returned all questions in the question set, but `CandidateAITestScreen.jsx` completely lacked question navigation controls (no question tabs or prev/next buttons).
+3. The editor file state and active file were tied strictly to `questions[0]`, lacking per-question memory isolation.
+
+### Solution
+1. **Per-Question State Isolation (`CandidateAITestScreen.jsx`)**:
+   - Added `questionFilesRef` and `questionActiveFileRef` to cache code files and active file selection per question ID (`{ [questionId]: { [fileName]: content } }`).
+   - Kept `filesRef` synchronized with local state on every edit so user typing is immediately captured without waiting for React re-render cycles.
+   - On initial mount from `sessionStorage`, pre-populated `questionFilesRef` for every question using existing submissions, question starter files (`aiTestBriefFiles`), or defaults.
+   - Restored `submittedQuestions` set from any existing submissions marked `status === 'SUBMITTED'`.
+2. **Question Navigation Handler (`handleSelectQuestion`)**:
+   - Automatically snapshots current question code into `questionFilesRef`.
+   - Fires asynchronous autosave (`api.saveFiles`) for the active question.
+   - Sets `activeQuestionIdx` to the target index.
+   - Loads target question's files and active file from cache.
+   - Increments `previewKey` (`setPreviewKey(k => k + 1)`) to immediately refresh the Sandpack preview for the newly selected question.
+3. **Question Navigation UI in Panel 1**:
+   - **Question Tab Strip**: Renders `#ai-question-nav-strip` below the header when `session.questions.length > 1`. Each tab (`#ai-question-tab-${idx}`) highlights the active question in purple (`#7c3aed`) and displays a green checkmark (`✓`) if submitted.
+   - **Prev / Next Buttons**: Renders `#ai-prev-question-btn` and `#ai-next-question-btn` in the Question panel with boundary disabling on first/last questions.
+4. **Progress & Submission Tracking**:
+   - Top timer bar dynamically displays `Progress: {submittedQuestions.size}/{session.questions.length} Submitted` and `Status: Q{idx + 1} Submitted` / `In Progress`.
+   - Isolated question submission: submitting Q1 updates Q1's status while keeping Q2 active and submittable.
+   - Preserved `handleSubmitAll` and timer expiry to submit current files before finalizing.
+
+### QA Verification Results
+Executed automated test suite `test_bug51_ai_test_multi_question_navigation.js`:
+- Backend returns all populated questions up to `totalQuestions`: **PASS**
+- Per-question files isolation and caching: **PASS**
+- Dynamic question tab navigation strip & Prev/Next buttons: **PASS**
+- State preservation, autosave, and preview refresh on switch: **PASS**
+- Dynamic Progress indicator (`submittedQuestions.size / totalQuestions`): **PASS**
+- Isolated question submission: **PASS**
+- Regression audit (view-mode toggle, modal, camera overlay): **PASS**
+- Summary: **20 / 20 tests passed (100%)**.
+- Full repository QA suites (all 25 suites): **25 / 25 passed (100%)**.
+
+
+
+
 
 
 

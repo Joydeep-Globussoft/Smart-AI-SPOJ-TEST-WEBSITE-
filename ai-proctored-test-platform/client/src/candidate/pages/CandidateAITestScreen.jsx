@@ -174,6 +174,15 @@ export default function CandidateAITestScreen() {
   const [newFileName, setNewFileName] = useState('');
   const [showAddFile, setShowAddFile] = useState(false);
 
+  // Per-question state cache (BUG-XX: Multi-question code & active file isolation)
+  const questionFilesRef = useRef({}); // { [questionId]: { [fileName]: content } }
+  const questionActiveFileRef = useRef({}); // { [questionId]: fileName }
+  const filesRef = useRef(files);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
   // ── Panel Maximize & Resizable Workspace State ─────────────────────────────
   const [maximizedPanel, setMaximizedPanel] = useState(null); // null | 'question' | 'editor' | 'preview' | 'chat'
 
@@ -348,12 +357,24 @@ export default function CandidateAITestScreen() {
   const [submittedQuestions, setSubmittedQuestions] = useState(new Set());
   const [disqualified, setDisqualified] = useState(false);
   const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+  // Close in-page preview modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isPreviewModalOpen) {
+        setIsPreviewModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPreviewModalOpen]);
 
   const heartbeatRef = useRef(null);
   const isSubmittingAll = useRef(false);
   const chatEndRef = useRef(null);
 
-  // Load session from sessionStorage
+  // Load session from sessionStorage and initialize per-question state
   useEffect(() => {
     const stored = sessionStorage.getItem('testSession');
     if (!stored) {
@@ -363,18 +384,82 @@ export default function CandidateAITestScreen() {
     const s = JSON.parse(stored);
     setSession(s);
 
-    const currentQ = s.questions?.[0];
-    if (currentQ?.aiTestBriefFiles && currentQ.aiTestBriefFiles.length > 0) {
-      const initial = {};
-      currentQ.aiTestBriefFiles.forEach(f => {
-        initial[f.fileName] = f.initialContent || '';
-      });
-      setFiles(initial);
-      setActiveFile(currentQ.aiTestBriefFiles[0].fileName);
+    // Restore submitted status for any previously submitted questions
+    const initialSubmitted = new Set();
+    (s.submissions || []).forEach((sub) => {
+      if (sub.status === 'SUBMITTED') {
+        const qIdStr = sub.questionId?._id?.toString() || sub.questionId?.toString() || sub.questionId;
+        if (qIdStr) initialSubmitted.add(qIdStr);
+      }
+    });
+    setSubmittedQuestions(initialSubmitted);
+
+    // Pre-populate each question's file state from saved submission, brief files, or defaults
+    (s.questions || []).forEach((q) => {
+      const qIdStr = q._id.toString();
+      const sub = (s.submissions || []).find(
+        (item) => (item.questionId?._id?.toString() || item.questionId?.toString() || item.questionId) === qIdStr
+      );
+      if (sub?.filesJson && Object.keys(sub.filesJson).length > 0) {
+        questionFilesRef.current[qIdStr] = sub.filesJson;
+      } else if (q.aiTestBriefFiles && q.aiTestBriefFiles.length > 0) {
+        const initial = {};
+        q.aiTestBriefFiles.forEach((f) => {
+          initial[f.fileName] = f.initialContent || '';
+        });
+        questionFilesRef.current[qIdStr] = initial;
+      } else {
+        questionFilesRef.current[qIdStr] = { ...DEFAULT_FILES };
+      }
+      questionActiveFileRef.current[qIdStr] = Object.keys(questionFilesRef.current[qIdStr])[0] || 'index.html';
+    });
+
+    const firstQ = s.questions?.[0];
+    if (firstQ) {
+      const firstQIdStr = firstQ._id.toString();
+      const initialFiles = questionFilesRef.current[firstQIdStr] || DEFAULT_FILES;
+      setFiles(initialFiles);
+      filesRef.current = initialFiles;
+      const initialActiveFile = questionActiveFileRef.current[firstQIdStr] || 'index.html';
+      setActiveFile(initialActiveFile);
     }
   }, [navigate]);
 
   const activeQuestion = session?.questions?.[activeQuestionIdx];
+
+  // ── Question Switch Handler (Preserve code/preview per question & autosave) ──
+  const handleSelectQuestion = useCallback((newIdx) => {
+    if (!session?.questions || newIdx < 0 || newIdx >= session.questions.length) return;
+    if (newIdx === activeQuestionIdx) return;
+    if (proctoring?.isCameraDisconnected) return;
+
+    // 1. Snapshot and cache current question files in memory
+    const currentQ = session.questions[activeQuestionIdx];
+    if (currentQ) {
+      const currentQId = currentQ._id.toString();
+      const currentFiles = filesRef.current;
+      questionFilesRef.current[currentQId] = currentFiles;
+      questionActiveFileRef.current[currentQId] = activeFile;
+
+      // Asynchronously autosave current question files to backend
+      api.saveFiles(currentQ._id, { filesJson: currentFiles }).catch(() => {});
+    }
+
+    // 2. Switch active question index
+    const targetQ = session.questions[newIdx];
+    const targetQId = targetQ._id.toString();
+    setActiveQuestionIdx(newIdx);
+
+    // 3. Load target question's files from cache
+    const targetFiles = questionFilesRef.current[targetQId] || DEFAULT_FILES;
+    setFiles(targetFiles);
+    filesRef.current = targetFiles;
+    const targetActiveFile = questionActiveFileRef.current[targetQId] || Object.keys(targetFiles)[0] || 'index.html';
+    setActiveFile(targetActiveFile);
+
+    // 4. Force preview refresh for newly selected question
+    setPreviewKey((k) => k + 1);
+  }, [session?.questions, activeQuestionIdx, activeFile, proctoring?.isCameraDisconnected]);
 
   // Scroll chat to bottom on update
   useEffect(() => {
@@ -388,13 +473,13 @@ export default function CandidateAITestScreen() {
     toast('⏰ Time is up! Submitting your AI test...', { icon: '⏰' });
     try {
       if (activeQuestion) {
-        await api.submitAiTest(activeQuestion._id, { filesJson: files });
+        await api.submitAiTest(activeQuestion._id, { filesJson: filesRef.current });
       }
       await api.submitAll(session.test._id);
     } catch (_) {}
     toast.dismiss();
     navigate('/candidate/complete');
-  }, [session, activeQuestion, files, navigate]);
+  }, [session, activeQuestion, navigate]);
 
   const { formatted: timerDisplay, urgency } = useTimer(
     session?.candidateEndTime,
@@ -488,10 +573,17 @@ export default function CandidateAITestScreen() {
   // File operations
   const handleFileChange = (newContent) => {
     if (proctoring?.isCameraDisconnected) return;
-    setFiles((prev) => ({
-      ...prev,
-      [activeFile]: newContent || '',
-    }));
+    setFiles((prev) => {
+      const updated = {
+        ...prev,
+        [activeFile]: newContent || '',
+      };
+      filesRef.current = updated;
+      if (activeQuestion) {
+        questionFilesRef.current[activeQuestion._id.toString()] = updated;
+      }
+      return updated;
+    });
   };
 
   const handleAddFile = (e) => {
@@ -503,8 +595,18 @@ export default function CandidateAITestScreen() {
       toast.error('File already exists');
       return;
     }
-    setFiles(prev => ({ ...prev, [trimmed]: '' }));
+    setFiles((prev) => {
+      const updated = { ...prev, [trimmed]: '' };
+      filesRef.current = updated;
+      if (activeQuestion) {
+        questionFilesRef.current[activeQuestion._id.toString()] = updated;
+      }
+      return updated;
+    });
     setActiveFile(trimmed);
+    if (activeQuestion) {
+      questionActiveFileRef.current[activeQuestion._id.toString()] = trimmed;
+    }
     setNewFileName('');
     setShowAddFile(false);
     toast.success(`Created ${trimmed}`);
@@ -520,8 +622,16 @@ export default function CandidateAITestScreen() {
       const copy = { ...files };
       delete copy[fileName];
       setFiles(copy);
+      filesRef.current = copy;
+      if (activeQuestion) {
+        questionFilesRef.current[activeQuestion._id.toString()] = copy;
+      }
       if (activeFile === fileName) {
-        setActiveFile(Object.keys(copy)[0]);
+        const nextActive = Object.keys(copy)[0];
+        setActiveFile(nextActive);
+        if (activeQuestion) {
+          questionActiveFileRef.current[activeQuestion._id.toString()] = nextActive;
+        }
       }
     }
   };
@@ -539,14 +649,25 @@ export default function CandidateAITestScreen() {
     setIsAiTyping(true);
 
     try {
-      const { data } = await api.aiChat(activeQuestion._id, { message: msg });
-      const aiEntry = { role: 'ai', message: data.reply, timestamp: new Date().toISOString() };
-      setChatMessages((prev) => [...prev, aiEntry]);
-    } catch (err) {
-      toast.error('AI assistant error: ' + (err.response?.data?.error || err.message));
+      const { data } = await api.kimiChat(activeQuestion._id, {
+        message: msg,
+        filesContext: files,
+        chatHistory: chatMessages.slice(-6).map((m) => ({
+          role: m.role === 'candidate' ? 'user' : 'assistant',
+          content: m.message,
+        })),
+      });
+
+      const reply = data?.reply || 'I am ready to help you build your project!';
       setChatMessages((prev) => [
         ...prev,
-        { role: 'ai', message: '⚠️ Error communicating with AI assistant. Please try again.', timestamp: new Date().toISOString() }
+        { role: 'kimi', message: reply, timestamp: new Date().toISOString() },
+      ]);
+    } catch (err) {
+      const errReply = err.response?.data?.error || 'AI assistant is currently unavailable. Please continue coding!';
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'kimi', message: `⚠️ ${errReply}`, timestamp: new Date().toISOString() },
       ]);
     } finally {
       setIsAiTyping(false);
@@ -566,13 +687,15 @@ export default function CandidateAITestScreen() {
   const handleSubmitQuestion = async () => {
     if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || isSubmitting) return;
+    const qIdStr = activeQuestion._id.toString();
     setIsSubmitting(true);
     try {
+      questionFilesRef.current[qIdStr] = files;
       await api.submitAiTest(activeQuestion._id, {
         filesJson: files,
         promptLog: chatMessages,
       });
-      setSubmittedQuestions(prev => new Set([...prev, activeQuestion._id]));
+      setSubmittedQuestions(prev => new Set([...prev, qIdStr]));
       toast.success(`Q${activeQuestionIdx + 1} project submitted successfully!`);
     } catch (err) {
       console.error('Submit question error:', err);
@@ -589,7 +712,9 @@ export default function CandidateAITestScreen() {
     isSubmittingAll.current = true;
     try {
       if (activeQuestion) {
-        await api.submitAiTest(activeQuestion._id, { filesJson: files, promptLog: chatMessages });
+        const currentQId = activeQuestion._id.toString();
+        questionFilesRef.current[currentQId] = filesRef.current;
+        await api.submitAiTest(activeQuestion._id, { filesJson: filesRef.current, promptLog: chatMessages });
       }
       await api.submitAll(session.test._id);
       toast.dismiss();
@@ -692,13 +817,25 @@ export default function CandidateAITestScreen() {
 
         {/* Row (b): Timer & Actions */}
         <div className="timer-bar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 500 }}>
-              Status:
-            </span>
-            <span style={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
-              {submittedQuestions.has(activeQuestion?._id) ? '✓ Current Task Submitted' : 'In Progress'}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 500 }}>
+                Progress:
+              </span>
+              <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>
+                {submittedQuestions.size}/{session.questions?.length || 1} Submitted
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 500 }}>
+                Status:
+              </span>
+              <span style={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
+                {submittedQuestions.has(activeQuestion?._id?.toString()) || submittedQuestions.has(activeQuestion?._id)
+                  ? `✓ Q${activeQuestionIdx + 1} Submitted`
+                  : 'In Progress'}
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -715,10 +852,14 @@ export default function CandidateAITestScreen() {
               id="ai-submit-question-btn"
               className="btn btn-primary btn-sm"
               onClick={handleSubmitQuestion}
-              disabled={isSubmitting || submittedQuestions.has(activeQuestion?._id) || disqualified || proctoring?.isCameraDisconnected}
+              disabled={isSubmitting || submittedQuestions.has(activeQuestion?._id?.toString()) || submittedQuestions.has(activeQuestion?._id) || disqualified || proctoring?.isCameraDisconnected}
               style={{ fontWeight: 600 }}
             >
-              {isSubmitting ? 'Submitting...' : submittedQuestions.has(activeQuestion?._id) ? '✓ Submitted' : 'Submit Project'}
+              {isSubmitting
+                ? 'Submitting...'
+                : (submittedQuestions.has(activeQuestion?._id?.toString()) || submittedQuestions.has(activeQuestion?._id))
+                ? '✓ Submitted'
+                : 'Submit Project'}
             </button>
             <button
               id="ai-submit-all-btn"
@@ -838,6 +979,55 @@ export default function CandidateAITestScreen() {
             </div>
           </div>
 
+          {/* Question Navigation Tab Strip (BUG-XX: Multi-question tabs) */}
+          {session?.questions && session.questions.length > 1 && (
+            <div
+              id="ai-question-nav-strip"
+              style={{
+                background: '#0a0f1d',
+                borderBottom: '1px solid #1e293b',
+                padding: '6px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                overflowX: 'auto',
+                flexShrink: 0,
+              }}
+            >
+              {session.questions.map((q, idx) => {
+                const isActive = idx === activeQuestionIdx;
+                const isSub = submittedQuestions.has(q._id?.toString()) || submittedQuestions.has(q._id);
+                return (
+                  <button
+                    key={q._id}
+                    type="button"
+                    id={`ai-question-tab-${idx}`}
+                    onClick={() => handleSelectQuestion(idx)}
+                    disabled={Boolean(proctoring?.isCameraDisconnected)}
+                    style={{
+                      background: isActive ? '#7c3aed' : '#1e293b',
+                      color: isActive ? '#ffffff' : '#94a3b8',
+                      border: isActive ? '1px solid #a78bfa' : '1px solid #334155',
+                      borderRadius: 4,
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      fontWeight: isActive ? 700 : 500,
+                      cursor: Boolean(proctoring?.isCameraDisconnected) ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      transition: 'all 0.15s ease',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span>Q{idx + 1}</span>
+                    {isSub && <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 800 }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Question Body (Scrollable) */}
           <div
             style={{
@@ -895,6 +1085,70 @@ export default function CandidateAITestScreen() {
                 Focus on clean UI/UX and efficient state management.
               </div>
             </div>
+
+            {/* Question Prev / Next Navigation Controls (BUG-XX) */}
+            {session?.questions && session.questions.length > 1 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 20,
+                  paddingTop: 14,
+                  borderTop: '1px solid #1e293b',
+                }}
+              >
+                <button
+                  type="button"
+                  id="ai-prev-question-btn"
+                  onClick={() => handleSelectQuestion(activeQuestionIdx - 1)}
+                  disabled={activeQuestionIdx <= 0 || Boolean(proctoring?.isCameraDisconnected)}
+                  style={{
+                    background: activeQuestionIdx <= 0 ? '#1e293b' : '#334155',
+                    color: activeQuestionIdx <= 0 ? '#64748b' : '#ffffff',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '5px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: activeQuestionIdx <= 0 || Boolean(proctoring?.isCameraDisconnected) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    opacity: activeQuestionIdx <= 0 ? 0.5 : 1,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  ◀ Prev Question
+                </button>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+                  Q{activeQuestionIdx + 1} of {session.questions.length}
+                </span>
+                <button
+                  type="button"
+                  id="ai-next-question-btn"
+                  onClick={() => handleSelectQuestion(activeQuestionIdx + 1)}
+                  disabled={activeQuestionIdx >= session.questions.length - 1 || Boolean(proctoring?.isCameraDisconnected)}
+                  style={{
+                    background: activeQuestionIdx >= session.questions.length - 1 ? '#1e293b' : '#7c3aed',
+                    color: activeQuestionIdx >= session.questions.length - 1 ? '#64748b' : '#ffffff',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '5px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: activeQuestionIdx >= session.questions.length - 1 || Boolean(proctoring?.isCameraDisconnected) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    opacity: activeQuestionIdx >= session.questions.length - 1 ? 0.5 : 1,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  Next Question ▶
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -1374,12 +1628,10 @@ export default function CandidateAITestScreen() {
                 ↻
               </button>
               <button
-                onClick={() => {
-                  const blob = new Blob([generatePreviewSrcDoc()], { type: 'text/html' });
-                  const url = URL.createObjectURL(blob);
-                  window.open(url, '_blank');
-                }}
-                title="Open in new window"
+                type="button"
+                id="ai-preview-popout-btn"
+                onClick={() => setIsPreviewModalOpen(true)}
+                title="Open full preview"
                 style={{
                   background: 'none',
                   border: 'none',
@@ -1896,6 +2148,139 @@ export default function CandidateAITestScreen() {
           >
             ⛶ Re-enter Fullscreen Mode
           </button>
+        </div>
+      )}
+
+      {/* In-Page Full Application Preview Modal (BUG-XX: Prevents external browser tab-switch violations) */}
+      {isPreviewModalOpen && (
+        <div
+          id="ai-preview-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Application Live Preview"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 950,
+            background: 'rgba(7, 11, 20, 0.92)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '16px 20px 20px',
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Modal Browser Navigation Header */}
+          <div
+            style={{
+              background: '#0d1525',
+              border: '1px solid #1e293b',
+              borderBottom: 'none',
+              borderRadius: '8px 8px 0 0',
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ color: '#10b981' }}>●</span> Application Live Preview
+              </span>
+              <div
+                style={{
+                  background: '#111827',
+                  border: '1px solid #1e293b',
+                  borderRadius: 4,
+                  padding: '3px 12px',
+                  color: '#38bdf8',
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                http://localhost:3000
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <button
+                type="button"
+                id="ai-preview-modal-reload-btn"
+                onClick={() => setPreviewKey((k) => k + 1)}
+                title="Reload Preview"
+                style={{
+                  background: '#1e293b',
+                  border: '1px solid #334155',
+                  color: '#38bdf8',
+                  padding: '5px 12px',
+                  borderRadius: 4,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                ↻ Reload
+              </button>
+              <button
+                type="button"
+                id="ai-preview-modal-close-btn"
+                onClick={() => setIsPreviewModalOpen(false)}
+                title="Close Preview (Esc)"
+                style={{
+                  background: '#ef4444',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '5px 14px',
+                  borderRadius: 4,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                ✕ Close Preview
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Iframe Container */}
+          <div
+            style={{
+              flex: 1,
+              background: '#ffffff',
+              border: '1px solid #1e293b',
+              borderRadius: '0 0 8px 8px',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <iframe
+              id="ai-test-preview-modal-iframe"
+              data-preview-iframe="true"
+              key={`modal-preview-${previewKey}`}
+              title="Full Application Live Preview"
+              srcDoc={generatePreviewSrcDoc()}
+              sandbox="allow-scripts allow-modals"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                background: '#ffffff',
+              }}
+            />
+          </div>
         </div>
       )}
 

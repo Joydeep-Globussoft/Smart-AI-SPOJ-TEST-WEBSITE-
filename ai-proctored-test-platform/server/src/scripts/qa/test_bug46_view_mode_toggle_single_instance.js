@@ -68,8 +68,8 @@ async function runTests() {
   );
   assert(
     aiTestCode.includes('title="Reload Preview"') &&
-    aiTestCode.includes('title="Open in new window"'),
-    'Preview panel retains reload and open-in-new-window controls'
+    (aiTestCode.includes('title="Open full preview"') || aiTestCode.includes('id="ai-preview-popout-btn"')),
+    'Preview panel retains reload and open preview controls'
   );
   assert(
     previewPanelSection.includes("setMaximizedPanel((p) => (p === 'preview' ? null : 'preview'))"),
