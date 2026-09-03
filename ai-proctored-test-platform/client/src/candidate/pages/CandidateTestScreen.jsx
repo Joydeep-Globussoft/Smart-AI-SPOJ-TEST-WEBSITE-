@@ -11,6 +11,7 @@ import {
   initSocket, emitCandidateJoin, emitCandidateHeartbeat,
   emitTabSwitch, emitFullscreenExit,
   onCandidateWarning, offCandidateWarning,
+  onCandidateViolationUpdated, offCandidateViolationUpdated,
   onCandidateDisqualified, offCandidateDisqualified,
   onTestEnded, offTestEnded,
 } from '../../services/socketClient';
@@ -19,6 +20,7 @@ import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
+import TestFooter from '../components/TestFooter';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 
 // ── Monaco Editor (lazy-loaded to avoid bundle bloat) ─────────────────────────
@@ -394,6 +396,10 @@ export default function CandidateTestScreen() {
         return;
       }
       const s = JSON.parse(stored);
+      if (s.completed || (s.submissions && s.submissions.length > 0 && s.submissions.every((sub) => sub.status === 'SUBMITTED'))) {
+        navigate('/candidate/complete', { replace: true });
+        return;
+      }
       if (!s || !s.test || !s.room) {
         setLoadError('Incomplete test session data. Please rejoin the test room.');
         return;
@@ -433,12 +439,23 @@ export default function CandidateTestScreen() {
   const handleTimerExpire = useCallback(async () => {
     if (isSubmittingAll.current) return;
     isSubmittingAll.current = true;
+    setIsSubmittingAllState(true);
     toast('⏰ Time is up! Submitting your test...', { icon: '⏰' });
     try {
-      await api.submitAll(session.test._id);
+      if (session?.test?._id) {
+        await api.submitAll(session.test._id);
+      }
+      try {
+        const stored = sessionStorage.getItem('testSession');
+        if (stored) {
+          const s = JSON.parse(stored);
+          s.completed = true;
+          sessionStorage.setItem('testSession', JSON.stringify(s));
+        }
+      } catch (_) {}
     } catch (_) {}
     toast.dismiss();
-    navigate('/candidate/complete');
+    navigate('/candidate/complete', { replace: true });
   }, [session, navigate]);
 
   const { formatted: timerDisplay, urgency } = useTimer(
@@ -490,16 +507,46 @@ export default function CandidateTestScreen() {
     onWarning: handleProctorWarning,
   });
 
-  // ── Socket: candidate:warning + candidate:disqualified + test:ended ───────────
+  // Fetch initial violation count on test load / session ready (FEATURE-004)
   useEffect(() => {
-    const onWarning = ({ violationType, message }) => {
+    if (!session?.test?._id) return;
+    let isMounted = true;
+    api
+      .getViolationCount(session.test._id)
+      .then((res) => {
+        if (isMounted && typeof res.data?.violationCount === 'number') {
+          console.log('[ViolationCounter] Coding Test initial violation count:', res.data.violationCount);
+          setViolationCount(res.data.violationCount);
+        }
+      })
+      .catch((err) => {
+        console.warn('[ViolationCounter] Failed to fetch initial violation count:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.test?._id]);
+
+  // ── Socket: candidate:warning + candidate:violation-updated + candidate:disqualified + test:ended ───────────
+  useEffect(() => {
+    const onWarning = ({ violationType, message, violationCount: count }) => {
       if (isSubmittingAll.current) return;
+      if (typeof count === 'number') {
+        setViolationCount(count);
+      }
       if (violationType === 'CAMERA_DISCONNECTED') {
         // BUG-40: Camera disconnect is handled exclusively by the full-screen blocking overlay.
         // Do not display a separate, dismissible top banner or toast.
         return;
       }
       showWarning(message);
+    };
+
+    const onViolationUpdated = (data) => {
+      if (typeof data?.violationCount === 'number') {
+        console.log('[ViolationCounter] Real-time violation update:', data.violationCount);
+        setViolationCount(data.violationCount);
+      }
     };
 
     const onDisqualified = ({ reason }) => {
@@ -513,16 +560,18 @@ export default function CandidateTestScreen() {
     };
 
     onCandidateWarning(onWarning);
+    onCandidateViolationUpdated(onViolationUpdated);
     onCandidateDisqualified(onDisqualified);
     onTestEnded(onEnded);
 
     return () => {
       toast.dismiss();
       offCandidateWarning(onWarning);
+      offCandidateViolationUpdated(onViolationUpdated);
       offCandidateDisqualified(onDisqualified);
       offTestEnded(onEnded);
     };
-  }, [handleTimerExpire]);
+  }, [handleTimerExpire, showWarning]);
 
   // ── FR-5.4: Copy-paste disabled in editor ─────────────────────────────────────
   // Monaco editor handles this via options; also prevent at DOM level for textarea/inputs
@@ -663,16 +712,52 @@ export default function CandidateTestScreen() {
     }
   };
 
+  const [isSubmittingAllState, setIsSubmittingAllState] = useState(false);
+  const [violationCount, setViolationCount] = useState(0);
+
   // ── Submit all ────────────────────────────────────────────────────────────────
   const handleSubmitAll = async () => {
-    if (!confirm('Submit the entire test? This cannot be undone.')) return;
+    if (isSubmittingAllState || isSubmittingAll.current) return;
+    if (!window.confirm('Submit the entire test? This cannot be undone.')) return;
+
+    setIsSubmittingAllState(true);
     isSubmittingAll.current = true;
+    console.log('[SubmitAll] Starting final test submission flow...');
+
     try {
-      await api.submitAll(session.test._id);
+      // 1. Save current active question code draft before final submit
+      if (activeQuestion?._id && code) {
+        try {
+          await saveCodeToBackend(activeQuestion._id, code, language);
+        } catch (_) {}
+      }
+
+      // 2. Execute submitAll API request
+      if (session?.test?._id) {
+        console.log(`[SubmitAll] Calling POST /tests/${session.test._id}/submit-all...`);
+        await api.submitAll(session.test._id);
+        console.log('[SubmitAll] Final submitAll succeeded!');
+      }
+
+      // 3. Mark session completed in sessionStorage
+      try {
+        const stored = sessionStorage.getItem('testSession');
+        if (stored) {
+          const s = JSON.parse(stored);
+          s.completed = true;
+          sessionStorage.setItem('testSession', JSON.stringify(s));
+        }
+      } catch (_) {}
+
+      // 4. Success feedback & redirect to completion page
       toast.dismiss();
-      navigate('/candidate/complete');
+      toast.success('Test submitted successfully!');
+      navigate('/candidate/complete', { replace: true });
     } catch (err) {
-      toast.error('Submit failed');
+      console.error('[SubmitAll] Final submission error:', err);
+      const errMsg = err.response?.data?.error || err.message || 'Submit all failed';
+      toast.error(`Submit failed: ${errMsg}. Please try again.`);
+      setIsSubmittingAllState(false);
       isSubmittingAll.current = false;
     }
   };
@@ -1334,6 +1419,9 @@ export default function CandidateTestScreen() {
         </div>
       </div>
 
+      {/* ── Shared Bottom Proctoring Status & Violation Footer (FEATURE-004) ── */}
+      <TestFooter proctoring={proctoring} violationCount={violationCount} />
+
       {/* ── Movable AI Proctoring PIP Feed (FR-5.2, FR-7.1, FR-7.2) ── */}
       <DraggableWebcamPip videoRef={proctoring.videoRef} faceCount={proctoring.faceCount} />
 
@@ -1372,7 +1460,7 @@ export default function CandidateTestScreen() {
         </div>
       )}
 
-      {/* Camera Disconnected Full-Screen Blocking Overlay (BUG-29) */}
+      {/* Camera Disconnected Full-Screen Blocking Overlay (BUG-29, BUG-002) */}
       <CameraDisconnectedOverlay
         isVisible={Boolean(proctoring?.isCameraDisconnected)}
         timerDisplay={timerDisplay}
@@ -1380,6 +1468,7 @@ export default function CandidateTestScreen() {
         isVerifyingFace={Boolean(proctoring?.isVerifyingFace)}
         onRetry={proctoring?.reconnectCamera}
         onSubmitAll={handleSubmitAll}
+        isSubmitting={isSubmittingAllState}
         videoRef={proctoring?.videoRef}
       />
     </div>

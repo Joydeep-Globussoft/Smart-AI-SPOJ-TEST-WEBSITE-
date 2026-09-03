@@ -42,7 +42,8 @@ const regenerate = async (testId) => {
         resultCount: 0,
       };
     }
-    byCandidate[cid].totalScore += r.finalScorePerQuestion || 0;
+    const qScore = Math.min(10, Math.max(0, Number(r.finalScorePerQuestion) || 0));
+    byCandidate[cid].totalScore += qScore;
     byCandidate[cid].questionsCompleted += r.questionsCompletedCount || 0;
     byCandidate[cid].resultCount += 1;
   }
@@ -74,11 +75,15 @@ const regenerate = async (testId) => {
     // Exclude candidates who didn't meet passing criteria
     if (data.questionsCompleted < passingCriteria) continue;
 
+    // Normalized overall candidate score on 0-10 scale
+    const rawAverageScore = data.resultCount > 0 ? data.totalScore / data.resultCount : 0;
+    const normalizedScore = Number(Math.min(10, Math.max(0, rawAverageScore)).toFixed(2));
+
     shortlistCandidates.push({
       candidateId: data.candidateId,
       name: data.name,
       email: data.email,
-      score: data.totalScore,
+      score: normalizedScore,
       questionsCompleted: data.questionsCompleted,
       malpracticeCount,
       rank: 0, // will be assigned below

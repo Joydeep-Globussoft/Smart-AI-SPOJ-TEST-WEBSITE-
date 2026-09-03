@@ -11,6 +11,7 @@ import {
   initSocket, emitCandidateJoin, emitCandidateHeartbeat,
   emitTabSwitch, emitFullscreenExit,
   onCandidateWarning, offCandidateWarning,
+  onCandidateViolationUpdated, offCandidateViolationUpdated,
   onCandidateDisqualified, offCandidateDisqualified,
   onTestEnded, offTestEnded,
 } from '../../services/socketClient';
@@ -19,6 +20,7 @@ import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
+import TestFooter from '../components/TestFooter';
 import Editor from '@monaco-editor/react';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 
@@ -372,6 +374,8 @@ export default function CandidateAITestScreen() {
 
   const heartbeatRef = useRef(null);
   const isSubmittingAll = useRef(false);
+  const [isSubmittingAllState, setIsSubmittingAllState] = useState(false);
+  const [violationCount, setViolationCount] = useState(0);
   const chatEndRef = useRef(null);
 
   // Load session from sessionStorage and initialize per-question state
@@ -382,6 +386,10 @@ export default function CandidateAITestScreen() {
       return;
     }
     const s = JSON.parse(stored);
+    if (s.completed || (s.submissions && s.submissions.length > 0 && s.submissions.every((sub) => sub.status === 'SUBMITTED'))) {
+      navigate('/candidate/complete', { replace: true });
+      return;
+    }
     setSession(s);
 
     // Restore submitted status for any previously submitted questions
@@ -486,16 +494,36 @@ export default function CandidateAITestScreen() {
   const handleTimerExpire = useCallback(async () => {
     if (isSubmittingAll.current) return;
     isSubmittingAll.current = true;
+    setIsSubmittingAllState(true);
     toast('⏰ Time is up! Submitting your AI test...', { icon: '⏰' });
     try {
-      if (activeQuestion) {
-        await api.submitAiTest(activeQuestion._id, { filesJson: filesRef.current });
+      if (session?.questions && session.questions.length > 0) {
+        for (const q of session.questions) {
+          const qIdStr = q._id.toString();
+          const filesToSubmit =
+            q._id === activeQuestion?._id
+              ? filesRef.current
+              : questionFilesRef.current[qIdStr] || DEFAULT_FILES;
+          try {
+            await api.submitAiTest(q._id, { filesJson: filesToSubmit, promptLog: chatMessages });
+          } catch (_) {}
+        }
       }
-      await api.submitAll(session.test._id);
+      if (session?.test?._id) {
+        await api.submitAll(session.test._id);
+      }
+      try {
+        const stored = sessionStorage.getItem('testSession');
+        if (stored) {
+          const s = JSON.parse(stored);
+          s.completed = true;
+          sessionStorage.setItem('testSession', JSON.stringify(s));
+        }
+      } catch (_) {}
     } catch (_) {}
     toast.dismiss();
-    navigate('/candidate/complete');
-  }, [session, activeQuestion, navigate]);
+    navigate('/candidate/complete', { replace: true });
+  }, [session, activeQuestion, navigate, chatMessages]);
 
   const { formatted: timerDisplay, urgency } = useTimer(
     session?.candidateEndTime,
@@ -527,15 +555,44 @@ export default function CandidateAITestScreen() {
 
   // (proctoring is now declared above handleSelectQuestion to avoid TDZ — see comment above handleSelectQuestion)
 
-  // Socket proctor warnings / disqualifications
+  // Fetch initial violation count on test load / session ready
   useEffect(() => {
-    const onWarning = ({ violationType, message }) => {
+    if (!session?.test?._id) return;
+    let isMounted = true;
+    api
+      .getViolationCount(session.test._id)
+      .then((res) => {
+        if (isMounted && typeof res.data?.violationCount === 'number') {
+          console.log('[ViolationCounter] Initial violation count:', res.data.violationCount);
+          setViolationCount(res.data.violationCount);
+        }
+      })
+      .catch((err) => {
+        console.warn('[ViolationCounter] Failed to fetch initial violation count:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.test?._id]);
+
+  // Socket proctor warnings / disqualifications / real-time violation updates
+  useEffect(() => {
+    const onWarning = ({ violationType, message, violationCount: count }) => {
       if (isSubmittingAll.current) return;
+      if (typeof count === 'number') {
+        setViolationCount(count);
+      }
       if (violationType === 'CAMERA_DISCONNECTED') {
         // BUG-40: Camera disconnect is handled exclusively by the full-screen blocking overlay.
         return;
       }
       showWarning(message);
+    };
+    const onViolationUpdated = (data) => {
+      if (typeof data?.violationCount === 'number') {
+        console.log('[ViolationCounter] Real-time violation update:', data.violationCount);
+        setViolationCount(data.violationCount);
+      }
     };
     const onDisqualify = () => {
       setDisqualified(true);
@@ -547,16 +604,18 @@ export default function CandidateAITestScreen() {
     };
 
     onCandidateWarning(onWarning);
+    onCandidateViolationUpdated(onViolationUpdated);
     onCandidateDisqualified(onDisqualify);
     onTestEnded(onEnded);
 
     return () => {
       toast.dismiss();
       offCandidateWarning(onWarning);
+      offCandidateViolationUpdated(onViolationUpdated);
       offCandidateDisqualified(onDisqualify);
       offTestEnded(onEnded);
     };
-  }, [handleTimerExpire]);
+  }, [handleTimerExpire, showWarning]);
 
   // Autosave files every 30s (NFR §13 Availability)
   useAutosave(
@@ -711,21 +770,63 @@ export default function CandidateAITestScreen() {
 
   // Submit all
   const handleSubmitAll = async () => {
-    if (!confirm('Submit all questions and finalize your AI test?')) return;
+    if (isSubmittingAllState || isSubmittingAll.current) return;
+    if (!window.confirm('Submit all questions and finalize your AI test?')) return;
+
+    setIsSubmittingAllState(true);
     isSubmittingAll.current = true;
+    console.log('[SubmitAll] Starting AI Test final submission flow...');
+
     try {
+      // 1. Snapshot current active question files into ref
       if (activeQuestion) {
         const currentQId = activeQuestion._id.toString();
         questionFilesRef.current[currentQId] = filesRef.current;
-        await api.submitAiTest(activeQuestion._id, { filesJson: filesRef.current, promptLog: chatMessages });
       }
-      await api.submitAll(session.test._id);
+
+      // 2. Submit/save files & promptLog for all questions in the test
+      if (session?.questions && session.questions.length > 0) {
+        for (const q of session.questions) {
+          const qIdStr = q._id.toString();
+          const filesToSubmit =
+            q._id === activeQuestion?._id
+              ? filesRef.current
+              : questionFilesRef.current[qIdStr] || DEFAULT_FILES;
+          console.log(`[SubmitAll] Submitting AI question ${qIdStr}...`);
+          try {
+            await api.submitAiTest(q._id, { filesJson: filesToSubmit, promptLog: chatMessages });
+          } catch (qErr) {
+            console.warn(`[SubmitAll] AI question ${qIdStr} submit warning:`, qErr);
+          }
+        }
+      }
+
+      // 3. Trigger final submitAll API endpoint
+      if (session?.test?._id) {
+        console.log(`[SubmitAll] Calling POST /tests/${session.test._id}/submit-all...`);
+        await api.submitAll(session.test._id);
+        console.log('[SubmitAll] Final submitAll succeeded!');
+      }
+
+      // 4. Mark session completed in sessionStorage
+      try {
+        const stored = sessionStorage.getItem('testSession');
+        if (stored) {
+          const s = JSON.parse(stored);
+          s.completed = true;
+          sessionStorage.setItem('testSession', JSON.stringify(s));
+        }
+      } catch (_) {}
+
+      // 5. Success toast and navigate to completion page
       toast.dismiss();
-      navigate('/candidate/complete');
+      toast.success('AI Test submitted successfully!');
+      navigate('/candidate/complete', { replace: true });
     } catch (err) {
-      console.error('Submit all error:', err);
+      console.error('[SubmitAll] Final submission error:', err);
       const errMsg = err.response?.data?.error || err.message || 'Submit all failed';
-      toast.error(`Submit all failed: ${errMsg}`);
+      toast.error(`Submit all failed: ${errMsg}. Please try again.`);
+      setIsSubmittingAllState(false);
       isSubmittingAll.current = false;
     }
   };
@@ -2013,108 +2114,8 @@ export default function CandidateAITestScreen() {
         </div>
       </div>
 
-      {/* ── Bottom Proctoring Status Bar ── */}
-      <div
-        style={{
-          height: 46,
-          background: '#0b1120',
-          borderTop: '1px solid #1e293b',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 16px',
-          fontSize: '0.8rem',
-          color: '#94a3b8',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Webcam mini feed */}
-          <div
-            style={{
-              position: 'relative',
-              width: 58,
-              height: 36,
-              background: '#000',
-              borderRadius: 4,
-              overflow: 'hidden',
-              border: '1px solid #334155',
-            }}
-          >
-            <video
-              ref={proctoring.videoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: 2,
-                left: 2,
-                background: 'rgba(0,0,0,0.7)',
-                color: '#ef4444',
-                fontSize: '0.55rem',
-                padding: '1px 3px',
-                borderRadius: 2,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              ● REC
-            </div>
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 2,
-                left: 2,
-                background: 'rgba(0,0,0,0.7)',
-                color: proctoring.faceCount === 1 ? '#22c55e' : '#ef4444',
-                fontSize: '0.5rem',
-                padding: '1px 3px',
-                borderRadius: 2,
-                fontWeight: 600,
-              }}
-            >
-              {proctoring.faceCount === 1 ? '✓ Face' : '✗ No Face'}
-            </div>
-          </div>
-          <span style={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.8rem' }}>Proctored</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f59e0b', fontSize: '0.78rem' }}>
-          <span>⚠️</span>
-          <span>Do not switch tabs or open other applications. Violations are monitored.</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontSize: '0.78rem' }}>
-            <span>●</span>
-            <span style={{ color: '#cbd5e1' }}>All systems normal</span>
-            <span style={{ color: '#64748b' }}>📶</span>
-          </div>
-          <button
-            onClick={() => toast('Proctoring support notified. An admin is monitoring your session.', { icon: 'ℹ️' })}
-            style={{
-              background: 'transparent',
-              border: '1px solid #334155',
-              color: '#cbd5e1',
-              padding: '4px 10px',
-              borderRadius: 4,
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            🚨 Report Issue
-          </button>
-        </div>
-      </div>
+      {/* ── Shared Bottom Proctoring Status & Violation Footer (FEATURE-004) ── */}
+      <TestFooter proctoring={proctoring} violationCount={violationCount} />
 
       {/* ── Movable AI Proctoring PIP Feed (FR-5.2, FR-7.1, FR-7.2) ── */}
       <DraggableWebcamPip videoRef={proctoring.videoRef} faceCount={proctoring.faceCount} />
@@ -2287,7 +2288,7 @@ export default function CandidateAITestScreen() {
         </div>
       )}
 
-      {/* Camera Disconnected Full-Screen Blocking Overlay (BUG-29) */}
+      {/* Camera Disconnected Full-Screen Blocking Overlay (BUG-29, BUG-002) */}
       <CameraDisconnectedOverlay
         isVisible={Boolean(proctoring?.isCameraDisconnected)}
         timerDisplay={timerDisplay}
@@ -2295,6 +2296,7 @@ export default function CandidateAITestScreen() {
         isVerifyingFace={Boolean(proctoring?.isVerifyingFace)}
         onRetry={proctoring?.reconnectCamera}
         onSubmitAll={handleSubmitAll}
+        isSubmitting={isSubmittingAllState}
         videoRef={proctoring?.videoRef}
       />
     </div>

@@ -10,10 +10,10 @@ const kimiService = require('./kimiService');
 
 /**
  * FR-9.4: Weighted scoring formula for standard coding tests
- * Sum of weights = 1.0 (100%)
+ * Sum of weights = 1.0 (100%), Normalized to 0-10 scale
  */
 const computeStandardScore = (breakdown) => {
-  return (
+  const score =
     (breakdown.codeCorrectness || 0) * 0.30 +
     (breakdown.testCasePassPercent || 0) * 0.10 +
     (breakdown.timeComplexity || 0) * 0.15 +
@@ -23,21 +23,29 @@ const computeStandardScore = (breakdown) => {
     (breakdown.exceptionHandling || 0) * 0.08 +
     (breakdown.inputValidation || 0) * 0.05 +
     (breakdown.codeOptimization || 0) * 0.02 +
-    (breakdown.linesOfCode || 0) * 0.02
-  );
-  // Verify: 0.30+0.10+0.15+0.10+0.10+0.08+0.08+0.05+0.02+0.02 = 1.00 ✓
+    (breakdown.linesOfCode || 0) * 0.02;
+
+  if (isNaN(score)) return 0;
+  if (score < 0 || score > 10) {
+    console.warn(`[Eval] Standard score out of bounds (${score}), clamping to [0, 10].`);
+  }
+  return Math.min(10, Math.max(0, score));
 };
 
 /**
  * FR-9.4: Weighted scoring formula for AI Test
- * Sum of weights = 1.0 (100%)
+ * Sum of weights = 1.0 (100%), Normalized to 0-10 scale
  */
 const computeAiTestScore = (breakdown) => {
-  return (
+  const score =
     (breakdown.promptQuality || 0) * 0.60 +
-    (breakdown.outputCorrectnessDesign || 0) * 0.40
-  );
-  // Verify: 0.60+0.40 = 1.00 ✓
+    (breakdown.outputCorrectnessDesign || 0) * 0.40;
+
+  if (isNaN(score)) return 0;
+  if (score < 0 || score > 10) {
+    console.warn(`[Eval] AI Test score out of bounds (${score}), clamping to [0, 10].`);
+  }
+  return Math.min(10, Math.max(0, score));
 };
 
 /**

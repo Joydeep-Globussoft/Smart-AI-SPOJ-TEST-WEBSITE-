@@ -6,10 +6,14 @@ const {
   reportViolation,
   reportCameraDisconnected,
   reportCameraReconnected,
+  getViolationCount,
 } = require('../controllers/proctoringController');
 const { verifyToken, requireCandidate } = require('../middleware/authMiddleware');
 
 router.use(verifyToken, requireCandidate);
+
+// GET /proctoring/:testId/violation-count — live malpractice count for candidate
+router.get('/:testId/violation-count', getViolationCount);
 
 // POST /proctoring/:testId/frame — multipart/form-data upload
 router.post('/:testId/frame', submitFrame);

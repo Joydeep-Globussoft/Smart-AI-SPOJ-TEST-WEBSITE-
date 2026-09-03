@@ -87,6 +87,9 @@ export const offMalpracticeAlert = (cb) => { socket?.off('malpractice:alert', cb
 export const onCandidateWarning = (cb) => { socket?.on('candidate:warning', cb); };
 export const offCandidateWarning = (cb) => { socket?.off('candidate:warning', cb); };
 
+export const onCandidateViolationUpdated = (cb) => { socket?.on('candidate:violation-updated', cb); };
+export const offCandidateViolationUpdated = (cb) => { socket?.off('candidate:violation-updated', cb); };
+
 export const onCandidateDisqualified = (cb) => { socket?.on('candidate:disqualified', cb); };
 export const offCandidateDisqualified = (cb) => { socket?.off('candidate:disqualified', cb); };
 

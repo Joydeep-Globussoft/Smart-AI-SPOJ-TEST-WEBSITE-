@@ -203,10 +203,40 @@ const deleteQuestion = async (req, res, next) => {
   }
 };
 
+// ── DELETE /question-sets/:setId ─────────────────────────────────────────────
+const deleteQuestionSet = async (req, res, next) => {
+  try {
+    const { setId } = req.params;
+    const questionSet = await QuestionSet.findById(setId);
+    if (!questionSet) {
+      return res.status(404).json({ error: 'Question Set not found' });
+    }
+
+    // Check if this Question Set is assigned to any existing Test
+    const assignedTest = await Test.findOne({ questionSetId: setId });
+    if (assignedTest) {
+      return res.status(400).json({
+        error: `Cannot delete Question Set: It is assigned to test "${assignedTest.title}".`,
+      });
+    }
+
+    // Delete associated questions from Question collection
+    await Question.deleteMany({ questionSetId: setId });
+
+    // Delete the Question Set
+    await QuestionSet.findByIdAndDelete(setId);
+
+    res.json({ success: true, message: 'Question set deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createQuestionSet,
   getQuestionSets,
   updateQuestionSet,
+  deleteQuestionSet,
   createQuestion,
   getQuestions,
   updateQuestion,

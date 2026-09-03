@@ -22,6 +22,7 @@ export default function CameraDisconnectedOverlay({
   isVerifyingFace,
   onRetry,
   onSubmitAll,
+  isSubmitting = false,
   videoRef,
 }) {
   const previewVideoRef = useRef(null);
@@ -292,25 +293,27 @@ export default function CameraDisconnectedOverlay({
               id="disconnected-submit-all-btn"
               type="button"
               onClick={onSubmitAll}
+              disabled={isSubmitting}
               style={{
-                background: 'transparent',
+                background: isSubmitting ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
                 color: '#ef4444',
                 border: '1px solid #ef4444',
                 borderRadius: 8,
                 padding: '12px 20px',
                 fontSize: '0.88rem',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 transition: 'background 0.2s, color 0.2s',
+                opacity: isSubmitting ? 0.7 : 1,
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                if (!isSubmitting) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = 'transparent';
+                if (!isSubmitting) e.currentTarget.style.background = 'transparent';
               }}
             >
-              Submit All &amp; Finish Exam
+              {isSubmitting ? '⌛ Submitting Exam...' : 'Submit All & Finish Exam'}
             </button>
           )}
         </div>

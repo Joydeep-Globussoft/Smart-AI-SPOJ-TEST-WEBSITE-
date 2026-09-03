@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createQuestionSet, getQuestionSets, updateQuestionSet,
+  createQuestionSet, getQuestionSets, updateQuestionSet, deleteQuestionSet,
   createQuestion, getQuestions,
   updateQuestion, deleteQuestion,
 } = require('../controllers/questionController');
@@ -13,6 +13,7 @@ const { verifyToken, requireAdmin } = require('../middleware/authMiddleware');
 router.post('/question-sets', verifyToken, requireAdmin, createQuestionSet);
 router.get('/question-sets', verifyToken, requireAdmin, getQuestionSets);
 router.patch('/question-sets/:setId', verifyToken, requireAdmin, updateQuestionSet);
+router.delete('/question-sets/:setId', verifyToken, requireAdmin, deleteQuestionSet);
 router.post('/question-sets/:setId/questions', verifyToken, requireAdmin, createQuestion);
 // GET questions — accessible to candidates (filtered) and admins (full)
 router.get('/question-sets/:setId/questions', verifyToken, getQuestions);

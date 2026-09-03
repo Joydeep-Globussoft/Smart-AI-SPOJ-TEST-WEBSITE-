@@ -98,6 +98,7 @@ export const api = {
   createQuestionSet: (data) => axios.post('/question-sets', data),
   getQuestionSets: () => axios.get('/question-sets'),
   updateQuestionSet: (setId, data) => axios.patch(`/question-sets/${setId}`, data),
+  deleteQuestionSet: (setId) => axios.delete(`/question-sets/${setId}`),
   createQuestion: (setId, data) => axios.post(`/question-sets/${setId}/questions`, data),
   getQuestions: (setId) => axios.get(`/question-sets/${setId}/questions`),
   updateQuestion: (qId, data) => axios.patch(`/questions/${qId}`, data),
@@ -126,6 +127,7 @@ export const api = {
   reportViolation: (data) => axios.post('/proctoring/violation', data),
   reportCameraDisconnected: (data) => axios.post('/proctoring/camera-disconnected', data),
   reportCameraReconnected: (data) => axios.post('/proctoring/camera-reconnected', data),
+  getViolationCount: (testId) => axios.get(`/proctoring/${testId}/violation-count`),
   reviewMalpractice: (logId, data) => axios.patch(`/malpractice-logs/${logId}/review`, data),
   getCandidateMalpracticeLogs: (testId, candidateId) =>
     axios.get(`/tests/${testId}/candidates/${candidateId}/malpractice-logs`),

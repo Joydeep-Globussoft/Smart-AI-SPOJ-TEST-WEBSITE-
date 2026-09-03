@@ -384,6 +384,11 @@ docker-compose up --build
 11. **In-Page Preview Modal (BUG-50)**: Replaced external `window.open` on the Preview popout button (`↗`) with an in-page modal dialog (`#ai-preview-modal-overlay`), preventing browser tab-switch violations during active tests.
 12. **AI Test Multi-Question Navigation & State Isolation (BUG-51)**: Full multi-question exam support in `CandidateAITestScreen.jsx` with per-question file caching (`questionFilesRef`), dynamic question tab navigation strip (`#ai-question-nav-strip`), Prev/Next controls, preview refresh on switch, and dynamic exam progress tracking.
 13. **Question Set Name and Type Editing (BUG-52)**: Implemented `PATCH /api/v1/question-sets/:setId` and Edit Set modal in Admin Question Bank. Supports instant renaming and safe type modification (locked when questions exist or when assigned to an existing test).
+14. **Question Set Deletion & Management**: Implemented `DELETE /api/v1/question-sets/:setId` endpoint and Delete Set confirmation modal (`#delete-question-set-btn`) in Admin Question Bank. Supports cascade deletion of unassigned question sets and associated questions while safely blocking deletion if assigned to an active test.
+15. **Results & Shortlist Score Normalization (BUG-001)**: Fixed score aggregation in `shortlistService.js` and `evaluationService.js` to ensure candidate overall scores are normalized on a strict 0–10 scale. Added server-side bounds clamping (`Math.min(10, Math.max(0, score))`) and defensive frontend metrics clamping in `AdminResults.jsx`.
+16. **Webcam Disconnected Submit All Flow (BUG-002)**: Hardened `handleSubmitAll` in `CandidateAITestScreen.jsx` and `CandidateTestScreen.jsx` so candidates with webcam hardware disconnections can finalize their exam. Includes all-question file/promptLog persistence, reactive loading states (`isSubmittingAllState`), `sessionStorage` completion flag, and immediate redirect to `/candidate/complete`.
+17. **Live Malpractice Violation Counter in AI Test Footer (FEATURE-003)**: Added a real-time malpractice counter badge (`#ai-violation-counter`) in the Candidate AI Test footer displaying `⚠️ Violations: X`. Incorporates dynamic severity color states (Green for 0, Yellow for 1–2, Red for 3+), hover tooltip, initial database fetch via `GET /api/v1/proctoring/:testId/violation-count`, and real-time socket updates via `candidate:violation-updated`.
+18. **Shared Proctoring Footer Across All Candidate Test Screens (FEATURE-004)**: Extracted and consolidated the persistent bottom proctoring status bar into a single source of truth (`TestFooter.jsx`). Consumed across both Standard Coding Tests (`CandidateTestScreen.jsx` for SPOJ, JAVASCRIPT, REACT) and AI Tests (`CandidateAITestScreen.jsx`), providing unified proctoring telemetry, REC indicator, live violation counter, advisory banner, and system health status.
 
 ---
 
@@ -402,7 +407,11 @@ docker-compose up --build
 
 ### 2026-09-03
 - Resolved BUG-48 through BUG-52 across candidate test-taking and admin management flows.
-- Implemented in-page preview modal dialog eliminating false TAB_SWITCH proctoring violations.
-- Implemented AI Test multi-question exam navigation and per-question file cache state isolation.
-- Implemented Question Set name and type editing in Admin Question Bank with strict test association safety rules.
-- Validated all 26 automated repository QA test suites with a 100% pass rate.
+- Resolved proctoring Temporal Dead Zone initialization crash in Candidate AI Test screen.
+- Removed advisory banner for expired room passwords from Admin Test Detail view.
+- Implemented Question Set deletion functionality (`DELETE /api/v1/question-sets/:setId`) with modal confirmation and safety guards blocking assigned tests.
+- Fixed BUG-001 Results Dashboard score normalization where raw accumulated scores exceeded 10.0; enforced strict 0-10 scale across backend evaluation, shortlist aggregation, and frontend stat cards.
+- Fixed BUG-002 Webcam Disconnected "Submit All & Finish Exam" flow; added all-question persistence, reactive loading states, double-submission guards, and immediate redirect to `/candidate/complete`.
+- Implemented FEATURE-003 Live Malpractice/Violation Counter in AI Test footer with real-time socket subscriptions, severity color coding, and initial DB synchronization.
+- Implemented FEATURE-004 Shared Proctoring Footer (`TestFooter.jsx`) unified across all candidate exam types (SPOJ, JS, React, AI_TEST) with zero duplicate markup.
+- Validated client production build in 2.81s with 0 errors and verified 25/25 FEATURE-004 QA tests.

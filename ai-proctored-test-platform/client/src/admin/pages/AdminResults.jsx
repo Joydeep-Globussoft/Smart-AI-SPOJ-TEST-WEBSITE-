@@ -178,15 +178,23 @@ export default function AdminResults() {
     return name.includes(searchQuery.toLowerCase()) || email.includes(searchQuery.toLowerCase());
   });
 
-  // Metrics
+  // Metrics (Defensively normalized to 0-10 scale)
   const totalShortlisted = shortlist?.candidates?.length || 0;
-  const highestScore = shortlist?.candidates?.[0]?.score?.toFixed(1) || '0.0';
-  const averageScore = shortlist?.candidates?.length
-    ? (
-        shortlist.candidates.reduce((acc, curr) => acc + (curr.score || 0), 0) /
-        shortlist.candidates.length
-      ).toFixed(1)
-    : '0.0';
+
+  const rawHighest = shortlist?.candidates?.[0]?.score;
+  const highestScore = shortlist?.candidates?.length
+    ? Math.min(10, Math.max(0, Number(rawHighest) || 0)).toFixed(1)
+    : results.length
+      ? Math.min(10, Math.max(0, Math.max(...results.map((r) => r.finalScorePerQuestion || 0)))).toFixed(1)
+      : '0.0';
+
+  const rawAvg = shortlist?.candidates?.length
+    ? shortlist.candidates.reduce((acc, curr) => acc + (curr.score || 0), 0) / shortlist.candidates.length
+    : results.length
+      ? results.reduce((acc, r) => acc + (r.finalScorePerQuestion || 0), 0) / results.length
+      : 0;
+
+  const averageScore = Math.min(10, Math.max(0, Number(rawAvg) || 0)).toFixed(1);
 
   if (loading) {
     return (

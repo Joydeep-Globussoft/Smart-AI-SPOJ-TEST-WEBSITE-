@@ -38,6 +38,10 @@ export default function AdminQuestionBank() {
     testType: 'SPOJ',
   });
 
+  // Delete Question Set Modal State
+  const [showDeleteSetModal, setShowDeleteSetModal] = useState(false);
+  const [deletingSet, setDeletingSet] = useState(false);
+
   // Question Modal State (Create / Edit)
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
@@ -170,6 +174,26 @@ export default function AdminQuestionBank() {
       toast.error(err.response?.data?.error || 'Failed to update question set');
     } finally {
       setEditingSet(false);
+    }
+  };
+
+  // Handle Delete Question Set Submit
+  const handleDeleteSetSubmit = async () => {
+    if (!selectedSet?._id) return;
+    try {
+      setDeletingSet(true);
+      await api.deleteQuestionSet(selectedSet._id);
+      toast.success(`Deleted Question Set "${selectedSet.name}"`);
+      setShowDeleteSetModal(false);
+
+      const res = await api.getQuestionSets();
+      const sets = res.data.questionSets || [];
+      setQuestionSets(sets);
+      setSelectedSet(sets.length > 0 ? sets[0] : null);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete question set');
+    } finally {
+      setDeletingSet(false);
     }
   };
 
@@ -463,6 +487,23 @@ export default function AdminQuestionBank() {
                         title="Edit Question Set Name and Type"
                       >
                         ✏ Edit Set
+                      </button>
+                      <button
+                        type="button"
+                        id="delete-question-set-btn"
+                        onClick={() => setShowDeleteSetModal(true)}
+                        className="btn btn-danger btn-sm"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '3px 10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer',
+                        }}
+                        title="Delete Question Set"
+                      >
+                        🗑 Delete Set
                       </button>
                     </div>
                     <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 4 }}>
@@ -821,6 +862,52 @@ export default function AdminQuestionBank() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Delete Question Set Modal ── */}
+        {showDeleteSetModal && selectedSet && (
+          <div className="modal-backdrop" onClick={() => !deletingSet && setShowDeleteSetModal(false)}>
+            <div className="modal-container" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title" style={{ color: '#dc2626' }}>🗑 Delete Question Set</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteSetModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="modal-body" style={{ gap: 12 }}>
+                <p style={{ fontSize: '0.95rem', color: '#374151', margin: 0 }}>
+                  Are you sure you want to delete Question Set <strong>"{selectedSet.name}"</strong>?
+                </p>
+                {questions.length > 0 && (
+                  <p style={{ fontSize: '0.85rem', color: '#dc2626', background: '#fee2e2', padding: '8px 12px', borderRadius: 6, margin: 0 }}>
+                    ⚠️ This will also delete all <strong>{questions.length}</strong> question(s) inside this set.
+                  </p>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteSetModal(false)}
+                  className="btn btn-secondary"
+                  disabled={deletingSet}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteSetSubmit}
+                  className="btn btn-danger"
+                  disabled={deletingSet}
+                >
+                  {deletingSet ? 'Deleting...' : 'Confirm Delete'}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -74,6 +74,14 @@ const submitFrame = [
         io.to(`candidate:${candidateId}`).emit('candidate:warning', {
           violationType: 'PHONE_DETECTED',
           message: 'Phone detected in your camera view. This has been flagged.',
+          violationCount: malpracticeCount,
+        });
+
+        io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
+          candidateId: candidateId.toString(),
+          testId: testId.toString(),
+          violationCount: malpracticeCount,
+          violationType: 'PHONE_DETECTED',
         });
       }
 
@@ -151,6 +159,14 @@ const reportViolation = async (req, res, next) => {
     io.to(`candidate:${candidateId}`).emit('candidate:warning', {
       violationType,
       message: `Violation detected: ${violationType.replace(/_/g, ' ')}. This has been flagged.`,
+      violationCount: malpracticeCount,
+    });
+
+    io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
+      candidateId: candidateId.toString(),
+      testId: testId.toString(),
+      violationCount: malpracticeCount,
+      violationType,
     });
 
     // Seat map update
@@ -160,7 +176,7 @@ const reportViolation = async (req, res, next) => {
       colorStatus: 'YELLOW', // warning state; disqualified = RED handled below
     });
 
-    res.json({ malpracticeLog: log });
+    res.status(201).json({ malpracticeLog: log, violationCount: malpracticeCount });
   } catch (err) {
     next(err);
   }
@@ -428,6 +444,24 @@ const reportCameraReconnected = async (req, res, next) => {
   }
 };
 
+// ── GET /proctoring/:testId/violation-count ────────────────────────────────────
+// Candidate or Admin queries the total live violation count for the active test session
+const getViolationCount = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    let candidateId = req.query.candidateId || req.user.id;
+
+    if (req.user.type === 'candidate') {
+      candidateId = req.user.id;
+    }
+
+    const violationCount = await MalpracticeLog.countDocuments({ candidateId, testId });
+    res.json({ violationCount });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   submitFrame,
   reportViolation,
@@ -436,4 +470,5 @@ module.exports = {
   getTestMalpracticeLogs,
   reportCameraDisconnected,
   reportCameraReconnected,
+  getViolationCount,
 };
