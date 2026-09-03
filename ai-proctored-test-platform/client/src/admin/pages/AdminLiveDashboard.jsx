@@ -29,6 +29,21 @@ const STATUS_COLORS = {
   WHITE: '#e5e7eb',
 };
 
+// ── Candidate Color Status Helper (BUG-44: GREEN = SUBMITTED, YELLOW = IN_PROGRESS, RED = DISQUALIFIED, WHITE = NOT_STARTED)
+const getCandidateColorStatus = (candidate) => {
+  if (!candidate) return 'WHITE';
+  if (candidate.status === 'DISQUALIFIED' || candidate.colorStatus === 'RED' || candidate.isDisqualified) {
+    return 'RED';
+  }
+  if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP' || candidate.colorStatus === 'GREEN') {
+    return 'GREEN';
+  }
+  if (candidate.status === 'IN_PROGRESS' || candidate.candidateStartTime) {
+    return 'YELLOW';
+  }
+  return 'WHITE';
+};
+
 // ── Candidate Session Remaining Time Helper (Pure client-side countdown) ──────
 const getCandidateRemainingMs = (candidate, currentNow) => {
   if (!candidate) return 0;
@@ -50,8 +65,9 @@ const getCandidateRemainingMs = (candidate, currentNow) => {
 // ── Memoized Seat Tile (FR-7.3: Persistent Malpractice counter beside name) ────
 const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
   const isCandidateInProgress = candidate.status === 'IN_PROGRESS';
-  const color = STATUS_COLORS[candidate.colorStatus] || (isCandidateInProgress ? STATUS_COLORS.YELLOW : STATUS_COLORS.WHITE);
-  const isWhite = color === STATUS_COLORS.WHITE && !isCandidateInProgress;
+  const colorStatus = getCandidateColorStatus(candidate);
+  const color = STATUS_COLORS[colorStatus];
+  const isWhite = colorStatus === 'WHITE';
   const isYellowDot = color === STATUS_COLORS.YELLOW;
   const malpracticeCount = candidate.malpracticeCount || 0;
 
@@ -176,9 +192,10 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
 // ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name) ──
 const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now }) => {
   const isCandidateInProgress = candidate.status === 'IN_PROGRESS';
-  const color = STATUS_COLORS[candidate.colorStatus] || (isCandidateInProgress ? STATUS_COLORS.YELLOW : STATUS_COLORS.WHITE);
-  const isWhite = color === STATUS_COLORS.WHITE && !isCandidateInProgress;
-  const isYellowDot = color === STATUS_COLORS.YELLOW;
+  const colorStatus = getCandidateColorStatus(candidate);
+  const color = STATUS_COLORS[colorStatus];
+  const isWhite = colorStatus === 'WHITE';
+  const isYellowDot = colorStatus === 'YELLOW';
   const malpracticeCount = candidate.malpracticeCount || 0;
 
   const remainingMs = getCandidateRemainingMs(candidate, now);
@@ -269,7 +286,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             fontWeight: 600,
           }}
         >
-          {candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : candidate.colorStatus) || 'IN_PROGRESS'}
+          {candidate.status === 'AUTO_SUBMITTED_TIME_UP'
+            ? 'SUBMITTED (TIME UP)'
+            : (candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : colorStatus) || 'IN_PROGRESS')}
         </span>
       </div>
 
@@ -887,7 +906,12 @@ export default function AdminLiveDashboard() {
     return Object.values(candidatesMap).filter((c) => {
       const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
       const matchesRoom = selectedRoomId === 'ALL' || String(cRoomId) === String(selectedRoomId);
-      const matchesStatus = filterStatus === 'ALL' || c.colorStatus === filterStatus || c.status === filterStatus;
+      const cColorStatus = getCandidateColorStatus(c);
+      const matchesStatus =
+        filterStatus === 'ALL' ||
+        cColorStatus === filterStatus ||
+        (filterStatus === 'GREEN' && (c.status === 'SUBMITTED' || c.status === 'AUTO_SUBMITTED_TIME_UP')) ||
+        c.status === filterStatus;
       const matchesSearch = !searchQuery.trim() || c.name?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesRoom && matchesStatus && matchesSearch;
     });
@@ -895,24 +919,32 @@ export default function AdminLiveDashboard() {
 
   // Aggregated Stats
   const stats = useMemo(() => {
-    let green = 0, yellow = 0, red = 0, white = 0, totalMalpractice = 0;
+    let submitted = 0, yellow = 0, red = 0, white = 0, passing = 0, totalMalpractice = 0;
+    const passingThreshold = test?.passingCriteria || 1;
     Object.values(candidatesMap).forEach((c) => {
-      if (c.colorStatus === 'GREEN') green++;
-      else if (c.colorStatus === 'YELLOW') yellow++;
-      else if (c.colorStatus === 'RED' || c.status === 'DISQUALIFIED') red++;
+      const cColorStatus = getCandidateColorStatus(c);
+      if (cColorStatus === 'GREEN') submitted++;
+      else if (cColorStatus === 'YELLOW') yellow++;
+      else if (cColorStatus === 'RED') red++;
       else white++;
+
+      if ((c.questionsCompleted ?? 0) >= passingThreshold) {
+        passing++;
+      }
 
       if (c.malpracticeCount) totalMalpractice += c.malpracticeCount;
     });
     return {
       total: Object.keys(candidatesMap).length,
-      green,
+      green: submitted,
+      submitted,
       yellow,
       red,
       white,
+      passing,
       totalMalpractice,
     };
-  }, [candidatesMap]);
+  }, [candidatesMap, test?.passingCriteria]);
 
   // Aggregate / Tentative Timer Calculation (BUG-21: MAXIMUM remaining time among IN_PROGRESS candidates)
   const [now, setNow] = useState(Date.now());
@@ -1284,14 +1316,14 @@ export default function AdminLiveDashboard() {
         )}
 
         {/* ── Real-Time Metrics Bar ── */}
-        <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+        <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
           <div className="stat-card">
             <div className="stat-value">{stats.total}</div>
             <div className="stat-label">Active Candidates</div>
           </div>
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.GREEN}` }}>
-            <div className="stat-value" style={{ color: STATUS_COLORS.GREEN }}>{stats.green}</div>
-            <div className="stat-label">Passing (≥ {test?.passingCriteria || 3} Qs)</div>
+            <div className="stat-value" style={{ color: STATUS_COLORS.GREEN }}>{stats.submitted}</div>
+            <div className="stat-label">Submitted</div>
           </div>
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.YELLOW}` }}>
             <div className="stat-value" style={{ color: '#d97706' }}>{stats.yellow}</div>
@@ -1300,6 +1332,10 @@ export default function AdminLiveDashboard() {
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.RED}` }}>
             <div className="stat-value" style={{ color: STATUS_COLORS.RED }}>{stats.red}</div>
             <div className="stat-label">Disqualified</div>
+          </div>
+          <div className="stat-card" style={{ borderLeft: '4px solid #10B981' }}>
+            <div className="stat-value" style={{ color: '#10B981' }}>{stats.passing}</div>
+            <div className="stat-label">Meeting Criteria (≥ {test?.passingCriteria || 1} Qs)</div>
           </div>
           <div className="stat-card" style={{ borderLeft: '4px solid #8e44ad' }}>
             <div className="stat-value" style={{ color: '#8e44ad' }}>{stats.totalMalpractice}</div>
@@ -1317,11 +1353,11 @@ export default function AdminLiveDashboard() {
               </p>
             </div>
 
-            {/* Seat Map Legend (Section 14) */}
+            {/* Seat Map Legend (Section 14, BUG-44: GREEN = Submitted) */}
             <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.GREEN }} />
-                <span>Passed (≥ Criteria)</span>
+                <span>Submitted</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.YELLOW }} />
@@ -1398,7 +1434,7 @@ export default function AdminLiveDashboard() {
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="ALL">All Statuses</option>
-                <option value="GREEN">Passed</option>
+                <option value="GREEN">Submitted</option>
                 <option value="YELLOW">In Progress</option>
                 <option value="RED">Disqualified</option>
               </select>
@@ -1620,19 +1656,27 @@ export default function AdminLiveDashboard() {
                       {activeInspectCandidate.email || activeInspectCandidate.candidateEmail || ''} {activeInspectCandidate.email || activeInspectCandidate.candidateEmail ? '·' : ''} Room: <strong>{roomsById[activeInspectCandidate.roomId] || activeInspectCandidate.roomName || 'Assigned Room'}</strong>
                     </span>
                   </div>
-                  <span
-                    className="badge"
-                    style={{
-                      background: `${STATUS_COLORS[activeInspectCandidate.colorStatus] || '#9ca3af'}20`,
-                      color: STATUS_COLORS[activeInspectCandidate.colorStatus] || '#374151',
-                      border: `1.5px solid ${STATUS_COLORS[activeInspectCandidate.colorStatus] || '#9ca3af'}`,
-                      fontWeight: 700,
-                      fontSize: '0.8rem',
-                      padding: '4px 10px',
-                    }}
-                  >
-                    {activeInspectCandidate.status || activeInspectCandidate.colorStatus || 'ACTIVE'}
-                  </span>
+                  {(() => {
+                    const inspectColorStatus = getCandidateColorStatus(activeInspectCandidate);
+                    const inspectColor = STATUS_COLORS[inspectColorStatus] || '#9ca3af';
+                    return (
+                      <span
+                        className="badge"
+                        style={{
+                          background: `${inspectColor}20`,
+                          color: inspectColor === '#F1C40F' ? '#b45309' : inspectColor,
+                          border: `1.5px solid ${inspectColor}`,
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          padding: '4px 10px',
+                        }}
+                      >
+                        {activeInspectCandidate.status === 'AUTO_SUBMITTED_TIME_UP'
+                          ? 'SUBMITTED (TIME UP)'
+                          : (activeInspectCandidate.status || inspectColorStatus || 'ACTIVE')}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Key Metrics Grid */}

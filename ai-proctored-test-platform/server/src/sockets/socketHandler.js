@@ -81,22 +81,20 @@ const registerSocketHandlers = (io) => {
         // Calculate time remaining from server-persisted candidateEndTime (NFR: resilience)
         const Submission = require('../models/Submission');
         const sub = await Submission.findOne(
-          { candidateId, testId, status: 'IN_PROGRESS' },
-          { candidateEndTime: 1, candidateStartTime: 1, roomId: 1 }
+          { candidateId, testId },
+          { status: 1, candidateEndTime: 1, candidateStartTime: 1, roomId: 1 }
         );
         const timeRemaining = sub?.candidateEndTime
           ? Math.max(0, sub.candidateEndTime.getTime() - Date.now())
           : 0;
 
-        // Determine seat map color (FR-8.1)
-        const Test = require('../models/Test');
-        const test = await Test.findById(testId, 'passingCriteria');
+        // Determine seat map color (FR-8.1, BUG-44: GREEN = SUBMITTED)
         let colorStatus = 'YELLOW'; // in progress
         if (candidate?.isDisqualified) {
           colorStatus = 'RED';
-        } else if (questionsCompleted >= (test?.passingCriteria || Infinity)) {
+        } else if (sub?.status === 'SUBMITTED' || sub?.status === 'AUTO_SUBMITTED_TIME_UP') {
           colorStatus = 'GREEN';
-        } else if (!sub) {
+        } else if (!sub || sub?.status === 'NOT_STARTED') {
           colorStatus = 'WHITE'; // only white if test attempt has not started
         }
 

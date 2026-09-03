@@ -955,7 +955,7 @@ export function useProctoring({
           if (typeof onWarningRef.current === 'function') {
             onWarningRef.current('Violation detected: FULLSCREEN EXIT. This has been flagged.');
           }
-          toast.error('⚠️ Fullscreen exited! You must remain in full-screen mode.', { duration: 4000 });
+          toast.error('⚠️ Fullscreen exited! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 6000 });
         });
       }
     };
@@ -976,7 +976,7 @@ export function useProctoring({
           if (typeof onWarningRef.current === 'function') {
             onWarningRef.current('Violation detected: FULLSCREEN EXIT. You must return to fullscreen mode to continue.');
           }
-          toast.error('⚠️ Fullscreen required! You must remain in full-screen mode.', { duration: 4000 });
+          toast.error('⚠️ Fullscreen required! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 6000 });
         });
       }
     }
@@ -990,9 +990,11 @@ export function useProctoring({
     };
   }, [enabled, candidateId, testId, roomId, triggerDelayedScreenViolation, lockKeyboard, unlockKeyboard]);
 
-  // ── 5. Tab Switch / Window Blur Detection (FR-5.3) ───────────────────────────
+  // ── 5. Tab Switch / Window Blur Detection (FR-5.3 & BUG-48) ───────────────────
   useEffect(() => {
     if (!enabled) return;
+
+    let blurTimer = null;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -1002,25 +1004,52 @@ export function useProctoring({
           if (typeof onWarningRef.current === 'function') {
             onWarningRef.current('Violation detected: TAB SWITCH. This has been flagged.');
           }
-          toast.error('⚠️ Tab switch detected! Switching tabs is strictly prohibited.', { duration: 4000 });
+          toast.error('⚠️ Tab switch detected! Switching tabs is strictly prohibited.', { id: 'proctor-violation-toast', duration: 6000 });
         });
       }
     };
 
+    const isInternalIframeFocus = () => {
+      const active = document.activeElement;
+      return Boolean(
+        active &&
+        !document.hidden &&
+        (active.tagName === 'IFRAME' ||
+         active.id === 'ai-test-preview-iframe' ||
+         active.dataset?.previewIframe === 'true')
+      );
+    };
+
     const handleWindowBlur = () => {
-      // BUG-31: Immediate detection and socket alert; 1s delayed screen-capture screenshot
-      triggerDelayedScreenViolation('TAB_SWITCH', () => {
-        emitTabSwitch({ candidateId, testId, roomId });
-        if (typeof onWarningRef.current === 'function') {
-          onWarningRef.current('Violation detected: TAB SWITCH. This has been flagged.');
+      // BUG-48: If candidate clicked into the application's internal preview iframe,
+      // focus moves into the iframe causing window blur, but they never left the test.
+      // Check immediately and with a short 60ms grace period to suppress false TAB_SWITCH.
+      if (isInternalIframeFocus()) {
+        return;
+      }
+
+      if (blurTimer) clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => {
+        if (isInternalIframeFocus()) {
+          return;
         }
-      });
+
+        // Genuine tab switch or window blur (switched tabs, alt-tabbed to external app)
+        // BUG-31: Immediate detection and socket alert; 1s delayed screen-capture screenshot
+        triggerDelayedScreenViolation('TAB_SWITCH', () => {
+          emitTabSwitch({ candidateId, testId, roomId });
+          if (typeof onWarningRef.current === 'function') {
+            onWarningRef.current('Violation detected: TAB SWITCH. This has been flagged.');
+          }
+        });
+      }, 60);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
 
     return () => {
+      if (blurTimer) clearTimeout(blurTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
     };

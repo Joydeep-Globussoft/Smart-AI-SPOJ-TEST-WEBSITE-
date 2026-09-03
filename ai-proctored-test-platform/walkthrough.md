@@ -696,6 +696,217 @@ Executed automated test suite `test_bug43_seatmap_tile_yellow_dot_pulse.js`:
 - Full repository QA suites (all 17 suites): **17 / 17 passed (100%)**.
 
 
+## 21. Green Tile Status Meaning: "Submitted" (BUG-44)
+
+### Problem
+Previously, the seat map legend and color derivation marked candidates as GREEN based on "Passed (≥ Criteria)". This caused several critical issues during live monitoring:
+1. In-progress candidates who reached the passing threshold were turning GREEN mid-test before submitting.
+2. Candidates who submitted having solved fewer questions than the passing threshold were not colored GREEN, despite having completed and finished their test.
+3. The seat map legend label "Passed (≥ Criteria)" implied that the live monitoring tile reflected scoring qualification rather than test completion state.
+
+### Solution
+1. **Unified Four-Color System (`getCandidateColorStatus`)**:
+   - Single source of truth applied uniformly across `SeatTile`, `CandidateRowItem`, and `CandidateInspectionModal`:
+     - **GREEN (`#2ECC71`)**: Strictly indicates **`SUBMITTED`** (manual "Submit All & Finish" or automatic time-expiry submission `AUTO_SUBMITTED_TIME_UP`), independent of question count or passing criteria.
+     - **YELLOW (`#F1C40F`)**: Currently taking the test (`IN_PROGRESS` with active `candidateStartTime`), regardless of whether they have already solved ≥ passing criteria questions.
+     - **RED (`#E74C3C`)**: Disqualified (`DISQUALIFIED`, manual admin action or malpractice threshold exceeded).
+     - **WHITE (`#ffffff` fill, `#111827` border)**: Not started (`NOT_STARTED`).
+2. **Backend Alignment**:
+   - In [`roomController.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/controllers/roomController.js): Removed the passing criteria override loop that turned active in-progress candidates green.
+   - In [`socketHandler.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/sockets/socketHandler.js): Updated `candidate:heartbeat` to derive `GREEN` strictly when `status === 'SUBMITTED'` or `'AUTO_SUBMITTED_TIME_UP'`.
+   - In [`submissionController.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/controllers/submissionController.js): Broadcast `seatmap:status` with `colorStatus: 'GREEN'` on both manual submit and auto-submit timeout.
+3. **Legend and UI Consistency**:
+   - Updated seat map legend label from "Passed (≥ Criteria)" to **"Submitted"**.
+   - Updated Table Roster filter dropdown option from "Passed" to **"Submitted"**.
+   - Updated Real-Time Metrics Bar to display **"Submitted"** (green card) and a distinct **"Meeting Criteria (≥ N Qs)"** stat card so admins have both real-time completion status and scoring qualification without ambiguity.
+4. **Scoring & Shortlist Logic Preservation**:
+   - Verified that `shortlistService.js` and `evaluationService.js` are **100% UNCHANGED** and continue to evaluate candidate pass/fail against `test.passingCriteria`.
+
+### QA Verification Results
+Executed automated test suite `test_bug44_green_tile_submitted_meaning.js`:
+- Client `getCandidateColorStatus` maps SUBMITTED and AUTO_SUBMITTED_TIME_UP to GREEN: **PASS**
+- IN_PROGRESS candidates remain YELLOW regardless of score: **PASS**
+- DISQUALIFIED candidates remain RED: **PASS**
+- NOT_STARTED candidates remain WHITE: **PASS**
+- Legend label reads "Submitted": **PASS**
+- Filter dropdown uses "Submitted": **PASS**
+- Real-time metrics bar differentiates "Submitted" vs "Meeting Criteria": **PASS**
+- Backend roomController and socketHandler derive GREEN strictly from submission: **PASS**
+- Shortlist & Evaluation pass/fail logic verified untouched: **PASS**
+- Applied consistently across Seat Map, Table Roster, and Inspection Modal: **PASS**
+- Summary: **16 / 16 tests passed (100%)**.
+- Full repository QA suites (all 18 suites): **18 / 18 passed (100%)**.
+
+
+## 22. Consolidate View-Mode Toggle to Single Authoritative Instance (BUG-46)
+
+### Problem
+The "Split / Code / Preview" view-mode segmented control was simultaneously rendered in three redundant locations on [`CandidateAITestScreen.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/candidate/pages/CandidateAITestScreen.jsx):
+1. In the top header bar next to "Time Remaining".
+2. In Panel #2 (Code Editor panel header).
+3. In Panel #3 (Preview panel header).
+
+This created visual clutter, confusion about which toggle was authoritative, and redundancy.
+
+### Solution
+1. **Removed Top Header Bar Toggle**:
+   - Removed `<ViewModeSegmentedToggle />` from the top timer bar, returning it to showing exclusively "Time Remaining", countdown clock, and submission action buttons.
+2. **Removed Preview Panel Header Toggle**:
+   - Removed the duplicate segmented control from the Preview panel header (Panel #3).
+   - Preserved all other Preview panel elements: panel number `3`, "Preview" title, `http://localhost:3000` address bar, `● LIVE` indicator, reload (`↻`), and open-in-new-window controls.
+   - Enhanced the Preview header's expand/restore button (`⛶` / `🗗`) so that if a candidate enters full-width preview mode (`viewMode === 'preview'`), clicking restore seamlessly returns them to split mode.
+3. **Consolidated to Single Instance in Code Editor Header**:
+   - Retained exactly ONE authoritative segmented toggle in Panel #2 (Code Editor header) with `compact` styling.
+4. **Preserved Shared State & Full Functionality**:
+   - Single shared `viewMode` state continues to control both Code Editor and Preview panels non-destructively (`display: none` / `flex`).
+   - Drag splitters, AI Assistant panel, multi-file tabs (`index.html`, `style.css`, `app.js`), proctoring lock, and fullscreen blocking overlays remain 100% unaffected.
+
+### QA Verification Results
+Executed automated test suite `test_bug46_view_mode_toggle_single_instance.js`:
+- Exactly ONE `<ViewModeSegmentedToggle />` rendered across the entire screen: **PASS**
+- Top timer bar does NOT contain the toggle: **PASS**
+- Preview panel header does NOT contain the toggle: **PASS**
+- Code Editor panel header contains the sole authoritative toggle: **PASS**
+- Preview panel address bar, LIVE badge, and refresh controls preserved: **PASS**
+- Shared `viewMode` state & layout expansion preserved: **PASS**
+- Zero regressions to AI Assistant, tabs, violation banners, or proctoring: **PASS**
+- Summary: **17 / 17 tests passed (100%)**.
+- Full repository QA suites (all 19 suites): **19 / 19 passed (100%)**.
+
+
+## 23. Resolve View-Mode Click Handler State Conflict & Restore Multi-Click Reliability (BUG-47)
+
+### Problem
+1. When any panel maximization (`maximizedPanel !== null`) was activated, it took precedence over `viewMode` in the CSS `display` and `flex` calculations.
+2. `handleViewModeChange` did not reset `maximizedPanel`, causing clicks on the `ViewModeSegmentedToggle` ("Split", "Code", "Preview") to update the toggle's internal state without altering the actual DOM layout.
+3. The candidate was left stuck in a full-screen panel with desynced visual toggle highlights.
+4. An investigation into the floating circular "✕" icon confirmed it is Google Chrome's native HTML5 fullscreen exit UI bubble when the cursor touches the top screen edge, not an orphaned markup element.
+
+### Solution
+1. **Unify State & Clear Conflicts**:
+   - Updated `handleViewModeChange` to explicitly call `setMaximizedPanel(null)`, immediately dismissing any panel maximization lock and guaranteeing that selecting Split, Code, or Preview renders the expected layout without delay.
+2. **Harmonize Panel Expand Buttons with View Mode**:
+   - Panel 2 (Code Editor) expand button now toggles `handleViewModeChange(viewMode === 'code' ? 'split' : 'code')`.
+   - Panel 3 (Preview) expand button now toggles `handleViewModeChange(viewMode === 'preview' ? 'split' : 'preview')`.
+   - In `viewMode === 'preview'`, added an explicit, accessible `[ ◫ Split View ]` button in the Preview panel header alongside the `🗗` restore button so candidates can instantaneously return to side-by-side split view.
+3. **Confirmed Single Toggle Instance**:
+   - Exactly ONE `ViewModeSegmentedToggle` exists across the entire screen, located strictly in Panel 2 (Code Editor header).
+   - Zero toggle instances in top timer header bar and zero toggle instances in Preview panel header.
+
+### QA Verification Results
+Executed automated test suite `test_bug47_view_mode_click_handler.js`:
+- Exactly ONE `ViewModeSegmentedToggle` rendered across the screen: **PASS**
+- Top timer bar and Preview header 100% free of toggles: **PASS**
+- `handleViewModeChange` clears `maximizedPanel`: **PASS**
+- Expand buttons unified with `viewMode`: **PASS**
+- Multi-click order transitions (`Code → Preview → Split → Code`) verified seamless: **PASS**
+- Zero regressions to AI Assistant, tabs, violation banner, or proctoring: **PASS**
+- Summary: **18 / 18 tests passed (100%)**.
+- Full repository QA suites (all 20 suites): **20 / 20 passed (100%)**.
+
+
+## 24. Persistent Top Header Toggle & Preview Iframe Focus Exemption (BUG-48)
+
+### Problem
+1. **Part A — Toggle Disappeared in Preview Mode**: Placing the single `ViewModeSegmentedToggle` inside the Code Editor panel header caused it to be hidden when the candidate clicked "Preview", because Preview mode sets the Code Editor to `display: 'none'`. This left the candidate with no toggle on screen to switch back to Split or Code mode.
+2. **Part B — False TAB_SWITCH on Preview Iframe Click**: Clicking anywhere inside the Preview panel's rendered iframe caused the main `window` to fire a `blur` event as focus entered the child browsing context, falsely triggering a `TAB_SWITCH` violation toast and warning banner.
+
+### Solution
+1. **Part A — Dynamic Panel-Header Toggle Placement (Revised)**:
+   - Completely removed the toggle from the top header bar (near Time Remaining).
+   - In **Split mode** and **Code mode**, the toggle is rendered inside the **Code Editor panel's header** (`(viewMode === 'split' || viewMode === 'code')`).
+   - In **Preview mode**, the toggle is rendered inside the **Preview panel's header** (`viewMode === 'preview'`), ensuring the candidate always has the toggle accessible to switch away from Preview.
+   - At no point does the toggle appear in both headers simultaneously or in the top bar. Exactly ONE toggle exists on-screen at all times.
+2. **Part B — Exempted Internal Preview Iframe Focus from TAB_SWITCH**:
+   - Added `id="ai-test-preview-iframe"` and `data-preview-iframe="true"` to the preview `<iframe />`.
+   - In `useProctoring.js`, updated `handleWindowBlur` to check `document.activeElement` for the preview iframe alongside a short 60ms grace period.
+   - When focus moves into the preview iframe while `!document.hidden`, the false `TAB_SWITCH` violation is suppressed.
+   - Genuine tab switches (`document.hidden === true`) and switching to external desktop applications (`active.tagName !== 'IFRAME'`) continue to trigger immediate violations.
+
+### QA Verification Results
+Executed automated test suite `test_bug48_persistent_toggle_iframe_tabswitch.js`:
+- Toggle NEVER appears in top header bar: **PASS**
+- Toggle appears in Code Editor panel header for Split and Code modes: **PASS**
+- Toggle moves to Preview panel header when Preview mode is active: **PASS**
+- Exactly ONE toggle rendered on-screen across all three modes: **PASS**
+- Clicking into preview iframe suppresses false TAB_SWITCH: **PASS**
+- Genuine tab switches (`document.hidden`) and Alt-Tab to external apps still trigger TAB_SWITCH: **PASS**
+- Zero regressions across Code Editor, AI Assistant, tabs, webcam proctoring: **PASS**
+- Summary: **21 / 21 tests passed (100%)**.
+- Full repository QA suites (all 21 suites): **21 / 21 passed (100%)**.
+
+
+## 25. Expand Panel (Maximize) Functionality for Code Editor & Preview (BUG-49)
+
+### Problem
+1. While the Question and AI Assistant panels expanded to fill 100% full screen when clicking their `⛶` expand icons (`maximizedPanel === 'question'` and `maximizedPanel === 'chat'`), clicking the expand icon on the Code Editor or Preview panel did not fully maximize them.
+2. In BUG-47, the Code Editor and Preview expand buttons had been temporarily mapped to `handleViewModeChange`, which only toggled between Split and Code (or Split and Preview) within the center 54% column, leaving Question (24%) and AI Assistant (22%) visible.
+
+### Solution
+1. **Symmetrical Panel Maximization Across All 4 Panels**:
+   - Reconnected Code Editor expand button to toggle `maximizedPanel === 'editor'` via `setMaximizedPanel((p) => (p === 'editor' ? null : 'editor'))`.
+   - Reconnected Preview expand button to toggle `maximizedPanel === 'preview'` via `setMaximizedPanel((p) => (p === 'preview' ? null : 'preview'))`.
+   - In both cases, the maximized panel expands to `flex: '1 1 100%'` and `display: 'flex'`, while the other three panels receive `display: 'none'`, perfectly matching Question and AI Assistant.
+2. **State Restoration**:
+   - Collapsing back out of the maximized state (`setMaximizedPanel(null)`) automatically restores the exact previous layout based on the candidate's active `viewMode` (`split`, `code`, or `preview`).
+3. **Toggle Accessibility During Maximize**:
+   - The Split/Code/Preview toggle remains accessible in the Code Editor header when editor is maximized, and in the Preview header when preview is maximized.
+   - Clicking any mode in the toggle while a panel is maximized automatically clears `maximizedPanel` and applies the new `viewMode`.
+4. **Smooth Monaco Editor Re-layout**:
+   - Added `maximizedPanel` to the resize `useEffect` dependency array so Monaco immediately re-lays out when maximizing or restoring.
+
+### QA Verification Results
+Executed automated test suite `test_bug49_panel_expand_maximize.js`:
+- Symmetrical maximize handlers across all 4 panels: **PASS**
+- Full-width layout flex and display computations: **PASS**
+- Multi-state restoration simulation across split, code, and preview modes: **PASS**
+- Toggle accessibility in maximized panel headers: **PASS**
+- Smooth Monaco re-layout event dispatch: **PASS**
+- Zero regressions to AI Assistant, question bank, multi-file tabs, or proctoring: **PASS**
+- Summary: **25 / 25 tests passed (100%)**.
+- Full repository QA suites (all 22 suites): **22 / 22 passed (100%)**.
+
+
+## 26. Violation Notification Auto-Dismiss & Shared Banner Component (BUG-49 / BUG-50)
+
+### Problem
+1. When a proctoring violation was triggered (such as `FULLSCREEN_EXIT` or `TAB_SWITCH`), the full-width orange/red warning banner at the top and the top-right toast persisted indefinitely.
+2. The candidate was forced to manually click the "✕" button on each notification to close them.
+3. If multiple violations occurred in quick succession, previous notifications lingered without resetting their dismissal lifecycle.
+4. This issue occurred on both the Standard Coding Test screen and the AI Test screen.
+
+### Solution
+1. **Single Source of Truth (`ViolationNotificationBanner.jsx`)**:
+   - Created shared component `client/src/candidate/components/ViolationNotificationBanner.jsx` exporting `ViolationNotificationBanner`, `useViolationNotification`, and `showViolationToast`.
+   - Both `CandidateTestScreen.jsx` and `CandidateAITestScreen.jsx` now consume this single shared component and hook.
+2. **Auto-Dismiss Behavior**:
+   - Configured a 6-second auto-dismiss timer (`6000ms`, within the requested 5–8s range) for both the top banner and the top-right toast.
+   - When the timer expires, the notification automatically fades/unmounts without requiring manual user interaction.
+3. **Manual "✕" Dismissal Preserved**:
+   - The interactive "✕" button remains fully available on both the banner and toast for immediate early dismissal.
+4. **Timer Reset & In-Place Updates on Successive Violations**:
+   - When a new violation occurs while a notification is active, the auto-dismiss timer immediately resets to a fresh 6-second countdown.
+   - The fixed toast ID (`id: 'proctor-violation-toast'`) ensures that rapid successive violations update the toast in-place rather than stacking multiple toasts on top of each other.
+5. **Backend Violation Persistence Preserved**:
+   - Candidate notification auto-dismissal is purely cosmetic; backend malpractice logging (`MalpracticeLog`), proctor alerts, and admin seat map counts are completely unaffected.
+
+### QA Verification Results
+Executed automated test suite `test_bug49_violation_auto_dismiss.js`:
+- Single source of truth shared component and hook consumed by both test screens: **PASS**
+- Auto-dismiss duration set to 6000ms: **PASS**
+- Interactive manual "✕" button clears notification immediately: **PASS**
+- Timer resets and toast updates in-place on successive violations: **PASS**
+- Backend malpractice logging and socket alerts fully preserved: **PASS**
+- Summary: **19 / 19 tests passed (100%)**.
+- Full repository QA suites (all 23 suites): **23 / 23 passed (100%)**.
+
+
+
+
+
+
+
+
 
 
 

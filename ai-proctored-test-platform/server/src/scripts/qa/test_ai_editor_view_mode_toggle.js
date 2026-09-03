@@ -58,9 +58,20 @@ async function runTests() {
     aiTestCode.includes('#0E7C86'),
     'Toggle uses Globussoft teal (#0E7C86) for active state highlight'
   );
+  // BUG-48 (REVISED): Toggle lives inside Code Editor header (split/code) and Preview header (preview); NEVER in top bar
   assert(
-    aiTestCode.includes('<ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} />'),
-    'Toggle placed in timer-bar toolbar directly above panels (Criterion 1)'
+    !aiTestCode.includes('<ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} />'),
+    'Toggle NEVER appears in top header bar (BUG-48 Revised Criterion 1)'
+  );
+  assert(
+    aiTestCode.includes("viewMode === 'split' || viewMode === 'code'") &&
+    aiTestCode.includes('<ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} compact />'),
+    'Toggle placed in Code Editor panel header for Split and Code modes (BUG-48 Revised Criteria 2 & 3)'
+  );
+  assert(
+    aiTestCode.includes("viewMode === 'preview'") &&
+    aiTestCode.includes('<ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} compact />'),
+    'Toggle placed in Preview panel header for Preview mode (BUG-48 Revised Criterion 4)'
   );
 
   // ──────────────────────────────────────────────────────────────────────────

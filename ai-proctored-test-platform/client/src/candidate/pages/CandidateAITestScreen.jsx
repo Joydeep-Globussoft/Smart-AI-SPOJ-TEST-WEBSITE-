@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
+import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import Editor from '@monaco-editor/react';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 
@@ -173,6 +174,9 @@ export default function CandidateAITestScreen() {
   const [newFileName, setNewFileName] = useState('');
   const [showAddFile, setShowAddFile] = useState(false);
 
+  // ── Panel Maximize & Resizable Workspace State ─────────────────────────────
+  const [maximizedPanel, setMaximizedPanel] = useState(null); // null | 'question' | 'editor' | 'preview' | 'chat'
+
   // ── Split / Code / Preview View Mode State ────────────────────────────────
   const [viewMode, setViewMode] = useState(() => {
     const saved = sessionStorage.getItem('ai_test_view_mode');
@@ -180,17 +184,18 @@ export default function CandidateAITestScreen() {
   });
 
   const handleViewModeChange = useCallback((mode) => {
+    setMaximizedPanel(null); // CRITICAL: Instantly dismiss any panel maximization so viewMode takes immediate full effect
     setViewMode(mode);
     sessionStorage.setItem('ai_test_view_mode', mode);
   }, []);
 
   useEffect(() => {
-    // When switching view modes, re-layout Monaco editor smoothly
+    // When switching view modes or maximizing panels, re-layout Monaco editor smoothly
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 60);
     return () => clearTimeout(timer);
-  }, [viewMode]);
+  }, [viewMode, maximizedPanel]);
 
   // ── Single-Row 4-Panel Resizable Workspace State ──────────────────────────
   const [panelWidths, setPanelWidths] = useState(() => {
@@ -210,7 +215,6 @@ export default function CandidateAITestScreen() {
   });
 
   const [activeSplitter, setActiveSplitter] = useState(null); // null | 0 | 1 | 2
-  const [maximizedPanel, setMaximizedPanel] = useState(null); // null | 'question' | 'editor' | 'preview' | 'chat'
   const containerRef = useRef(null);
   const dragStartRef = useRef({ clientX: 0, widths: [24, 30, 24, 22], containerWidth: 1000 });
 
@@ -343,7 +347,7 @@ export default function CandidateAITestScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedQuestions, setSubmittedQuestions] = useState(new Set());
   const [disqualified, setDisqualified] = useState(false);
-  const [warningMessage, setWarningMessage] = useState('');
+  const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
 
   const heartbeatRef = useRef(null);
   const isSubmittingAll = useRef(false);
@@ -423,8 +427,8 @@ export default function CandidateAITestScreen() {
   // ── Client-Side AI Proctoring (FR-5.2, FR-5.3, FR-5.4, FR-6.1, FR-7.1, FR-7.2) ──
   // allowInternalCopyPaste: true allows candidate to copy code from Kimi Chat into Monaco files (FR-6.1)
   const handleProctorWarning = useCallback((msg) => {
-    setWarningMessage(msg);
-  }, []);
+    showWarning(msg);
+  }, [showWarning]);
 
   const proctoring = useProctoring({
     testId: session?.test?._id,
@@ -443,8 +447,7 @@ export default function CandidateAITestScreen() {
         // BUG-40: Camera disconnect is handled exclusively by the full-screen blocking overlay.
         return;
       }
-      setWarningMessage(message);
-      toast.error(`⚠️ ${message}`, { duration: 8000 });
+      showWarning(message);
     };
     const onDisqualify = () => {
       setDisqualified(true);
@@ -707,9 +710,6 @@ export default function CandidateAITestScreen() {
             </span>
           </div>
 
-          {/* View Mode Toggle: Split / Code / Preview (Feature Request) */}
-          <ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} />
-
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
               id="ai-submit-question-btn"
@@ -733,13 +733,12 @@ export default function CandidateAITestScreen() {
         </div>
       </div>
 
-      {/* Warning banner if active */}
-      {warningMessage && (
-        <div style={{ background: '#E74C3C', color: 'white', padding: '6px 20px', fontSize: '0.85rem', textAlign: 'center', fontWeight: 600 }}>
-          ⚠️ {warningMessage}
-          <button onClick={() => setWarningMessage('')} style={{ background: 'none', border: 'none', color: 'white', marginLeft: 12, cursor: 'pointer' }}>✕</button>
-        </div>
-      )}
+      {/* Warning banner with 6s auto-dismiss and interactive ✕ (BUG-49) */}
+      <ViolationNotificationBanner
+        message={warningMessage}
+        onDismiss={dismissWarning}
+        autoDismissMs={6000}
+      />
 
       {/* ── Main Workspace: 4-Panel Single Row Resizable Layout ─────────────── */}
       <div
@@ -1021,9 +1020,13 @@ export default function CandidateAITestScreen() {
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} compact />
+              {/* ASSUMPTION: Toggle remains accessible in Code Editor header during normal split/code modes or when editor is maximized */}
+              {(!maximizedPanel ? (viewMode === 'split' || viewMode === 'code') : maximizedPanel === 'editor') && (
+                <ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} compact />
+              )}
               <button
                 type="button"
+                id="ai-panel2-expand-btn"
                 title={maximizedPanel === 'editor' ? 'Restore Panel' : 'Maximize Panel'}
                 onClick={() => setMaximizedPanel((p) => (p === 'editor' ? null : 'editor'))}
                 style={{
@@ -1297,9 +1300,13 @@ export default function CandidateAITestScreen() {
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} compact />
+              {/* ASSUMPTION: Toggle remains accessible in Preview header during normal preview mode or when preview is maximized */}
+              {(!maximizedPanel ? viewMode === 'preview' : maximizedPanel === 'preview') && (
+                <ViewModeSegmentedToggle viewMode={viewMode} onChange={handleViewModeChange} compact />
+              )}
               <button
                 type="button"
+                id="ai-panel3-expand-btn"
                 title={maximizedPanel === 'preview' ? 'Restore Panel' : 'Maximize Panel'}
                 onClick={() => setMaximizedPanel((p) => (p === 'preview' ? null : 'preview'))}
                 style={{
@@ -1400,6 +1407,8 @@ export default function CandidateAITestScreen() {
             }}
           >
             <iframe
+              id="ai-test-preview-iframe"
+              data-preview-iframe="true"
               key={previewKey}
               title="Live Preview"
               srcDoc={generatePreviewSrcDoc()}

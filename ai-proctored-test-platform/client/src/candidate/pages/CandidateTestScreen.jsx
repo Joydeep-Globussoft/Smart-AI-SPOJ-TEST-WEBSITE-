@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
+import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 
 // ── Monaco Editor (lazy-loaded to avoid bundle bloat) ─────────────────────────
@@ -174,7 +175,7 @@ export default function CandidateTestScreen() {
   const [submittedQuestions, setSubmittedQuestions] = useState(new Set());
   const [questionProgress, setQuestionProgress] = useState({}); // { questionId: { passed, total } }
   const [disqualified, setDisqualified] = useState(false);
-  const [warningMessage, setWarningMessage] = useState('');
+  const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
   const [loadError, setLoadError] = useState('');
   const heartbeatRef = useRef(null);
   const isSubmittingAll = useRef(false);
@@ -477,8 +478,8 @@ export default function CandidateTestScreen() {
 
   // ── Client-Side AI Proctoring (FR-5.2, FR-5.3, FR-5.4, FR-7.1, FR-7.2) ────────
   const handleProctorWarning = useCallback((msg) => {
-    setWarningMessage(msg);
-  }, []);
+    showWarning(msg);
+  }, [showWarning]);
 
   const proctoring = useProctoring({
     testId: session?.test?._id,
@@ -498,8 +499,7 @@ export default function CandidateTestScreen() {
         // Do not display a separate, dismissible top banner or toast.
         return;
       }
-      setWarningMessage(message);
-      toast.error(`⚠️ ${message}`, { duration: 8000 });
+      showWarning(message);
     };
 
     const onDisqualified = ({ reason }) => {
@@ -851,21 +851,12 @@ export default function CandidateTestScreen() {
         </div>
       </div>
 
-      {/* Warning banner */}
-      {warningMessage && (
-        <div style={{
-          background: '#E74C3C', color: 'white', padding: '8px 24px',
-          fontSize: '0.875rem', textAlign: 'center', fontWeight: 600,
-        }}>
-          ⚠️ {warningMessage}
-          <button
-            onClick={() => setWarningMessage('')}
-            style={{ background: 'none', border: 'none', color: 'white', marginLeft: 16, cursor: 'pointer' }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      {/* Warning banner with 6s auto-dismiss and interactive ✕ (BUG-49) */}
+      <ViolationNotificationBanner
+        message={warningMessage}
+        onDismiss={dismissWarning}
+        autoDismissMs={6000}
+      />
 
       {/* ── Main Layout with Resizable & Collapsible Questions Panel (BUG-10) ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>

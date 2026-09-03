@@ -360,14 +360,6 @@ const getLiveCandidates = async (req, res, next) => {
       }
     }
 
-    // Recalculate colorStatus based on test passing criteria
-    for (const cid of Object.keys(candidateMap)) {
-      const c = candidateMap[cid];
-      if (!c.isDisqualified && test.passingCriteria && c.questionsCompleted >= test.passingCriteria) {
-        c.colorStatus = 'GREEN';
-      }
-    }
-
     // BUG-21: Tentative Time = MAX remaining time (candidateEndTime - now) among candidates currently IN_PROGRESS
     const tentativeTimeByRoom = {};
     let overallTentativeTime = 0;

@@ -288,9 +288,25 @@ const startAttempt = async (req, res, next) => {
 
         console.log(`[AutoSubmit] Candidate ${candidateId} test ${testId} auto-submitted at time-up`);
 
-        // BUG-21: Broadcast updated Tentative Time if leader auto-submitted
         const io = req.app.get('io');
-        broadcastTentativeTime(io, testId, targetRoomId);
+        if (io) {
+          const Candidate = require('../models/Candidate');
+          const cand = await Candidate.findById(candidateId, 'name');
+          io.to(`test:${testId}:admin`).emit('candidate:submitted', {
+            candidateId,
+            candidateName: cand?.name || 'Unknown',
+          });
+          io.to(`test:${testId}:admin`).emit('seatmap:status', {
+            candidateId: candidateId.toString(),
+            roomId: targetRoomId ? targetRoomId.toString() : null,
+            colorStatus: 'GREEN',
+          });
+        }
+
+        // BUG-21: Broadcast updated Tentative Time if leader auto-submitted
+        if (io) {
+          broadcastTentativeTime(io, testId, targetRoomId);
+        }
 
         // Trigger evaluation
         const evaluationService = require('../services/evaluationService');
@@ -550,9 +566,16 @@ const submitAll = async (req, res, next) => {
       candidateName: candidate?.name || 'Unknown',
     });
 
-    // BUG-21: Broadcast updated Tentative Time immediately on candidate submit
+    // BUG-21: Broadcast updated Tentative Time and seatmap status immediately on candidate submit
     Submission.findOne({ candidateId, testId }, { roomId: 1 }).then((s) => {
       broadcastTentativeTime(io, testId, s?.roomId);
+      if (io && s?.roomId) {
+        io.to(`test:${testId}:admin`).emit('seatmap:status', {
+          candidateId: candidateId.toString(),
+          roomId: s.roomId.toString(),
+          colorStatus: 'GREEN',
+        });
+      }
     }).catch(() => {});
 
     // Trigger evaluation for all submissions
