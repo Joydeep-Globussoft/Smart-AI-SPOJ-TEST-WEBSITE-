@@ -834,14 +834,26 @@ tbody td {
   margin-top: 112px;
 }
 
+/* FEATURE-005: Glowing Border Themes for non-AI test interfaces */
+.panel-glow-purple {
+  border: 1px solid rgba(139, 92, 246, 0.85) !important;
+  box-shadow: 0 0 14px 1px rgba(124, 58, 237, 0.42), inset 0 0 0 1px rgba(124, 58, 237, 0.15) !important;
+}
+
+.panel-glow-green {
+  border: 1px solid rgba(0, 230, 118, 0.85) !important;
+  box-shadow: 0 0 14px 1px rgba(0, 230, 118, 0.42), inset 0 0 0 1px rgba(0, 230, 118, 0.15) !important;
+}
+
 .test-question-panel {
-  background: white;
-  border-right: 1px solid var(--color-border);
+  background: #13141f;
+  border-right: 1px solid #23253a;
   overflow-y: auto;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  color: #cbd5e1;
 }
 
 .test-editor-panel {

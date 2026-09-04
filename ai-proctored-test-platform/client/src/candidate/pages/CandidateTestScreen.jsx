@@ -48,9 +48,9 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
         style={{
           width: '100%',
           padding: '12px 4px',
-          background: isActive ? 'rgba(14, 124, 134, 0.12)' : 'transparent',
+          background: isActive ? 'rgba(124, 58, 237, 0.2)' : 'transparent',
           border: 'none',
-          borderLeft: isActive ? '3px solid #0E7C86' : '3px solid transparent',
+          borderLeft: isActive ? '3px solid #8b5cf6' : '3px solid transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           display: 'flex',
@@ -65,15 +65,15 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
           style={{
             fontWeight: 700,
             fontSize: '0.85rem',
-            color: isActive ? '#0E7C86' : '#1A2B3C',
+            color: isActive ? '#a78bfa' : '#94a3b8',
           }}
         >
           Q{index + 1}
         </span>
         {isSubmitted || isFullyPassed ? (
-          <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700 }}>✓</span>
+          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>✓</span>
         ) : visibleTotal > 0 ? (
-          <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>
             {visiblePassed}/{visibleTotal}
           </span>
         ) : (
@@ -82,7 +82,7 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: isActive ? '#0E7C86' : '#cbd5e1',
+              background: isActive ? '#8b5cf6' : '#475569',
               display: 'inline-block',
             }}
           />
@@ -100,9 +100,9 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
         width: '100%',
         textAlign: 'left',
         padding: '12px 16px',
-        background: isActive ? 'rgba(14, 124, 134, 0.1)' : 'transparent',
+        background: isActive ? 'rgba(124, 58, 237, 0.18)' : 'transparent',
         border: 'none',
-        borderLeft: isActive ? '3px solid #0E7C86' : '3px solid transparent',
+        borderLeft: isActive ? '3px solid #8b5cf6' : '3px solid transparent',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'all 200ms',
@@ -110,7 +110,7 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1A2B3C' }}>
+        <span style={{ fontWeight: 600, fontSize: '0.875rem', color: isActive ? '#f8fafc' : '#cbd5e1' }}>
           Q{index + 1}. {question.title}
         </span>
         <span
@@ -124,10 +124,10 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
       </div>
       {visibleTotal > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div className="progress-bar-container" style={{ flex: 1 }}>
-            <div className="progress-bar-fill" style={{ width: `${progress * 100}%` }} />
+          <div className="progress-bar-container" style={{ flex: 1, background: '#23253a' }}>
+            <div className="progress-bar-fill" style={{ width: `${progress * 100}%`, background: '#8b5cf6' }} />
           </div>
-          <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
             {visiblePassed}/{visibleTotal}
           </span>
         </div>
@@ -141,21 +141,21 @@ QuestionTab.displayName = 'QuestionTab';
 const TestCaseResult = memo(({ tc, index }) => (
   <div style={{
     padding: '8px 12px', borderRadius: 6, marginBottom: 6,
-    background: tc.passed ? '#d1fae5' : '#fee2e2',
-    border: `1px solid ${tc.passed ? '#6ee7b7' : '#fca5a5'}`,
+    background: tc.passed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+    border: `1px solid ${tc.passed ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
     fontSize: '0.8rem',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-      <strong>Test {index + 1}</strong>
-      <span style={{ color: tc.passed ? '#065f46' : '#991b1b', fontWeight: 700 }}>
+      <strong style={{ color: '#f8fafc' }}>Test {index + 1}</strong>
+      <span style={{ color: tc.passed ? '#34d399' : '#f87171', fontWeight: 700 }}>
         {tc.passed ? '✓ Passed' : '✗ Failed'}
       </span>
     </div>
-    {tc.error && <div style={{ color: '#991b1b', fontFamily: 'monospace', fontSize: '0.75rem' }}>{tc.error}</div>}
+    {tc.error && <div style={{ color: '#f87171', fontFamily: 'monospace', fontSize: '0.75rem' }}>{tc.error}</div>}
     {!tc.passed && (
-      <div style={{ color: '#374151', fontFamily: 'monospace', fontSize: '0.75rem', marginTop: 4 }}>
-        Expected: <code style={{ background: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: 3 }}>{tc.expectedOutput}</code>
-        &nbsp;Got: <code style={{ background: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: 3 }}>{tc.actualOutput}</code>
+      <div style={{ color: '#cbd5e1', fontFamily: 'monospace', fontSize: '0.75rem', marginTop: 4 }}>
+        Expected: <code style={{ background: 'rgba(0,0,0,0.3)', color: '#a5f3fc', padding: '1px 4px', borderRadius: 3 }}>{tc.expectedOutput}</code>
+        &nbsp;Got: <code style={{ background: 'rgba(0,0,0,0.3)', color: '#fca5a5', padding: '1px 4px', borderRadius: 3 }}>{tc.actualOutput}</code>
       </div>
     )}
   </div>
@@ -894,6 +894,8 @@ export default function CandidateTestScreen() {
     );
   }
 
+  const isGlowTheme = session?.test?.testType !== 'AI_TEST';
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Fixed Stacked Header: (a) Test name + Room/ID row, then (b) Timer + Action row ── */}
@@ -962,121 +964,138 @@ export default function CandidateTestScreen() {
         autoDismissMs={6000}
       />
 
-      {/* ── Main Layout with Resizable & Collapsible Questions Panel (BUG-10) ── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-
-        {/* ── Question List sidebar ─────────────────────────────────────────── */}
+      {/* ── Main Layout with Glowing Panels and Resizers (BUG-10, BUG-11, FEATURE-005) ── */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          overflow: 'hidden',
+          position: 'relative',
+          background: '#0b0c16',
+          padding: isGlowTheme ? '10px 14px' : 0,
+          gap: isGlowTheme ? 12 : 0,
+        }}
+      >
+        {/* ── Left Container: Questions List Sidebar + Resizer + Question Details (Purple Glow) ── */}
         <div
+          className={isGlowTheme ? 'panel-glow-purple' : ''}
           style={{
-            width: isCollapsed ? 58 : panelWidth,
-            minWidth: isCollapsed ? 58 : panelWidth,
-            maxWidth: isCollapsed ? 58 : 480,
-            flexShrink: 0,
-            background: 'white',
-            borderRight: '1px solid #e5e7eb',
             display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
-            transition: isDragging ? 'none' : 'width 200ms cubic-bezier(0.4, 0, 0.2, 1), min-width 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-            zIndex: 5,
+            borderRadius: isGlowTheme ? 10 : 0,
+            background: '#13141f',
+            overflow: 'hidden',
+            flexShrink: 0,
+            position: 'relative',
           }}
         >
-          {/* Header with Title + Toggle Button */}
+          {/* ── Question List sidebar ─────────────────────────────────────────── */}
           <div
             style={{
-              padding: isCollapsed ? '12px 6px' : '12px 14px',
-              borderBottom: '1px solid #e5e7eb',
-              background: '#f9fafb',
+              width: isCollapsed ? 58 : panelWidth,
+              minWidth: isCollapsed ? 58 : panelWidth,
+              maxWidth: isCollapsed ? 58 : 480,
+              flexShrink: 0,
+              background: '#151624',
+              borderRight: '1px solid #23253a',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'space-between',
-              minHeight: 45,
+              flexDirection: 'column',
+              overflowY: 'auto',
+              transition: isDragging ? 'none' : 'width 200ms cubic-bezier(0.4, 0, 0.2, 1), min-width 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+              zIndex: 5,
             }}
           >
-            {!isCollapsed && (
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Questions
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsCollapsed((prev) => !prev)}
-              title={isCollapsed ? 'Expand Questions Panel' : 'Collapse Questions Panel'}
+            {/* Header with Title + Toggle Button */}
+            <div
               style={{
-                background: 'transparent',
-                border: '1px solid #e2e8f0',
-                borderRadius: 4,
-                cursor: 'pointer',
-                padding: '3px 6px',
-                fontSize: '0.72rem',
-                color: '#64748b',
+                padding: isCollapsed ? '12px 6px' : '12px 14px',
+                borderBottom: '1px solid #23253a',
+                background: '#18192a',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 150ms ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#e2e8f0';
-                e.currentTarget.style.color = '#1e293b';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#64748b';
+                justifyContent: isCollapsed ? 'center' : 'space-between',
+                minHeight: 45,
               }}
             >
-              {isCollapsed ? '▶' : '◀'}
-            </button>
+              {!isCollapsed && (
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Questions
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsCollapsed((prev) => !prev)}
+                title={isCollapsed ? 'Expand Questions Panel' : 'Collapse Questions Panel'}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #333852',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  padding: '3px 6px',
+                  fontSize: '0.72rem',
+                  color: '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 150ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#282b42';
+                  e.currentTarget.style.color = '#f1f5f9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#94a3b8';
+                }}
+              >
+                {isCollapsed ? '▶' : '◀'}
+              </button>
+            </div>
+
+            {(!session.questions || session.questions.length === 0) ? (
+              <div style={{ padding: 16, textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>
+                {!isCollapsed ? 'No questions found for this test session.' : '—'}
+              </div>
+            ) : (
+              session.questions.map((q, idx) => (
+                <QuestionTab
+                  key={q._id}
+                  question={q}
+                  index={idx}
+                  isActive={idx === activeQuestionIdx}
+                  visiblePassed={questionProgress[q._id]?.passed || 0}
+                  visibleTotal={questionProgress[q._id]?.total || q.visibleTestCases?.length || 0}
+                  isSubmitted={submittedQuestions.has(q._id)}
+                  isCollapsed={isCollapsed}
+                  disabled={Boolean(proctoring?.isCameraDisconnected)}
+                  onClick={() => handleSelectQuestion(idx)}
+                />
+              ))
+            )}
           </div>
 
-          {(!session.questions || session.questions.length === 0) ? (
-            <div style={{ padding: 16, textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>
-              {!isCollapsed ? 'No questions found for this test session.' : '—'}
-            </div>
-          ) : (
-            session.questions.map((q, idx) => (
-              <QuestionTab
-                key={q._id}
-                question={q}
-                index={idx}
-                isActive={idx === activeQuestionIdx}
-                visiblePassed={questionProgress[q._id]?.passed || 0}
-                visibleTotal={questionProgress[q._id]?.total || q.visibleTestCases?.length || 0}
-                isSubmitted={submittedQuestions.has(q._id)}
-                isCollapsed={isCollapsed}
-                disabled={Boolean(proctoring?.isCameraDisconnected)}
-                onClick={() => handleSelectQuestion(idx)}
-              />
-            ))
+          {/* Resizable Divider Handle (when not collapsed) */}
+          {!isCollapsed && (
+            <div
+              onMouseDown={handleMouseDown}
+              style={{
+                width: 6,
+                cursor: 'col-resize',
+                background: isDragging ? '#8b5cf6' : '#1c1e2f',
+                borderRight: isDragging ? '1px solid #8b5cf6' : '1px solid #23253a',
+                flexShrink: 0,
+                zIndex: 10,
+                transition: 'background 150ms ease',
+                position: 'relative',
+              }}
+              title="Drag to resize Questions panel"
+              onMouseEnter={(e) => {
+                if (!isDragging) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isDragging) e.currentTarget.style.background = '#1c1e2f';
+              }}
+            />
           )}
-        </div>
-
-        {/* Resizable Divider Handle (when not collapsed) */}
-        {!isCollapsed && (
-          <div
-            onMouseDown={handleMouseDown}
-            style={{
-              width: 6,
-              cursor: 'col-resize',
-              background: isDragging ? '#0E7C86' : 'transparent',
-              borderRight: isDragging ? '1px solid #0E7C86' : 'none',
-              flexShrink: 0,
-              zIndex: 10,
-              transition: 'background 150ms ease',
-              marginRight: -6,
-              position: 'relative',
-            }}
-            title="Drag to resize Questions panel"
-            onMouseEnter={(e) => {
-              if (!isDragging) e.currentTarget.style.background = 'rgba(14, 124, 134, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              if (!isDragging) e.currentTarget.style.background = 'transparent';
-            }}
-          />
-        )}
-
-        {/* ── Content area with resizable Question Details and Code Editor ── */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
           {/* Question panel */}
           <div
@@ -1086,7 +1105,8 @@ export default function CandidateTestScreen() {
               minWidth: 300,
               maxWidth: 850,
               flexShrink: 0,
-              borderRight: '1px solid #e5e7eb',
+              background: '#13141f',
+              borderRight: 'none',
               overflowY: 'auto',
               transition: isDraggingDetail ? 'none' : 'width 150ms ease',
             }}
@@ -1095,7 +1115,7 @@ export default function CandidateTestScreen() {
               <>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontWeight: 800, fontSize: '1rem', color: '#1A2B3C' }}>
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: '#f8fafc' }}>
                       Q{activeQuestionIdx + 1}. {activeQuestion.title}
                     </span>
                     {submittedQuestions.has(activeQuestion._id) && (
@@ -1114,14 +1134,14 @@ export default function CandidateTestScreen() {
                   </div>
                 </div>
 
-                <div style={{ lineHeight: 1.7, color: '#374151', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
+                <div style={{ lineHeight: 1.7, color: '#cbd5e1', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
                   {activeQuestion.description}
                 </div>
 
                 {activeQuestion.inputFormat && (
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1A2B3C', marginBottom: 4 }}>Input Format</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#f8fafc', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Input Format</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#191b2c', border: '1px solid #282a40', color: '#cbd5e1', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
                       {activeQuestion.inputFormat}
                     </div>
                   </div>
@@ -1129,8 +1149,8 @@ export default function CandidateTestScreen() {
 
                 {activeQuestion.outputFormat && (
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1A2B3C', marginBottom: 4 }}>Output Format</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#f8fafc', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Output Format</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#191b2c', border: '1px solid #282a40', color: '#cbd5e1', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
                       {activeQuestion.outputFormat}
                     </div>
                   </div>
@@ -1138,8 +1158,8 @@ export default function CandidateTestScreen() {
 
                 {activeQuestion.constraints && (
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1A2B3C', marginBottom: 4 }}>Constraints</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#fff3cd', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Constraints</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.35)', color: '#fef08a', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
                       {activeQuestion.constraints}
                     </div>
                   </div>
@@ -1148,15 +1168,15 @@ export default function CandidateTestScreen() {
                 {/* Visible test cases (FR-4.2: shown to candidate) */}
                 {activeQuestion.visibleTestCases?.length > 0 && (
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1A2B3C', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 8 }}>
                       Sample Test Cases
                     </div>
                     {activeQuestion.visibleTestCases.map((tc, i) => (
-                      <div key={i} style={{ background: '#f8fafc', borderRadius: 6, padding: 10, marginBottom: 8, border: '1px solid #e5e7eb' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: 4 }}>
+                      <div key={i} style={{ background: '#191b2c', borderRadius: 6, padding: 10, marginBottom: 8, border: '1px solid #282a40' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>
                           Example {i + 1}
                         </div>
-                        <div style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#e2e8f0' }}>
                           <div><strong>Input:</strong> {tc.input}</div>
                           <div><strong>Output:</strong> {tc.expectedOutput}</div>
                         </div>
@@ -1167,46 +1187,59 @@ export default function CandidateTestScreen() {
               </>
             )}
           </div>
+        </div>
 
-          {/* Question Detail Resizable Divider Handle */}
+        {/* Question Detail Resizable Divider Handle */}
+        <div
+          onMouseDown={handleDetailMouseDown}
+          style={{
+            width: 8,
+            cursor: 'col-resize',
+            background: isDraggingDetail ? '#8b5cf6' : 'transparent',
+            borderRight: isDraggingDetail ? '1px solid #8b5cf6' : 'none',
+            flexShrink: 0,
+            zIndex: 10,
+            transition: 'background 150ms ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            userSelect: 'none',
+          }}
+          title="Drag to resize Question Details panel"
+          onMouseEnter={(e) => {
+            if (!isDraggingDetail) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            if (!isDraggingDetail) e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          {/* Visual drag handle grip bar */}
           <div
-            onMouseDown={handleDetailMouseDown}
             style={{
-              width: 8,
-              cursor: 'col-resize',
-              background: isDraggingDetail ? '#0E7C86' : '#f8fafc',
-              borderRight: isDraggingDetail ? '1px solid #0E7C86' : '1px solid #e2e8f0',
-              borderLeft: isDraggingDetail ? '1px solid #0E7C86' : '1px solid #e2e8f0',
-              flexShrink: 0,
-              zIndex: 10,
-              transition: 'background 150ms ease',
+              width: 2,
+              height: 32,
+              borderRadius: 1,
+              background: isDraggingDetail ? '#ffffff' : '#475569',
+            }}
+          />
+        </div>
+
+        {/* ── Right Column: Code Editor (Green Glow) + Resizer + Bottom Panel (Purple Glow) ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: isGlowTheme ? 8 : 0, overflow: 'hidden', minWidth: 350 }}>
+
+          {/* ── Top Panel: Editor (Green Glow) ── */}
+          <div
+            className={isGlowTheme ? 'panel-glow-green' : ''}
+            style={{
+              flex: 1,
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              userSelect: 'none',
-            }}
-            title="Drag to resize Question Details panel"
-            onMouseEnter={(e) => {
-              if (!isDraggingDetail) e.currentTarget.style.background = 'rgba(14, 124, 134, 0.25)';
-            }}
-            onMouseLeave={(e) => {
-              if (!isDraggingDetail) e.currentTarget.style.background = '#f8fafc';
+              flexDirection: 'column',
+              borderRadius: isGlowTheme ? 10 : 0,
+              background: '#1e1e2e',
+              overflow: 'hidden',
+              minHeight: 160,
             }}
           >
-            {/* Visual drag handle grip bar */}
-            <div
-              style={{
-                width: 2,
-                height: 32,
-                borderRadius: 1,
-                background: isDraggingDetail ? '#ffffff' : '#94a3b8',
-              }}
-            />
-          </div>
-
-          {/* ── Editor + Output panel ──────────────────────────────────────── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1e1e2e', overflow: 'hidden', minWidth: 350 }}>
-
             {/* Editor toolbar */}
             <div className="editor-toolbar">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1311,127 +1344,129 @@ export default function CandidateTestScreen() {
                 }}
               />
             </div>
+          </div>
 
-            {/* Horizontal Resizer Divider between Editor and Bottom Panel (BUG-11) */}
+          {/* Horizontal Resizer Divider between Editor and Bottom Panel (BUG-11) */}
+          <div
+            onMouseDown={handleHeightMouseDown}
+            style={{
+              height: 6,
+              cursor: 'row-resize',
+              background: isDraggingHeight ? '#8b5cf6' : 'transparent',
+              borderTop: isDraggingHeight ? '1px solid #8b5cf6' : 'none',
+              borderBottom: isDraggingHeight ? '1px solid #8b5cf6' : 'none',
+              zIndex: 10,
+              position: 'relative',
+              flexShrink: 0,
+              transition: 'background 150ms ease',
+            }}
+            title="Drag to resize Editor / Output panel height"
+            onMouseEnter={(e) => {
+              if (!isDraggingHeight) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              if (!isDraggingHeight) e.currentTarget.style.background = 'transparent';
+            }}
+          />
+
+          {/* Custom input + output panel (BUG-11, Purple Glow) */}
+          <div
+            ref={bottomPanelRef}
+            className={isGlowTheme ? 'panel-glow-purple' : ''}
+            style={{
+              height: bottomHeight,
+              display: 'flex',
+              borderRadius: isGlowTheme ? 10 : 0,
+              background: '#1e1e2e',
+              overflow: 'hidden',
+              position: 'relative',
+              flexShrink: 0,
+            }}
+          >
+            {/* Custom input */}
             <div
-              onMouseDown={handleHeightMouseDown}
               style={{
-                height: 6,
-                cursor: 'row-resize',
-                background: isDraggingHeight ? '#0E7C86' : '#2d2d44',
-                borderTop: '1px solid #333',
-                borderBottom: '1px solid #222',
+                width: `${inputWidthPercent}%`,
+                minWidth: 80,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '6px 12px', background: '#18192a', borderBottom: '1px solid #282a40', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>
+                Custom Input (optional)
+              </div>
+              <textarea
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                onCopy={preventCopyPaste}
+                onPaste={preventCopyPaste}
+                onContextMenu={preventCopyPaste}
+                disabled={disqualified || proctoring?.isCameraDisconnected}
+                placeholder="Enter custom input here..."
+                style={{
+                  flex: 1, resize: 'none', background: '#13141f', color: '#cdd6f4',
+                  border: 'none', padding: 12, fontFamily: 'monospace', fontSize: '0.8rem',
+                  outline: 'none',
+                  cursor: proctoring?.isCameraDisconnected ? 'not-allowed' : 'text',
+                }}
+              />
+            </div>
+
+            {/* Vertical Resizer Divider between Custom Input and Output (BUG-11) */}
+            <div
+              onMouseDown={handleSplitMouseDown}
+              style={{
+                width: 6,
+                cursor: 'col-resize',
+                background: isDraggingSplit ? '#8b5cf6' : '#18192a',
+                borderLeft: isDraggingSplit ? '1px solid #8b5cf6' : '1px solid #282a40',
+                borderRight: isDraggingSplit ? '1px solid #8b5cf6' : '1px solid #282a40',
                 zIndex: 10,
                 position: 'relative',
                 flexShrink: 0,
                 transition: 'background 150ms ease',
               }}
-              title="Drag to resize Editor / Output panel height"
+              title="Drag to resize Custom Input / Output width"
               onMouseEnter={(e) => {
-                if (!isDraggingHeight) e.currentTarget.style.background = 'rgba(14, 124, 134, 0.5)';
+                if (!isDraggingSplit) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)';
               }}
               onMouseLeave={(e) => {
-                if (!isDraggingHeight) e.currentTarget.style.background = '#2d2d44';
+                if (!isDraggingSplit) e.currentTarget.style.background = '#18192a';
               }}
             />
 
-            {/* Custom input + output panel (BUG-11) */}
+            {/* Output */}
             <div
-              ref={bottomPanelRef}
               style={{
-                height: bottomHeight,
+                flex: 1,
+                minWidth: 80,
                 display: 'flex',
-                background: '#1e1e2e',
-                overflow: 'hidden',
-                position: 'relative',
-                flexShrink: 0,
+                flexDirection: 'column',
+                overflowY: 'auto',
               }}
             >
-              {/* Custom input */}
-              <div
-                style={{
-                  width: `${inputWidthPercent}%`,
-                  minWidth: 80,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                }}
-              >
-                <div style={{ padding: '6px 12px', background: '#2d2d44', fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600, flexShrink: 0 }}>
-                  Custom Input (optional)
-                </div>
-                <textarea
-                  value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
-                  onCopy={preventCopyPaste}
-                  onPaste={preventCopyPaste}
-                  onContextMenu={preventCopyPaste}
-                  disabled={disqualified || proctoring?.isCameraDisconnected}
-                  placeholder="Enter custom input here..."
-                  style={{
-                    flex: 1, resize: 'none', background: '#1e1e2e', color: '#cdd6f4',
-                    border: 'none', padding: 12, fontFamily: 'monospace', fontSize: '0.8rem',
-                    outline: 'none',
-                    cursor: proctoring?.isCameraDisconnected ? 'not-allowed' : 'text',
-                  }}
-                />
+              <div style={{ padding: '6px 12px', background: '#18192a', borderBottom: '1px solid #282a40', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>
+                Output
               </div>
-
-              {/* Vertical Resizer Divider between Custom Input and Output (BUG-11) */}
-              <div
-                onMouseDown={handleSplitMouseDown}
-                style={{
-                  width: 6,
-                  cursor: 'col-resize',
-                  background: isDraggingSplit ? '#0E7C86' : '#2d2d44',
-                  borderLeft: '1px solid #333',
-                  borderRight: '1px solid #222',
-                  zIndex: 10,
-                  position: 'relative',
-                  flexShrink: 0,
-                  transition: 'background 150ms ease',
-                }}
-                title="Drag to resize Custom Input / Output width"
-                onMouseEnter={(e) => {
-                  if (!isDraggingSplit) e.currentTarget.style.background = 'rgba(14, 124, 134, 0.5)';
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDraggingSplit) e.currentTarget.style.background = '#2d2d44';
-                }}
-              />
-
-              {/* Output */}
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 80,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflowY: 'auto',
-                }}
-              >
-                <div style={{ padding: '6px 12px', background: '#2d2d44', fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600, flexShrink: 0 }}>
-                  Output
-                </div>
-                <div style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
-                  {runOutput && (
-                    <pre style={{ color: '#a6e3a1', fontFamily: 'monospace', fontSize: '0.8rem', margin: 0, whiteSpace: 'pre-wrap' }}>
-                      {runOutput}
-                    </pre>
-                  )}
-                  {runResults.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      {runResults.map((r, i) => (
-                        <TestCaseResult key={i} tc={r} index={i} />
-                      ))}
-                    </div>
-                  )}
-                  {!runOutput && runResults.length === 0 && (
-                    <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                      Click "▶ Run" to execute your code against test cases.
-                    </div>
-                  )}
-                </div>
+              <div style={{ flex: 1, padding: 12, overflowY: 'auto', background: '#13141f' }}>
+                {runOutput && (
+                  <pre style={{ color: '#a6e3a1', fontFamily: 'monospace', fontSize: '0.8rem', margin: 0, whiteSpace: 'pre-wrap' }}>
+                    {runOutput}
+                  </pre>
+                )}
+                {runResults.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    {runResults.map((r, i) => (
+                      <TestCaseResult key={i} tc={r} index={i} />
+                    ))}
+                  </div>
+                )}
+                {!runOutput && runResults.length === 0 && (
+                  <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                    Click "▶ Run" to execute your code against test cases.
+                  </div>
+                )}
               </div>
             </div>
           </div>
