@@ -158,8 +158,6 @@ export default function CandidateTestScreen() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('python');
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-  const [runResults, setRunResults] = useState([]);
-  const [runOutput, setRunOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [attemptedQuestions, setAttemptedQuestions] = useState(new Set()); // Set of questionIds that have been validated at least once
@@ -179,12 +177,11 @@ export default function CandidateTestScreen() {
   const languageRef = useRef('python');
   const activeQuestionRef = useRef(null);
 
-  // ── FEATURE-006: Tabbed Testcase & Test Result State ────────────────────────
-  const [selectedCaseTab, setSelectedCaseTab] = useState(0); // 0-indexed case tab
-  const [selectedResultTab, setSelectedResultTab] = useState(0); // 0-indexed result tab
+  // ── FEATURE-006 & BUG-56: Per-Question Tabbed Testcase & Test Result State ─
+  const [selectedCaseTabByQuestion, setSelectedCaseTabByQuestion] = useState({}); // { [qId]: number }
+  const [selectedResultTabByQuestion, setSelectedResultTabByQuestion] = useState({}); // { [qId]: number }
   const [customCasesByQuestion, setCustomCasesByQuestion] = useState({}); // { [qId]: string[][] }
-  const [runtimeMs, setRuntimeMs] = useState(null);
-  const [lastRunStatus, setLastRunStatus] = useState(null); // 'ACCEPTED' | 'WRONG_ANSWER' | 'RUNTIME_ERROR' | 'CUSTOM' | null
+  const [runDataByQuestion, setRunDataByQuestion] = useState({}); // { [qId]: { runResults, runOutput, runtimeMs, lastRunStatus } }
 
   // ── Resizable & Collapsible Questions Panel (BUG-10) ────────────────────────
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -386,6 +383,44 @@ export default function CandidateTestScreen() {
   activeQuestionRef.current = activeQuestion;
   codeRef.current = code;
   languageRef.current = language;
+
+  const activeQId = activeQuestion?._id;
+
+  const currentRunData = useMemo(() => {
+    if (!activeQId || !runDataByQuestion[activeQId]) {
+      return {
+        runResults: [],
+        runOutput: '',
+        runtimeMs: null,
+        lastRunStatus: null,
+      };
+    }
+    return runDataByQuestion[activeQId];
+  }, [activeQId, runDataByQuestion]);
+
+  const runResults = currentRunData.runResults || [];
+  const runOutput = currentRunData.runOutput || '';
+  const runtimeMs = currentRunData.runtimeMs ?? null;
+  const lastRunStatus = currentRunData.lastRunStatus ?? null;
+
+  const selectedCaseTab = (activeQId && selectedCaseTabByQuestion[activeQId]) ?? 0;
+  const selectedResultTab = (activeQId && selectedResultTabByQuestion[activeQId]) ?? 0;
+
+  const handleSelectCaseTab = useCallback((tabIdx) => {
+    if (!activeQuestionRef.current?._id) return;
+    setSelectedCaseTabByQuestion((prev) => ({
+      ...prev,
+      [activeQuestionRef.current._id]: tabIdx,
+    }));
+  }, []);
+
+  const handleSelectResultTab = useCallback((tabIdx) => {
+    if (!activeQuestionRef.current?._id) return;
+    setSelectedResultTabByQuestion((prev) => ({
+      ...prev,
+      [activeQuestionRef.current._id]: tabIdx,
+    }));
+  }, []);
 
   const visibleCases = useMemo(() => activeQuestion?.visibleTestCases || [], [activeQuestion]);
   const customCases = useMemo(() => {
@@ -595,8 +630,6 @@ export default function CandidateTestScreen() {
       saveCodeToBackend(activeQuestionRef.current._id, languageRef.current, codeRef.current);
     }
     setActiveQuestionIdx(newIdx);
-    setSelectedCaseTab(0);
-    setSelectedResultTab(0);
   }, [activeQuestionIdx, saveCodeToBackend, proctoring?.isCameraDisconnected]);
 
   // ── Custom Test Case Handlers (FEATURE-006) ──────────────────────────────────
@@ -609,7 +642,11 @@ export default function CandidateTestScreen() {
       ...prev,
       [activeQuestion._id]: nextCustom,
     }));
-    setSelectedCaseTab(visibleCases.length + nextCustom.length - 1);
+    const newTabIdx = visibleCases.length + nextCustom.length - 1;
+    setSelectedCaseTabByQuestion((prev) => ({
+      ...prev,
+      [activeQuestion._id]: newTabIdx,
+    }));
   }, [activeQuestion?._id, firstCaseLinesCount, visibleCases.length, customCasesByQuestion]);
 
   const handleCustomCaseLineChange = useCallback((customIdx, lineIdx, value) => {
@@ -676,15 +713,22 @@ export default function CandidateTestScreen() {
     !!session && !disqualified
   );
 
-  // ── Run code against visible test cases / custom testcase (FEATURE-006) ──────
+  // ── Run code against visible test cases / custom testcase (FEATURE-006 & BUG-56) ──────
   const handleRun = async () => {
     if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || !code) return;
-    saveCodeToBackend(activeQuestion._id, language, code);
+    const qId = activeQuestion._id;
+    saveCodeToBackend(qId, language, code);
     setIsRunning(true);
-    setRunResults([]);
-    setRunOutput('');
-    setLastRunStatus(null);
+    setRunDataByQuestion((prev) => ({
+      ...prev,
+      [qId]: {
+        runResults: [],
+        runOutput: '',
+        runtimeMs: null,
+        lastRunStatus: null,
+      },
+    }));
 
     const isCustomSelected = selectedCaseTab >= visibleCases.length;
     let customInputString = null;
@@ -701,34 +745,53 @@ export default function CandidateTestScreen() {
         ...(customInputString !== null ? { customInput: customInputString } : {}),
       };
 
-      const { data } = await api.runCode(activeQuestion._id, payload);
+      const { data } = await api.runCode(qId, payload);
       const results = data.visibleTestResults || [];
-      setRunOutput(data.output || '');
-      setRunResults(results);
-      setRuntimeMs(typeof data.runtimeMs === 'number' ? data.runtimeMs : 0);
+      const output = data.output || '';
+      const runtime = typeof data.runtimeMs === 'number' ? data.runtimeMs : 0;
 
+      let computedStatus = null;
       const hasError = results.some((r) => r.error);
       if (hasError) {
-        setLastRunStatus('RUNTIME_ERROR');
-        if (!isCustomSelected && activeQuestion?._id) {
-          setPassedVisibleByQuestion((prev) => ({ ...prev, [activeQuestion._id]: false }));
+        computedStatus = 'RUNTIME_ERROR';
+        if (!isCustomSelected) {
+          setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: false }));
         }
       } else if (data.isCustom || isCustomSelected) {
-        setLastRunStatus('CUSTOM');
+        computedStatus = 'CUSTOM';
       } else {
         const allPassed = results.length > 0 && results.every((r) => r.passed);
-        setLastRunStatus(allPassed ? 'ACCEPTED' : 'WRONG_ANSWER');
-        if (activeQuestion?._id) {
-          setPassedVisibleByQuestion((prev) => ({ ...prev, [activeQuestion._id]: allPassed }));
-        }
+        computedStatus = allPassed ? 'ACCEPTED' : 'WRONG_ANSWER';
+        setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: allPassed }));
       }
 
-      setSelectedResultTab(selectedCaseTab);
+      setRunDataByQuestion((prev) => ({
+        ...prev,
+        [qId]: {
+          runResults: results,
+          runOutput: output,
+          runtimeMs: runtime,
+          lastRunStatus: computedStatus,
+        },
+      }));
+
+      setSelectedResultTabByQuestion((prev) => ({
+        ...prev,
+        [qId]: selectedCaseTab,
+      }));
     } catch (err) {
-      setRunOutput(err.response?.data?.error || 'Execution failed');
-      setLastRunStatus('RUNTIME_ERROR');
-      if (!isCustomSelected && activeQuestion?._id) {
-        setPassedVisibleByQuestion((prev) => ({ ...prev, [activeQuestion._id]: false }));
+      const errOutput = err.response?.data?.error || 'Execution failed';
+      setRunDataByQuestion((prev) => ({
+        ...prev,
+        [qId]: {
+          runResults: [],
+          runOutput: errOutput,
+          runtimeMs: null,
+          lastRunStatus: 'RUNTIME_ERROR',
+        },
+      }));
+      if (!isCustomSelected) {
+        setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: false }));
       }
     } finally {
       setIsRunning(false);
@@ -850,8 +913,8 @@ export default function CandidateTestScreen() {
         let restoredCode = null;
 
         if (sub) {
-          if (sub.status === 'SUBMITTED' || sub.status === 'AUTO_SUBMITTED_TIME_UP') {
-            setSubmittedQuestions((prev) => new Set([...prev, activeQuestion._id]));
+          if (sub.isAttempted) {
+            setAttemptedQuestions((prev) => new Set([...prev, activeQuestion._id]));
           }
           if (sub.savedCodeByLanguage && sub.savedCodeByLanguage[language]) {
             restoredCode = sub.savedCodeByLanguage[language];
@@ -1491,7 +1554,7 @@ export default function CandidateTestScreen() {
                       <button
                         key={`admin-case-${idx}`}
                         type="button"
-                        onClick={() => setSelectedCaseTab(idx)}
+                        onClick={() => handleSelectCaseTab(idx)}
                         style={{
                           background: isSelected ? '#25273d' : 'transparent',
                           border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
@@ -1517,7 +1580,7 @@ export default function CandidateTestScreen() {
                       <button
                         key={`custom-case-${cIdx}`}
                         type="button"
-                        onClick={() => setSelectedCaseTab(tabIdx)}
+                        onClick={() => handleSelectCaseTab(tabIdx)}
                         style={{
                           background: isSelected ? '#25273d' : 'transparent',
                           border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
@@ -1781,7 +1844,7 @@ export default function CandidateTestScreen() {
                           <button
                             key={`res-tab-${idx}`}
                             type="button"
-                            onClick={() => setSelectedResultTab(idx)}
+                            onClick={() => handleSelectResultTab(idx)}
                             style={{
                               background: isSelected ? '#25273d' : 'transparent',
                               border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
@@ -1822,7 +1885,7 @@ export default function CandidateTestScreen() {
                           <button
                             key={`res-custom-${cIdx}`}
                             type="button"
-                            onClick={() => setSelectedResultTab(tabIdx)}
+                            onClick={() => handleSelectResultTab(tabIdx)}
                             style={{
                               background: isSelected ? '#25273d' : 'transparent',
                               border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
