@@ -357,11 +357,18 @@ export default function CandidateTestScreen() {
       setSession(s);
       setLanguage(s.test.supportedLanguages?.[0] || 'python');
 
-      // BUG-25: Populate draft cache & attempted state from stored submissions (if resuming / rejoining)
+      // BUG-25 & BUG-57: Populate draft cache, attempted state & visible progress from stored submissions
       if (s.submissions && Array.isArray(s.submissions)) {
+        const initProgress = {};
         s.submissions.forEach((sub) => {
           if (sub.isAttempted) {
             setAttemptedQuestions((prev) => new Set([...prev, sub.questionId]));
+          }
+          if (typeof sub.visibleTestCasesPassed === 'number') {
+            initProgress[sub.questionId] = {
+              passed: sub.visibleTestCasesPassed,
+              total: sub.visibleTestCasesTotal || 0,
+            };
           }
           if (sub.savedCodeByLanguage) {
             Object.entries(sub.savedCodeByLanguage).forEach(([lang, c]) => {
@@ -372,6 +379,9 @@ export default function CandidateTestScreen() {
             sessionStorage.setItem(`draft_${s.test._id}_${sub.questionId}_${sub.language}`, sub.code);
           }
         });
+        if (Object.keys(initProgress).length > 0) {
+          setQuestionProgress((prev) => ({ ...prev, ...initProgress }));
+        }
       }
     } catch (err) {
       console.error('Failed to parse test session:', err);
@@ -680,11 +690,19 @@ export default function CandidateTestScreen() {
     setCode(newCode);
     codeRef.current = newCode;
 
-    // Reset visible test cases passing gate on code modification (FEATURE-007)
+    // Reset visible test cases passing gate and progress on code modification (FEATURE-007 & BUG-57)
     if (activeQuestionRef.current?._id) {
+      const qId = activeQuestionRef.current._id;
       setPassedVisibleByQuestion((prev) => ({
         ...prev,
-        [activeQuestionRef.current._id]: false,
+        [qId]: false,
+      }));
+      setQuestionProgress((prev) => ({
+        ...prev,
+        [qId]: {
+          passed: 0,
+          total: activeQuestionRef.current?.visibleTestCases?.length || prev[qId]?.total || 0,
+        },
       }));
     }
 
@@ -713,7 +731,7 @@ export default function CandidateTestScreen() {
     !!session && !disqualified
   );
 
-  // ── Run code against visible test cases / custom testcase (FEATURE-006 & BUG-56) ──────
+  // ── Run code against visible test cases / custom testcase (FEATURE-006 & BUG-56 & BUG-57) ──────
   const handleRun = async () => {
     if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || !code) return;
@@ -756,6 +774,12 @@ export default function CandidateTestScreen() {
         computedStatus = 'RUNTIME_ERROR';
         if (!isCustomSelected) {
           setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: false }));
+          const passedCount = results.filter((r) => r && r.passed).length;
+          const totalCount = activeQuestion.visibleTestCases?.length || results.length || 0;
+          setQuestionProgress((prev) => ({
+            ...prev,
+            [qId]: { passed: passedCount, total: totalCount },
+          }));
         }
       } else if (data.isCustom || isCustomSelected) {
         computedStatus = 'CUSTOM';
@@ -763,6 +787,12 @@ export default function CandidateTestScreen() {
         const allPassed = results.length > 0 && results.every((r) => r.passed);
         computedStatus = allPassed ? 'ACCEPTED' : 'WRONG_ANSWER';
         setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: allPassed }));
+        const passedCount = results.filter((r) => r && r.passed).length;
+        const totalCount = activeQuestion.visibleTestCases?.length || results.length || 0;
+        setQuestionProgress((prev) => ({
+          ...prev,
+          [qId]: { passed: passedCount, total: totalCount },
+        }));
       }
 
       setRunDataByQuestion((prev) => ({
@@ -792,6 +822,10 @@ export default function CandidateTestScreen() {
       }));
       if (!isCustomSelected) {
         setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: false }));
+        setQuestionProgress((prev) => ({
+          ...prev,
+          [qId]: { passed: 0, total: activeQuestion.visibleTestCases?.length || 0 },
+        }));
       }
     } finally {
       setIsRunning(false);
@@ -915,6 +949,19 @@ export default function CandidateTestScreen() {
         if (sub) {
           if (sub.isAttempted) {
             setAttemptedQuestions((prev) => new Set([...prev, activeQuestion._id]));
+          }
+          if (typeof sub.visibleTestCasesPassed === 'number' && sub.visibleTestCasesPassed > 0) {
+            const total = sub.visibleTestCasesTotal || activeQuestion.visibleTestCases?.length || 0;
+            setQuestionProgress((prev) => ({
+              ...prev,
+              [activeQuestion._id]: {
+                passed: sub.visibleTestCasesPassed,
+                total,
+              },
+            }));
+            if (total > 0 && sub.visibleTestCasesPassed === total) {
+              setPassedVisibleByQuestion((prev) => ({ ...prev, [activeQuestion._id]: true }));
+            }
           }
           if (sub.savedCodeByLanguage && sub.savedCodeByLanguage[language]) {
             restoredCode = sub.savedCodeByLanguage[language];
