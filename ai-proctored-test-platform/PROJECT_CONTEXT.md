@@ -390,6 +390,7 @@ docker-compose up --build
 17. **Live Malpractice Violation Counter in AI Test Footer (FEATURE-003)**: Added a real-time malpractice counter badge (`#ai-violation-counter`) in the Candidate AI Test footer displaying `⚠️ Violations: X`. Incorporates dynamic severity color states (Green for 0, Yellow for 1–2, Red for 3+), hover tooltip, initial database fetch via `GET /api/v1/proctoring/:testId/violation-count`, and real-time socket updates via `candidate:violation-updated`.
 18. **Shared Proctoring Footer Across All Candidate Test Screens (FEATURE-004)**: Extracted and consolidated the persistent bottom proctoring status bar into a single source of truth (`TestFooter.jsx`). Consumed across both Standard Coding Tests (`CandidateTestScreen.jsx` for SPOJ, JAVASCRIPT, REACT) and AI Tests (`CandidateAITestScreen.jsx`), providing unified proctoring telemetry, REC indicator, live violation counter, advisory banner, and system health status.
 19. **Join Test Room Input Alignment Consistency (BUG-50)**: Synchronized "Room Password" input field styling (`CandidateJoinRoom.jsx`) to `textAlign: 'center'`, matching the "Room Code" field font, letter-spacing (`0.15em`), and size (`1.2rem`) for visual consistency and centered placeholder alignment.
+20. **Post-Transition (1s Delay) Evidence Capture for Fullscreen Exit & Tab Switch (BUG-51)**: Switched violation screenshot capture in `useProctoring.js` from pre-transition rolling buffer to a scheduled 1000ms post-transition screen grab from the live `__proctoring_screen_video` monitor stream. Captures the destination window/tab/app navigated to while logging and dispatching the violation immediately with the exact detection timestamp (`detectedAt`).
 
 ---
 
@@ -408,7 +409,8 @@ docker-compose up --build
 
 ### 2026-09-04
 - Fixed BUG-50: Center-aligned "Room Password" input field text and placeholder in `CandidateJoinRoom.jsx` to match "Room Code" field styling (`textAlign: 'center'`, `fontFamily: 'monospace'`, `fontSize: '1.2rem'`, `letterSpacing: '0.15em'`).
-- Preserved all candidate room join authentication, late-join request lifecycle, and manual override handling without regressions.
+- Implemented BUG-51: Switched evidence capture for `FULLSCREEN_EXIT` and `TAB_SWITCH` in `useProctoring.js` to 1000ms post-transition screen grab, capturing the destination application/tab while preserving immediate event dispatch, watermarking, and detection timestamps.
+- Preserved all candidate room join authentication, late-join request lifecycle, preview iframe focus exemptions (BUG-48), and proctoring locks.
 
 ### 2026-09-03
 - Resolved BUG-48 through BUG-52 across candidate test-taking and admin management flows.

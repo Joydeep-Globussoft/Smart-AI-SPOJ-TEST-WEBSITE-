@@ -181,42 +181,108 @@ export function useProctoring({
   }, [enabled, captureLatestScreenFrame]);
 
   // ── Helper: Capture Real-time Proof Screenshot for any Violation ──────────────
-  const captureViolationProof = useCallback((violationType, timestampDate = new Date()) => {
+  const captureViolationProof = useCallback(async (violationType, timestampDate = new Date()) => {
     try {
-      // ASSUMPTION: 'TAB_SWITCH', 'FULLSCREEN_EXIT', 'CAMERA_DISCONNECTED', and 'OTHER' capture candidate's monitor/screen display evidence.
-      // Physical presence violations ('PHONE_DETECTED', 'MULTIPLE_FACES', 'NO_FACE_15MIN') capture webcam frames.
+      // Screen monitor violations capture candidate's OS display/monitor (never webcam)
       const isScreenViolation =
         violationType === 'TAB_SWITCH' ||
         violationType === 'FULLSCREEN_EXIT' ||
-        violationType === 'CAMERA_DISCONNECTED' ||
+        violationType === 'SCREEN_SNAPSHOT' ||
         violationType === 'OTHER';
 
-      // 1. Screen Monitor Capture for TAB_SWITCH, FULLSCREEN_EXIT, and OTHER (BUG-13, Rolling Buffer & DOM Fallback)
+      // 1. Screen Monitor Capture for TAB_SWITCH, FULLSCREEN_EXIT, SCREEN_SNAPSHOT, and OTHER (BUG-13, BUG-51)
       if (isScreenViolation) {
-        let source = null;
         let sw = 0;
         let sh = 0;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        let drewScreen = false;
 
-        if (screenVideoRef.current && screenVideoRef.current.readyState >= 2 && screenVideoRef.current.videoWidth > 0) {
-          source = screenVideoRef.current;
-          sw = screenVideoRef.current.videoWidth;
-          sh = screenVideoRef.current.videoHeight;
-        } else if (lastGoodScreenCanvasRef.current && lastGoodScreenCanvasRef.current.width > 0) {
-          // Use rolling cached frame from immediately before the transition event
-          source = lastGoodScreenCanvasRef.current;
-          sw = lastGoodScreenCanvasRef.current.width;
-          sh = lastGoodScreenCanvasRef.current.height;
+        // A. Primary Approach: ImageCapture.grabFrame on active Entire Screen track (Hardware frame in Chromium)
+        const screenStream = getScreenStream();
+        if (screenStream && screenStream.active) {
+          const track = screenStream.getVideoTracks()[0];
+          if (track && track.readyState === 'live') {
+            if (typeof window !== 'undefined' && typeof window.ImageCapture === 'function') {
+              try {
+                const imageCapture = new window.ImageCapture(track);
+                const bitmap = await imageCapture.grabFrame();
+                if (bitmap && bitmap.width > 0 && bitmap.height > 0) {
+                  sw = bitmap.width;
+                  sh = bitmap.height;
+                  canvas.width = sw;
+                  canvas.height = sh;
+                  ctx.drawImage(bitmap, 0, 0, sw, sh);
+                  drewScreen = true;
+                }
+              } catch (icErr) {
+                console.debug('[Proctoring] ImageCapture.grabFrame fallback:', icErr.message);
+              }
+            }
+          }
         }
 
-        if (source && sw > 0 && sh > 0) {
-          const canvas = document.createElement('canvas');
+        // B. Secondary Approach: Active <video> element
+        if (!drewScreen) {
+          let screenVideo = screenVideoRef.current;
+          if (!screenVideo) {
+            screenVideo = document.getElementById('__proctoring_screen_video');
+          }
+          if (!screenVideo && screenStream && screenStream.active) {
+            screenVideo = document.createElement('video');
+            screenVideo.id = '__proctoring_screen_video';
+            screenVideo.autoplay = true;
+            screenVideo.muted = true;
+            screenVideo.playsInline = true;
+            screenVideo.srcObject = screenStream;
+            screenVideo.style.position = 'fixed';
+            screenVideo.style.top = '0px';
+            screenVideo.style.left = '0px';
+            screenVideo.style.width = '320px';
+            screenVideo.style.height = '180px';
+            screenVideo.style.opacity = '0.001';
+            screenVideo.style.pointerEvents = 'none';
+            screenVideo.style.zIndex = '-9999';
+            document.body.appendChild(screenVideo);
+            screenVideoRef.current = screenVideo;
+            screenVideo.play().catch(() => {});
+          }
+
+          if (screenVideo && screenVideo.readyState >= 2 && screenVideo.videoWidth > 0) {
+            sw = screenVideo.videoWidth;
+            sh = screenVideo.videoHeight;
+            canvas.width = sw;
+            canvas.height = sh;
+            ctx.drawImage(screenVideo, 0, 0, sw, sh);
+            drewScreen = true;
+          }
+        }
+
+        // C. Tertiary Approach: Cached rolling frame
+        if (!drewScreen && lastGoodScreenCanvasRef.current && lastGoodScreenCanvasRef.current.width > 0) {
+          sw = lastGoodScreenCanvasRef.current.width;
+          sh = lastGoodScreenCanvasRef.current.height;
           canvas.width = sw;
           canvas.height = sh;
-          const ctx = canvas.getContext('2d');
+          ctx.drawImage(lastGoodScreenCanvasRef.current, 0, 0, sw, sh);
+          drewScreen = true;
+        }
 
-          // Draw genuine screen content behind watermark
-          ctx.drawImage(source, 0, 0, sw, sh);
-
+        // D. Fallback Screen Banner (if screen stream completely unavailable, NEVER fall through to webcam)
+        if (!drewScreen) {
+          sw = 1280;
+          sh = 720;
+          canvas.width = sw;
+          canvas.height = sh;
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, sw, sh);
+          ctx.fillStyle = '#EF4444';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')} (SCREEN CAPTURE)`, 40, 100);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '15px sans-serif';
+          ctx.fillText('Screen monitor stream unavailable at capture moment', 40, 140);
+        } else {
           // Overlay proctoring violation watermark header
           ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
           ctx.fillRect(0, 0, sw, 48);
@@ -233,12 +299,12 @@ export function useProctoring({
           const displayTime = timestampDate.toLocaleTimeString();
           const displayDate = timestampDate.toLocaleDateString();
           ctx.fillText(`Time: ${displayTime} · ${displayDate} | Candidate: ${candidateId} | Room: ${roomId} | Screen Evidence`, 18, sh - 12);
-
-          return canvas.toDataURL('image/jpeg', 0.85);
         }
+
+        return canvas.toDataURL('image/jpeg', 0.85);
       }
 
-      // 2. Webcam Capture for PHONE_DETECTED, MULTIPLE_FACES, NO_FACE_15MIN (or fallback)
+      // 2. Webcam Capture for PHONE_DETECTED, MULTIPLE_FACES, NO_FACE_15MIN, CAMERA_DISCONNECTED
       if (videoRef.current && videoRef.current.readyState >= 2) {
         const vw = videoRef.current.videoWidth || 640;
         const vh = videoRef.current.videoHeight || 480;
@@ -295,13 +361,13 @@ export function useProctoring({
   }, [candidateId, testId, roomId]);
 
   // ── Helper: Capture Webcam Screenshot ───────────────────────────────────────
-  const captureWebcamScreenshot = useCallback((violationType = 'CAMERA_CAPTURE') => {
-    return captureViolationProof(violationType);
+  const captureWebcamScreenshot = useCallback(async (violationType = 'CAMERA_CAPTURE') => {
+    return await captureViolationProof(violationType);
   }, [captureViolationProof]);
 
   // ── Helper: Capture Screen Snapshot ─────────────────────────────────────────
-  const captureScreenSnapshot = useCallback(() => {
-    return captureViolationProof('SCREEN_SNAPSHOT');
+  const captureScreenSnapshot = useCallback(async () => {
+    return await captureViolationProof('SCREEN_SNAPSHOT');
   }, [captureViolationProof]);
 
   // ── Helper: Send Violation to API ───────────────────────────────────────────
@@ -336,12 +402,12 @@ export function useProctoring({
     lastViolationTimeRef.current[violationType] = now;
 
     const detectedAt = new Date(now).toISOString();
-    const proof = screenshotBase64 || captureViolationProof(violationType, new Date(now));
+    const proof = screenshotBase64 || (await captureViolationProof(violationType, new Date(now)));
     await sendViolationApi(violationType, proof, detectedAt);
   }, [captureViolationProof, sendViolationApi]);
 
-  // ── Immediate Pre-Transition Screen-Share Capture for TAB_SWITCH & FULLSCREEN_EXIT ──
-  const triggerDelayedScreenViolation = useCallback(async (violationType, onImmediate) => {
+  // ── Post-Transition (1s Delay) Screen Capture for TAB_SWITCH & FULLSCREEN_EXIT (BUG-51) ──
+  const triggerDelayedScreenViolation = useCallback((violationType, onImmediate) => {
     const now = Date.now();
     const lastTime = lastViolationTimeRef.current[violationType] || 0;
     if (now - lastTime < 5000) {
@@ -351,7 +417,8 @@ export function useProctoring({
     lastViolationTimeRef.current[violationType] = now;
 
     // 1. Immediately record detection timestamp
-    const detectedAt = new Date(now).toISOString();
+    const detectionDate = new Date(now);
+    const detectedAt = detectionDate.toISOString();
 
     // 2. Immediately execute synchronous immediate handlers (toast banner, socket emit, candidate warning)
     if (typeof onImmediate === 'function') {
@@ -362,13 +429,26 @@ export function useProctoring({
       }
     }
 
-    // 3. Ensure we have the latest screen frame
-    await captureLatestScreenFrame();
-    const proof = captureViolationProof(violationType, new Date(now));
+    // 3. Schedule 1000ms post-transition screenshot capture (BUG-51: captures what candidate switched TO)
+    const timerId = setTimeout(async () => {
+      delayedViolationTimeoutsRef.current.delete(timerId);
+      let proof = null;
+      try {
+        proof = await captureViolationProof(violationType, detectionDate);
+      } catch (captureErr) {
+        console.error(`[Proctoring] Post-transition screen capture error for ${violationType}:`, captureErr);
+      }
 
-    // 4. Send API violation immediately with genuine pre-transition screen proof
-    sendViolationApi(violationType, proof, detectedAt);
-  }, [captureLatestScreenFrame, captureViolationProof, sendViolationApi]);
+      // 4. Send API violation with post-transition screenshot proof (or null fallback) and original detection timestamp
+      try {
+        await sendViolationApi(violationType, proof, detectedAt);
+      } catch (apiErr) {
+        console.error(`[Proctoring] Failed to submit delayed violation for ${violationType}:`, apiErr);
+      }
+    }, 1000);
+
+    delayedViolationTimeoutsRef.current.add(timerId);
+  }, [captureViolationProof, sendViolationApi]);
 
   /* ==========================================================================
    * ARCHITECTURAL DIRECTIVE & REGRESSION GUARD: WEBCAM DISCONNECT VS NO FACE
@@ -403,7 +483,7 @@ export function useProctoring({
    * ========================================================================== */
 
   // ── Camera Disconnect Handler (Immediate Fullscreen Blocking & Lockdown) ────
-  const handleCameraDisconnected = useCallback(() => {
+  const handleCameraDisconnected = useCallback(async () => {
     if (isCameraDisconnectedRef.current) return;
     isCameraDisconnectedRef.current = true;
     setIsCameraDisconnected(true);
@@ -432,7 +512,7 @@ export function useProctoring({
     lastVideoCurrentTimeRef.current = -1;
 
     console.warn('[Proctoring] CAMERA_DISCONNECTED triggered! Blocking screen and alerting server.');
-    const proof = captureViolationProof('CAMERA_DISCONNECTED');
+    const proof = await captureViolationProof('CAMERA_DISCONNECTED');
 
     const curCandidateId = candidateIdRef.current || candidateId;
     const curTestId = testIdRef.current || testId;
@@ -980,11 +1060,11 @@ export function useProctoring({
       // Detect mid-test screen share revocation (Requirement 4)
       const track = stream.getVideoTracks()[0];
       if (track) {
-        track.onended = () => {
+        track.onended = async () => {
           // ASSUMPTION: If candidate stops screen sharing mid-test via browser UI ("Stop sharing"), treat as FULLSCREEN_EXIT violation and warn candidate.
           console.warn('[Proctoring] Screen share stream was stopped mid-test!');
           toast.error('⚠️ Screen sharing was disconnected! Continuous screen sharing is mandatory.', { duration: 8000 });
-          const proof = captureViolationProof('FULLSCREEN_EXIT');
+          const proof = await captureViolationProof('FULLSCREEN_EXIT');
           reportViolation('FULLSCREEN_EXIT', proof);
         };
       }
