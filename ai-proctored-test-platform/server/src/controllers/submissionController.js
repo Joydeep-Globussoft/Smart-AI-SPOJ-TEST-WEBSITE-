@@ -44,6 +44,46 @@ const broadcastTentativeTime = async (io, testId, targetRoomId = null) => {
   }
 };
 
+// BUG-54: Helper to find any active, unsubmitted, unexpired exam session for a candidate on another test
+const getActiveExamSessionForCandidate = async (candidateId, excludeTestId = null) => {
+  if (!candidateId) return null;
+  const now = new Date();
+
+  const query = {
+    candidateId,
+    candidateStartTime: { $ne: null },
+    status: 'IN_PROGRESS',
+    candidateEndTime: { $gt: now },
+  };
+  if (excludeTestId) {
+    query.testId = { $ne: excludeTestId };
+  }
+
+  const activeSubmissions = await Submission.find(query)
+    .populate('testId', 'title testType status durationMinutes')
+    .lean();
+
+  if (!activeSubmissions || activeSubmissions.length === 0) {
+    return null;
+  }
+
+  for (const sub of activeSubmissions) {
+    const parentTest = sub.testId;
+    if (!parentTest || parentTest.status === 'ENDED') {
+      continue;
+    }
+    return {
+      testId: parentTest._id,
+      title: parentTest.title || 'Ongoing Test',
+      testType: parentTest.testType,
+      candidateStartTime: sub.candidateStartTime,
+      candidateEndTime: sub.candidateEndTime,
+    };
+  }
+
+  return null;
+};
+
 // ── POST /rooms/join ──────────────────────────────────────────────────────────
 // Body: { roomCode, roomPassword }
 // Response: { test, room, instructions }
@@ -57,6 +97,20 @@ const joinRoom = async (req, res, next) => {
 
     const room = await Room.findOne({ roomCode });
     if (!room) return res.status(404).json({ error: 'Room not found' });
+
+    // BUG-54: Prevent candidate from joining a new room/test if they already have an active session on another test
+    const activeOtherSession = await getActiveExamSessionForCandidate(req.user.id, room.testId);
+    if (activeOtherSession) {
+      return res.status(409).json({
+        error: `You have an active exam in progress ("${activeOtherSession.title}"). Please finish or exit it before starting another test.`,
+        code: 'ACTIVE_SESSION_EXISTS_OTHER_TEST',
+        activeTest: {
+          _id: activeOtherSession.testId,
+          title: activeOtherSession.title,
+          testType: activeOtherSession.testType,
+        },
+      });
+    }
 
     // BUG-22: Check parent test status first — block joins if test is not LIVE regardless of room status or timer
     const test = await Test.findById(room.testId).populate('questionSetId');
@@ -174,6 +228,20 @@ const startAttempt = async (req, res, next) => {
     if (!test) return res.status(404).json({ error: 'Test not found' });
     if (test.status !== 'LIVE') {
       return res.status(403).json({ error: 'Test is not currently live' });
+    }
+
+    // BUG-54: Prevent candidate from starting a test if they already have an active session on another test
+    const activeOtherSession = await getActiveExamSessionForCandidate(candidateId, testId);
+    if (activeOtherSession) {
+      return res.status(409).json({
+        error: `You have an active exam in progress ("${activeOtherSession.title}"). Please finish or exit it before starting another test.`,
+        code: 'ACTIVE_SESSION_EXISTS_OTHER_TEST',
+        activeTest: {
+          _id: activeOtherSession.testId,
+          title: activeOtherSession.title,
+          testType: activeOtherSession.testType,
+        },
+      });
     }
 
     const now = new Date();

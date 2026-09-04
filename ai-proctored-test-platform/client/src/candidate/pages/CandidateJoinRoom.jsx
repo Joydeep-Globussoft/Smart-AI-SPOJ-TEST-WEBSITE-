@@ -73,11 +73,13 @@ export default function CandidateJoinRoom() {
       const msg = err.response?.data?.error || 'Failed to join room';
       setError(msg);
 
-      if (err.response?.data?.roomId) {
-        setTargetRoomId(err.response.data.roomId);
-      }
-      if (err.response?.data?.lateJoinRequestedAt) {
-        setIsLateJoinRequested(true);
+      if (err.response?.data?.code !== 'ACTIVE_SESSION_EXISTS_OTHER_TEST') {
+        if (err.response?.data?.roomId) {
+          setTargetRoomId(err.response.data.roomId);
+        }
+        if (err.response?.data?.lateJoinRequestedAt) {
+          setIsLateJoinRequested(true);
+        }
       }
     } finally {
       setLoading(false);
@@ -126,10 +128,12 @@ export default function CandidateJoinRoom() {
         </p>
 
         {error && (
-          <div className="alert alert-danger">
-            {error.includes('expired') || error.includes('Expired')
-              ? '🔒 Room access window has closed. Contact your proctor for assistance.'
-              : error}
+          <div className="alert alert-danger" id="join-room-error-alert" style={{ lineHeight: 1.5 }}>
+            {error.includes('active exam') || error.includes('active session')
+              ? `⚠️ ${error}`
+              : (error.includes('expired') || error.includes('Expired')
+                  ? '🔒 Room access window has closed. Contact your proctor for assistance.'
+                  : error)}
           </div>
         )}
 

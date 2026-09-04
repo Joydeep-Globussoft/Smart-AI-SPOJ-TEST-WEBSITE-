@@ -566,7 +566,11 @@ export default function CandidateInstructions() {
               )}
             </div>
 
-            {error && <div className="alert alert-danger" style={{ fontSize: '0.8rem' }}>{error}</div>}
+            {error && (
+              <div className="alert alert-danger" id="instructions-error-alert" style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
+                {error.includes('active exam') ? `⚠️ ${error}` : error}
+              </div>
+            )}
 
             <div className="card" style={{ background: '#1A2B3C', borderColor: '#1A2B3C' }}>
               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginBottom: 12 }}>
