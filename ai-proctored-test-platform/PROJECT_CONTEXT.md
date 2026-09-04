@@ -389,6 +389,7 @@ docker-compose up --build
 16. **Webcam Disconnected Submit All Flow (BUG-002)**: Hardened `handleSubmitAll` in `CandidateAITestScreen.jsx` and `CandidateTestScreen.jsx` so candidates with webcam hardware disconnections can finalize their exam. Includes all-question file/promptLog persistence, reactive loading states (`isSubmittingAllState`), `sessionStorage` completion flag, and immediate redirect to `/candidate/complete`.
 17. **Live Malpractice Violation Counter in AI Test Footer (FEATURE-003)**: Added a real-time malpractice counter badge (`#ai-violation-counter`) in the Candidate AI Test footer displaying `⚠️ Violations: X`. Incorporates dynamic severity color states (Green for 0, Yellow for 1–2, Red for 3+), hover tooltip, initial database fetch via `GET /api/v1/proctoring/:testId/violation-count`, and real-time socket updates via `candidate:violation-updated`.
 18. **Shared Proctoring Footer Across All Candidate Test Screens (FEATURE-004)**: Extracted and consolidated the persistent bottom proctoring status bar into a single source of truth (`TestFooter.jsx`). Consumed across both Standard Coding Tests (`CandidateTestScreen.jsx` for SPOJ, JAVASCRIPT, REACT) and AI Tests (`CandidateAITestScreen.jsx`), providing unified proctoring telemetry, REC indicator, live violation counter, advisory banner, and system health status.
+19. **Join Test Room Input Alignment Consistency (BUG-50)**: Synchronized "Room Password" input field styling (`CandidateJoinRoom.jsx`) to `textAlign: 'center'`, matching the "Room Code" field font, letter-spacing (`0.15em`), and size (`1.2rem`) for visual consistency and centered placeholder alignment.
 
 ---
 
@@ -404,6 +405,10 @@ docker-compose up --build
 ---
 
 ## 10. Session Log
+
+### 2026-09-04
+- Fixed BUG-50: Center-aligned "Room Password" input field text and placeholder in `CandidateJoinRoom.jsx` to match "Room Code" field styling (`textAlign: 'center'`, `fontFamily: 'monospace'`, `fontSize: '1.2rem'`, `letterSpacing: '0.15em'`).
+- Preserved all candidate room join authentication, late-join request lifecycle, and manual override handling without regressions.
 
 ### 2026-09-03
 - Resolved BUG-48 through BUG-52 across candidate test-taking and admin management flows.

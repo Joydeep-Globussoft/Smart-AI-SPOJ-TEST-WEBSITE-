@@ -230,7 +230,7 @@ export default function CandidateJoinRoom() {
               placeholder="Provided by proctor"
               required
               autoComplete="off"
-              style={{ fontFamily: 'monospace', letterSpacing: '0.1em' }}
+              style={{ fontFamily: 'monospace', fontSize: '1.2rem', letterSpacing: '0.15em', textAlign: 'center' }}
             />
           </div>
 
