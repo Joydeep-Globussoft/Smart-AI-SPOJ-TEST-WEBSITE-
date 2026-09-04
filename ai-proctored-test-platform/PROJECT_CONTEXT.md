@@ -392,6 +392,7 @@ docker-compose up --build
 19. **Join Test Room Input Alignment Consistency (BUG-50)**: Synchronized "Room Password" input field styling (`CandidateJoinRoom.jsx`) to `textAlign: 'center'`, matching the "Room Code" field font, letter-spacing (`0.15em`), and size (`1.2rem`) for visual consistency and centered placeholder alignment.
 20. **Post-Transition (1s Delay) Evidence Capture for Fullscreen Exit & Tab Switch (BUG-51)**: Switched violation screenshot capture in `useProctoring.js` from pre-transition rolling buffer to a scheduled 1000ms post-transition screen grab from the live `__proctoring_screen_video` monitor stream. Captures the destination window/tab/app navigated to while logging and dispatching the violation immediately with the exact detection timestamp (`detectedAt`).
 21. **Navbar Width Flicker & Scrollbar-Gutter Layout Stability (BUG-52)**: Added `scrollbar-gutter: stable;` to `html` and enforced `width: 100%` on `.navbar` in `global.css`. Eliminates horizontal navbar resizing/flickering caused by vertical scrollbars appearing/disappearing between pages of varying content heights.
+22. **Single Exam Session Enforcement & Timer Continuation (BUG-53)**: Enforced strict single-active-session policy per candidate test attempt. When a candidate re-logs in or resumes an ongoing exam from a new tab/window, the backend preserves original `candidateStartTime` and `candidateEndTime` without timer reset or progress loss, generates a new `submissionSessionId`, and emits a `session:superseded` socket event. Previous tabs display a blocking `SessionSupersededOverlay.jsx` modal (`#session-superseded-overlay`) and disable interactions.
 
 ---
 
@@ -412,6 +413,7 @@ docker-compose up --build
 - Fixed BUG-50: Center-aligned "Room Password" input field text and placeholder in `CandidateJoinRoom.jsx` to match "Room Code" field styling (`textAlign: 'center'`, `fontFamily: 'monospace'`, `fontSize: '1.2rem'`, `letterSpacing: '0.15em'`).
 - Implemented BUG-51: Switched evidence capture for `FULLSCREEN_EXIT` and `TAB_SWITCH` in `useProctoring.js` to 1000ms post-transition screen grab, capturing the destination application/tab while preserving immediate event dispatch, watermarking, and detection timestamps.
 - Resolved BUG-52: Fixed top navigation bar width flicker across admin pages by adding `scrollbar-gutter: stable;` on `html` and `width: 100%` on `.navbar` in `global.css`.
+- Fixed BUG-53: Single-session enforcement and timer continuation across candidate reconnect/re-login. Preserved immutable server start/end times (`candidateStartTime`, `candidateEndTime`) in `submissionController.js`, generated unique `submissionSessionId`, emitted `session:superseded` socket event, and rendered full-screen blocking `SessionSupersededOverlay.jsx` on invalidated tabs with zero code loss. Passed 17/17 QA tests.
 - Preserved all candidate room join authentication, late-join request lifecycle, preview iframe focus exemptions (BUG-48), and proctoring locks.
 
 ### 2026-09-03

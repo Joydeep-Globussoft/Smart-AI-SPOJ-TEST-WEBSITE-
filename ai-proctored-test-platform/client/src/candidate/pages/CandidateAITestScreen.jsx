@@ -14,11 +14,13 @@ import {
   onCandidateViolationUpdated, offCandidateViolationUpdated,
   onCandidateDisqualified, offCandidateDisqualified,
   onTestEnded, offTestEnded,
+  onSessionSuperseded, offSessionSuperseded,
 } from '../../services/socketClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
+import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import TestFooter from '../components/TestFooter';
 import Editor from '@monaco-editor/react';
@@ -358,6 +360,8 @@ export default function CandidateAITestScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedQuestions, setSubmittedQuestions] = useState(new Set());
   const [disqualified, setDisqualified] = useState(false);
+  const [isSuperseded, setIsSuperseded] = useState(false);
+  const [supersededMessage, setSupersededMessage] = useState('');
   const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
@@ -603,10 +607,24 @@ export default function CandidateAITestScreen() {
       handleTimerExpire();
     };
 
+    const onSuperseded = (data) => {
+      if (
+        data?.testId === session?.test?._id &&
+        data?.newSessionId &&
+        session?.submissionSessionId &&
+        data.newSessionId !== session.submissionSessionId
+      ) {
+        console.warn('[Session] Exam session superseded by new session:', data.newSessionId);
+        setIsSuperseded(true);
+        if (data.message) setSupersededMessage(data.message);
+      }
+    };
+
     onCandidateWarning(onWarning);
     onCandidateViolationUpdated(onViolationUpdated);
     onCandidateDisqualified(onDisqualify);
     onTestEnded(onEnded);
+    onSessionSuperseded(onSuperseded);
 
     return () => {
       toast.dismiss();
@@ -614,8 +632,9 @@ export default function CandidateAITestScreen() {
       offCandidateViolationUpdated(onViolationUpdated);
       offCandidateDisqualified(onDisqualify);
       offTestEnded(onEnded);
+      offSessionSuperseded(onSuperseded);
     };
-  }, [handleTimerExpire, showWarning]);
+  }, [session?.test?._id, session?.submissionSessionId, handleTimerExpire, showWarning]);
 
   // Autosave files every 30s (NFR §13 Availability)
   useAutosave(
@@ -2298,6 +2317,12 @@ export default function CandidateAITestScreen() {
         onSubmitAll={handleSubmitAll}
         isSubmitting={isSubmittingAllState}
         videoRef={proctoring?.videoRef}
+      />
+
+      {/* Session Superseded Full-Screen Blocking Overlay (BUG-53) */}
+      <SessionSupersededOverlay
+        isVisible={isSuperseded}
+        message={supersededMessage}
       />
     </div>
   );

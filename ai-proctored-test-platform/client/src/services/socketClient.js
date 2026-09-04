@@ -118,4 +118,8 @@ export const offLateJoinDismissed = (cb) => { socket?.off('candidate:lateJoinDis
 export const onLateJoinProcessed = (cb) => { socket?.on('candidate:lateJoinProcessed', cb); };
 export const offLateJoinProcessed = (cb) => { socket?.off('candidate:lateJoinProcessed', cb); };
 
+// ── Single Session Invalidation (BUG-53) ──────────────────────────────────────
+export const onSessionSuperseded = (cb) => { socket?.on('session:superseded', cb); };
+export const offSessionSuperseded = (cb) => { socket?.off('session:superseded', cb); };
+
 export default { initSocket, getSocket, disconnectSocket };

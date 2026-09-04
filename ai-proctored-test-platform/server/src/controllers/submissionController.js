@@ -177,8 +177,34 @@ const startAttempt = async (req, res, next) => {
     }
 
     const now = new Date();
-    const candidateStartTime = now;
-    const candidateEndTime = new Date(now.getTime() + test.durationMinutes * 60 * 1000);
+    const crypto = require('crypto');
+    const submissionSessionId = crypto.randomUUID();
+
+    // Check if candidate already has active attempt for this test (BUG-53 Single-Session Enforcement)
+    const existingSubmissions = await Submission.find({ candidateId, testId });
+    const hasStartedAttempt = existingSubmissions.some((s) => Boolean(s.candidateStartTime));
+
+    let candidateStartTime = null;
+    let candidateEndTime = null;
+
+    if (hasStartedAttempt) {
+      // Preserve existing start and end times — do NOT reset timers (BUG-53)
+      for (const s of existingSubmissions) {
+        if (s.candidateStartTime && (!candidateStartTime || new Date(s.candidateStartTime) < candidateStartTime)) {
+          candidateStartTime = new Date(s.candidateStartTime);
+        }
+        if (s.candidateEndTime && (!candidateEndTime || new Date(s.candidateEndTime) < candidateEndTime)) {
+          candidateEndTime = new Date(s.candidateEndTime);
+        }
+      }
+    }
+
+    if (!candidateStartTime) {
+      candidateStartTime = now;
+    }
+    if (!candidateEndTime) {
+      candidateEndTime = new Date(now.getTime() + test.durationMinutes * 60 * 1000);
+    }
 
     // Get questions from question set (visible test cases only — FR-4.2)
     const questionSet = test.questionSetId;
@@ -198,7 +224,7 @@ const startAttempt = async (req, res, next) => {
     }));
 
     // Find the room for this candidate (from req.body or fallback to room where candidate joined)
-    let targetRoomId = req.body.roomId;
+    let targetRoomId = req.body?.roomId;
     if (!targetRoomId) {
       const candidateRoom = await Room.findOne({
         testId,
@@ -216,11 +242,30 @@ const startAttempt = async (req, res, next) => {
       );
     }
 
-    // Create / update IN_PROGRESS submissions for each question
-    let createdSubmissions = [];
+    // Single-Session Invalidation: If existing session is superseded by new tab, notify previous tab (BUG-53)
+    const io = req.app.get('io');
+    if (io && hasStartedAttempt) {
+      console.log(`[Session] Candidate ${candidateId} resumed test ${testId} with new session ${submissionSessionId}. Superseding previous tabs.`);
+      io.to(`candidate:${candidateId}`).emit('session:superseded', {
+        candidateId: candidateId.toString(),
+        testId: testId.toString(),
+        newSessionId: submissionSessionId,
+        message: 'Your exam session was opened in another tab or window. This session has been terminated.',
+      });
+    }
+
+    // Create / ensure submissions for each question without overwriting existing code/progress
+    let finalSubmissions = [];
     if (questions.length > 0) {
-      const submissionPromises = questions.map((q) =>
-        Submission.findOneAndUpdate(
+      const submissionPromises = questions.map(async (q) => {
+        const existing = existingSubmissions.find(
+          (s) => s.questionId?.toString() === q._id?.toString()
+        );
+        if (existing) {
+          // If already existing, keep original code, files, status, and times intact
+          return existing;
+        }
+        return await Submission.findOneAndUpdate(
           { candidateId, testId, questionId: q._id },
           {
             $set: {
@@ -235,89 +280,93 @@ const startAttempt = async (req, res, next) => {
             },
           },
           { upsert: true, new: true }
-        )
-      );
-      createdSubmissions = await Promise.all(submissionPromises);
+        );
+      });
+      finalSubmissions = await Promise.all(submissionPromises);
     } else {
       // Fallback for tests without questions defined yet
       const placeholderQId = test.questionSetId?._id || test._id;
-      const sub = await Submission.findOneAndUpdate(
-        { candidateId, testId, questionId: placeholderQId },
-        {
-          $set: {
-            candidateId,
-            testId,
-            roomId: targetRoomId,
-            questionId: placeholderQId,
-            candidateStartTime,
-            candidateEndTime,
-            status: 'IN_PROGRESS',
-          },
-        },
-        { upsert: true, new: true }
+      const existing = existingSubmissions.find(
+        (s) => s.questionId?.toString() === placeholderQId.toString()
       );
-      createdSubmissions = [sub];
+      if (existing) {
+        finalSubmissions = [existing];
+      } else {
+        const sub = await Submission.findOneAndUpdate(
+          { candidateId, testId, questionId: placeholderQId },
+          {
+            $set: {
+              candidateId,
+              testId,
+              roomId: targetRoomId,
+              questionId: placeholderQId,
+              candidateStartTime,
+              candidateEndTime,
+              status: 'IN_PROGRESS',
+            },
+          },
+          { upsert: true, new: true }
+        );
+        finalSubmissions = [sub];
+      }
     }
 
-    // Server-side auto-submit timer (FR-5.6: server-side timer, not solely client-triggered)
-    const msUntilEnd = candidateEndTime.getTime() - now.getTime();
-    setTimeout(async () => {
-      try {
-        // Auto-submit all IN_PROGRESS submissions for this candidate/test
-        const autoNow = new Date();
-        await Submission.updateMany(
-          { candidateId, testId, status: 'IN_PROGRESS' },
-          { status: 'AUTO_SUBMITTED_TIME_UP', submittedAt: autoNow }
-        );
+    const msUntilEnd = Math.max(0, candidateEndTime.getTime() - now.getTime());
 
-        // Finalize any open CAMERA_DISCONNECTED malpractice logs
-        const MalpracticeLog = require('../models/MalpracticeLog');
-        const openLogs = await MalpracticeLog.find({
-          candidateId,
-          testId,
-          violationType: 'CAMERA_DISCONNECTED',
-          reconnectAt: null,
-        });
-        for (const openLog of openLogs) {
-          const start = new Date(openLog.disconnectAt || openLog.detectedAt);
-          openLog.reconnectAt = autoNow;
-          openLog.durationSeconds = Math.max(1, Math.round((autoNow.getTime() - start.getTime()) / 1000));
-          openLog.resolved = false;
-          await openLog.save();
-        }
+    // Server-side auto-submit timer (FR-5.6) — only schedule if not already past endTime
+    if (!hasStartedAttempt && msUntilEnd > 0) {
+      setTimeout(async () => {
+        try {
+          // Auto-submit all IN_PROGRESS submissions for this candidate/test
+          const autoNow = new Date();
+          await Submission.updateMany(
+            { candidateId, testId, status: 'IN_PROGRESS' },
+            { status: 'AUTO_SUBMITTED_TIME_UP', submittedAt: autoNow }
+          );
 
-        console.log(`[AutoSubmit] Candidate ${candidateId} test ${testId} auto-submitted at time-up`);
-
-        const io = req.app.get('io');
-        if (io) {
-          const Candidate = require('../models/Candidate');
-          const cand = await Candidate.findById(candidateId, 'name');
-          io.to(`test:${testId}:admin`).emit('candidate:submitted', {
+          // Finalize any open CAMERA_DISCONNECTED malpractice logs
+          const MalpracticeLog = require('../models/MalpracticeLog');
+          const openLogs = await MalpracticeLog.find({
             candidateId,
-            candidateName: cand?.name || 'Unknown',
+            testId,
+            violationType: 'CAMERA_DISCONNECTED',
+            reconnectAt: null,
           });
-          io.to(`test:${testId}:admin`).emit('seatmap:status', {
-            candidateId: candidateId.toString(),
-            roomId: targetRoomId ? targetRoomId.toString() : null,
-            colorStatus: 'GREEN',
-          });
+          for (const openLog of openLogs) {
+            const start = new Date(openLog.disconnectAt || openLog.detectedAt);
+            openLog.reconnectAt = autoNow;
+            openLog.durationSeconds = Math.max(1, Math.round((autoNow.getTime() - start.getTime()) / 1000));
+            openLog.resolved = false;
+            await openLog.save();
+          }
+
+          console.log(`[AutoSubmit] Candidate ${candidateId} test ${testId} auto-submitted at time-up`);
+
+          if (io) {
+            const Candidate = require('../models/Candidate');
+            const cand = await Candidate.findById(candidateId, 'name');
+            io.to(`test:${testId}:admin`).emit('candidate:submitted', {
+              candidateId,
+              candidateName: cand?.name || 'Unknown',
+            });
+            io.to(`test:${testId}:admin`).emit('seatmap:status', {
+              candidateId: candidateId.toString(),
+              roomId: targetRoomId ? targetRoomId.toString() : null,
+              colorStatus: 'GREEN',
+            });
+            broadcastTentativeTime(io, testId, targetRoomId);
+          }
+
+          // Trigger evaluation
+          const evaluationService = require('../services/evaluationService');
+          evaluationService.evaluateCandidateSubmissions(candidateId, testId).catch(console.error);
+        } catch (err) {
+          console.error('[AutoSubmit] Error:', err);
         }
+      }, msUntilEnd);
+    }
 
-        // BUG-21: Broadcast updated Tentative Time if leader auto-submitted
-        if (io) {
-          broadcastTentativeTime(io, testId, targetRoomId);
-        }
-
-        // Trigger evaluation
-        const evaluationService = require('../services/evaluationService');
-        evaluationService.evaluateCandidateSubmissions(candidateId, testId).catch(console.error);
-      } catch (err) {
-        console.error('[AutoSubmit] Error:', err);
-      }
-    }, msUntilEnd);
-
-    // Broadcast candidate start to admins
-    const io = req.app.get('io');
+    // Broadcast candidate status to admins with authoritative candidateStartTime/candidateEndTime
     if (io) {
       const Candidate = require('../models/Candidate');
       const Room = require('../models/Room');
@@ -325,15 +374,17 @@ const startAttempt = async (req, res, next) => {
         Candidate.findById(candidateId, 'name email'),
         targetRoomId ? Room.findById(targetRoomId, 'roomName') : null,
       ]).then(([cand, roomDoc]) => {
+        const isSubmitted = finalSubmissions.every((s) => s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED_TIME_UP');
+        const colorStatus = isSubmitted ? 'GREEN' : 'YELLOW';
         const payload = {
           candidateId: candidateId.toString(),
           name: cand?.name,
           email: cand?.email,
           roomId: targetRoomId ? targetRoomId.toString() : null,
           roomName: roomDoc?.roomName || 'Assigned Room',
-          status: 'IN_PROGRESS',
-          colorStatus: 'YELLOW',
-          questionsCompleted: 0,
+          status: isSubmitted ? 'SUBMITTED' : 'IN_PROGRESS',
+          colorStatus,
+          questionsCompleted: finalSubmissions.filter((s) => s.status === 'SUBMITTED').length,
           timeRemaining: msUntilEnd,
           candidateStartTime,
           candidateEndTime,
@@ -342,23 +393,25 @@ const startAttempt = async (req, res, next) => {
         io.to(`test:${testId}:admin`).emit('seatmap:status', {
           candidateId: candidateId.toString(),
           roomId: targetRoomId ? targetRoomId.toString() : null,
-          colorStatus: 'YELLOW',
+          colorStatus,
         });
-        // BUG-21: Broadcast updated Tentative Time immediately on candidate start
+        // BUG-21 & BUG-53: Broadcast continuous Tentative Time based on authoritative endTime
         broadcastTentativeTime(io, testId, targetRoomId);
       }).catch(() => {});
     }
 
     res.json({
-      submissionSessionId: createdSubmissions[0]?._id, // session reference
+      submissionSessionId,
       candidateStartTime,
       candidateEndTime,
       questions,
-      submissions: createdSubmissions.map((s) => ({
+      submissions: finalSubmissions.map((s) => ({
         questionId: s.questionId,
         code: s.code,
         language: s.language,
         savedCodeByLanguage: s.savedCodeByLanguage || {},
+        filesJson: s.filesJson || {},
+        promptLog: s.promptLog || [],
         status: s.status,
       })),
     });
