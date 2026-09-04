@@ -297,7 +297,21 @@ const getLiveCandidates = async (req, res, next) => {
     const candidateMap = {};
     const now = Date.now();
 
-    const totalQuestions = test.questions ? test.questions.length : 0;
+    const totalQuestions = test.totalQuestions || (test.questions ? test.questions.length : 5);
+
+    // Pre-aggregate attempted and completed counts per candidate across all submissions
+    const attemptedCounts = {};
+    const completedCounts = {};
+    for (const sub of submissions) {
+      const cid = sub.candidateId?._id ? sub.candidateId._id.toString() : sub.candidateId?.toString();
+      if (!cid) continue;
+      if (sub.isAttempted) {
+        attemptedCounts[cid] = (attemptedCounts[cid] || 0) + 1;
+      }
+      if (sub.visibleTestCasesPassed > 0) {
+        completedCounts[cid] = (completedCounts[cid] || 0) + 1;
+      }
+    }
 
     // 1. Seed candidates from rooms (joined candidates who may not have started test yet)
     for (const r of rooms) {
@@ -315,9 +329,9 @@ const getLiveCandidates = async (req, res, next) => {
           timeRemaining: 0,
           candidateStartTime: null,
           candidateEndTime: null,
-          questionsAttempted: 0,
+          questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
-          questionsCompleted: 0,
+          questionsCompleted: completedCounts[cid] || 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
           colorStatus: candidate.isDisqualified ? 'RED' : 'WHITE',
         };
@@ -328,7 +342,7 @@ const getLiveCandidates = async (req, res, next) => {
     for (const sub of submissions) {
       const candidate = sub.candidateId;
       if (!candidate) continue;
-      const cid = candidate._id.toString();
+      const cid = candidate._id ? candidate._id.toString() : candidate.toString();
 
       const timeRemaining = sub.candidateEndTime
         ? Math.max(0, new Date(sub.candidateEndTime).getTime() - now)
@@ -341,7 +355,6 @@ const getLiveCandidates = async (req, res, next) => {
         colorStatus = 'GREEN';
       }
 
-      const isAtt = Boolean(sub.isAttempted);
       const existing = candidateMap[cid];
       if (!existing || existing.status === 'NOT_STARTED') {
         candidateMap[cid] = {
@@ -354,18 +367,19 @@ const getLiveCandidates = async (req, res, next) => {
           timeRemaining,
           candidateStartTime: sub.candidateStartTime,
           candidateEndTime: sub.candidateEndTime,
-          questionsAttempted: isAtt ? 1 : 0,
+          questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
-          questionsCompleted: sub.visibleTestCasesPassed > 0 ? 1 : 0,
+          questionsCompleted: completedCounts[cid] || 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
           colorStatus,
         };
       } else {
-        if (isAtt) {
-          candidateMap[cid].questionsAttempted = (candidateMap[cid].questionsAttempted || 0) + 1;
-        }
-        if (sub.visibleTestCasesPassed > 0) {
-          candidateMap[cid].questionsCompleted += 1;
+        candidateMap[cid].questionsAttempted = attemptedCounts[cid] || 0;
+        candidateMap[cid].questionsCompleted = completedCounts[cid] || 0;
+        candidateMap[cid].totalQuestions = totalQuestions;
+        if (sub.status === 'SUBMITTED' || sub.status === 'AUTO_SUBMITTED_TIME_UP') {
+          candidateMap[cid].status = sub.status;
+          candidateMap[cid].colorStatus = 'GREEN';
         }
       }
     }

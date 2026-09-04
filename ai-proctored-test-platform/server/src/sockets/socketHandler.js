@@ -101,6 +101,16 @@ const registerSocketHandlers = (io) => {
         const Room = require('../models/Room');
         const roomDoc = sub?.roomId ? await Room.findById(sub.roomId, 'roomName') : null;
 
+        const attemptedCount = await Submission.countDocuments({
+          candidateId,
+          testId,
+          isAttempted: true,
+        });
+
+        const Test = require('../models/Test');
+        const testDoc = await Test.findById(testId, 'totalQuestions questions');
+        const totalQCount = testDoc?.totalQuestions || testDoc?.questions?.length || 5;
+
         // Section 10.2: dashboard:update — broadcast to admins
         io.to(`test:${testId}:admin`).emit('dashboard:update', {
           candidateId: candidateId.toString(),
@@ -110,6 +120,8 @@ const registerSocketHandlers = (io) => {
           roomName: roomDoc?.roomName || 'Assigned Room',
           status: candidate?.isDisqualified ? 'DISQUALIFIED' : (sub ? 'IN_PROGRESS' : 'NOT_STARTED'),
           questionsCompleted: questionsCompleted || 0,
+          questionsAttempted: attemptedCount,
+          totalQuestions: totalQCount,
           timeRemaining,
           candidateEndTime: sub?.candidateEndTime,
           candidateStartTime: sub?.candidateStartTime,

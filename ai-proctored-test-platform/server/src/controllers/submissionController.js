@@ -274,9 +274,15 @@ const startAttempt = async (req, res, next) => {
       candidateEndTime = new Date(now.getTime() + test.durationMinutes * 60 * 1000);
     }
 
-    // Get questions from question set (visible test cases only — FR-4.2)
+    // Get questions from question set (visible test cases only — FR-4.2, BUG-59)
     const questionSet = test.questionSetId;
-    const allQuestions = questionSet?.questionIds || [];
+    let allQuestions = (questionSet?.questionIds && questionSet.questionIds.length > 0 && questionSet.questionIds[0]?.title)
+      ? questionSet.questionIds
+      : [];
+    if (allQuestions.length === 0 && questionSet) {
+      const qSetId = questionSet._id || questionSet;
+      allQuestions = await Question.find({ questionSetId: qSetId });
+    }
     // Limit to totalQuestions
     const questions = allQuestions.slice(0, test.totalQuestions).map((q) => ({
       _id: q._id,
@@ -822,22 +828,26 @@ const validateCode = async (req, res, next) => {
 
     await submission.save();
 
-    // If first time attempted for this question, calculate total distinct attempted questions & emit live update
-    if (!wasAttempted) {
-      const attemptedCount = await Submission.countDocuments({
-        candidateId,
-        testId: submission.testId,
-        isAttempted: true,
-      });
+    // Calculate total distinct attempted questions & emit live update
+    const attemptedCount = await Submission.countDocuments({
+      candidateId,
+      testId: submission.testId,
+      isAttempted: true,
+    });
 
-      const io = req.app.get('io');
-      if (io) {
-        io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
-          candidateId,
-          roomId: submission.roomId,
-          questionsAttempted: attemptedCount,
-        });
-      }
+    const Test = require('../models/Test');
+    const testDoc = await Test.findById(submission.testId, 'totalQuestions questions');
+    const totalQCount = testDoc?.totalQuestions || testDoc?.questions?.length || 5;
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
+        candidateId: candidateId.toString(),
+        roomId: submission.roomId ? submission.roomId.toString() : null,
+        status: 'IN_PROGRESS',
+        questionsAttempted: attemptedCount,
+        totalQuestions: totalQCount,
+      });
     }
 
     res.json({

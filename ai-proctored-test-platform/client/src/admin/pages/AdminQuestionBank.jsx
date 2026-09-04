@@ -92,7 +92,16 @@ export default function AdminQuestionBank() {
     try {
       setLoadingQuestions(true);
       const res = await api.getQuestions(setId);
-      setQuestions(res.data.questions || []);
+      const qList = res.data.questions || [];
+      setQuestions(qList);
+      // Immediately sync question count for the active set in questionSets state (BUG-59)
+      setQuestionSets((prev) =>
+        prev.map((s) =>
+          s._id === setId
+            ? { ...s, questionCount: qList.length, questionIds: qList.map((q) => q._id) }
+            : s
+        )
+      );
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to fetch questions');
     } finally {
@@ -314,8 +323,22 @@ export default function AdminQuestionBank() {
         await api.updateQuestion(editingQuestionId, payload);
         toast.success('Question updated successfully');
       } else {
-        await api.createQuestion(selectedSet._id, payload);
+        const createRes = await api.createQuestion(selectedSet._id, payload);
         toast.success('Question added to question set (FR-4.1 verified)');
+        if (createRes?.data?.question) {
+          const newQ = createRes.data.question;
+          setQuestionSets((prev) =>
+            prev.map((s) =>
+              s._id === selectedSet._id
+                ? {
+                    ...s,
+                    questionCount: (s.questionCount ?? s.questionIds?.length ?? 0) + 1,
+                    questionIds: [...(s.questionIds || []), newQ._id],
+                  }
+                : s
+            )
+          );
+        }
       }
       setShowQuestionModal(false);
       fetchQuestions(selectedSet._id);
@@ -334,6 +357,17 @@ export default function AdminQuestionBank() {
       setDeleting(true);
       await api.deleteQuestion(deleteTarget._id);
       toast.success(`Deleted question "${deleteTarget.title}"`);
+      setQuestionSets((prev) =>
+        prev.map((s) =>
+          s._id === selectedSet._id
+            ? {
+                ...s,
+                questionCount: Math.max(0, (s.questionCount ?? s.questionIds?.length ?? 0) - 1),
+                questionIds: (s.questionIds || []).filter((id) => (id?._id || id) !== deleteTarget._id),
+              }
+            : s
+        )
+      );
       setDeleteTarget(null);
       fetchQuestions(selectedSet._id);
       fetchQuestionSets();
@@ -423,7 +457,9 @@ export default function AdminQuestionBank() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
                 {filteredSets.map((qs) => {
                   const isSelected = selectedSet?._id === qs._id;
-                  const qCount = qs.questionIds?.length || 0;
+                  const qCount = isSelected && questions !== null && questions !== undefined
+                    ? questions.length
+                    : (qs.questionCount ?? (qs.questionIds?.length || 0));
 
                   return (
                     <button

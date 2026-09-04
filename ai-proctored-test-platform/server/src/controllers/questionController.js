@@ -29,8 +29,37 @@ const getQuestionSets = async (req, res, next) => {
   try {
     const questionSets = await QuestionSet.find()
       .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 });
-    res.json({ questionSets });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Query question counts and questionIds for each question set to guarantee accurate, real-time counts (BUG-59)
+    const setIds = questionSets.map((s) => s._id);
+    const questionsBySet = await Question.find(
+      { questionSetId: { $in: setIds } },
+      { _id: 1, questionSetId: 1 }
+    ).lean();
+
+    const countMap = {};
+    const idsMap = {};
+    for (const q of questionsBySet) {
+      const sId = q.questionSetId.toString();
+      countMap[sId] = (countMap[sId] || 0) + 1;
+      if (!idsMap[sId]) idsMap[sId] = [];
+      idsMap[sId].push(q._id);
+    }
+
+    const hydratedSets = questionSets.map((s) => {
+      const sId = s._id.toString();
+      const actualIds = idsMap[sId] || [];
+      const questionCount = countMap[sId] || 0;
+      return {
+        ...s,
+        questionIds: actualIds,
+        questionCount,
+      };
+    });
+
+    res.json({ questionSets: hydratedSets });
   } catch (err) {
     next(err);
   }
@@ -137,7 +166,7 @@ const createQuestion = async (req, res, next) => {
     });
 
     // Add question to set's questionIds array
-    await QuestionSet.findByIdAndUpdate(setId, { $push: { questionIds: question._id } });
+    await QuestionSet.findByIdAndUpdate(setId, { $addToSet: { questionIds: question._id } });
 
     res.status(201).json({ question });
   } catch (err) {
