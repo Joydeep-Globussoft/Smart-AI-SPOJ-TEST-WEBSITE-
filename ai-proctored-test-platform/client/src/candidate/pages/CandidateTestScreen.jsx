@@ -60,12 +60,18 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
           gap: 4,
           transition: 'background 150ms ease',
         }}
+        onMouseEnter={(e) => {
+          if (!isActive && !disabled) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive && !disabled) e.currentTarget.style.background = 'transparent';
+        }}
       >
         <span
           style={{
             fontWeight: 700,
             fontSize: '0.85rem',
-            color: isActive ? '#a78bfa' : '#94a3b8',
+            color: isActive ? '#a78bfa' : '#e2e8f0',
           }}
         >
           Q{index + 1}
@@ -73,7 +79,7 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
         {isSubmitted || isFullyPassed ? (
           <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>✓</span>
         ) : visibleTotal > 0 ? (
-          <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.68rem', color: isActive ? '#c4b5fd' : '#cbd5e1', fontWeight: 600 }}>
             {visiblePassed}/{visibleTotal}
           </span>
         ) : (
@@ -82,7 +88,7 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: isActive ? '#8b5cf6' : '#475569',
+              background: isActive ? '#8b5cf6' : '#94a3b8',
               display: 'inline-block',
             }}
           />
@@ -108,9 +114,15 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
         transition: 'all 200ms',
         fontFamily: 'Inter, sans-serif',
       }}
+      onMouseEnter={(e) => {
+        if (!isActive && !disabled) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive && !disabled) e.currentTarget.style.background = 'transparent';
+      }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: '0.875rem', color: isActive ? '#f8fafc' : '#cbd5e1' }}>
+        <span style={{ fontWeight: 600, fontSize: '0.875rem', color: isActive ? '#f8fafc' : '#e2e8f0' }}>
           Q{index + 1}. {question.title}
         </span>
         <span
@@ -127,7 +139,7 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
           <div className="progress-bar-container" style={{ flex: 1, background: '#23253a' }}>
             <div className="progress-bar-fill" style={{ width: `${progress * 100}%`, background: '#8b5cf6' }} />
           </div>
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+          <span style={{ fontSize: '0.72rem', color: isActive ? '#c4b5fd' : '#cbd5e1', fontWeight: 500 }}>
             {visiblePassed}/{visibleTotal}
           </span>
         </div>
@@ -136,31 +148,6 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
   );
 });
 QuestionTab.displayName = 'QuestionTab';
-
-// ── Test Result row (memoized) ─────────────────────────────────────────────────
-const TestCaseResult = memo(({ tc, index }) => (
-  <div style={{
-    padding: '8px 12px', borderRadius: 6, marginBottom: 6,
-    background: tc.passed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-    border: `1px solid ${tc.passed ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
-    fontSize: '0.8rem',
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-      <strong style={{ color: '#f8fafc' }}>Test {index + 1}</strong>
-      <span style={{ color: tc.passed ? '#34d399' : '#f87171', fontWeight: 700 }}>
-        {tc.passed ? '✓ Passed' : '✗ Failed'}
-      </span>
-    </div>
-    {tc.error && <div style={{ color: '#f87171', fontFamily: 'monospace', fontSize: '0.75rem' }}>{tc.error}</div>}
-    {!tc.passed && (
-      <div style={{ color: '#cbd5e1', fontFamily: 'monospace', fontSize: '0.75rem', marginTop: 4 }}>
-        Expected: <code style={{ background: 'rgba(0,0,0,0.3)', color: '#a5f3fc', padding: '1px 4px', borderRadius: 3 }}>{tc.expectedOutput}</code>
-        &nbsp;Got: <code style={{ background: 'rgba(0,0,0,0.3)', color: '#fca5a5', padding: '1px 4px', borderRadius: 3 }}>{tc.actualOutput}</code>
-      </div>
-    )}
-  </div>
-));
-TestCaseResult.displayName = 'TestCaseResult';
 
 // ── Main Test Screen ───────────────────────────────────────────────────────────
 export default function CandidateTestScreen() {
@@ -171,7 +158,6 @@ export default function CandidateTestScreen() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('python');
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-  const [customInput, setCustomInput] = useState('');
   const [runResults, setRunResults] = useState([]);
   const [runOutput, setRunOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
@@ -190,6 +176,13 @@ export default function CandidateTestScreen() {
   const codeRef = useRef('');
   const languageRef = useRef('python');
   const activeQuestionRef = useRef(null);
+
+  // ── FEATURE-006: Tabbed Testcase & Test Result State ────────────────────────
+  const [selectedCaseTab, setSelectedCaseTab] = useState(0); // 0-indexed case tab
+  const [selectedResultTab, setSelectedResultTab] = useState(0); // 0-indexed result tab
+  const [customCasesByQuestion, setCustomCasesByQuestion] = useState({}); // { [qId]: string[][] }
+  const [runtimeMs, setRuntimeMs] = useState(null);
+  const [lastRunStatus, setLastRunStatus] = useState(null); // 'ACCEPTED' | 'WRONG_ANSWER' | 'RUNTIME_ERROR' | 'CUSTOM' | null
 
   // ── Resizable & Collapsible Questions Panel (BUG-10) ────────────────────────
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -343,53 +336,7 @@ export default function CandidateTestScreen() {
     };
   }, [isDraggingHeight]);
 
-  // ── Resizable Custom Input vs Output (Width) (BUG-11) ───────────────────────
-  const [inputWidthPercent, setInputWidthPercent] = useState(() => {
-    const saved = sessionStorage.getItem('test_custom_input_split');
-    return saved ? Math.max(15, Math.min(85, parseFloat(saved))) : 50;
-  });
-  const [isDraggingSplit, setIsDraggingSplit] = useState(false);
   const bottomPanelRef = useRef(null);
-
-  useEffect(() => {
-    sessionStorage.setItem('test_custom_input_split', String(inputWidthPercent));
-  }, [inputWidthPercent]);
-
-  const handleSplitMouseDown = useCallback((e) => {
-    e.preventDefault();
-    setIsDraggingSplit(true);
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
-  }, []);
-
-  useEffect(() => {
-    if (!isDraggingSplit) return;
-
-    const handleMouseMove = (e) => {
-      if (!bottomPanelRef.current) return;
-      const rect = bottomPanelRef.current.getBoundingClientRect();
-      if (rect.width > 0) {
-        const percent = ((e.clientX - rect.left) / rect.width) * 100;
-        setInputWidthPercent(Math.max(15, Math.min(85, percent)));
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDraggingSplit(false);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-    };
-  }, [isDraggingSplit]);
 
   // Load session from sessionStorage
   useEffect(() => {
@@ -437,6 +384,15 @@ export default function CandidateTestScreen() {
   activeQuestionRef.current = activeQuestion;
   codeRef.current = code;
   languageRef.current = language;
+
+  const visibleCases = useMemo(() => activeQuestion?.visibleTestCases || [], [activeQuestion]);
+  const customCases = useMemo(() => {
+    return (activeQuestion?._id ? customCasesByQuestion[activeQuestion._id] : []) || [];
+  }, [activeQuestion?._id, customCasesByQuestion]);
+  const firstCaseLinesCount = useMemo(() => {
+    const firstInput = visibleCases[0]?.input || '';
+    return Math.max(1, firstInput.split('\n').length);
+  }, [visibleCases]);
 
   // ── FR-5.6: Server-side auto-submit is already handled by server timer.
   // Client-side timer expiry triggers submit-all as backup.
@@ -637,7 +593,36 @@ export default function CandidateTestScreen() {
       saveCodeToBackend(activeQuestionRef.current._id, languageRef.current, codeRef.current);
     }
     setActiveQuestionIdx(newIdx);
+    setSelectedCaseTab(0);
+    setSelectedResultTab(0);
   }, [activeQuestionIdx, saveCodeToBackend, proctoring?.isCameraDisconnected]);
+
+  // ── Custom Test Case Handlers (FEATURE-006) ──────────────────────────────────
+  const handleAddCustomCase = useCallback(() => {
+    if (!activeQuestion?._id) return;
+    const emptyLines = Array(firstCaseLinesCount).fill('');
+    const curCustom = customCasesByQuestion[activeQuestion._id] || [];
+    const nextCustom = [...curCustom, emptyLines];
+    setCustomCasesByQuestion((prev) => ({
+      ...prev,
+      [activeQuestion._id]: nextCustom,
+    }));
+    setSelectedCaseTab(visibleCases.length + nextCustom.length - 1);
+  }, [activeQuestion?._id, firstCaseLinesCount, visibleCases.length, customCasesByQuestion]);
+
+  const handleCustomCaseLineChange = useCallback((customIdx, lineIdx, value) => {
+    if (!activeQuestion?._id) return;
+    setCustomCasesByQuestion((prev) => {
+      const curCustom = prev[activeQuestion._id] || [];
+      const updated = curCustom.map((c, idx) => {
+        if (idx !== customIdx) return c;
+        const copyLines = [...c];
+        copyLines[lineIdx] = value;
+        return copyLines;
+      });
+      return { ...prev, [activeQuestion._id]: updated };
+    });
+  }, [activeQuestion?._id]);
 
   // ── Language Change Handler (Requirement 2: Autosave code under current language before switching) ──
   const handleLanguageChange = useCallback((newLang) => {
@@ -681,7 +666,7 @@ export default function CandidateTestScreen() {
     !!session && !disqualified
   );
 
-  // ── Run code against visible test cases ──────────────────────────────────────
+  // ── Run code against visible test cases / custom testcase (FEATURE-006) ──────
   const handleRun = async () => {
     if (proctoring?.isCameraDisconnected) return;
     if (!activeQuestion || !code) return;
@@ -689,15 +674,43 @@ export default function CandidateTestScreen() {
     setIsRunning(true);
     setRunResults([]);
     setRunOutput('');
+    setLastRunStatus(null);
+
+    const isCustomSelected = selectedCaseTab >= visibleCases.length;
+    let customInputString = null;
+    if (isCustomSelected) {
+      const customIdx = selectedCaseTab - visibleCases.length;
+      const lines = customCases[customIdx] || [];
+      customInputString = lines.join('\n');
+    }
+
     try {
-      const { data } = await api.runCode(activeQuestion._id, {
-        code, language,
-        ...(customInput ? { customInput } : {}),
-      });
+      const payload = {
+        code,
+        language,
+        ...(customInputString !== null ? { customInput: customInputString } : {}),
+      };
+
+      const { data } = await api.runCode(activeQuestion._id, payload);
+      const results = data.visibleTestResults || [];
       setRunOutput(data.output || '');
-      setRunResults(data.visibleTestResults || []);
+      setRunResults(results);
+      setRuntimeMs(typeof data.runtimeMs === 'number' ? data.runtimeMs : 0);
+
+      const hasError = results.some((r) => r.error);
+      if (hasError) {
+        setLastRunStatus('RUNTIME_ERROR');
+      } else if (data.isCustom || isCustomSelected) {
+        setLastRunStatus('CUSTOM');
+      } else {
+        const allPassed = results.length > 0 && results.every((r) => r.passed);
+        setLastRunStatus(allPassed ? 'ACCEPTED' : 'WRONG_ANSWER');
+      }
+
+      setSelectedResultTab(selectedCaseTab);
     } catch (err) {
       setRunOutput(err.response?.data?.error || 'Execution failed');
+      setLastRunStatus('RUNTIME_ERROR');
     } finally {
       setIsRunning(false);
     }
@@ -996,7 +1009,8 @@ export default function CandidateTestScreen() {
               maxWidth: isCollapsed ? 58 : 480,
               flexShrink: 0,
               background: '#151624',
-              borderRight: '1px solid #23253a',
+              borderRight: isGlowTheme ? '1px solid rgba(139, 92, 246, 0.45)' : '1px solid #23253a',
+              boxShadow: isGlowTheme ? '1px 0 8px rgba(124, 58, 237, 0.25)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               overflowY: 'auto',
@@ -1008,7 +1022,7 @@ export default function CandidateTestScreen() {
             <div
               style={{
                 padding: isCollapsed ? '12px 6px' : '12px 14px',
-                borderBottom: '1px solid #23253a',
+                borderBottom: isGlowTheme ? '1px solid rgba(139, 92, 246, 0.25)' : '1px solid #23253a',
                 background: '#18192a',
                 display: 'flex',
                 alignItems: 'center',
@@ -1081,7 +1095,12 @@ export default function CandidateTestScreen() {
                 width: 6,
                 cursor: 'col-resize',
                 background: isDragging ? '#8b5cf6' : '#1c1e2f',
-                borderRight: isDragging ? '1px solid #8b5cf6' : '1px solid #23253a',
+                borderRight: isDragging
+                  ? '1px solid #8b5cf6'
+                  : isGlowTheme
+                  ? '1px solid rgba(139, 92, 246, 0.45)'
+                  : '1px solid #23253a',
+                boxShadow: isGlowTheme ? '1px 0 8px rgba(124, 58, 237, 0.25)' : 'none',
                 flexShrink: 0,
                 zIndex: 10,
                 transition: 'background 150ms ease',
@@ -1369,13 +1388,14 @@ export default function CandidateTestScreen() {
             }}
           />
 
-          {/* Custom input + output panel (BUG-11, Purple Glow) */}
+          {/* ── Side-by-Side Testcase & Test Result Split Panel (FEATURE-006 ADDENDUM, Purple Glow) ── */}
           <div
             ref={bottomPanelRef}
             className={isGlowTheme ? 'panel-glow-purple' : ''}
             style={{
               height: bottomHeight,
               display: 'flex',
+              flexDirection: 'row',
               borderRadius: isGlowTheme ? 10 : 0,
               background: '#1e1e2e',
               overflow: 'hidden',
@@ -1383,89 +1403,434 @@ export default function CandidateTestScreen() {
               flexShrink: 0,
             }}
           >
-            {/* Custom input */}
-            <div
-              style={{
-                width: `${inputWidthPercent}%`,
-                minWidth: 80,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ padding: '6px 12px', background: '#18192a', borderBottom: '1px solid #282a40', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>
-                Custom Input (optional)
-              </div>
-              <textarea
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                onCopy={preventCopyPaste}
-                onPaste={preventCopyPaste}
-                onContextMenu={preventCopyPaste}
-                disabled={disqualified || proctoring?.isCameraDisconnected}
-                placeholder="Enter custom input here..."
-                style={{
-                  flex: 1, resize: 'none', background: '#13141f', color: '#cdd6f4',
-                  border: 'none', padding: 12, fontFamily: 'monospace', fontSize: '0.8rem',
-                  outline: 'none',
-                  cursor: proctoring?.isCameraDisconnected ? 'not-allowed' : 'text',
-                }}
-              />
-            </div>
-
-            {/* Vertical Resizer Divider between Custom Input and Output (BUG-11) */}
-            <div
-              onMouseDown={handleSplitMouseDown}
-              style={{
-                width: 6,
-                cursor: 'col-resize',
-                background: isDraggingSplit ? '#8b5cf6' : '#18192a',
-                borderLeft: isDraggingSplit ? '1px solid #8b5cf6' : '1px solid #282a40',
-                borderRight: isDraggingSplit ? '1px solid #8b5cf6' : '1px solid #282a40',
-                zIndex: 10,
-                position: 'relative',
-                flexShrink: 0,
-                transition: 'background 150ms ease',
-              }}
-              title="Drag to resize Custom Input / Output width"
-              onMouseEnter={(e) => {
-                if (!isDraggingSplit) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isDraggingSplit) e.currentTarget.style.background = '#18192a';
-              }}
-            />
-
-            {/* Output */}
+            {/* ── Left Column: Testcase Panel ── */}
             <div
               style={{
                 flex: 1,
-                minWidth: 80,
                 display: 'flex',
                 flexDirection: 'column',
-                overflowY: 'auto',
+                minWidth: 0,
+                borderRight: '1px solid #282a40',
+                background: '#13141f',
               }}
             >
-              <div style={{ padding: '6px 12px', background: '#18192a', borderBottom: '1px solid #282a40', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>
-                Output
+              {/* Left Header */}
+              <div
+                style={{
+                  height: 38,
+                  background: '#161726',
+                  borderBottom: '1px solid #282a40',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 14px',
+                  flexShrink: 0,
+                  userSelect: 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f8fafc', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <span style={{ color: '#10b981', fontSize: '0.9rem' }}>☑</span>
+                  <span>Testcase</span>
+                </div>
               </div>
-              <div style={{ flex: 1, padding: 12, overflowY: 'auto', background: '#13141f' }}>
-                {runOutput && (
-                  <pre style={{ color: '#a6e3a1', fontFamily: 'monospace', fontSize: '0.8rem', margin: 0, whiteSpace: 'pre-wrap' }}>
-                    {runOutput}
-                  </pre>
-                )}
-                {runResults.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    {runResults.map((r, i) => (
-                      <TestCaseResult key={i} tc={r} index={i} />
+
+              {/* Left Body (Scrollable) */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Case Tabs Row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                  {/* Admin-defined Visible Cases */}
+                  {visibleCases.map((vc, idx) => {
+                    const isSelected = selectedCaseTab === idx;
+                    return (
+                      <button
+                        key={`admin-case-${idx}`}
+                        type="button"
+                        onClick={() => setSelectedCaseTab(idx)}
+                        style={{
+                          background: isSelected ? '#25273d' : 'transparent',
+                          border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
+                          color: isSelected ? '#f8fafc' : '#94a3b8',
+                          fontWeight: isSelected ? 700 : 500,
+                          fontSize: '0.82rem',
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          transition: 'all 150ms ease',
+                        }}
+                      >
+                        Case {idx + 1}
+                      </button>
+                    );
+                  })}
+
+                  {/* Candidate-added Custom Cases */}
+                  {customCases.map((cc, cIdx) => {
+                    const tabIdx = visibleCases.length + cIdx;
+                    const isSelected = selectedCaseTab === tabIdx;
+                    return (
+                      <button
+                        key={`custom-case-${cIdx}`}
+                        type="button"
+                        onClick={() => setSelectedCaseTab(tabIdx)}
+                        style={{
+                          background: isSelected ? '#25273d' : 'transparent',
+                          border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
+                          color: isSelected ? '#f8fafc' : '#94a3b8',
+                          fontWeight: isSelected ? 700 : 500,
+                          fontSize: '0.82rem',
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          transition: 'all 150ms ease',
+                        }}
+                      >
+                        Case {visibleCases.length + cIdx + 1}
+                      </button>
+                    );
+                  })}
+
+                  {/* Add Case (+) Button */}
+                  <button
+                    type="button"
+                    onClick={handleAddCustomCase}
+                    title="Add new custom test case"
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #333852',
+                      color: '#94a3b8',
+                      fontSize: '1rem',
+                      padding: '3px 10px',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1,
+                      transition: 'all 150ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#8b5cf6';
+                      e.currentTarget.style.color = '#f8fafc';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#333852';
+                      e.currentTarget.style.color = '#94a3b8';
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Case Content: Stacked Boxes for input lines */}
+                {selectedCaseTab < visibleCases.length ? (
+                  // Admin case: read-only stacked boxes
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {((visibleCases[selectedCaseTab]?.input || '').split('\n')).map((line, lIdx) => (
+                      <div
+                        key={`admin-line-${lIdx}`}
+                        style={{
+                          background: '#1a1b2c',
+                          border: '1px solid #282a40',
+                          borderRadius: 8,
+                          padding: '8px 12px',
+                          color: '#f1f5f9',
+                          fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                          fontSize: '0.85rem',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {line || ' '}
+                      </div>
                     ))}
                   </div>
-                )}
-                {!runOutput && runResults.length === 0 && (
-                  <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                    Click "▶ Run" to execute your code against test cases.
+                ) : (
+                  // Candidate-added custom case: editable stacked input boxes
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {(() => {
+                      const customIdx = selectedCaseTab - visibleCases.length;
+                      const lines = customCases[customIdx] || Array(firstCaseLinesCount).fill('');
+                      return lines.map((lineVal, lIdx) => (
+                        <input
+                          key={`custom-line-${lIdx}`}
+                          type="text"
+                          value={lineVal}
+                          onChange={(e) => handleCustomCaseLineChange(customIdx, lIdx, e.target.value)}
+                          placeholder={`Input line ${lIdx + 1}`}
+                          disabled={disqualified || proctoring?.isCameraDisconnected}
+                          style={{
+                            background: '#1a1b2c',
+                            border: '1px solid #3b3e5b',
+                            borderRadius: 8,
+                            padding: '8px 12px',
+                            color: '#f1f5f9',
+                            fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            transition: 'border-color 150ms ease',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#8b5cf6';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#3b3e5b';
+                          }}
+                        />
+                      ));
+                    })()}
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Right Column: Test Result Panel ── */}
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+                background: '#13141f',
+              }}
+            >
+              {/* Right Header */}
+              <div
+                style={{
+                  height: 38,
+                  background: '#161726',
+                  borderBottom: '1px solid #282a40',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 14px',
+                  flexShrink: 0,
+                  userSelect: 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f8fafc', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <span style={{ color: '#10b981', fontFamily: 'monospace', fontWeight: 800 }}>&gt;_</span>
+                  <span>Test Result</span>
+                </div>
+              </div>
+
+              {/* Right Body (Scrollable) */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {!lastRunStatus && runResults.length === 0 && !runOutput ? (
+                  <div style={{ color: '#6b7280', fontSize: '0.85rem', padding: '20px 0', textAlign: 'center' }}>
+                    Click &quot;▶ Run&quot; to execute your code against test cases.
+                  </div>
+                ) : (
+                  <>
+                    {/* Top Status Header + Runtime */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                      {lastRunStatus === 'ACCEPTED' && (
+                        <span style={{ color: '#22c55e', fontWeight: 800, fontSize: '1.15rem' }}>Accepted</span>
+                      )}
+                      {lastRunStatus === 'WRONG_ANSWER' && (
+                        <span style={{ color: '#ef4444', fontWeight: 800, fontSize: '1.15rem' }}>Wrong Answer</span>
+                      )}
+                      {lastRunStatus === 'RUNTIME_ERROR' && (
+                        <span style={{ color: '#ef4444', fontWeight: 800, fontSize: '1.15rem' }}>Runtime Error</span>
+                      )}
+                      {lastRunStatus === 'CUSTOM' && (
+                        <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: '1.15rem' }}>Finished</span>
+                      )}
+                      {runtimeMs !== null && (
+                        <span style={{ color: '#94a3b8', fontSize: '0.85rem', marginLeft: 8 }}>
+                          Runtime: <strong style={{ color: '#e2e8f0' }}>{runtimeMs} ms</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Result Case Tabs Strip */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                      {visibleCases.map((vc, idx) => {
+                        const res = runResults[idx];
+                        const isSelected = selectedResultTab === idx;
+                        const isPassed = res?.passed;
+                        const hasError = Boolean(res?.error);
+
+                        return (
+                          <button
+                            key={`res-tab-${idx}`}
+                            type="button"
+                            onClick={() => setSelectedResultTab(idx)}
+                            style={{
+                              background: isSelected ? '#25273d' : 'transparent',
+                              border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
+                              color: isSelected ? '#f8fafc' : '#94a3b8',
+                              fontWeight: isSelected ? 700 : 500,
+                              fontSize: '0.82rem',
+                              padding: '5px 12px',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              transition: 'all 150ms ease',
+                            }}
+                          >
+                            {res && (
+                              <span
+                                style={{
+                                  color: hasError || !isPassed ? '#ef4444' : '#22c55e',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {hasError || !isPassed ? '✕' : '✓'}
+                              </span>
+                            )}
+                            <span>Case {idx + 1}</span>
+                          </button>
+                        );
+                      })}
+
+                      {customCases.map((cc, cIdx) => {
+                        const tabIdx = visibleCases.length + cIdx;
+                        const isSelected = selectedResultTab === tabIdx;
+                        const isCustomRun = runResults.length === 1 && runResults[0]?.isCustom;
+
+                        return (
+                          <button
+                            key={`res-custom-${cIdx}`}
+                            type="button"
+                            onClick={() => setSelectedResultTab(tabIdx)}
+                            style={{
+                              background: isSelected ? '#25273d' : 'transparent',
+                              border: isSelected ? '1px solid #3b3e5b' : '1px solid transparent',
+                              color: isSelected ? '#f8fafc' : '#94a3b8',
+                              fontWeight: isSelected ? 700 : 500,
+                              fontSize: '0.82rem',
+                              padding: '5px 12px',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              transition: 'all 150ms ease',
+                            }}
+                          >
+                            {isCustomRun && (
+                              <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 800 }}>▶</span>
+                            )}
+                            <span>Case {visibleCases.length + cIdx + 1}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Detail breakdown for selectedResultTab */}
+                    {(() => {
+                      const isCustomCase = selectedResultTab >= visibleCases.length;
+                      const currentResult = isCustomCase
+                        ? (runResults[0]?.isCustom ? runResults[0] : null)
+                        : runResults[selectedResultTab];
+                      const inputLines = isCustomCase
+                        ? customCases[selectedResultTab - visibleCases.length] || []
+                        : (visibleCases[selectedResultTab]?.input || '').split('\n');
+                      const expectedOutput = isCustomCase
+                        ? null
+                        : (currentResult?.expectedOutput || visibleCases[selectedResultTab]?.expectedOutput || '');
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {/* Input Section */}
+                          <div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                              Input
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {inputLines.map((line, lIdx) => (
+                                <div
+                                  key={`res-input-${lIdx}`}
+                                  style={{
+                                    background: '#1a1b2c',
+                                    border: '1px solid #282a40',
+                                    borderRadius: 8,
+                                    padding: '8px 12px',
+                                    color: '#f1f5f9',
+                                    fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                                    fontSize: '0.85rem',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-all',
+                                  }}
+                                >
+                                  {line || ' '}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Output Section */}
+                          <div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                              Output
+                            </div>
+                            <div
+                              style={{
+                                background: '#1a1b2c',
+                                border: currentResult?.error ? '1px solid #7f1d1d' : '1px solid #282a40',
+                                borderRadius: 8,
+                                padding: '8px 12px',
+                                color: currentResult?.error ? '#fca5a5' : currentResult?.passed ? '#34d399' : '#f87171',
+                                fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                                fontSize: '0.85rem',
+                                whiteSpace: 'pre-wrap',
+                                minHeight: 36,
+                                wordBreak: 'break-all',
+                              }}
+                            >
+                              {currentResult?.error
+                                ? currentResult.error
+                                : currentResult?.actualOutput !== undefined && currentResult?.actualOutput !== null
+                                ? currentResult.actualOutput || '(Empty output)'
+                                : runOutput || 'No output recorded.'}
+                            </div>
+                          </div>
+
+                          {/* Expected Section (only for admin cases) */}
+                          {!isCustomCase && (
+                            <div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                                Expected
+                              </div>
+                              <div
+                                style={{
+                                  background: '#1a1b2c',
+                                  border: '1px solid #282a40',
+                                  borderRadius: 8,
+                                  padding: '8px 12px',
+                                  color: '#34d399',
+                                  fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                                  fontSize: '0.85rem',
+                                  whiteSpace: 'pre-wrap',
+                                  minHeight: 36,
+                                  wordBreak: 'break-all',
+                                }}
+                              >
+                                {expectedOutput || '(None)'}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
             </div>

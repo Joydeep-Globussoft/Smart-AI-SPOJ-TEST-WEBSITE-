@@ -515,7 +515,7 @@ const getQuestion = async (req, res, next) => {
 // Proxy to Judge0, does NOT persist (Section 9.5)
 const runCode = async (req, res, next) => {
   try {
-    const { code, language, customInput } = req.body;
+    const { code, language, customInput, customTestCases } = req.body;
     const { questionId } = req.params;
 
     if (!code || !language) {
@@ -525,24 +525,44 @@ const runCode = async (req, res, next) => {
     const question = await Question.findById(questionId, { hiddenTestCases: 0 });
     if (!question) return res.status(404).json({ error: 'Question not found' });
 
-    // Run against visible test cases
-    const testCases = customInput
-      ? [{ input: customInput, expectedOutput: '' }]
-      : question.visibleTestCases;
+    // Run against custom test cases, custom input, or admin visible test cases
+    let testCases;
+    let isCustom = false;
+    if (Array.isArray(customTestCases) && customTestCases.length > 0) {
+      testCases = customTestCases.map((tc) => ({
+        input: typeof tc === 'string' ? tc : (tc.input || ''),
+        expectedOutput: tc.expectedOutput || '',
+      }));
+      isCustom = true;
+    } else if (customInput !== undefined && customInput !== null && customInput !== '') {
+      testCases = [{ input: customInput, expectedOutput: '' }];
+      isCustom = true;
+    } else {
+      testCases = question.visibleTestCases || [];
+    }
 
     const results = await judge0Service.runAgainstTestCases(code, language, testCases);
 
-    const output = results[0]?.stdout || results[0]?.stderr || '';
-    const visibleTestResults = results.map((r, i) => ({
-      input: testCases[i]?.input,
-      expectedOutput: testCases[i]?.expectedOutput,
-      actualOutput: r.stdout?.trim(),
-      passed: r.stdout?.trim() === testCases[i]?.expectedOutput?.trim(),
-      error: r.stderr || r.compile_output,
-      status: r.status?.description,
-    }));
+    const output = results[0]?.stdout || results[0]?.stderr || results[0]?.compile_output || '';
+    let maxTimeMs = 0;
+    const visibleTestResults = results.map((r, i) => {
+      const timeMs = r.time ? Math.round(parseFloat(r.time) * 1000) : 0;
+      if (timeMs > maxTimeMs) maxTimeMs = timeMs;
+      const expected = testCases[i]?.expectedOutput?.trim();
+      const actual = r.stdout?.trim();
+      return {
+        input: testCases[i]?.input,
+        expectedOutput: testCases[i]?.expectedOutput,
+        actualOutput: actual,
+        passed: isCustom ? true : (expected !== undefined && expected !== '' && actual === expected),
+        error: r.stderr || r.compile_output,
+        status: r.status?.description,
+        timeMs,
+        isCustom,
+      };
+    });
 
-    res.json({ output, visibleTestResults });
+    res.json({ output, visibleTestResults, runtimeMs: maxTimeMs, isCustom });
   } catch (err) {
     next(err);
   }
