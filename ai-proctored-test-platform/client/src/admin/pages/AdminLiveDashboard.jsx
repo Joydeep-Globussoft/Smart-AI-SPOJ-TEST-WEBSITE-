@@ -175,6 +175,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
         <div style={{ fontWeight: 600, color: '#374151', marginTop: 2 }}>
           {candidate.status === 'NOT_STARTED'
             ? 'Not started'
+            : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
+            ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
             : `${candidate.questionsCompleted ?? 0} Qs Solved`}
         </div>
       </div>
@@ -293,7 +295,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       </div>
 
       <div style={{ color: '#1A2B3C', fontWeight: 600 }}>
-        {candidate.status === 'NOT_STARTED' ? '—' : (candidate.questionsCompleted ?? 0)}
+        {candidate.status === 'NOT_STARTED'
+          ? '—'
+          : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
+          ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
+          : `${candidate.questionsCompleted ?? 0} Qs Solved`}
       </div>
 
       <div>

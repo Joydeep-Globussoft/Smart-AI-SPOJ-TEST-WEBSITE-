@@ -733,12 +733,133 @@ const submitAll = async (req, res, next) => {
   }
 };
 
+// ── POST /submissions/:questionId/validate (FEATURE-007) ─────────────────────────
+// Non-finalizing validation against Hidden Test Cases with visible-test-case gating
+const validateCode = async (req, res, next) => {
+  try {
+    const { code, language } = req.body;
+    const { questionId } = req.params;
+    const candidateId = req.user.id;
+
+    if (!code || !language) {
+      return res.status(400).json({ error: 'code and language are required' });
+    }
+
+    const question = await Question.findById(questionId);
+    if (!question) return res.status(404).json({ error: 'Question not found' });
+
+    const visibleTestCases = question.visibleTestCases || [];
+    const hiddenTestCases = question.hiddenTestCases || [];
+
+    // Server-side Gating: Verify all visible test cases pass on this code
+    if (visibleTestCases.length > 0) {
+      const visibleResults = await judge0Service.runAgainstTestCases(
+        code,
+        language,
+        visibleTestCases
+      );
+      const allVisiblePassed =
+        visibleResults.length === visibleTestCases.length &&
+        visibleResults.every((r, idx) => {
+          const expected = visibleTestCases[idx]?.expectedOutput?.trim();
+          const actual = r.stdout?.trim();
+          return !r.error && !r.stderr && expected !== undefined && actual === expected;
+        });
+
+      if (!allVisiblePassed) {
+        return res.status(400).json({
+          error: 'All visible test cases must pass before validation.',
+          visibleGatingFailed: true,
+        });
+      }
+    }
+
+    // Execute against Hidden Test Cases
+    let hiddenResults = [];
+    let hiddenPassed = 0;
+    let maxTimeMs = 0;
+
+    if (hiddenTestCases.length > 0) {
+      hiddenResults = await judge0Service.runAgainstTestCases(
+        code,
+        language,
+        hiddenTestCases
+      );
+      hiddenResults.forEach((r, idx) => {
+        const timeMs = r.time ? Math.round(parseFloat(r.time) * 1000) : 0;
+        if (timeMs > maxTimeMs) maxTimeMs = timeMs;
+        const expected = hiddenTestCases[idx]?.expectedOutput?.trim();
+        const actual = r.stdout?.trim();
+        if (!r.error && !r.stderr && expected !== undefined && actual === expected) {
+          hiddenPassed += 1;
+        }
+      });
+    }
+
+    // Retrieve existing submission to check prior isAttempted state
+    let submission = await Submission.findOne({ candidateId, questionId });
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission session not found. Call start-attempt first.' });
+    }
+
+    const wasAttempted = submission.isAttempted;
+
+    // Update submission record with validation stats and draft code WITHOUT marking SUBMITTED
+    submission.code = code;
+    submission.language = language;
+    submission.isAttempted = true;
+    submission.attemptedAt = new Date();
+    submission.visibleTestCasesPassed = visibleTestCases.length;
+    submission.visibleTestCasesTotal = visibleTestCases.length;
+    submission.hiddenTestCasesPassed = hiddenPassed;
+    submission.hiddenTestCasesTotal = hiddenTestCases.length;
+
+    // Persist draft code by language
+    if (!submission.savedCodeByLanguage) {
+      submission.savedCodeByLanguage = new Map();
+    }
+    submission.savedCodeByLanguage.set(language, code);
+
+    await submission.save();
+
+    // If first time attempted for this question, calculate total distinct attempted questions & emit live update
+    if (!wasAttempted) {
+      const attemptedCount = await Submission.countDocuments({
+        candidateId,
+        testId: submission.testId,
+        isAttempted: true,
+      });
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
+          candidateId,
+          roomId: submission.roomId,
+          questionsAttempted: attemptedCount,
+        });
+      }
+    }
+
+    res.json({
+      hiddenTestCasesPassed: hiddenPassed,
+      hiddenTestCasesTotal: hiddenTestCases.length,
+      visibleTestCasesPassed: visibleTestCases.length,
+      visibleTestCasesTotal: visibleTestCases.length,
+      runtimeMs: maxTimeMs,
+      isAttempted: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   joinRoom,
   startAttempt,
   getQuestion,
   runCode,
   saveCode,
+  validateCode,
   submitCode,
   submitAll,
   broadcastTentativeTime,

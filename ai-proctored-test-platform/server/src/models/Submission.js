@@ -28,6 +28,8 @@ const submissionSchema = new mongoose.Schema({
   visibleTestCasesTotal: { type: Number, default: 0 },
   hiddenTestCasesPassed: { type: Number, default: 0 },
   hiddenTestCasesTotal: { type: Number, default: 0 },
+  isAttempted: { type: Boolean, default: false },
+  attemptedAt: { type: Date },
   candidateStartTime: { type: Date }, // individual timer start (FR-5.1)
   candidateEndTime: { type: Date },
   submittedAt: { type: Date },

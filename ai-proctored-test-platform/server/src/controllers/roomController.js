@@ -297,6 +297,8 @@ const getLiveCandidates = async (req, res, next) => {
     const candidateMap = {};
     const now = Date.now();
 
+    const totalQuestions = test.questions ? test.questions.length : 0;
+
     // 1. Seed candidates from rooms (joined candidates who may not have started test yet)
     for (const r of rooms) {
       for (const j of r.joinedCandidates || []) {
@@ -313,6 +315,8 @@ const getLiveCandidates = async (req, res, next) => {
           timeRemaining: 0,
           candidateStartTime: null,
           candidateEndTime: null,
+          questionsAttempted: 0,
+          totalQuestions,
           questionsCompleted: 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
           colorStatus: candidate.isDisqualified ? 'RED' : 'WHITE',
@@ -337,6 +341,7 @@ const getLiveCandidates = async (req, res, next) => {
         colorStatus = 'GREEN';
       }
 
+      const isAtt = Boolean(sub.isAttempted);
       const existing = candidateMap[cid];
       if (!existing || existing.status === 'NOT_STARTED') {
         candidateMap[cid] = {
@@ -349,11 +354,16 @@ const getLiveCandidates = async (req, res, next) => {
           timeRemaining,
           candidateStartTime: sub.candidateStartTime,
           candidateEndTime: sub.candidateEndTime,
+          questionsAttempted: isAtt ? 1 : 0,
+          totalQuestions,
           questionsCompleted: sub.visibleTestCasesPassed > 0 ? 1 : 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
           colorStatus,
         };
       } else {
+        if (isAtt) {
+          candidateMap[cid].questionsAttempted = (candidateMap[cid].questionsAttempted || 0) + 1;
+        }
         if (sub.visibleTestCasesPassed > 0) {
           candidateMap[cid].questionsCompleted += 1;
         }

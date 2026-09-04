@@ -110,6 +110,7 @@ export const api = {
   getQuestion: (testId, qId) => axios.get(`/tests/${testId}/questions/${qId}`),
   runCode: (qId, data) => axios.post(`/submissions/${qId}/run`, data),
   saveCode: (qId, data) => axios.post(`/submissions/${qId}/save`, data),
+  validateCode: (qId, data) => axios.post(`/submissions/${qId}/validate`, data),
   submitCode: (qId, data) => axios.post(`/submissions/${qId}/submit`, data),
   submitAll: (testId) => axios.post(`/tests/${testId}/submit-all`),
 

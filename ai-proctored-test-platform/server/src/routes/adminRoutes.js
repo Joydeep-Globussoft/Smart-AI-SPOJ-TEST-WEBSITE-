@@ -28,7 +28,7 @@ router.patch('/admins/me/password', verifyToken, requireAdmin, updateMyPassword)
 router.patch('/me/password', verifyToken, requireAdmin, updateMyPassword);
 
 // ── Super-Admin-only routes (Managing other Admin accounts) ────────────────────────
-router.use(verifyToken, requireSuperAdmin);
+router.use('/admins', verifyToken, requireSuperAdmin);
 
 // GET /api/v1/admins (supports optional ?isActive=true/false)
 router.get('/admins', getAdmins);
