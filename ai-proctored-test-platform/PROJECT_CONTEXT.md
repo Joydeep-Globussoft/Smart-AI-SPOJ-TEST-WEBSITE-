@@ -391,6 +391,7 @@ docker-compose up --build
 18. **Shared Proctoring Footer Across All Candidate Test Screens (FEATURE-004)**: Extracted and consolidated the persistent bottom proctoring status bar into a single source of truth (`TestFooter.jsx`). Consumed across both Standard Coding Tests (`CandidateTestScreen.jsx` for SPOJ, JAVASCRIPT, REACT) and AI Tests (`CandidateAITestScreen.jsx`), providing unified proctoring telemetry, REC indicator, live violation counter, advisory banner, and system health status.
 19. **Join Test Room Input Alignment Consistency (BUG-50)**: Synchronized "Room Password" input field styling (`CandidateJoinRoom.jsx`) to `textAlign: 'center'`, matching the "Room Code" field font, letter-spacing (`0.15em`), and size (`1.2rem`) for visual consistency and centered placeholder alignment.
 20. **Post-Transition (1s Delay) Evidence Capture for Fullscreen Exit & Tab Switch (BUG-51)**: Switched violation screenshot capture in `useProctoring.js` from pre-transition rolling buffer to a scheduled 1000ms post-transition screen grab from the live `__proctoring_screen_video` monitor stream. Captures the destination window/tab/app navigated to while logging and dispatching the violation immediately with the exact detection timestamp (`detectedAt`).
+21. **Navbar Width Flicker & Scrollbar-Gutter Layout Stability (BUG-52)**: Added `scrollbar-gutter: stable;` to `html` and enforced `width: 100%` on `.navbar` in `global.css`. Eliminates horizontal navbar resizing/flickering caused by vertical scrollbars appearing/disappearing between pages of varying content heights.
 
 ---
 
@@ -410,6 +411,7 @@ docker-compose up --build
 ### 2026-09-04
 - Fixed BUG-50: Center-aligned "Room Password" input field text and placeholder in `CandidateJoinRoom.jsx` to match "Room Code" field styling (`textAlign: 'center'`, `fontFamily: 'monospace'`, `fontSize: '1.2rem'`, `letterSpacing: '0.15em'`).
 - Implemented BUG-51: Switched evidence capture for `FULLSCREEN_EXIT` and `TAB_SWITCH` in `useProctoring.js` to 1000ms post-transition screen grab, capturing the destination application/tab while preserving immediate event dispatch, watermarking, and detection timestamps.
+- Resolved BUG-52: Fixed top navigation bar width flicker across admin pages by adding `scrollbar-gutter: stable;` on `html` and `width: 100%` on `.navbar` in `global.css`.
 - Preserved all candidate room join authentication, late-join request lifecycle, preview iframe focus exemptions (BUG-48), and proctoring locks.
 
 ### 2026-09-03
