@@ -35,8 +35,8 @@ export default function AdminTests() {
     testType: 'SPOJ',
     questionSetId: '',
     durationMinutes: 90,
-    totalQuestions: 5,
-    passingCriteria: 3,
+    totalQuestions: 0,
+    passingCriteria: 0,
     startTestWindowMinutes: 10,
     supportedLanguages: ['python', 'java', 'cpp', 'javascript'],
     instructions: '1. Maintain full-screen mode throughout the test.\n2. Do not switch tabs or use secondary monitors.\n3. Keep your webcam on and ensure your face is clearly visible.\n4. Mobile phones and electronic gadgets are strictly prohibited.',
@@ -98,11 +98,19 @@ export default function AdminTests() {
     if (!formData.questionSetId) {
       return toast.error('Please select a Question Set');
     }
+    const selectedQs = questionSets.find((qs) => qs._id === formData.questionSetId);
+    const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : formData.totalQuestions;
+    if (qCount <= 0) {
+      return toast.error('Selected Question Set contains 0 questions. Please add questions before creating a test.');
+    }
     if (!formData.durationMinutes || formData.durationMinutes <= 0) {
       return toast.error('Duration must be greater than 0');
     }
     if (formData.passingCriteria < 0) {
       return toast.error('Passing criteria cannot be negative');
+    }
+    if (formData.passingCriteria > qCount) {
+      return toast.error(`Passing criteria (${formData.passingCriteria}) cannot exceed Total Questions (${qCount})`);
     }
 
     try {
@@ -116,8 +124,8 @@ export default function AdminTests() {
         testType: 'SPOJ',
         questionSetId: '',
         durationMinutes: 90,
-        totalQuestions: 5,
-        passingCriteria: 3,
+        totalQuestions: 0,
+        passingCriteria: 0,
         startTestWindowMinutes: 10,
         supportedLanguages: ['python', 'java', 'cpp', 'javascript'],
         instructions: '1. Maintain full-screen mode throughout the test.\n2. Do not switch tabs or use secondary monitors.\n3. Keep your webcam on and ensure your face is clearly visible.\n4. Mobile phones and electronic gadgets are strictly prohibited.',
@@ -394,8 +402,14 @@ export default function AdminTests() {
                         className="form-select"
                         value={formData.testType}
                         onChange={(e) => {
-                          handleInputChange(e);
-                          setFormData((prev) => ({ ...prev, questionSetId: '' }));
+                          const newType = e.target.value;
+                          setFormData((prev) => ({
+                            ...prev,
+                            testType: newType,
+                            questionSetId: '',
+                            totalQuestions: 0,
+                            passingCriteria: 0,
+                          }));
                         }}
                         required
                       >
@@ -411,21 +425,38 @@ export default function AdminTests() {
                         name="questionSetId"
                         className="form-select"
                         value={formData.questionSetId}
-                        onChange={handleInputChange}
+                        onChange={(e) => {
+                          const newSetId = e.target.value;
+                          const selectedQs = questionSets.find((qs) => qs._id === newSetId);
+                          const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : 0;
+                          setFormData((prev) => ({
+                            ...prev,
+                            questionSetId: newSetId,
+                            totalQuestions: qCount,
+                            passingCriteria: prev.passingCriteria > qCount ? qCount : prev.passingCriteria,
+                          }));
+                        }}
                         required
                       >
                         <option value="">Select a Question Set...</option>
-                        {filteredQuestionSets.map((qs) => (
-                          <option key={qs._id} value={qs._id}>
-                            {qs.name} ({qs.testType})
-                          </option>
-                        ))}
+                        {filteredQuestionSets.map((qs) => {
+                          const qCount = qs.questionCount ?? qs.questionIds?.length ?? 0;
+                          return (
+                            <option key={qs._id} value={qs._id}>
+                              {qs.name} ({qs.testType}) — {qCount} Qs
+                            </option>
+                          );
+                        })}
                       </select>
-                      {filteredQuestionSets.length === 0 && (
+                      {filteredQuestionSets.length === 0 ? (
                         <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
                           No question sets found for {formData.testType}. Create one in Question Bank first.
                         </p>
-                      )}
+                      ) : formData.questionSetId && formData.totalQuestions === 0 ? (
+                        <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                          Warning: This Question Set contains 0 questions. Add questions in Question Bank before creating a test.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 
@@ -445,16 +476,29 @@ export default function AdminTests() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Total Questions</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Total Questions</label>
+                        <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+                          (Auto-derived)
+                        </span>
+                      </div>
                       <input
                         type="number"
                         name="totalQuestions"
                         className="form-control"
-                        min="1"
-                        max="50"
                         value={formData.totalQuestions}
-                        onChange={handleInputChange}
+                        disabled
+                        readOnly
+                        style={{
+                          backgroundColor: '#f3f4f6',
+                          cursor: 'not-allowed',
+                          color: '#374151',
+                          fontWeight: 600,
+                        }}
                       />
+                      <small style={{ color: '#6b7280', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
+                        Locked to Question Set's count ({formData.totalQuestions} Qs).
+                      </small>
                     </div>
 
                     <div className="form-group">
@@ -464,11 +508,16 @@ export default function AdminTests() {
                         name="passingCriteria"
                         className="form-control"
                         min="0"
-                        max="50"
+                        max={formData.totalQuestions || 50}
                         value={formData.passingCriteria}
                         onChange={handleInputChange}
                         required
                       />
+                      {formData.passingCriteria > formData.totalQuestions && formData.totalQuestions > 0 && (
+                        <small style={{ color: '#E74C3C', fontSize: '0.75rem', display: 'block', marginTop: 2 }}>
+                          Cannot exceed Total Questions ({formData.totalQuestions}).
+                        </small>
+                      )}
                     </div>
                   </div>
 

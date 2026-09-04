@@ -13,15 +13,40 @@ const createTest = async (req, res, next) => {
       testType,
       questionSetId,
       durationMinutes,
-      totalQuestions,
       passingCriteria,
       instructions,
       startTestWindowMinutes,
       supportedLanguages,
     } = req.body;
 
-    if (!title || !testType || !questionSetId || !durationMinutes || !passingCriteria || !instructions) {
+    if (!title || !testType || !questionSetId || !durationMinutes || passingCriteria === undefined || passingCriteria === null || !instructions) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const Question = require('../models/Question');
+    const QuestionSet = require('../models/QuestionSet');
+
+    const questionSet = await QuestionSet.findById(questionSetId);
+    if (!questionSet) {
+      return res.status(404).json({ error: 'Selected Question Set not found' });
+    }
+
+    // Authoritative question count from Question collection (BUG-60)
+    const actualQuestionCount = await Question.countDocuments({ questionSetId });
+    if (actualQuestionCount <= 0) {
+      return res.status(400).json({
+        error: 'Selected Question Set contains 0 questions. Please add questions to the set before creating a test.',
+      });
+    }
+
+    const parsedPassingCriteria = Number(passingCriteria);
+    if (isNaN(parsedPassingCriteria) || parsedPassingCriteria < 0) {
+      return res.status(400).json({ error: 'Passing criteria must be a non-negative number' });
+    }
+    if (parsedPassingCriteria > actualQuestionCount) {
+      return res.status(400).json({
+        error: `Passing criteria (${parsedPassingCriteria}) cannot exceed total questions in the set (${actualQuestionCount}).`,
+      });
     }
 
     const test = await Test.create({
@@ -29,8 +54,8 @@ const createTest = async (req, res, next) => {
       testType,
       questionSetId,
       durationMinutes,
-      totalQuestions: totalQuestions || 5,
-      passingCriteria,
+      totalQuestions: actualQuestionCount, // Strictly locked to question set's real count (BUG-60)
+      passingCriteria: parsedPassingCriteria,
       instructions,
       startTestWindowMinutes: startTestWindowMinutes || 10,
       supportedLanguages: supportedLanguages || [],
@@ -148,6 +173,21 @@ const updateTest = async (req, res, next) => {
       return res.status(400).json({ error: 'Instructions cannot be empty' });
     }
 
+    // If questionSetId is updated, derive totalQuestions from the new set (BUG-60)
+    if (req.body.questionSetId) {
+      const Question = require('../models/Question');
+      const questionCount = await Question.countDocuments({ questionSetId: req.body.questionSetId });
+      if (questionCount <= 0) {
+        return res.status(400).json({
+          error: 'Selected Question Set contains 0 questions. Please add questions to the set before assigning.',
+        });
+      }
+      req.body.totalQuestions = questionCount;
+      if (existing.passingCriteria > questionCount) {
+        req.body.passingCriteria = questionCount;
+      }
+    }
+
     const test = await Test.findByIdAndUpdate(req.params.testId, req.body, {
       new: true,
       runValidators: true,
@@ -171,19 +211,30 @@ const updatePassingCriteria = async (req, res, next) => {
       return res.status(400).json({ error: 'passingCriteria is required' });
     }
 
-    const test = await Test.findByIdAndUpdate(
-      req.params.testId,
-      { passingCriteria },
-      { new: true, runValidators: true }
-    );
-    if (!test) return res.status(404).json({ error: 'Test not found' });
-
-    // FR-2.2: Auto-trigger shortlist regeneration if test has ended
-    if (test.status === 'ENDED') {
-      await shortlistService.regenerate(test._id.toString());
+    const numericCriteria = Number(passingCriteria);
+    if (isNaN(numericCriteria) || numericCriteria < 0) {
+      return res.status(400).json({ error: 'Passing criteria must be a non-negative number' });
     }
 
-    res.json({ test });
+    const existingTest = await Test.findById(req.params.testId);
+    if (!existingTest) return res.status(404).json({ error: 'Test not found' });
+
+    // Validate passingCriteria does not exceed totalQuestions (BUG-60)
+    if (numericCriteria > existingTest.totalQuestions) {
+      return res.status(400).json({
+        error: `Passing criteria (${numericCriteria}) cannot exceed total questions (${existingTest.totalQuestions}).`,
+      });
+    }
+
+    existingTest.passingCriteria = numericCriteria;
+    await existingTest.save();
+
+    // FR-2.2: Auto-trigger shortlist regeneration if test has ended
+    if (existingTest.status === 'ENDED') {
+      await shortlistService.regenerate(existingTest._id.toString());
+    }
+
+    res.json({ test: existingTest });
   } catch (err) {
     next(err);
   }

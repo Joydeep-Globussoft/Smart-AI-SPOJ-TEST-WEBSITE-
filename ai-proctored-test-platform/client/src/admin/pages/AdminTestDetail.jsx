@@ -347,16 +347,29 @@ export default function AdminTestDetail() {
     }
   };
 
-  // ── BUG-36, BUG-38, BUG-39: Edit Configuration Handlers ───────────────────
+  // ── BUG-36, BUG-38, BUG-39, BUG-60: Edit Configuration Handlers ───────────
   const handleOpenEditModal = async () => {
     if (test?.status !== 'DRAFT') return;
     const qsId = test?.questionSetId?._id || test?.questionSetId || '';
+    let loadedSets = questionSets;
+    if (questionSets.length === 0) {
+      try {
+        const res = await api.getQuestionSets();
+        loadedSets = res.data?.questionSets || [];
+        setQuestionSets(loadedSets);
+      } catch (err) {
+        console.error('Failed to load question sets:', err);
+      }
+    }
+    const selectedQs = loadedSets.find((qs) => qs._id === qsId);
+    const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? test?.totalQuestions ?? 0) : (test?.totalQuestions ?? 0);
+
     setEditFormData({
       title: test?.title || '',
       testType: test?.testType || 'SPOJ',
       questionSetId: qsId,
       durationMinutes: test?.durationMinutes ?? 90,
-      totalQuestions: test?.totalQuestions ?? 5,
+      totalQuestions: qCount,
       startTestWindowMinutes: test?.startTestWindowMinutes ?? 10,
       supportedLanguages: Array.isArray(test?.supportedLanguages) && test.supportedLanguages.length > 0
         ? [...test.supportedLanguages]
@@ -364,14 +377,6 @@ export default function AdminTestDetail() {
       instructions: test?.instructions || '',
     });
     setShowEditModal(true);
-    if (questionSets.length === 0) {
-      try {
-        const res = await api.getQuestionSets();
-        setQuestionSets(res.data?.questionSets || []);
-      } catch (err) {
-        console.error('Failed to load question sets:', err);
-      }
-    }
   };
 
   const handleEditTestTypeChange = (e) => {
@@ -381,6 +386,7 @@ export default function AdminTestDetail() {
       ...prev,
       testType: newType,
       questionSetId: '', // Reset question set because old set is not valid for new testType
+      totalQuestions: 0,
     }));
   };
 
@@ -1282,7 +1288,16 @@ export default function AdminTestDetail() {
                         id="edit-question-set"
                         className="form-select"
                         value={editFormData.questionSetId}
-                        onChange={(e) => setEditFormData((p) => ({ ...p, questionSetId: e.target.value }))}
+                        onChange={(e) => {
+                          const newSetId = e.target.value;
+                          const selectedQs = questionSets.find((qs) => qs._id === newSetId);
+                          const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : 0;
+                          setEditFormData((p) => ({
+                            ...p,
+                            questionSetId: newSetId,
+                            totalQuestions: qCount,
+                          }));
+                        }}
                         required
                       >
                         <option value="">Select a Question Set...</option>
@@ -1292,11 +1307,14 @@ export default function AdminTestDetail() {
                           const displayList = cur && cur.testType === editFormData.testType && !filtered.some((qs) => qs._id === cur._id)
                             ? [cur, ...filtered]
                             : filtered;
-                          return displayList.map((qs) => (
-                            <option key={qs._id} value={qs._id}>
-                              {qs.name} ({qs.testType})
-                            </option>
-                          ));
+                          return displayList.map((qs) => {
+                            const qCount = qs.questionCount ?? qs.questionIds?.length ?? 0;
+                            return (
+                              <option key={qs._id} value={qs._id}>
+                                {qs.name} ({qs.testType}) — {qCount} Qs
+                              </option>
+                            );
+                          });
                         })()}
                       </select>
                       {questionSets.filter((qs) => qs.testType === editFormData.testType).length === 0 && (
@@ -1324,16 +1342,29 @@ export default function AdminTestDetail() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600 }}>Total Questions</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>Total Questions</label>
+                        <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+                          (Auto-derived)
+                        </span>
+                      </div>
                       <input
                         type="number"
                         id="edit-total-questions"
                         className="form-control"
-                        min="1"
-                        max="50"
                         value={editFormData.totalQuestions}
-                        onChange={(e) => setEditFormData((p) => ({ ...p, totalQuestions: e.target.value }))}
+                        disabled
+                        readOnly
+                        style={{
+                          backgroundColor: '#f3f4f6',
+                          cursor: 'not-allowed',
+                          color: '#374151',
+                          fontWeight: 600,
+                        }}
                       />
+                      <small style={{ color: '#6b7280', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
+                        Locked to Question Set's count ({editFormData.totalQuestions} Qs).
+                      </small>
                     </div>
                   </div>
 
