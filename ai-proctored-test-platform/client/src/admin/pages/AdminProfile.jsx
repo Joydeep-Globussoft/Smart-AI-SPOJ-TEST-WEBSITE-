@@ -243,11 +243,39 @@ export default function AdminProfile() {
                   </span>
                   <div style={{ marginTop: 6 }}>
                     {profile.role === 'SUPER_ADMIN' ? (
-                      <span className="badge badge-primary" style={{ fontSize: '0.72rem' }}>
+                      <span
+                        className="badge badge-primary"
+                        style={{
+                          fontSize: '0.72rem',
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word',
+                          maxWidth: '100%',
+                          display: 'inline-block',
+                          lineHeight: 1.4,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          textAlign: 'left',
+                        }}
+                      >
                         SUPER_ADMIN — Full Platform Control
                       </span>
                     ) : (
-                      <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
+                      <span
+                        className="badge badge-secondary"
+                        style={{
+                          fontSize: '0.72rem',
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word',
+                          maxWidth: '100%',
+                          display: 'inline-block',
+                          lineHeight: 1.4,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          textAlign: 'left',
+                        }}
+                      >
                         ADMIN — Standard Access
                       </span>
                     )}
