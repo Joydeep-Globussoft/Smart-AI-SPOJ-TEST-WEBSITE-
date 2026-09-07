@@ -1,32 +1,35 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuthContext';
 import './styles/global.css';
 import ErrorBoundary from './shared/ErrorBoundary';
+import { lazyWithRetry } from './shared/lazyWithRetry';
 
-// ── Lazy-loaded pages ─────────────────────────────────────────────────────────
+// ── Critical candidate confirmation page (statically bundled for zero-latency, 100% reliable submission confirmation) ──
+import CandidateTestComplete from './candidate/pages/CandidateTestComplete';
+
+// ── Lazy-loaded pages with stale-deployment auto-recovery (BUG-65) ─────────────
 // Admin panel
-const AdminLogin = lazy(() => import('./admin/pages/AdminLogin'));
-const AdminDashboard = lazy(() => import('./admin/pages/AdminDashboard'));
-const AdminTests = lazy(() => import('./admin/pages/AdminTests'));
-const AdminTestDetail = lazy(() => import('./admin/pages/AdminTestDetail'));
-const AdminQuestionBank = lazy(() => import('./admin/pages/AdminQuestionBank'));
-const AdminLiveDashboard = lazy(() => import('./admin/pages/AdminLiveDashboard'));
-const AdminResults = lazy(() => import('./admin/pages/AdminResults'));
-const AdminCreateAdmin = lazy(() => import('./admin/pages/AdminCreateAdmin'));
-const AdminProfile = lazy(() => import('./admin/pages/AdminProfile'));
-const AdminSettings = lazy(() => import('./admin/pages/AdminSettings'));
-const AdminHelp = lazy(() => import('./admin/pages/AdminHelp'));
+const AdminLogin = lazyWithRetry(() => import('./admin/pages/AdminLogin'));
+const AdminDashboard = lazyWithRetry(() => import('./admin/pages/AdminDashboard'));
+const AdminTests = lazyWithRetry(() => import('./admin/pages/AdminTests'));
+const AdminTestDetail = lazyWithRetry(() => import('./admin/pages/AdminTestDetail'));
+const AdminQuestionBank = lazyWithRetry(() => import('./admin/pages/AdminQuestionBank'));
+const AdminLiveDashboard = lazyWithRetry(() => import('./admin/pages/AdminLiveDashboard'));
+const AdminResults = lazyWithRetry(() => import('./admin/pages/AdminResults'));
+const AdminCreateAdmin = lazyWithRetry(() => import('./admin/pages/AdminCreateAdmin'));
+const AdminProfile = lazyWithRetry(() => import('./admin/pages/AdminProfile'));
+const AdminSettings = lazyWithRetry(() => import('./admin/pages/AdminSettings'));
+const AdminHelp = lazyWithRetry(() => import('./admin/pages/AdminHelp'));
 
 // Candidate panel
-const CandidateRegister = lazy(() => import('./candidate/pages/CandidateRegister'));
-const CandidateLogin = lazy(() => import('./candidate/pages/CandidateLogin'));
-const CandidateJoinRoom = lazy(() => import('./candidate/pages/CandidateJoinRoom'));
-const CandidateInstructions = lazy(() => import('./candidate/pages/CandidateInstructions'));
-const CandidateTestScreen = lazy(() => import('./candidate/pages/CandidateTestScreen'));
-const CandidateAITestScreen = lazy(() => import('./candidate/pages/CandidateAITestScreen'));
-const CandidateTestComplete = lazy(() => import('./candidate/pages/CandidateTestComplete'));
+const CandidateRegister = lazyWithRetry(() => import('./candidate/pages/CandidateRegister'));
+const CandidateLogin = lazyWithRetry(() => import('./candidate/pages/CandidateLogin'));
+const CandidateJoinRoom = lazyWithRetry(() => import('./candidate/pages/CandidateJoinRoom'));
+const CandidateInstructions = lazyWithRetry(() => import('./candidate/pages/CandidateInstructions'));
+const CandidateTestScreen = lazyWithRetry(() => import('./candidate/pages/CandidateTestScreen'));
+const CandidateAITestScreen = lazyWithRetry(() => import('./candidate/pages/CandidateAITestScreen'));
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 const RequireAdmin = ({ children }) => {
