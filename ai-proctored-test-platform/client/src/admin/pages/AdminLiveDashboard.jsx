@@ -30,10 +30,24 @@ const STATUS_COLORS = {
 };
 
 // ── Candidate Color Status Helper (BUG-44: GREEN = SUBMITTED, YELLOW = IN_PROGRESS, RED = DISQUALIFIED, WHITE = NOT_STARTED)
-const getCandidateColorStatus = (candidate) => {
+const getCandidateColorStatus = (candidate, isTestEnded = false) => {
   if (!candidate) return 'WHITE';
   if (candidate.status === 'DISQUALIFIED' || candidate.colorStatus === 'RED' || candidate.isDisqualified) {
     return 'RED';
+  }
+  if (isTestEnded) {
+    // When test is ENDED, candidates who never started/joined remain NOT_STARTED (WHITE)
+    if (
+      candidate.status === 'NOT_STARTED' ||
+      (!candidate.candidateStartTime &&
+        !candidate.status &&
+        (candidate.questionsAttempted === undefined || candidate.questionsAttempted === 0) &&
+        (candidate.questionsCompleted === undefined || candidate.questionsCompleted === 0))
+    ) {
+      return 'WHITE';
+    }
+    // All other candidates who joined / in-progress / submitted show as SUBMITTED (GREEN)
+    return 'GREEN';
   }
   if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP' || candidate.colorStatus === 'GREEN') {
     return 'GREEN';
@@ -63,21 +77,27 @@ const getCandidateRemainingMs = (candidate, currentNow) => {
 };
 
 // ── Memoized Seat Tile (FR-7.3: Persistent Malpractice counter beside name) ────
-const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
-  const isCandidateInProgress = candidate.status === 'IN_PROGRESS';
-  const colorStatus = getCandidateColorStatus(candidate);
+const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
+  const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS';
+  const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
   const isWhite = colorStatus === 'WHITE';
-  const isYellowDot = color === STATUS_COLORS.YELLOW;
+  const isYellowDot = !isTestEnded && color === STATUS_COLORS.YELLOW;
   const malpracticeCount = candidate.malpracticeCount || 0;
 
   const remainingMs = getCandidateRemainingMs(candidate, now);
   const formattedTimer = useMemo(() => {
-    if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP') {
+    if (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || candidate.colorStatus === 'RED') {
+      return 'Disqualified';
+    }
+    if (isTestEnded) {
+      if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
+        return 'Not started';
+      }
       return 'Submitted';
     }
-    if (candidate.status === 'DISQUALIFIED') {
-      return 'Disqualified';
+    if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP') {
+      return 'Submitted';
     }
     if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
       return 'Not started';
@@ -92,7 +112,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
       return `${mins}m ${secs < 10 ? '0' : ''}${secs}s left`;
     }
     return isCandidateInProgress ? 'In Progress' : 'Not started';
-  }, [candidate.status, candidate.candidateStartTime, candidate.candidateEndTime, candidate.colorStatus, remainingMs, isCandidateInProgress]);
+  }, [candidate.status, candidate.candidateStartTime, candidate.candidateEndTime, candidate.colorStatus, candidate.isDisqualified, remainingMs, isCandidateInProgress, isTestEnded]);
 
   return (
     <div
@@ -165,7 +185,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
             animation: isYellowDot ? 'seatTileDotPulse 1.8s ease-in-out infinite' : 'none',
             willChange: isYellowDot ? 'opacity, transform' : 'auto',
           }}
-          title={`Status: ${candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : 'NOT_STARTED')}`}
+          title={`Status: ${isTestEnded ? (colorStatus === 'RED' ? 'DISQUALIFIED' : colorStatus === 'WHITE' ? 'NOT_STARTED' : 'SUBMITTED') : (candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : 'NOT_STARTED'))}`}
         />
       </div>
 
@@ -173,8 +193,10 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
       <div style={{ margin: '6px 0', fontSize: '0.75rem', color: '#6b7280' }}>
         <div>{roomName || candidate.roomName || 'Room'}</div>
         <div style={{ fontWeight: 600, color: '#374151', marginTop: 2 }}>
-          {candidate.status === 'NOT_STARTED'
+          {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
             ? 'Not started'
+            : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
+            ? `${candidate.questionsCompleted ?? 0} Qs Solved`
             : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
             ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
             : `${candidate.questionsCompleted ?? 0} Qs Solved`}
@@ -192,21 +214,27 @@ const SeatTile = memo(({ candidate, roomName, onClick, now }) => {
 });
 
 // ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name) ──
-const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now }) => {
-  const isCandidateInProgress = candidate.status === 'IN_PROGRESS';
-  const colorStatus = getCandidateColorStatus(candidate);
+const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now, isTestEnded }) => {
+  const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS';
+  const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
   const isWhite = colorStatus === 'WHITE';
-  const isYellowDot = colorStatus === 'YELLOW';
+  const isYellowDot = !isTestEnded && colorStatus === 'YELLOW';
   const malpracticeCount = candidate.malpracticeCount || 0;
 
   const remainingMs = getCandidateRemainingMs(candidate, now);
   const formattedTimer = useMemo(() => {
+    if (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || candidate.colorStatus === 'RED') {
+      return 'Disqualified';
+    }
+    if (isTestEnded) {
+      if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
+        return 'Not started';
+      }
+      return 'Test Ended';
+    }
     if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP') {
       return 'Submitted';
-    }
-    if (candidate.status === 'DISQUALIFIED') {
-      return 'Disqualified';
     }
     if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
       return 'Not started';
@@ -221,7 +249,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
     }
     return isCandidateInProgress ? 'In Progress' : 'Not started';
-  }, [candidate.status, candidate.candidateStartTime, candidate.candidateEndTime, candidate.colorStatus, remainingMs, isCandidateInProgress]);
+  }, [candidate.status, candidate.candidateStartTime, candidate.candidateEndTime, candidate.colorStatus, candidate.isDisqualified, remainingMs, isCandidateInProgress, isTestEnded]);
 
   return (
     <div
@@ -288,15 +316,25 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             fontWeight: 600,
           }}
         >
-          {candidate.status === 'AUTO_SUBMITTED_TIME_UP'
+          {isTestEnded
+            ? (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || colorStatus === 'RED'
+                ? 'DISQUALIFIED'
+                : candidate.status === 'NOT_STARTED' || colorStatus === 'WHITE'
+                ? 'NOT_STARTED'
+                : candidate.status === 'AUTO_SUBMITTED_TIME_UP'
+                ? 'SUBMITTED (TIME UP)'
+                : 'SUBMITTED')
+            : candidate.status === 'AUTO_SUBMITTED_TIME_UP'
             ? 'SUBMITTED (TIME UP)'
             : (candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : colorStatus) || 'IN_PROGRESS')}
         </span>
       </div>
 
       <div style={{ color: '#1A2B3C', fontWeight: 600 }}>
-        {candidate.status === 'NOT_STARTED'
+        {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
           ? '—'
+          : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
+          ? `${candidate.questionsCompleted ?? 0} Qs Solved`
           : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
           ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
           : `${candidate.questionsCompleted ?? 0} Qs Solved`}
@@ -328,7 +366,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         )}
       </div>
 
-      {/* Live countdown timer for roster (Requirement 2d) */}
+      {/* Countdown timer / Status for roster */}
       <div style={{ color: '#6b7280', fontFamily: 'monospace', fontSize: '0.8rem' }}>
         {formattedTimer}
       </div>
@@ -341,21 +379,23 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         >
           Inspect
         </button>
-        {candidate.status !== 'DISQUALIFIED' && (
+        {candidate.status !== 'DISQUALIFIED' && !candidate.isDisqualified && colorStatus !== 'RED' && (
           <>
-            <button
-              onClick={() => onWarn(candidate)}
-              className="btn btn-secondary"
-              style={{ padding: '3px 6px', fontSize: '0.72rem', color: '#d97706' }}
-              title="Send Warning"
-            >
-              Warn
-            </button>
+            {!isTestEnded && (
+              <button
+                onClick={() => onWarn(candidate)}
+                className="btn btn-secondary"
+                style={{ padding: '3px 6px', fontSize: '0.72rem', color: '#d97706' }}
+                title="Send Warning"
+              >
+                Warn
+              </button>
+            )}
             <button
               onClick={() => onDisqualify(candidate)}
               className="btn btn-danger"
               style={{ padding: '3px 6px', fontSize: '0.72rem' }}
-              title="Disqualify Candidate (FR-7.4)"
+              title={isTestEnded ? 'Retroactively Disqualify Candidate' : 'Disqualify Candidate (FR-7.4)'}
             >
               Disqualify
             </button>
@@ -880,24 +920,38 @@ export default function AdminLiveDashboard() {
     }
   };
 
+  const isTestEnded = test?.status === 'ENDED';
+
   const handleManualWarn = (candidate) => {
-    toast(`Sent warning to ${candidate.name}`, { icon: '⚠️' });
+    toast(`Sent warning to ${candidate.name || candidate.candidateName}`, { icon: '⚠️' });
   };
 
   const handleManualDisqualify = async (candidate) => {
-    if (!window.confirm(`Are you sure you want to DISQUALIFY ${candidate.name}?`)) return;
+    const cid = candidate.candidateId || candidate.id || candidate._id;
+    const name = candidate.name || candidate.candidateName || 'this candidate';
+    if (!window.confirm(`Are you sure you want to DISQUALIFY ${name}?`)) return;
     try {
+      await api.disqualifyCandidate(cid, { testId });
       setCandidatesMap((prev) => ({
         ...prev,
-        [candidate.candidateId]: {
-          ...prev[candidate.candidateId],
+        [cid]: {
+          ...prev[cid],
           status: 'DISQUALIFIED',
           colorStatus: 'RED',
+          isDisqualified: true,
         },
       }));
-      toast.success(`${candidate.name} has been disqualified.`);
-    } catch {
-      toast.error('Failed to disqualify candidate');
+      if (inspectCandidate && (inspectCandidate.candidateId === cid || inspectCandidate._id === cid || inspectCandidate.id === cid)) {
+        setInspectCandidate((prev) => ({
+          ...prev,
+          status: 'DISQUALIFIED',
+          colorStatus: 'RED',
+          isDisqualified: true,
+        }));
+      }
+      toast.success(`${name} has been disqualified.`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to disqualify candidate');
     }
   };
 
@@ -912,23 +966,23 @@ export default function AdminLiveDashboard() {
     return Object.values(candidatesMap).filter((c) => {
       const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
       const matchesRoom = selectedRoomId === 'ALL' || String(cRoomId) === String(selectedRoomId);
-      const cColorStatus = getCandidateColorStatus(c);
+      const cColorStatus = getCandidateColorStatus(c, isTestEnded);
       const matchesStatus =
         filterStatus === 'ALL' ||
         cColorStatus === filterStatus ||
-        (filterStatus === 'GREEN' && (c.status === 'SUBMITTED' || c.status === 'AUTO_SUBMITTED_TIME_UP')) ||
+        (filterStatus === 'GREEN' && (c.status === 'SUBMITTED' || c.status === 'AUTO_SUBMITTED_TIME_UP' || isTestEnded)) ||
         c.status === filterStatus;
-      const matchesSearch = !searchQuery.trim() || c.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = !searchQuery.trim() || (c.name || c.candidateName)?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesRoom && matchesStatus && matchesSearch;
     });
-  }, [candidatesMap, selectedRoomId, filterStatus, searchQuery]);
+  }, [candidatesMap, selectedRoomId, filterStatus, searchQuery, isTestEnded]);
 
   // Aggregated Stats
   const stats = useMemo(() => {
     let submitted = 0, yellow = 0, red = 0, white = 0, passing = 0, totalMalpractice = 0;
     const passingThreshold = test?.passingCriteria || 1;
     Object.values(candidatesMap).forEach((c) => {
-      const cColorStatus = getCandidateColorStatus(c);
+      const cColorStatus = getCandidateColorStatus(c, isTestEnded);
       if (cColorStatus === 'GREEN') submitted++;
       else if (cColorStatus === 'YELLOW') yellow++;
       else if (cColorStatus === 'RED') red++;
@@ -950,7 +1004,7 @@ export default function AdminLiveDashboard() {
       passing,
       totalMalpractice,
     };
-  }, [candidatesMap, test?.passingCriteria]);
+  }, [candidatesMap, test?.passingCriteria, isTestEnded]);
 
   // Aggregate / Tentative Timer Calculation (BUG-21: MAXIMUM remaining time among IN_PROGRESS candidates)
   const [now, setNow] = useState(Date.now());
@@ -967,7 +1021,7 @@ export default function AdminLiveDashboard() {
     // ASSUMPTION: If test is not loaded or status is not live, show appropriate fallback
     if (!test) return { formatted: '—', rawMs: 0, hasActive: false };
     if (test.status === 'ENDED') {
-      return { formatted: '00:00 (Concluded)', rawMs: 0, hasActive: false };
+      return { formatted: 'Concluded', rawMs: 0, hasActive: false };
     }
 
     // Filter in-progress candidates in current view (matching selectedRoomId or ALL rooms combined)
@@ -1061,9 +1115,10 @@ export default function AdminLiveDashboard() {
         onDisqualify={handleManualDisqualify}
         style={style}
         now={now}
+        isTestEnded={isTestEnded}
       />
     );
-  }, [candidateList, roomsById, now]);
+  }, [candidateList, roomsById, now, isTestEnded]);
 
   if (loading) {
     return (
@@ -1132,7 +1187,7 @@ export default function AdminLiveDashboard() {
     <div className="app-layout">
       <AdminNavbar />
       <main className="main-content">
-        {/* Breadcrumb Navigation */}
+        {/* Breadcrumb Navigation (FEATURE-008: Dynamically rename post-test) */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
           <Link to="/admin/tests" style={{ color: '#0E7C86', fontWeight: 500 }}>
             ← Tests
@@ -1142,10 +1197,12 @@ export default function AdminLiveDashboard() {
             {test?.title || 'Test Details'}
           </Link>
           <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>Live Monitoring</span>
+          <span style={{ color: '#4b5563', fontWeight: 600 }}>
+            {isTestEnded ? 'Test Summary' : 'Live Monitoring'}
+          </span>
         </div>
 
-        {/* Live Top Header */}
+        {/* Top Header Card */}
         <div className="card" style={{ marginBottom: 20, padding: '20px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
@@ -1161,7 +1218,7 @@ export default function AdminLiveDashboard() {
                   {test?.testType}
                 </span>
 
-                {/* Tentative Time Badge (BUG-21: Maximum remaining time indicating when the session concludes) */}
+                {/* Tentative Time / Status Badge (BUG-21, FEATURE-008: Frozen state post-test) */}
                 <div
                   style={{
                     display: 'inline-flex',
@@ -1174,50 +1231,57 @@ export default function AdminLiveDashboard() {
                     boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
                   }}
                   title={
-                    tentativeTimer.hasActive
+                    isTestEnded
+                      ? 'Test Concluded: Operational summary and malpractice review'
+                      : tentativeTimer.hasActive
                       ? `Tentative Time: Session concludes when the last candidate finishes in ${tentativeTimer.formatted}`
                       : tentativeTimer.formatted === 'Session concluded'
                       ? 'Tentative Time: All candidates have finished or reached terminal states'
                       : 'Tentative Time: No candidates have started yet'
                   }
                 >
-                  <span style={{ fontSize: '1rem' }}>⏱️</span>
+                  <span style={{ fontSize: '1rem' }}>{isTestEnded ? '🏁' : '⏱️'}</span>
                   <div>
                     <div style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', fontWeight: 700 }}>
-                      Tentative Time
+                      {isTestEnded ? 'Test Status' : 'Tentative Time'}
                     </div>
                     <div style={{
-                      fontFamily: tentativeTimer.hasActive ? 'monospace' : 'inherit',
-                      fontSize: tentativeTimer.hasActive ? '0.95rem' : '0.82rem',
+                      fontFamily: isTestEnded || !tentativeTimer.hasActive ? 'inherit' : 'monospace',
+                      fontSize: isTestEnded ? '0.85rem' : tentativeTimer.hasActive ? '0.95rem' : '0.82rem',
                       fontWeight: 800,
-                      color: tentativeTimer.hasActive ? '#38BDF8' : '#94A3B8',
-                      letterSpacing: tentativeTimer.hasActive ? '0.03em' : 'normal',
+                      color: isTestEnded ? '#10B981' : tentativeTimer.hasActive ? '#38BDF8' : '#94A3B8',
+                      letterSpacing: !isTestEnded && tentativeTimer.hasActive ? '0.03em' : 'normal',
                       lineHeight: 1.1
                     }}>
-                      {tentativeTimer.formatted}
+                      {isTestEnded ? 'Test Concluded' : tentativeTimer.formatted}
                     </div>
                   </div>
                 </div>
               </div>
               <p style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: 4 }}>
-                Real-time multi-room monitoring · Passing Threshold: <strong>≥ {test?.passingCriteria} Qs</strong>
+                {isTestEnded
+                  ? 'Post-test operational summary · Passing Threshold: '
+                  : 'Real-time multi-room monitoring · Passing Threshold: '}
+                <strong>≥ {test?.passingCriteria} Qs</strong>
               </p>
             </div>
 
             {/* Header Controls: Room Filter, Voice TTS, Links */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              {/* Voice Announcement Toggle (FR-8.3) */}
-              <button
-                onClick={() => {
-                  setVoiceEnabled(!voiceEnabled);
-                  toast.success(voiceEnabled ? 'Voice announcements muted' : 'Voice announcements enabled');
-                }}
-                className="btn btn-secondary"
-                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                title="AI Voice announcement when candidates submit (FR-8.3)"
-              >
-                {voiceEnabled ? '🔊 Voice TTS: ON' : '🔇 Voice TTS: OFF'}
-              </button>
+              {/* Voice Announcement Toggle (FR-8.3, removed post-test per FEATURE-008) */}
+              {!isTestEnded && (
+                <button
+                  onClick={() => {
+                    setVoiceEnabled(!voiceEnabled);
+                    toast.success(voiceEnabled ? 'Voice announcements muted' : 'Voice announcements enabled');
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                  title="AI Voice announcement when candidates submit (FR-8.3)"
+                >
+                  {voiceEnabled ? '🔊 Voice TTS: ON' : '🔇 Voice TTS: OFF'}
+                </button>
+              )}
 
               {/* Room Filter Dropdown (FR-8.2) */}
               <select
@@ -1243,8 +1307,8 @@ export default function AdminLiveDashboard() {
           </div>
         </div>
 
-        {/* ── Pending Late-Join Requests Banner (Requirements 4 & 5) ── */}
-        {lateJoinRequests.length > 0 && (
+        {/* ── Pending Late-Join Requests Banner (Requirements 4 & 5, hidden post-test) ── */}
+        {!isTestEnded && lateJoinRequests.length > 0 && (
           <div
             className="card"
             style={{
@@ -1321,18 +1385,18 @@ export default function AdminLiveDashboard() {
           </div>
         )}
 
-        {/* ── Real-Time Metrics Bar ── */}
+        {/* ── Real-Time Metrics Bar (FEATURE-008: Clear post-test summary metrics) ── */}
         <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
           <div className="stat-card">
             <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Active Candidates</div>
+            <div className="stat-label">{isTestEnded ? 'Total Candidates' : 'Active Candidates'}</div>
           </div>
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.GREEN}` }}>
             <div className="stat-value" style={{ color: STATUS_COLORS.GREEN }}>{stats.submitted}</div>
             <div className="stat-label">Submitted</div>
           </div>
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.YELLOW}` }}>
-            <div className="stat-value" style={{ color: '#d97706' }}>{stats.yellow}</div>
+            <div className="stat-value" style={{ color: '#d97706' }}>{isTestEnded ? 0 : stats.yellow}</div>
             <div className="stat-label">In Progress</div>
           </div>
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.RED}` }}>
@@ -1349,13 +1413,17 @@ export default function AdminLiveDashboard() {
           </div>
         </div>
 
-        {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter) ── */}
+        {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter, FEATURE-008 Post-Test Summary) ── */}
         <div className="card" style={{ marginBottom: 24 }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 className="card-title">Live Physical Seat Map (FR-8.1, FR-8.2)</h3>
+              <h3 className="card-title">
+                {isTestEnded ? 'Physical Seat Map Summary (FR-8.1, FR-8.2)' : 'Live Physical Seat Map (FR-8.1, FR-8.2)'}
+              </h3>
               <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
-                Persistent violation counters (<code>⚠️ count</code>) visible directly on each seat tile (FR-7.3).
+                {isTestEnded
+                  ? 'Final candidate submission status and persistent violation counters (⚠️ count).'
+                  : 'Persistent violation counters (⚠️ count) visible directly on each seat tile (FR-7.3).'}
               </p>
             </div>
 
@@ -1383,9 +1451,13 @@ export default function AdminLiveDashboard() {
           {candidateList.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 20px', color: '#6b7280' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📡</div>
-              <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>Waiting for candidates to connect...</h4>
+              <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>
+                {isTestEnded ? 'No candidates recorded for this test.' : 'Waiting for candidates to connect...'}
+              </h4>
               <p style={{ fontSize: '0.85rem' }}>
-                As candidates join physical rooms and send heartbeats, their seats will appear here in real time.
+                {isTestEnded
+                  ? 'Candidate records will appear here once candidates have taken the test.'
+                  : 'As candidates join physical rooms and send heartbeats, their seats will appear here in real time.'}
               </p>
             </div>
           ) : (
@@ -1404,6 +1476,7 @@ export default function AdminLiveDashboard() {
                   roomName={roomsById[c.roomId] || 'Room'}
                   onClick={setInspectCandidate}
                   now={now}
+                  isTestEnded={isTestEnded}
                 />
               ))}
             </div>
@@ -1414,11 +1487,13 @@ export default function AdminLiveDashboard() {
         <div className="card">
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h3 className="card-title">Candidate Live Proctoring Roster</h3>
+              <h3 className="card-title">
+                {isTestEnded ? 'Candidate Proctoring Summary Roster' : 'Candidate Live Proctoring Roster'}
+              </h3>
               <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
                 {candidateList.length > 50
                   ? `⚡ Virtualized View Active (${candidateList.length} candidates — 60fps steady)`
-                  : `Showing ${candidateList.length} connected candidate(s)`}
+                  : `Showing ${candidateList.length} ${isTestEnded ? 'candidate(s) in summary' : 'connected candidate(s)'}`}
               </p>
             </div>
 
@@ -1465,14 +1540,14 @@ export default function AdminLiveDashboard() {
             <div>Status</div>
             <div>Qs Solved</div>
             <div>Malpractice</div>
-            <div>Time Left</div>
+            <div>{isTestEnded ? 'Status / Time' : 'Time Left'}</div>
             <div style={{ textAlign: 'right' }}>Actions</div>
           </div>
 
           {/* Table Body: Virtualized with react-window when > 50 candidates, standard when <= 50 */}
           {candidateList.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 32, color: '#6b7280', fontSize: '0.85rem' }}>
-              No matching candidates connected.
+              {isTestEnded ? 'No candidates recorded for this test.' : 'No matching candidates connected.'}
             </div>
           ) : candidateList.length > 50 ? (
             // Section 13 NFR: react-window List Virtualization for > 50 candidates
@@ -1494,6 +1569,7 @@ export default function AdminLiveDashboard() {
                   onWarn={handleManualWarn}
                   onDisqualify={handleManualDisqualify}
                   now={now}
+                  isTestEnded={isTestEnded}
                 />
               ))}
             </div>
@@ -1700,9 +1776,16 @@ export default function AdminLiveDashboard() {
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: '#6b7280', fontSize: '0.78rem' }}>Time Remaining:</span>
-                    <span style={{ display: 'block', fontFamily: 'monospace', fontWeight: 700, color: '#374151', fontSize: '0.95rem', marginTop: 2 }}>
+                    <span style={{ color: '#6b7280', fontSize: '0.78rem' }}>{isTestEnded ? 'Session Status:' : 'Time Remaining:'}</span>
+                    <span style={{ display: 'block', fontFamily: isTestEnded ? 'inherit' : 'monospace', fontWeight: 700, color: '#374151', fontSize: isTestEnded ? '0.9rem' : '0.95rem', marginTop: 2 }}>
                       {(() => {
+                        if (isTestEnded) {
+                          return activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.isDisqualified
+                            ? 'Disqualified'
+                            : activeInspectCandidate.status === 'NOT_STARTED'
+                            ? 'Not Started'
+                            : 'Test Ended';
+                        }
                         // BUG-24: Only candidates actively IN_PROGRESS have a live countdown.
                         // Terminal or completed states (SUBMITTED, DISQUALIFIED, etc.) or NOT_STARTED show '—'.
                         if (activeInspectCandidate.status !== 'IN_PROGRESS') {
@@ -1898,19 +1981,21 @@ export default function AdminLiveDashboard() {
                                 {log.reviewedBy ? `Reviewed by ${log.reviewedBy.name || 'Admin'}` : 'Admin Review Action:'}
                               </span>
                               <div style={{ display: 'flex', gap: 8 }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleReviewMalpractice(log._id, 'WARNED')}
-                                  className="btn btn-secondary"
-                                  style={{
-                                    padding: '3px 10px', fontSize: '0.72rem',
-                                    color: '#d97706', borderColor: '#d97706',
-                                    background: isWarned ? '#fef3c7' : 'transparent',
-                                  }}
-                                  disabled={isDisqualified}
-                                >
-                                  ⚠️ {isWarned ? 'Warned' : 'Issue Warning'}
-                                </button>
+                                {!isTestEnded && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReviewMalpractice(log._id, 'WARNED')}
+                                    className="btn btn-secondary"
+                                    style={{
+                                      padding: '3px 10px', fontSize: '0.72rem',
+                                      color: '#d97706', borderColor: '#d97706',
+                                      background: isWarned ? '#fef3c7' : 'transparent',
+                                    }}
+                                    disabled={isDisqualified}
+                                  >
+                                    ⚠️ {isWarned ? 'Warned' : 'Issue Warning'}
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handleReviewMalpractice(log._id, 'DISQUALIFIED')}

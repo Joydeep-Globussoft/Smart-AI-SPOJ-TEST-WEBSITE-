@@ -307,6 +307,52 @@ const updateMyPassword = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /candidates/:candidateId/disqualify
+ * Access: ADMIN or SUPER_ADMIN
+ * Disqualifies candidate, transitions submissions to AUTO_SUBMITTED_DISQUALIFIED, and recalculates evaluation (FEATURE-008)
+ */
+const disqualifyCandidate = async (req, res, next) => {
+  try {
+    const { candidateId } = req.params;
+    const { testId } = req.body || {};
+    const Candidate = require('../models/Candidate');
+    const Submission = require('../models/Submission');
+
+    const candidate = await Candidate.findByIdAndUpdate(candidateId, { isDisqualified: true }, { new: true });
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
+
+    if (testId) {
+      await Submission.updateMany(
+        { candidateId, testId },
+        { status: 'AUTO_SUBMITTED_DISQUALIFIED', submittedAt: new Date() }
+      );
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`candidate:${candidateId}`).emit('candidate:disqualified', { reason: 'MANUAL' });
+        io.to(`test:${testId}:admin`).emit('seatmap:status', {
+          candidateId,
+          colorStatus: 'RED',
+        });
+        io.to(`test:${testId}:admin`).emit('dashboard:update', {
+          candidateId: candidateId.toString(),
+          status: 'DISQUALIFIED',
+          colorStatus: 'RED',
+        });
+      }
+
+      // Re-run evaluation & shortlist pass
+      const evaluationService = require('../services/evaluationService');
+      evaluationService.runFinalEvaluationPass(testId).catch(() => {});
+    }
+
+    res.json({ success: true, message: 'Candidate disqualified successfully', candidate });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAdmins,
   getAdminById,
@@ -317,4 +363,5 @@ module.exports = {
   getMe,
   updateMe,
   updateMyPassword,
+  disqualifyCandidate,
 };

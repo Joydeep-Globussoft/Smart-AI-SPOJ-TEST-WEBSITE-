@@ -11,8 +11,13 @@ const {
   getMe,
   updateMe,
   updateMyPassword,
+  disqualifyCandidate,
 } = require('../controllers/adminController');
 const { verifyToken, requireAdmin, requireSuperAdmin } = require('../middleware/authMiddleware');
+
+// ── Candidate Disqualification (FEATURE-008: Admin / Super Admin) ───────────────
+// POST /api/v1/candidates/:candidateId/disqualify
+router.post('/candidates/:candidateId/disqualify', verifyToken, requireAdmin, disqualifyCandidate);
 
 // ── Profile routes for logged-in Admin (accessible to both ADMIN and SUPER_ADMIN) ──
 // GET /api/v1/admins/me & /api/v1/me

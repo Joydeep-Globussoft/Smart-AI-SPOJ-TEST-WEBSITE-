@@ -597,12 +597,22 @@ export default function AdminTestDetail() {
               )}
 
               {test.status === 'ENDED' && (
-                <Link
-                  to={`/admin/tests/${test._id}/results`}
-                  className="btn btn-primary"
-                >
-                  🏆 View Results &amp; Shortlist
-                </Link>
+                <>
+                  <Link
+                    to={`/admin/tests/${test._id}/live`}
+                    className="btn btn-secondary"
+                    style={{ padding: '8px 16px' }}
+                  >
+                    📋 Test Summary Dashboard
+                  </Link>
+                  <Link
+                    to={`/admin/tests/${test._id}/results`}
+                    className="btn btn-primary"
+                    style={{ padding: '8px 16px' }}
+                  >
+                    🏆 View Results &amp; Shortlist
+                  </Link>
+                </>
               )}
             </div>
           </div>

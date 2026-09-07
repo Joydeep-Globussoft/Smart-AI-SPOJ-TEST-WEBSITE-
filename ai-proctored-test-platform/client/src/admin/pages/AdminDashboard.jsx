@@ -160,13 +160,23 @@ export default function AdminDashboard() {
                           </Link>
                         )}
                         {test.status === 'ENDED' && (
-                          <Link
-                            to={`/admin/tests/${test._id}/results`}
-                            className="btn btn-secondary"
-                            style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                          >
-                            Results
-                          </Link>
+                          <>
+                            <Link
+                              to={`/admin/tests/${test._id}/live`}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                              title="Test Summary"
+                            >
+                              Summary
+                            </Link>
+                            <Link
+                              to={`/admin/tests/${test._id}/results`}
+                              className="btn btn-primary"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                            >
+                              Results
+                            </Link>
+                          </>
                         )}
                         <Link
                           to={`/admin/tests/${test._id}`}

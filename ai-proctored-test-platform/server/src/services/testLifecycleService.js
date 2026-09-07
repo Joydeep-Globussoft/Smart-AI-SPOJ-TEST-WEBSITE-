@@ -51,6 +51,12 @@ const performEndTest = async (testId, io, reason = 'MANUAL') => {
       { status: 'CLOSED' }
     );
 
+    // FEATURE-008: Transition any remaining IN_PROGRESS submissions to AUTO_SUBMITTED_TIME_UP
+    await Submission.updateMany(
+      { testId: test._id, status: 'IN_PROGRESS' },
+      { status: 'AUTO_SUBMITTED_TIME_UP', submittedAt: now }
+    );
+
     // Section 10.2: broadcast test:ended to admins and candidates
     if (io) {
       io.to(`test:${test._id}:admin`).emit('test:ended', { testId: test._id, reason });

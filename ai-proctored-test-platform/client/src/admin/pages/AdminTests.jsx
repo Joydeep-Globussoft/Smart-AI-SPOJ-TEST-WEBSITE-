@@ -336,13 +336,23 @@ export default function AdminTests() {
                             </Link>
                           )}
                           {test.status === 'ENDED' && (
-                            <Link
-                              to={`/admin/tests/${test._id}/results`}
-                              className="btn btn-secondary"
-                              style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                            >
-                              Results
-                            </Link>
+                            <>
+                              <Link
+                                to={`/admin/tests/${test._id}/live`}
+                                className="btn btn-secondary"
+                                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                title="View frozen post-test operational summary"
+                              >
+                                Test Summary
+                              </Link>
+                              <Link
+                                to={`/admin/tests/${test._id}/results`}
+                                className="btn btn-primary"
+                                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                              >
+                                Results
+                              </Link>
+                            </>
                           )}
                           {test.status === 'DRAFT' && (
                             <button

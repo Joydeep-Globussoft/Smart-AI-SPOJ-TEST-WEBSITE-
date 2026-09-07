@@ -93,6 +93,7 @@ export const api = {
   dismissLateJoin: (roomId, candidateId) => axios.post(`/rooms/${roomId}/candidates/${candidateId}/dismiss-late-join`),
   getLateJoinStatus: (candidateId) => axios.get(`/candidates/${candidateId}/late-join-status`),
   getPendingLateJoins: (testId) => axios.get(`/tests/${testId}/pending-late-joins`),
+  disqualifyCandidate: (candidateId, data) => axios.post(`/candidates/${candidateId}/disqualify`, data),
 
   // Question Sets
   createQuestionSet: (data) => axios.post('/question-sets', data),

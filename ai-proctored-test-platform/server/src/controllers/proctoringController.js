@@ -213,12 +213,16 @@ const reviewMalpractice = async (req, res, next) => {
       // FR-7.4: Admin manual disqualification
       await Candidate.findByIdAndUpdate(log.candidateId, { isDisqualified: true });
 
-      // Auto-submit disqualified candidate's submissions
+      // Auto-submit / update disqualified candidate's submissions
       const Submission = require('../models/Submission');
       await Submission.updateMany(
-        { candidateId: log.candidateId, testId: log.testId, status: 'IN_PROGRESS' },
+        { candidateId: log.candidateId, testId: log.testId },
         { status: 'AUTO_SUBMITTED_DISQUALIFIED', submittedAt: new Date() }
       );
+
+      // Trigger re-evaluation for Results & Shortlist
+      const evaluationService = require('../services/evaluationService');
+      evaluationService.runFinalEvaluationPass(log.testId.toString()).catch(() => {});
 
       // candidate:disqualified event forces client to lock/close test window (Section 10.2)
       io.to(`candidate:${log.candidateId}`).emit('candidate:disqualified', {
