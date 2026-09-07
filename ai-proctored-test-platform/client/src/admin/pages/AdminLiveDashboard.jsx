@@ -1950,30 +1950,68 @@ export default function AdminLiveDashboard() {
           </div>
         )}
 
-        {/* ── Zoom Screenshot Modal ── */}
+        {/* ── Zoom Screenshot Modal (BUG-62) ── */}
         {zoomScreenshotUrl && (
-          <div className="modal-backdrop" onClick={() => setZoomScreenshotUrl(null)} style={{ zIndex: 1200 }}>
-            <div style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-backdrop"
+            onClick={() => setZoomScreenshotUrl(null)}
+            style={{
+              zIndex: 1200,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+              background: 'rgba(0, 0, 0, 0.85)',
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '92vw',
+                maxHeight: '90vh',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#0f172a',
+                borderRadius: 8,
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.7)',
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
                 src={zoomScreenshotUrl}
                 alt="Enlarged Proof Frame"
-                style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 8, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+                style={{
+                  maxWidth: '92vw',
+                  maxHeight: '85vh',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
               />
               <button
+                type="button"
                 onClick={() => setZoomScreenshotUrl(null)}
                 style={{
                   position: 'absolute',
-                  top: -12,
-                  right: -12,
-                  background: '#1A2B3C',
+                  top: 10,
+                  right: 10,
+                  background: 'rgba(15, 23, 42, 0.85)',
                   color: 'white',
-                  border: '2px solid white',
+                  border: '1.5px solid rgba(255, 255, 255, 0.7)',
                   borderRadius: '50%',
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   cursor: 'pointer',
+                  zIndex: 20,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
                 }}
+                aria-label="Close enlarged evidence"
               >
                 ✕
               </button>

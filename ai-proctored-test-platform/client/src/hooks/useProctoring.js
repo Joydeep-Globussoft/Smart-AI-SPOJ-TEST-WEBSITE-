@@ -190,13 +190,14 @@ export function useProctoring({
         violationType === 'SCREEN_SNAPSHOT' ||
         violationType === 'OTHER';
 
-      // 1. Screen Monitor Capture for TAB_SWITCH, FULLSCREEN_EXIT, SCREEN_SNAPSHOT, and OTHER (BUG-13, BUG-51)
+      // 1. Screen Monitor Capture for TAB_SWITCH, FULLSCREEN_EXIT, SCREEN_SNAPSHOT, and OTHER (BUG-13, BUG-51, BUG-62)
       if (isScreenViolation) {
         let sw = 0;
         let sh = 0;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         let drewScreen = false;
+        let screenSource = null;
 
         // A. Primary Approach: ImageCapture.grabFrame on active Entire Screen track (Hardware frame in Chromium)
         const screenStream = getScreenStream();
@@ -210,9 +211,7 @@ export function useProctoring({
                 if (bitmap && bitmap.width > 0 && bitmap.height > 0) {
                   sw = bitmap.width;
                   sh = bitmap.height;
-                  canvas.width = sw;
-                  canvas.height = sh;
-                  ctx.drawImage(bitmap, 0, 0, sw, sh);
+                  screenSource = bitmap;
                   drewScreen = true;
                 }
               } catch (icErr) {
@@ -251,9 +250,7 @@ export function useProctoring({
           if (screenVideo && screenVideo.readyState >= 2 && screenVideo.videoWidth > 0) {
             sw = screenVideo.videoWidth;
             sh = screenVideo.videoHeight;
-            canvas.width = sw;
-            canvas.height = sh;
-            ctx.drawImage(screenVideo, 0, 0, sw, sh);
+            screenSource = screenVideo;
             drewScreen = true;
           }
         }
@@ -262,14 +259,12 @@ export function useProctoring({
         if (!drewScreen && lastGoodScreenCanvasRef.current && lastGoodScreenCanvasRef.current.width > 0) {
           sw = lastGoodScreenCanvasRef.current.width;
           sh = lastGoodScreenCanvasRef.current.height;
-          canvas.width = sw;
-          canvas.height = sh;
-          ctx.drawImage(lastGoodScreenCanvasRef.current, 0, 0, sw, sh);
+          screenSource = lastGoodScreenCanvasRef.current;
           drewScreen = true;
         }
 
         // D. Fallback Screen Banner (if screen stream completely unavailable, NEVER fall through to webcam)
-        if (!drewScreen) {
+        if (!drewScreen || !screenSource) {
           sw = 1280;
           sh = 720;
           canvas.width = sw;
@@ -283,22 +278,30 @@ export function useProctoring({
           ctx.font = '15px sans-serif';
           ctx.fillText('Screen monitor stream unavailable at capture moment', 40, 140);
         } else {
-          // Overlay proctoring violation watermark header
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-          ctx.fillRect(0, 0, sw, 48);
+          // Reserved non-overlapping header and footer bands (BUG-62)
+          const headerH = 44;
+          const footerH = 32;
+          canvas.width = sw;
+          canvas.height = sh + headerH + footerH;
 
+          // Fill letterbox canvas background
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, sw, canvas.height);
+
+          // Top reserved header banner (unobstructed)
           ctx.fillStyle = '#EF4444';
-          ctx.font = 'bold 16px sans-serif';
-          ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')} (SCREEN CAPTURE)`, 18, 30);
+          ctx.font = 'bold 15px sans-serif';
+          ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')} (SCREEN CAPTURE)`, 18, 28);
 
-          // Timestamp & metadata footer
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-          ctx.fillRect(0, sh - 34, sw, 34);
+          // Draw full captured screen frame in reserved middle band (edge-to-edge, zero overlap)
+          ctx.drawImage(screenSource, 0, headerH, sw, sh);
+
+          // Bottom reserved metadata footer bar (unobstructed)
           ctx.fillStyle = '#E2E8F0';
           ctx.font = '13px monospace';
           const displayTime = timestampDate.toLocaleTimeString();
           const displayDate = timestampDate.toLocaleDateString();
-          ctx.fillText(`Time: ${displayTime} · ${displayDate} | Candidate: ${candidateId} | Room: ${roomId} | Screen Evidence`, 18, sh - 12);
+          ctx.fillText(`Time: ${displayTime} · ${displayDate} | Candidate: ${candidateId} | Room: ${roomId} | Screen Evidence`, 18, headerH + sh + 21);
         }
 
         return canvas.toDataURL('image/jpeg', 0.85);
@@ -308,32 +311,32 @@ export function useProctoring({
       if (videoRef.current && videoRef.current.readyState >= 2) {
         const vw = videoRef.current.videoWidth || 640;
         const vh = videoRef.current.videoHeight || 480;
+        const headerH = 36;
+        const footerH = 26;
 
         const canvas = document.createElement('canvas');
         canvas.width = vw;
-        canvas.height = vh;
+        canvas.height = vh + headerH + footerH;
         const ctx = canvas.getContext('2d');
 
-        // Draw live webcam frame
-        ctx.drawImage(videoRef.current, 0, 0, vw, vh);
+        // Fill letterbox canvas background
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, vw, canvas.height);
 
-        // Overlay proctoring violation watermark header
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-        ctx.fillRect(0, 0, vw, 40);
-
-        // Violation badge indicator
+        // Top reserved header banner (unobstructed)
         ctx.fillStyle = violationType === 'PHONE_DETECTED' || violationType === 'MULTIPLE_FACES' ? '#EF4444' : '#F59E0B';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')}`, 14, 25);
+        ctx.fillText(`⚠️ PROCTORING EVIDENCE: ${violationType.replace(/_/g, ' ')}`, 14, 23);
 
-        // Timestamp & metadata footer
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
-        ctx.fillRect(0, vh - 26, vw, 26);
+        // Draw live webcam frame in reserved middle band (edge-to-edge, zero overlap)
+        ctx.drawImage(videoRef.current, 0, headerH, vw, vh);
+
+        // Bottom reserved metadata footer bar (unobstructed)
         ctx.fillStyle = '#E2E8F0';
         ctx.font = '11px monospace';
         const displayTime = timestampDate.toLocaleTimeString();
         const displayDate = timestampDate.toLocaleDateString();
-        ctx.fillText(`Time: ${displayTime} · ${displayDate}`, 14, vh - 9);
+        ctx.fillText(`Time: ${displayTime} · ${displayDate}`, 14, headerH + vh + 18);
 
         return canvas.toDataURL('image/jpeg', 0.85);
       }
