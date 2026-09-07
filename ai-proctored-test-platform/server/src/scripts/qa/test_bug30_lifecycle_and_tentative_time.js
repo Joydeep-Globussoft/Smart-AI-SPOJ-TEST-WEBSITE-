@@ -68,26 +68,41 @@ async function runTests() {
   assert(Array.isArray(endedIds), 'Auto-ended sweep executed successfully across database');
 
   // Verify that tests with active future rooms did NOT auto-end
-  const now = new Date();
-  const activeFutureRooms = await Room.find({
+  const testControlled = await Test.create({
+    title: 'Controlled Sweep Test ' + Date.now(),
+    testType: 'SPOJ',
+    createdBy: new mongoose.Types.ObjectId(),
+    questionSetId: new mongoose.Types.ObjectId(),
+    durationMinutes: 60,
+    totalQuestions: 1,
+    passingCriteria: 1,
+    instructions: 'Standard sweep test instructions',
+    status: 'LIVE',
+  });
+  const roomControlled = await Room.create({
+    roomCode: 'CTRL' + Math.floor(1000 + Math.random() * 9000),
+    roomName: 'Controlled Room',
+    roomPassword: 'PASSWORD_SWEEP',
+    testId: testControlled._id,
     status: 'ACTIVE',
-    passwordValidUntil: { $gt: now },
-  }).lean();
+    passwordValidUntil: new Date(Date.now() + 3600000),
+  });
 
-  for (const r of activeFutureRooms) {
-    const parentTest = await Test.findById(r.testId);
-    if (parentTest) {
-      assert(
-        parentTest.status === 'LIVE',
-        `Test "${parentTest.title}" with valid active room (${r.roomName}) remained LIVE and was NOT auto-ended`
-      );
-    }
-  }
+  const sweptIds = await checkAndAutoEndAllLiveTests(null);
+  const recheckTest = await Test.findById(testControlled._id);
+  assert(
+    recheckTest.status === 'LIVE',
+    `Test "${testControlled.title}" with valid active room remained LIVE and was NOT auto-ended`
+  );
+
+  await Test.findByIdAndDelete(testControlled._id);
+  await Room.findByIdAndDelete(roomControlled._id);
 
   // ──────────────────────────────────────────────────────────────────────────
   // TEST 3: Password expired room rejects candidate join (Criterion 3)
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n--- TEST 3: Expired room password rejects candidate join (403) ---');
+  const now = new Date();
   const expiredRoom = await Room.findOne({
     passwordValidUntil: { $lt: now },
   }).lean();
@@ -230,6 +245,7 @@ async function runTests() {
   console.log(`SUMMARY: ${passedTests} / ${totalTests} TESTS PASSED (${Math.round((passedTests / totalTests) * 100)}%)`);
   console.log('========================================================================');
 
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   await mongoose.disconnect();
 }
 

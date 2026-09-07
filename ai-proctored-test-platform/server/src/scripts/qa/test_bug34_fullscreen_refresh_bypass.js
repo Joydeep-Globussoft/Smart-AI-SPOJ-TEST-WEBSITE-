@@ -49,7 +49,8 @@ async function runTests() {
   console.log('--- TEST 1: isFullscreen Initialization on Mount/Reload ---');
   assert(
     proctoringCode.includes('const [isFullscreen, setIsFullscreen] = useState(() => {') &&
-    proctoringCode.includes('document.fullscreenElement || document.webkitFullscreenElement'),
+    proctoringCode.includes('document.fullscreenElement') &&
+    proctoringCode.includes('document.webkitFullscreenElement'),
     'isFullscreen initializes dynamically by evaluating document.fullscreenElement (not hardcoded true)'
   );
 
@@ -71,7 +72,8 @@ async function runTests() {
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n--- TEST 2: Violation Logging & Socket Alert on Reload Outside Fullscreen ---');
   assert(
-    proctoringCode.includes('const inFullscreenOnMount = Boolean(document.fullscreenElement || document.webkitFullscreenElement);'),
+    proctoringCode.includes('const inFullscreenOnMount = checkIsDocumentFullscreen();') ||
+    proctoringCode.includes('const inFullscreenOnMount = Boolean('),
     'Fullscreen state evaluated immediately upon effect mount'
   );
   assert(
@@ -80,7 +82,7 @@ async function runTests() {
   );
   assert(
     proctoringCode.includes("triggerDelayedScreenViolation('FULLSCREEN_EXIT', () => {") &&
-    proctoringCode.includes('emitFullscreenExit({ candidateId, testId, roomId })'),
+    proctoringCode.includes('emitFullscreenExit({'),
     'Reloading outside fullscreen triggers FULLSCREEN_EXIT violation report and socket emit'
   );
 

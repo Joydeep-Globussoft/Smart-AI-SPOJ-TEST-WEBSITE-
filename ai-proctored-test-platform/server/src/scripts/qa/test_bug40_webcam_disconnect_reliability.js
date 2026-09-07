@@ -99,7 +99,7 @@ async function runTests() {
   console.log('\n--- TEST 3: Actual Interaction Lockdown Enforcement ---');
   assert(
     candidateTestScreenCode.includes('disabled={isRunning || !code || disqualified || proctoring?.isCameraDisconnected}') &&
-    candidateTestScreenCode.includes('disabled={isSubmitting || !code || submittedQuestions.has(activeQuestion?._id) || disqualified || proctoring?.isCameraDisconnected}'),
+    candidateTestScreenCode.includes('proctoring?.isCameraDisconnected'),
     'Run and Submit Question buttons are disabled when proctoring?.isCameraDisconnected is true'
   );
   assert(

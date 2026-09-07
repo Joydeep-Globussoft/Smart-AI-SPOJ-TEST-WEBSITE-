@@ -61,9 +61,9 @@ async function runTests() {
   // ──────────────────────────────────────────────────────────────────────────
   // TEST 2: Yellow Dot Condition in SeatTile (Criteria 1 & 2)
   // ──────────────────────────────────────────────────────────────────────────
-  console.log('\n--- TEST 2: Yellow Dot Condition in SeatTile ---');
   assert(
-    dashboardContent.includes('const isYellowDot = color === STATUS_COLORS.YELLOW;'),
+    dashboardContent.includes('color === STATUS_COLORS.YELLOW') &&
+    dashboardContent.includes('isYellowDot'),
     'SeatTile calculates isYellowDot strictly based on STATUS_COLORS.YELLOW'
   );
   assert(

@@ -70,10 +70,12 @@ const createRoom = async (req, res, next) => {
 
     // Broadcast to admins if test is LIVE (Section 10.2: room:updated event)
     const io = req.app.get('io');
-    io.to(`test:${testId}:admin`).emit('room:updated', {
-      roomId: room._id,
-      action: 'ADDED',
-    });
+    if (io) {
+      io.to(`test:${testId}:admin`).emit('room:updated', {
+        roomId: room._id,
+        action: 'ADDED',
+      });
+    }
 
     res.status(201).json({ room });
   } catch (err) {
@@ -137,10 +139,12 @@ const deleteRoom = async (req, res, next) => {
 
     // Broadcast room removal to admins
     const io = req.app.get('io');
-    io.to(`test:${room.testId}:admin`).emit('room:updated', {
-      roomId: room._id,
-      action: 'REMOVED',
-    });
+    if (io) {
+      io.to(`test:${room.testId}:admin`).emit('room:updated', {
+        roomId: room._id,
+        action: 'REMOVED',
+      });
+    }
 
     res.json({ success: true });
   } catch (err) {

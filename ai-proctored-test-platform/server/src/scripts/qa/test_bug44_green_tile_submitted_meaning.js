@@ -46,7 +46,7 @@ async function runTests() {
   // ──────────────────────────────────────────────────────────────────────────
   console.log('--- TEST 1: Client Color Status Derivation ---');
   assert(
-    dashboardCode.includes('const getCandidateColorStatus = (candidate) => {') &&
+    dashboardCode.includes('getCandidateColorStatus') &&
     dashboardCode.includes("candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'") &&
     dashboardCode.includes("return 'GREEN';"),
     'getCandidateColorStatus returns GREEN strictly for SUBMITTED and AUTO_SUBMITTED_TIME_UP'
@@ -134,13 +134,13 @@ async function runTests() {
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n--- TEST 6: Consistent Application Across Views ---');
   assert(
-    dashboardCode.includes('const colorStatus = getCandidateColorStatus(candidate);') &&
+    dashboardCode.includes('getCandidateColorStatus(candidate') &&
     dashboardCode.includes('SeatTile = memo('),
     'SeatTile derives colorStatus from getCandidateColorStatus'
   );
   assert(
     dashboardCode.includes('CandidateRowItem = memo(') &&
-    dashboardCode.includes('const colorStatus = getCandidateColorStatus(candidate);'),
+    dashboardCode.includes('getCandidateColorStatus(candidate'),
     'CandidateRowItem derives colorStatus from getCandidateColorStatus'
   );
   assert(

@@ -304,6 +304,7 @@ async function runTest() {
     process.exitCode = 1;
   } finally {
     await mongoose.disconnect();
+    process.exit(process.exitCode || 0);
   }
 }
 

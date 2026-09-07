@@ -347,6 +347,7 @@ async function runTests() {
   console.log('\n========================================================================');
   console.log(`RESULTS: ${passedTests}/${totalTests} tests passed.`);
   console.log('========================================================================\n');
+  process.exit(passedTests === totalTests ? 0 : 1);
 }
 
 runTests().catch((err) => {
