@@ -8,30 +8,40 @@ const path = require('path');
 
 let isAutoStartingContainers = false;
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const ensureJavaLanguageConfig = () => {
+  if (isProduction) return;
   // Configures OpenJDK in Judge0 database to ensure Metaspace and GC thread limits prevent JVM crash in containers
   const sql = "UPDATE languages SET compile_cmd = '/usr/local/openjdk13/bin/javac -J-XX:MetaspaceSize=64m -J-XX:MaxMetaspaceSize=128m %s Main.java', run_cmd = '/usr/local/openjdk13/bin/java -XX:+UseSerialGC -Xss256k -XX:CICompilerCount=2 -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128m -Xmx256m Main' WHERE id = 62;";
-  exec(`docker exec apt_postgres psql -U judge0 -d judge0 -c "${sql}"`, () => {});
+  try {
+    exec(`docker exec apt_postgres psql -U judge0 -d judge0 -c "${sql}"`, () => {});
+  } catch (_) {}
 };
 
-// Run once on load to ensure proper database command config
+// Run once on load to ensure proper database command config in local dev
 ensureJavaLanguageConfig();
 
 const startJudge0Containers = () => {
+  if (isProduction) return;
   if (isAutoStartingContainers) return;
   isAutoStartingContainers = true;
 
   const rootDir = path.resolve(__dirname, '../../../');
   console.log('[Judge0] Auto-starting Judge0 docker containers via docker compose...');
-  exec('docker compose up -d redis postgres judge0 judge0-workers', { cwd: rootDir }, (err, stdout, stderr) => {
+  try {
+    exec('docker compose up -d redis postgres judge0 judge0-workers', { cwd: rootDir }, (err, stdout, stderr) => {
+      isAutoStartingContainers = false;
+      if (err) {
+        console.error('[Judge0] Failed to auto-start Judge0 containers:', err.message);
+      } else {
+        console.log('[Judge0] Containers successfully started:', stdout || stderr);
+        setTimeout(ensureJavaLanguageConfig, 3000);
+      }
+    });
+  } catch (_) {
     isAutoStartingContainers = false;
-    if (err) {
-      console.error('[Judge0] Failed to auto-start Judge0 containers:', err.message);
-    } else {
-      console.log('[Judge0] Containers successfully started:', stdout || stderr);
-      setTimeout(ensureJavaLanguageConfig, 3000);
-    }
-  });
+  }
 };
 
 // Language ID mapping for Judge0 (standard IDs from Judge0 documentation)
@@ -45,10 +55,9 @@ const LANGUAGE_IDS = {
 };
 
 const getJudge0BaseUrl = () => {
-  return (process.env.JUDGE0_API_URL || 'http://localhost:2358').replace(/\/+$/, '');
+  const url = process.env.JUDGE0_API_URL || process.env.JUDGE0_URL || process.env.JUDGE0_HOST || 'http://localhost:2358';
+  return url.trim().replace(/\/+$/, '');
 };
-
-const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY || '';
 
 /**
  * Submit a single code execution to Judge0 and wait for result.
@@ -70,10 +79,23 @@ const executeCode = async (code, language, stdin = '', expectedOutput = '') => {
   }
 
   const primaryUrl = getJudge0BaseUrl();
+  const isRapidApi = primaryUrl.includes('rapidapi.com');
+  const apiKey = process.env.JUDGE0_API_KEY || process.env.RAPIDAPI_KEY || '';
+
   const headers = {
     'Content-Type': 'application/json',
-    ...(JUDGE0_API_KEY && { 'X-Auth-Token': JUDGE0_API_KEY }),
   };
+
+  if (apiKey) {
+    if (isRapidApi) {
+      headers['X-RapidAPI-Key'] = apiKey;
+      try {
+        headers['X-RapidAPI-Host'] = new URL(primaryUrl).host;
+      } catch (_) {}
+    } else {
+      headers['X-Auth-Token'] = apiKey;
+    }
+  }
 
   const payloadData = {
     language_id: languageId,
@@ -111,8 +133,8 @@ const executeCode = async (code, language, stdin = '', expectedOutput = '') => {
     try {
       return await sendToJudge0(primaryUrl);
     } catch (primaryErr) {
-      // If primary URL failed (e.g. ENOTFOUND judge0 when running server outside docker container), try localhost:2358
-      if (!primaryUrl.includes('localhost') && !primaryUrl.includes('127.0.0.1')) {
+      // If primary URL failed and we are in local development outside docker container, try localhost:2358 fallback
+      if (!isProduction && !primaryUrl.includes('localhost') && !primaryUrl.includes('127.0.0.1')) {
         console.debug('[Judge0] Primary URL failed (' + primaryErr.message + '), trying http://localhost:2358 fallback...');
         return await sendToJudge0('http://localhost:2358');
       }
@@ -123,7 +145,7 @@ const executeCode = async (code, language, stdin = '', expectedOutput = '') => {
     startJudge0Containers();
     return {
       stdout: null,
-      stderr: `Judge0 execution service unavailable: ${err.message}. Please verify the Judge0 container is running.`,
+      stderr: `Judge0 execution service unavailable (${primaryUrl}): ${err.message}. Please verify the JUDGE0_API_URL / JUDGE0_URL environment variable and service status.`,
       status: { id: 13, description: 'Service Unavailable' },
     };
   }
