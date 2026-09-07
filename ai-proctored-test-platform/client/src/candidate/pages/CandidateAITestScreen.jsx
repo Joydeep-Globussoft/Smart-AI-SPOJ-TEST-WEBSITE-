@@ -2154,7 +2154,7 @@ export default function CandidateAITestScreen() {
       {/* ── Movable AI Proctoring PIP Feed (FR-5.2, FR-7.1, FR-7.2) ── */}
       <DraggableWebcamPip videoRef={proctoring.videoRef} faceCount={proctoring.faceCount} />
 
-      {/* ── Fullscreen Enforcement Lock Overlay (FR-5.2, FR-5.3, BUG-34) ── */}
+      {/* ── Fullscreen Enforcement Lock Overlay (FR-5.2, FR-5.3, BUG-34, BUG-66) ── */}
       {!proctoring.isFullscreen && !disqualified && (
         <div
           id="ai-fullscreen-blocking-overlay"
@@ -2162,7 +2162,7 @@ export default function CandidateAITestScreen() {
             position: 'fixed',
             inset: 0,
             background: 'rgba(15, 23, 42, 0.98)',
-            zIndex: 99999,
+            zIndex: 999999,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -2182,7 +2182,7 @@ export default function CandidateAITestScreen() {
             id="ai-re-enter-fullscreen-btn"
             onClick={proctoring.requestFullscreen}
             className="btn btn-primary btn-lg"
-            style={{ fontSize: '1rem', padding: '12px 28px', fontWeight: 700 }}
+            style={{ fontSize: '1rem', padding: '12px 28px', fontWeight: 700, cursor: 'pointer', zIndex: 1000000 }}
           >
             ⛶ Re-enter Fullscreen Mode
           </button>

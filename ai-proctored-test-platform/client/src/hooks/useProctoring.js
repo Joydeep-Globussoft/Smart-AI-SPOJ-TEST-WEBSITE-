@@ -37,13 +37,36 @@ export function useProctoring({
   const [hasWebcam, setHasWebcam] = useState(false);
   const [hasMic, setHasMic] = useState(false);
   const [isMediaReady, setIsMediaReady] = useState(false);
-  // BUG-34: Initialize from the actual document fullscreen state rather than assuming true on reload
-  const [isFullscreen, setIsFullscreen] = useState(() => {
+  const checkIsDocumentFullscreen = useCallback(() => {
+    if (typeof document === 'undefined') return false;
     return Boolean(
-      typeof document !== 'undefined' &&
-      (document.fullscreenElement || document.webkitFullscreenElement)
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+  }, []);
+
+  // BUG-34 & BUG-66: Initialize from actual document fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(() => {
+    if (typeof document === 'undefined') return false;
+    return Boolean(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
     );
   });
+  const isFullscreenRef = useRef(
+    typeof document !== 'undefined'
+      ? Boolean(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement
+        )
+      : false
+  );
   const [faceCount, setFaceCount] = useState(1);
   const [proctoringActive, setProctoringActive] = useState(false);
   const [detectorReady, setDetectorReady] = useState(false);
@@ -1125,7 +1148,7 @@ export function useProctoring({
   // which continually re-trigger Chromium's native "press and hold Esc to exit" banner on re-renders.
   const lockKeyboard = useCallback(async () => {
     if (isKeyboardLockedRef.current) return;
-    const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    const inFullscreen = checkIsDocumentFullscreen();
     if (!inFullscreen) return;
 
     if ('keyboard' in navigator && typeof navigator.keyboard.lock === 'function') {
@@ -1138,45 +1161,55 @@ export function useProctoring({
         console.warn('[Proctoring] Keyboard lock could not be engaged:', err?.message || err);
       }
     }
-  }, []);
+  }, [checkIsDocumentFullscreen]);
 
-  // ── 4. Fullscreen Enforcement & Exit Detection (FR-5.2, FR-5.3, BUG-34) ─────
+  // ── 4. Fullscreen Enforcement & Exit Detection (FR-5.2, FR-5.3, BUG-34, BUG-66) ─────
   useEffect(() => {
-    if (!enabled) return;
-
     const handleFullscreenChange = () => {
-      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
-      const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      const inFullscreen = checkIsDocumentFullscreen();
+      const prevFullscreen = isFullscreenRef.current;
+      isFullscreenRef.current = inFullscreen;
       setIsFullscreen(inFullscreen);
 
       if (inFullscreen) {
         lockKeyboard();
       } else {
         unlockKeyboard();
-        // BUG-31: Immediate detection, socket alert, and toast; 1s delayed screen-capture screenshot
-        triggerDelayedScreenViolation('FULLSCREEN_EXIT', () => {
-          emitFullscreenExit({ candidateId, testId, roomId });
-          if (typeof onWarningRef.current === 'function') {
-            onWarningRef.current('Violation detected: FULLSCREEN EXIT. This has been flagged.');
-          }
-          toast.error('⚠️ Fullscreen exited! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 6000 });
-        });
+        // If candidate was in fullscreen and exited during an active session, immediately log violation and lock screen
+        if (prevFullscreen && enabled && !isSubmittingRef.current && !isIntentionalTeardownRef.current) {
+          // BUG-31 & BUG-66: Immediate detection, socket alert, and toast; 1s delayed screen-capture screenshot
+          triggerDelayedScreenViolation('FULLSCREEN_EXIT', () => {
+            emitFullscreenExit({
+              candidateId: candidateIdRef.current || candidateId,
+              testId: testIdRef.current || testId,
+              roomId: roomIdRef.current || roomId,
+            });
+            if (typeof onWarningRef.current === 'function') {
+              onWarningRef.current('Violation detected: FULLSCREEN EXIT. This has been flagged.');
+            }
+            toast.error('⚠️ Fullscreen exited! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 6000 });
+          });
+        }
       }
     };
 
-    // BUG-34: Check fullscreen state immediately upon mount/reload.
+    // BUG-34 & BUG-66: Check fullscreen state immediately upon mount/reload.
     // If candidate loads or refreshes outside fullscreen, immediately block and report violation.
-    const inFullscreenOnMount = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    const inFullscreenOnMount = checkIsDocumentFullscreen();
+    isFullscreenRef.current = inFullscreenOnMount;
+    setIsFullscreen(inFullscreenOnMount);
     if (inFullscreenOnMount) {
-      setIsFullscreen(true);
       lockKeyboard();
     } else {
-      setIsFullscreen(false);
-      // ASSUMPTION: Fullscreen exits resulting from a browser refresh/reload are logged as standard FULLSCREEN_EXIT violations and count toward the candidate's malpractice total and disqualification threshold.
-      if (!hasCheckedInitialFullscreenRef.current) {
+      unlockKeyboard();
+      if (enabled && !hasCheckedInitialFullscreenRef.current && !isSubmittingRef.current && !isIntentionalTeardownRef.current) {
         hasCheckedInitialFullscreenRef.current = true;
         triggerDelayedScreenViolation('FULLSCREEN_EXIT', () => {
-          emitFullscreenExit({ candidateId, testId, roomId });
+          emitFullscreenExit({
+            candidateId: candidateIdRef.current || candidateId,
+            testId: testIdRef.current || testId,
+            roomId: roomIdRef.current || roomId,
+          });
           if (typeof onWarningRef.current === 'function') {
             onWarningRef.current('Violation detected: FULLSCREEN EXIT. You must return to fullscreen mode to continue.');
           }
@@ -1185,14 +1218,37 @@ export function useProctoring({
       }
     }
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    // Comprehensive event listener attachment across document, window, and root element (BUG-66)
+    const eventNames = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+    eventNames.forEach((evt) => {
+      document.addEventListener(evt, handleFullscreenChange, true);
+      window.addEventListener(evt, handleFullscreenChange, true);
+      if (document.documentElement) {
+        document.documentElement.addEventListener(evt, handleFullscreenChange, true);
+      }
+    });
+    window.addEventListener('resize', handleFullscreenChange, true);
+
+    // BUG-66: Heartbeat polling interval (300ms) to ensure foolproof detection even if OS window manager suppresses events
+    const pollInterval = setInterval(() => {
+      const currentInFullscreen = checkIsDocumentFullscreen();
+      if (currentInFullscreen !== isFullscreenRef.current) {
+        handleFullscreenChange();
+      }
+    }, 300);
 
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      clearInterval(pollInterval);
+      eventNames.forEach((evt) => {
+        document.removeEventListener(evt, handleFullscreenChange, true);
+        window.removeEventListener(evt, handleFullscreenChange, true);
+        if (document.documentElement) {
+          document.documentElement.removeEventListener(evt, handleFullscreenChange, true);
+        }
+      });
+      window.removeEventListener('resize', handleFullscreenChange, true);
     };
-  }, [enabled, candidateId, testId, roomId, triggerDelayedScreenViolation, lockKeyboard, unlockKeyboard]);
+  }, [enabled, candidateId, testId, roomId, checkIsDocumentFullscreen, triggerDelayedScreenViolation, lockKeyboard, unlockKeyboard]);
 
   // ── 5. Tab Switch / Window Blur Detection (FR-5.3 & BUG-48) ───────────────────
   useEffect(() => {
@@ -1352,16 +1408,21 @@ export function useProctoring({
     };
   }, [enabled]);
 
-  // Enter Fullscreen Helper (BUG-34)
+  // Enter Fullscreen Helper (BUG-34, BUG-66)
   const requestFullscreen = async () => {
     try {
       const el = document.documentElement;
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (!checkIsDocumentFullscreen()) {
         if (el.requestFullscreen) {
           await el.requestFullscreen();
         } else if (el.webkitRequestFullscreen) {
           await el.webkitRequestFullscreen();
+        } else if (el.mozRequestFullScreen) {
+          await el.mozRequestFullScreen();
+        } else if (el.msRequestFullscreen) {
+          await el.msRequestFullscreen();
         }
+        isFullscreenRef.current = true;
         setIsFullscreen(true);
         await lockKeyboard();
       }
