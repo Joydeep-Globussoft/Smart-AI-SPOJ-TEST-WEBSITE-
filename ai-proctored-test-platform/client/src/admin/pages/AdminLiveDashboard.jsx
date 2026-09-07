@@ -617,12 +617,13 @@ export default function AdminLiveDashboard() {
   // ── Socket.io Connections & Event Subscriptions (Section 10) ──────────────────
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token || !user?.id) return;
+    const adminId = user?.id || user?._id;
+    if (!token || !adminId) return;
 
     initSocket(token);
 
     // Section 10.1: admin:join
-    emitAdminJoin({ adminId: user.id, testId });
+    emitAdminJoin({ adminId, testId });
 
     // Section 10.2: dashboard:update
     const handleDashboardUpdate = (data) => {
@@ -882,7 +883,7 @@ export default function AdminLiveDashboard() {
       offRoomTentativeTime(handleRoomTentativeTime);
       disconnectSocket();
     };
-  }, [testId, user?.id, flushDebounceBuffer, announceCandidateSubmission, handleAllowLateEntry, handleDismissLateJoin]);
+  }, [testId, user?.id, user?._id, flushDebounceBuffer, announceCandidateSubmission, handleAllowLateEntry, handleDismissLateJoin]);
 
   // Manage Active Alert Popup from Queue
   useEffect(() => {
@@ -2052,6 +2053,295 @@ export default function AdminLiveDashboard() {
                 >
                   Close
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Real-Time Malpractice Alert Modal (FR-7.3) ── */}
+        {activeAlert && (
+          <div
+            className="modal-backdrop"
+            style={{
+              zIndex: 1150,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+              background: 'rgba(15, 23, 42, 0.75)',
+            }}
+          >
+            <div
+              className="modal-card"
+              style={{
+                maxWidth: 580,
+                width: '100%',
+                background: '#ffffff',
+                borderRadius: 12,
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+                overflow: 'hidden',
+                border: '2px solid #ef4444',
+                animation: 'modalSlideIn 0.25s ease-out',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  background: '#fef2f2',
+                  borderBottom: '1px solid #fee2e2',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>⚠️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#991b1b', fontWeight: 700 }}>
+                      Real-Time Malpractice Alert
+                    </h3>
+                    <span style={{ fontSize: '0.78rem', color: '#b91c1c' }}>
+                      Automated violation flagged by proctoring engine
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveAlert(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.25rem',
+                    color: '#991b1b',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                  }}
+                  aria-label="Dismiss alert"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: 12,
+                    background: '#f8fafc',
+                    padding: 14,
+                    borderRadius: 8,
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                      Candidate
+                    </div>
+                    <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>
+                      {activeAlert.candidateName || 'Candidate'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {activeAlert.candidateEmail || ''}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                      Assigned Room
+                    </div>
+                    <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>
+                      {activeAlert.roomName || 'Assigned Room'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                      Violation Type
+                    </div>
+                    <span
+                      className="badge badge-danger"
+                      style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        marginTop: 2,
+                        display: 'inline-block',
+                      }}
+                    >
+                      {activeAlert.violationType?.replace(/_/g, ' ') || 'MALPRACTICE'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                      Total Violations
+                    </div>
+                    <div style={{ fontWeight: 800, color: '#dc2626', fontSize: '1rem' }}>
+                      {activeAlert.currentCount || 1} {activeAlert.currentCount === 1 ? 'incident' : 'incidents'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Evidence Proof Frame */}
+                {activeAlert.proofScreenshotUrl ? (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>
+                        Captured Proof Evidence:
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                        Click image to enlarge
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        position: 'relative',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        cursor: 'zoom-in',
+                        background: '#000',
+                        maxHeight: 220,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                      onClick={() => setZoomScreenshotUrl(activeAlert.proofScreenshotUrl)}
+                      title="Click to view full-resolution screenshot"
+                    >
+                      <img
+                        src={activeAlert.proofScreenshotUrl}
+                        alt="Violation Proof"
+                        style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 6,
+                          right: 8,
+                          background: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          fontSize: '0.7rem',
+                          padding: '3px 8px',
+                          borderRadius: 4,
+                          fontWeight: 600,
+                        }}
+                      >
+                        🔍 Click to Enlarge
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      background: '#f1f5f9',
+                      padding: '12px 14px',
+                      borderRadius: 6,
+                      color: '#64748b',
+                      fontSize: '0.8rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    📷 No image frame captured for this event.
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  borderTop: '1px solid #e2e8f0',
+                  padding: '12px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 10,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cid = activeAlert.candidateId;
+                    const cand = candidatesMap[cid] || {
+                      candidateId: cid,
+                      name: activeAlert.candidateName,
+                      email: activeAlert.candidateEmail,
+                      roomId: activeAlert.roomId,
+                      roomName: activeAlert.roomName,
+                      malpracticeCount: activeAlert.currentCount,
+                    };
+                    setInspectCandidate(cand);
+                    setActiveAlert(null);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                >
+                  🔍 Inspect Candidate
+                </button>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {!isTestEnded && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (activeAlert.malpracticeLogId) {
+                          await handleReviewMalpractice(activeAlert.malpracticeLogId, 'WARNED');
+                        } else {
+                          const cand = candidatesMap[activeAlert.candidateId] || {
+                            candidateId: activeAlert.candidateId,
+                            name: activeAlert.candidateName,
+                            malpracticeCount: activeAlert.currentCount || 1,
+                          };
+                          await handleManualWarn(cand);
+                        }
+                        setActiveAlert(null);
+                      }}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.82rem',
+                        color: '#d97706',
+                        borderColor: '#f59e0b',
+                        background: '#fffbeb',
+                      }}
+                    >
+                      ⚠️ Warn Candidate
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (activeAlert.malpracticeLogId) {
+                        await handleReviewMalpractice(activeAlert.malpracticeLogId, 'DISQUALIFIED');
+                      } else {
+                        const cand = candidatesMap[activeAlert.candidateId] || {
+                          candidateId: activeAlert.candidateId,
+                          name: activeAlert.candidateName,
+                        };
+                        await handleManualDisqualify(cand);
+                      }
+                      setActiveAlert(null);
+                    }}
+                    className="btn btn-danger"
+                    style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                  >
+                    🚫 Disqualify
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveAlert(null)}
+                    className="btn btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             </div>
           </div>

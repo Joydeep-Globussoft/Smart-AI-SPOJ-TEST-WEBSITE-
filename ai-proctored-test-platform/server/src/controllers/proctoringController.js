@@ -101,44 +101,61 @@ const reportViolation = async (req, res, next) => {
     let { candidateId, testId, roomId, violationType, screenshotBase64, detectedAt } = req.body;
 
     if (!candidateId && req.user) {
-      candidateId = req.user.id;
+      candidateId = req.user.id || req.user._id;
     }
 
     // Validate — candidate can only report their own violations
-    if (req.user.type === 'candidate' && String(req.user.id) !== String(candidateId)) {
+    if (req.user && req.user.type === 'candidate' && String(req.user.id || req.user._id) !== String(candidateId)) {
       return res.status(403).json({ error: 'Cannot report violation for another candidate' });
     }
 
-    if (!violationType || !candidateId || !testId || !roomId) {
-      return res.status(400).json({ error: 'candidateId, testId, roomId, violationType are required' });
+    if (!violationType || !candidateId || !testId) {
+      return res.status(400).json({ error: 'candidateId, testId, violationType are required' });
     }
 
-    // BUG-65 Part B: If candidate has already completed test (no IN_PROGRESS submissions), suppress spurious violation reports
     const Submission = require('../models/Submission');
-    const activeSubmissionsCount = await Submission.countDocuments({
+    const Room = require('../models/Room');
+
+    // Automatically resolve roomId if omitted by client
+    if (!roomId) {
+      const activeSub = await Submission.findOne({ candidateId, testId });
+      roomId = activeSub?.roomId;
+      if (!roomId) {
+        const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
+        roomId = candidateRoom?._id;
+      }
+    }
+
+    // BUG-65 Part B: If candidate has already concluded test, suppress spurious post-submission violation reports
+    const isConcluded = await Submission.exists({
       candidateId,
       testId,
-      status: 'IN_PROGRESS',
+      status: { $in: ['SUBMITTED', 'AUTO_SUBMITTED_TIME_UP', 'AUTO_SUBMITTED_DISQUALIFIED'] },
     });
-    if (activeSubmissionsCount === 0) {
+    if (isConcluded) {
       console.log(`[Proctoring] Suppressing violation ${violationType} for candidate ${candidateId} (test already concluded)`);
       return res.json({ success: true, message: 'Test already concluded; violation suppressed.' });
     }
 
-    // Upload screenshot to Cloudinary
+    // Upload screenshot to Cloudinary (with automatic base64 fallback)
     let proofScreenshotUrl = null;
     if (screenshotBase64) {
-      const buffer = Buffer.from(
-        screenshotBase64.replace(/^data:image\/\w+;base64,/, ''),
-        'base64'
-      );
-      proofScreenshotUrl = await cloudinaryService.uploadScreenshot(buffer, testId, candidateId);
+      try {
+        const buffer = Buffer.from(
+          screenshotBase64.replace(/^data:image\/\w+;base64,/, ''),
+          'base64'
+        );
+        proofScreenshotUrl = await cloudinaryService.uploadScreenshot(buffer, testId, candidateId);
+      } catch (uploadErr) {
+        console.warn('[Proctoring] Proof upload error, fallback to data URL:', uploadErr.message);
+        proofScreenshotUrl = screenshotBase64;
+      }
     }
 
     const logData = {
       candidateId,
       testId,
-      roomId,
+      roomId: roomId || undefined,
       violationType,
       proofScreenshotUrl,
     };
@@ -149,44 +166,51 @@ const reportViolation = async (req, res, next) => {
     const log = await MalpracticeLog.create(logData);
 
     const candidate = await Candidate.findById(candidateId, 'name email');
-    const Room = require('../models/Room');
-    const roomDoc = await Room.findById(roomId, 'roomName');
+    const roomDoc = roomId ? await Room.findById(roomId, 'roomName') : null;
     const malpracticeCount = await MalpracticeLog.countDocuments({ candidateId, testId });
 
     // FR-7.3: (a) candidate:warning, (b) malpractice:alert to admin — within 2 seconds
     const io = req.app.get('io');
-    io.to(`test:${testId}:admin`).emit('malpractice:alert', {
-      malpracticeLogId: log._id,
-      candidateId: candidateId.toString(),
-      candidateName: candidate?.name || 'Candidate',
-      candidateEmail: candidate?.email || '',
-      roomId: roomId ? roomId.toString() : null,
-      roomName: roomDoc?.roomName || 'Assigned Room',
-      violationType,
-      proofScreenshotUrl,
-      currentCount: malpracticeCount,
-      detectedAt: log.detectedAt,
-    });
+    if (io) {
+      io.to(`test:${testId}:admin`).emit('malpractice:alert', {
+        malpracticeLogId: log._id,
+        candidateId: candidateId.toString(),
+        candidateName: candidate?.name || 'Candidate',
+        candidateEmail: candidate?.email || '',
+        roomId: roomId ? roomId.toString() : null,
+        roomName: roomDoc?.roomName || 'Assigned Room',
+        violationType,
+        proofScreenshotUrl,
+        currentCount: malpracticeCount,
+        detectedAt: log.detectedAt,
+      });
 
-    io.to(`candidate:${candidateId}`).emit('candidate:warning', {
-      violationType,
-      message: `Violation detected: ${violationType.replace(/_/g, ' ')}. This has been flagged.`,
-      violationCount: malpracticeCount,
-    });
+      // Update seat map and dashboard counters in real time
+      io.to(`test:${testId}:admin`).emit('dashboard:update', {
+        candidateId: candidateId.toString(),
+        roomId: roomId ? roomId.toString() : null,
+        malpracticeCount,
+      });
 
-    io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
-      candidateId: candidateId.toString(),
-      testId: testId.toString(),
-      violationCount: malpracticeCount,
-      violationType,
-    });
+      io.to(`test:${testId}:admin`).emit('seatmap:status', {
+        candidateId: candidateId.toString(),
+        roomId: roomId ? roomId.toString() : null,
+        colorStatus: 'YELLOW', // warning state; disqualified = RED handled below
+      });
 
-    // Seat map update
-    io.to(`test:${testId}:admin`).emit('seatmap:status', {
-      candidateId: candidateId.toString(),
-      roomId: roomId ? roomId.toString() : null,
-      colorStatus: 'YELLOW', // warning state; disqualified = RED handled below
-    });
+      io.to(`candidate:${candidateId}`).emit('candidate:warning', {
+        violationType,
+        message: `Violation detected: ${violationType.replace(/_/g, ' ')}. This has been flagged.`,
+        violationCount: malpracticeCount,
+      });
+
+      io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
+        candidateId: candidateId.toString(),
+        testId: testId.toString(),
+        violationCount: malpracticeCount,
+        violationType,
+      });
+    }
 
     res.status(201).json({ malpracticeLog: log, violationCount: malpracticeCount });
   } catch (err) {
@@ -329,23 +353,29 @@ const reportCameraDisconnected = async (req, res, next) => {
       return res.status(403).json({ error: 'Cannot report violation for another candidate' });
     }
 
+    const Submission = require('../models/Submission');
+    const Room = require('../models/Room');
+
     if (!roomId && candidateId) {
-      const candidate = await Candidate.findById(candidateId).lean();
-      roomId = candidate?.currentRoomId;
+      const activeSub = await Submission.findOne({ candidateId, testId });
+      roomId = activeSub?.roomId;
+      if (!roomId) {
+        const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
+        roomId = candidateRoom?._id;
+      }
     }
 
     if (!candidateId || !testId) {
       return res.status(400).json({ error: 'candidateId and testId are required' });
     }
 
-    // BUG-65 Part B: If candidate has already completed test (no IN_PROGRESS submissions), suppress spurious camera disconnect
-    const Submission = require('../models/Submission');
-    const activeSubmissionsCount = await Submission.countDocuments({
+    // BUG-65 Part B: If candidate has already completed test, suppress spurious camera disconnect
+    const isConcluded = await Submission.exists({
       candidateId,
       testId,
-      status: 'IN_PROGRESS',
+      status: { $in: ['SUBMITTED', 'AUTO_SUBMITTED_TIME_UP', 'AUTO_SUBMITTED_DISQUALIFIED'] },
     });
-    if (activeSubmissionsCount === 0) {
+    if (isConcluded) {
       console.log(`[Proctoring] Suppressing camera disconnect for candidate ${candidateId} (test already concluded)`);
       return res.json({ success: true, message: 'Test already concluded; camera disconnect suppressed.' });
     }
@@ -361,17 +391,22 @@ const reportCameraDisconnected = async (req, res, next) => {
     if (!log) {
       let proofScreenshotUrl = null;
       if (screenshotBase64) {
-        const buffer = Buffer.from(
-          screenshotBase64.replace(/^data:image\/\w+;base64,/, ''),
-          'base64'
-        );
-        proofScreenshotUrl = await cloudinaryService.uploadScreenshot(buffer, testId, candidateId);
+        try {
+          const buffer = Buffer.from(
+            screenshotBase64.replace(/^data:image\/\w+;base64,/, ''),
+            'base64'
+          );
+          proofScreenshotUrl = await cloudinaryService.uploadScreenshot(buffer, testId, candidateId);
+        } catch (uploadErr) {
+          console.warn('[Proctoring] Camera disconnect proof upload error, fallback to data URL:', uploadErr.message);
+          proofScreenshotUrl = screenshotBase64;
+        }
       }
 
       log = await MalpracticeLog.create({
         candidateId,
         testId,
-        roomId,
+        roomId: roomId || undefined,
         violationType: 'CAMERA_DISCONNECTED',
         disconnectAt: disconnectAt ? new Date(disconnectAt) : new Date(),
         detectedAt: disconnectAt ? new Date(disconnectAt) : new Date(),
@@ -380,33 +415,46 @@ const reportCameraDisconnected = async (req, res, next) => {
       });
     }
 
-    const candidate = await Candidate.findById(candidateId, 'name');
+    const candidate = await Candidate.findById(candidateId, 'name email');
+    const roomDoc = roomId ? await Room.findById(roomId, 'roomName') : null;
     const malpracticeCount = await MalpracticeLog.countDocuments({ candidateId, testId });
 
     const io = req.app.get('io');
-    io.to(`test:${testId}:admin`).emit('malpractice:alert', {
-      malpracticeLogId: log._id,
-      candidateId,
-      candidateName: candidate?.name || 'Unknown',
-      roomId,
-      violationType: 'CAMERA_DISCONNECTED',
-      disconnectAt: log.disconnectAt,
-      reconnectAt: null,
-      durationSeconds: null,
-      isCameraDisconnected: true,
-      resolved: false,
-      currentCount: malpracticeCount,
-    });
+    if (io) {
+      io.to(`test:${testId}:admin`).emit('malpractice:alert', {
+        malpracticeLogId: log._id,
+        candidateId: candidateId.toString(),
+        candidateName: candidate?.name || 'Candidate',
+        candidateEmail: candidate?.email || '',
+        roomId: roomId ? roomId.toString() : null,
+        roomName: roomDoc?.roomName || 'Assigned Room',
+        violationType: 'CAMERA_DISCONNECTED',
+        disconnectAt: log.disconnectAt,
+        reconnectAt: null,
+        durationSeconds: null,
+        isCameraDisconnected: true,
+        resolved: false,
+        currentCount: malpracticeCount,
+        detectedAt: log.detectedAt,
+        proofScreenshotUrl: log.proofScreenshotUrl,
+      });
 
-    // BUG-40: Candidate UI is governed strictly by the full-screen blocking CameraDisconnectedOverlay.
-    // Do NOT emit candidate:warning here to avoid weak/dismissible banners or toasts.
-    io.to(`test:${testId}:admin`).emit('seatmap:status', {
-      candidateId,
-      roomId,
-      colorStatus: 'YELLOW',
-    });
+      io.to(`test:${testId}:admin`).emit('dashboard:update', {
+        candidateId: candidateId.toString(),
+        roomId: roomId ? roomId.toString() : null,
+        malpracticeCount,
+      });
 
-    res.json({ malpracticeLog: log });
+      // BUG-40: Candidate UI is governed strictly by the full-screen blocking CameraDisconnectedOverlay.
+      // Do NOT emit candidate:warning here to avoid weak/dismissible banners or toasts.
+      io.to(`test:${testId}:admin`).emit('seatmap:status', {
+        candidateId: candidateId.toString(),
+        roomId: roomId ? roomId.toString() : null,
+        colorStatus: 'YELLOW',
+      });
+    }
+
+    res.json({ malpracticeLog: log, violationCount: malpracticeCount });
   } catch (err) {
     next(err);
   }
@@ -418,16 +466,23 @@ const reportCameraReconnected = async (req, res, next) => {
     let { candidateId, testId, roomId, reconnectAt } = req.body;
 
     if (!candidateId && req.user) {
-      candidateId = req.user.id;
+      candidateId = req.user.id || req.user._id;
     }
 
-    if (req.user.type === 'candidate' && String(req.user.id) !== String(candidateId)) {
+    if (req.user && req.user.type === 'candidate' && String(req.user.id || req.user._id) !== String(candidateId)) {
       return res.status(403).json({ error: 'Cannot report violation for another candidate' });
     }
 
+    const Submission = require('../models/Submission');
+    const Room = require('../models/Room');
+
     if (!roomId && candidateId) {
-      const candidate = await Candidate.findById(candidateId).lean();
-      roomId = candidate?.currentRoomId;
+      const activeSub = await Submission.findOne({ candidateId, testId });
+      roomId = activeSub?.roomId;
+      if (!roomId) {
+        const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
+        roomId = candidateRoom?._id;
+      }
     }
 
     if (!candidateId || !testId) {
@@ -451,29 +506,42 @@ const reportCameraReconnected = async (req, res, next) => {
       log.resolved = true;
       await log.save();
 
-      const candidate = await Candidate.findById(candidateId, 'name');
+      const candidate = await Candidate.findById(candidateId, 'name email');
+      const roomDoc = roomId ? await Room.findById(roomId, 'roomName') : null;
       const malpracticeCount = await MalpracticeLog.countDocuments({ candidateId, testId });
 
       const io = req.app.get('io');
-      io.to(`test:${testId}:admin`).emit('malpractice:alert', {
-        malpracticeLogId: log._id,
-        candidateId,
-        candidateName: candidate?.name || 'Unknown',
-        roomId,
-        violationType: 'CAMERA_DISCONNECTED',
-        disconnectAt: log.disconnectAt,
-        reconnectAt: log.reconnectAt,
-        durationSeconds: log.durationSeconds,
-        isCameraDisconnected: false,
-        resolved: true,
-        currentCount: malpracticeCount,
-      });
+      if (io) {
+        io.to(`test:${testId}:admin`).emit('malpractice:alert', {
+          malpracticeLogId: log._id,
+          candidateId: candidateId.toString(),
+          candidateName: candidate?.name || 'Candidate',
+          candidateEmail: candidate?.email || '',
+          roomId: roomId ? roomId.toString() : null,
+          roomName: roomDoc?.roomName || 'Assigned Room',
+          violationType: 'CAMERA_DISCONNECTED',
+          disconnectAt: log.disconnectAt,
+          reconnectAt: log.reconnectAt,
+          durationSeconds: log.durationSeconds,
+          isCameraDisconnected: false,
+          resolved: true,
+          currentCount: malpracticeCount,
+          detectedAt: log.detectedAt,
+          proofScreenshotUrl: log.proofScreenshotUrl,
+        });
 
-      io.to(`test:${testId}:admin`).emit('seatmap:status', {
-        candidateId,
-        roomId,
-        colorStatus: 'GREEN',
-      });
+        io.to(`test:${testId}:admin`).emit('dashboard:update', {
+          candidateId: candidateId.toString(),
+          roomId: roomId ? roomId.toString() : null,
+          malpracticeCount,
+        });
+
+        io.to(`test:${testId}:admin`).emit('seatmap:status', {
+          candidateId: candidateId.toString(),
+          roomId: roomId ? roomId.toString() : null,
+          colorStatus: 'GREEN',
+        });
+      }
 
       return res.json({ malpracticeLog: log, resolved: true });
     }

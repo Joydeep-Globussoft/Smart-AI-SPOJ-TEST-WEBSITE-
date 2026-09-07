@@ -42,15 +42,18 @@ const registerSocketHandlers = (io) => {
     // Payload: { candidateId, testId, roomId }
     // Candidate socket joins test/room channel (Section 10.1)
     socket.on('candidate:join', ({ candidateId, testId, roomId }) => {
-      if (socket.user?.type !== 'candidate' || socket.user?.id !== candidateId) {
+      const isSelfCandidate =
+        socket.user?.type === 'candidate' &&
+        (String(socket.user?.id) === String(candidateId) || String(socket.user?._id) === String(candidateId));
+      if (!isSelfCandidate) {
         return; // Security: candidates can only join as themselves
       }
       // Join room-level channel
-      socket.join(`test:${testId}:room:${roomId}`);
+      if (roomId) socket.join(`test:${testId}:room:${roomId}`);
       // Join test-level channel (for test:ended broadcasts)
-      socket.join(`test:${testId}`);
+      if (testId) socket.join(`test:${testId}`);
       // Join personal channel (for candidate:warning, candidate:disqualified)
-      socket.join(`candidate:${candidateId}`);
+      if (candidateId) socket.join(`candidate:${candidateId}`);
 
       console.log(`[Socket] Candidate ${candidateId} joined test:${testId}:room:${roomId}`);
     });
@@ -59,11 +62,16 @@ const registerSocketHandlers = (io) => {
     // Payload: { adminId, testId }
     // Admin joins full-test monitoring channel (Section 10.1)
     socket.on('admin:join', ({ adminId, testId }) => {
-      if (socket.user?.type !== 'admin') {
+      const isAdmin =
+        socket.user?.type === 'admin' ||
+        ['SUPER_ADMIN', 'ADMIN'].includes(socket.user?.role);
+      if (!isAdmin) {
         return; // Security: only admins can join admin channel
       }
-      socket.join(`test:${testId}:admin`);
-      console.log(`[Socket] Admin ${adminId} joined test:${testId}:admin`);
+      if (testId) {
+        socket.join(`test:${testId}:admin`);
+        console.log(`[Socket] Admin ${adminId || socket.user?.id} joined test:${testId}:admin`);
+      }
     });
 
     // ── Client → Server: candidate:heartbeat ─────────────────────────────────
@@ -72,7 +80,10 @@ const registerSocketHandlers = (io) => {
     // NFR: debounce/throttle max 1 re-render per 200ms per candidate (Section 13)
     // Server-side: we emit once per heartbeat — client-side debouncing is in React
     socket.on('candidate:heartbeat', async ({ candidateId, testId, currentQuestionId, questionsCompleted }) => {
-      if (socket.user?.type !== 'candidate' || (socket.user?.id !== candidateId && socket.user?._id !== candidateId)) {
+      const isSelfCandidate =
+        socket.user?.type === 'candidate' &&
+        (String(socket.user?.id) === String(candidateId) || String(socket.user?._id) === String(candidateId));
+      if (!isSelfCandidate) {
         return;
       }
 
@@ -145,23 +156,50 @@ const registerSocketHandlers = (io) => {
     // Payload: { candidateId, testId, roomId }
     // Fired on visibilitychange/blur (FR-5.3, Section 10.1)
     socket.on('candidate:tabswitch', ({ candidateId, testId, roomId }) => {
-      if (socket.user?.type !== 'candidate' || socket.user?.id !== candidateId) {
+      const isSelfCandidate =
+        socket.user?.type === 'candidate' &&
+        (String(socket.user?.id) === String(candidateId) || String(socket.user?._id) === String(candidateId));
+      if (!isSelfCandidate) {
         return;
       }
-      // Tab switch violation is reported via REST /proctoring/violation by the client
-      // Socket event here is for immediate notification — REST call handles DB logging
       console.log(`[Proctoring] Tab switch: candidate=${candidateId} test=${testId}`);
+      if (testId) {
+        io.to(`test:${testId}:admin`).emit('seatmap:status', {
+          candidateId: candidateId.toString(),
+          roomId: roomId ? roomId.toString() : null,
+          colorStatus: 'YELLOW',
+        });
+        io.to(`test:${testId}:admin`).emit('dashboard:update', {
+          candidateId: candidateId.toString(),
+          roomId: roomId ? roomId.toString() : null,
+          colorStatus: 'YELLOW',
+        });
+      }
     });
 
     // ── Client → Server: candidate:fullscreenexit ─────────────────────────────
     // Payload: { candidateId, testId, roomId }
     // Fired on fullscreen API exit event (FR-5.2, Section 10.1)
     socket.on('candidate:fullscreenexit', ({ candidateId, testId, roomId }) => {
-      if (socket.user?.type !== 'candidate' || socket.user?.id !== candidateId) {
+      const isSelfCandidate =
+        socket.user?.type === 'candidate' &&
+        (String(socket.user?.id) === String(candidateId) || String(socket.user?._id) === String(candidateId));
+      if (!isSelfCandidate) {
         return;
       }
-      // Fullscreen exit violation is reported via REST /proctoring/violation by the client
       console.log(`[Proctoring] Fullscreen exit: candidate=${candidateId} test=${testId}`);
+      if (testId) {
+        io.to(`test:${testId}:admin`).emit('seatmap:status', {
+          candidateId: candidateId.toString(),
+          roomId: roomId ? roomId.toString() : null,
+          colorStatus: 'YELLOW',
+        });
+        io.to(`test:${testId}:admin`).emit('dashboard:update', {
+          candidateId: candidateId.toString(),
+          roomId: roomId ? roomId.toString() : null,
+          colorStatus: 'YELLOW',
+        });
+      }
     });
 
     socket.on('disconnect', () => {
