@@ -254,6 +254,18 @@ const reviewMalpractice = async (req, res, next) => {
       checkAndAutoEndTest(log.testId, io).catch(console.error);
     }
 
+    if (adminAction === 'WARNED') {
+      // BUG-64: Emit official proctor warning event to candidate
+      if (io) {
+        io.to(`candidate:${log.candidateId}`).emit('candidate:warning-issued', {
+          warningId: log._id.toString(),
+          violationType: log.violationType,
+          issuedAt: new Date().toISOString(),
+          adminName: req.user?.name || 'Proctor',
+        });
+      }
+    }
+
     res.json({ malpracticeLog: log });
   } catch (err) {
     next(err);

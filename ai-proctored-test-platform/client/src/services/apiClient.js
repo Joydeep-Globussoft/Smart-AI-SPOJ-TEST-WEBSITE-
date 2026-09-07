@@ -94,6 +94,7 @@ export const api = {
   getLateJoinStatus: (candidateId) => axios.get(`/candidates/${candidateId}/late-join-status`),
   getPendingLateJoins: (testId) => axios.get(`/tests/${testId}/pending-late-joins`),
   disqualifyCandidate: (candidateId, data) => axios.post(`/candidates/${candidateId}/disqualify`, data),
+  warnCandidate: (candidateId, data) => axios.post(`/candidates/${candidateId}/warn`, data),
 
   // Question Sets
   createQuestionSet: (data) => axios.post('/question-sets', data),

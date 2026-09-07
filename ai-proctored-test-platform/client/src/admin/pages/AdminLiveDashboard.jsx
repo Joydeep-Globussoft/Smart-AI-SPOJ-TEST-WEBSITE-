@@ -931,13 +931,21 @@ export default function AdminLiveDashboard() {
 
   const isTestEnded = test?.status === 'ENDED';
 
-  const handleManualWarn = (candidate) => {
+  const handleManualWarn = async (candidate) => {
+    const cid = candidate.candidateId || candidate.id || candidate._id;
+    const name = candidate.name || candidate.candidateName || 'Candidate';
     const count = candidate.malpracticeCount || 0;
     if (count < 1) {
-      toast.error(`Cannot warn ${candidate.name || candidate.candidateName || 'candidate'}: No violations recorded`);
+      toast.error(`Cannot warn ${name}: No violations recorded`);
       return;
     }
-    toast(`Sent warning to ${candidate.name || candidate.candidateName}`, { icon: '⚠️' });
+    try {
+      const res = await api.warnCandidate(cid, { testId });
+      const violationLabel = res.data?.violationType ? res.data.violationType.replace(/_/g, ' ') : 'malpractice';
+      toast.success(`Official warning delivered to ${name} (${violationLabel})`, { icon: '⚠️' });
+    } catch (err) {
+      toast.error(err.response?.data?.error || `Failed to deliver warning to ${name}`);
+    }
   };
 
   const handleManualDisqualify = async (candidate) => {

@@ -11,6 +11,7 @@ import {
   initSocket, emitCandidateJoin, emitCandidateHeartbeat,
   emitTabSwitch, emitFullscreenExit,
   onCandidateWarning, offCandidateWarning,
+  onCandidateWarningIssued, offCandidateWarningIssued,
   onCandidateViolationUpdated, offCandidateViolationUpdated,
   onCandidateDisqualified, offCandidateDisqualified,
   onTestEnded, offTestEnded,
@@ -21,6 +22,7 @@ import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
+import ProctorWarningModal from '../components/ProctorWarningModal';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import TestFooter from '../components/TestFooter';
 import globussoftLogo from '../../assets/globussoft-logo.png';
@@ -167,6 +169,7 @@ export default function CandidateTestScreen() {
   const [disqualified, setDisqualified] = useState(false);
   const [isSuperseded, setIsSuperseded] = useState(false);
   const [supersededMessage, setSupersededMessage] = useState('');
+  const [proctorWarningsQueue, setProctorWarningsQueue] = useState([]);
   const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
   const [loadError, setLoadError] = useState('');
   const heartbeatRef = useRef(null);
@@ -579,7 +582,14 @@ export default function CandidateTestScreen() {
       }
     };
 
+    const onWarningIssued = (warningData) => {
+      console.log('[ProctorWarning] Official proctor warning received:', warningData);
+      if (isSubmittingAll.current) return;
+      setProctorWarningsQueue((prev) => [...prev, warningData]);
+    };
+
     onCandidateWarning(onWarning);
+    onCandidateWarningIssued(onWarningIssued);
     onCandidateViolationUpdated(onViolationUpdated);
     onCandidateDisqualified(onDisqualified);
     onTestEnded(onEnded);
@@ -588,6 +598,7 @@ export default function CandidateTestScreen() {
     return () => {
       toast.dismiss();
       offCandidateWarning(onWarning);
+      offCandidateWarningIssued(onWarningIssued);
       offCandidateViolationUpdated(onViolationUpdated);
       offCandidateDisqualified(onDisqualified);
       offTestEnded(onEnded);
@@ -2118,6 +2129,13 @@ export default function CandidateTestScreen() {
       <SessionSupersededOverlay
         isVisible={isSuperseded}
         message={supersededMessage}
+      />
+
+      {/* Official Proctor Warning Modal (BUG-64) */}
+      <ProctorWarningModal
+        warning={proctorWarningsQueue[0]}
+        queueCount={proctorWarningsQueue.length}
+        onAcknowledge={() => setProctorWarningsQueue((prev) => prev.slice(1))}
       />
     </div>
   );

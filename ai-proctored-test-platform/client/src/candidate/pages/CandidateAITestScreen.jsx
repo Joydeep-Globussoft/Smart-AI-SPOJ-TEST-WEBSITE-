@@ -11,6 +11,7 @@ import {
   initSocket, emitCandidateJoin, emitCandidateHeartbeat,
   emitTabSwitch, emitFullscreenExit,
   onCandidateWarning, offCandidateWarning,
+  onCandidateWarningIssued, offCandidateWarningIssued,
   onCandidateViolationUpdated, offCandidateViolationUpdated,
   onCandidateDisqualified, offCandidateDisqualified,
   onTestEnded, offTestEnded,
@@ -21,6 +22,7 @@ import { useProctoring } from '../../hooks/useProctoring';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
+import ProctorWarningModal from '../components/ProctorWarningModal';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import TestFooter from '../components/TestFooter';
 import Editor from '@monaco-editor/react';
@@ -362,6 +364,7 @@ export default function CandidateAITestScreen() {
   const [disqualified, setDisqualified] = useState(false);
   const [isSuperseded, setIsSuperseded] = useState(false);
   const [supersededMessage, setSupersededMessage] = useState('');
+  const [proctorWarningsQueue, setProctorWarningsQueue] = useState([]);
   const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
@@ -620,7 +623,14 @@ export default function CandidateAITestScreen() {
       }
     };
 
+    const onWarningIssued = (warningData) => {
+      console.log('[ProctorWarning] Official proctor warning received (AI test):', warningData);
+      if (isSubmittingAll.current) return;
+      setProctorWarningsQueue((prev) => [...prev, warningData]);
+    };
+
     onCandidateWarning(onWarning);
+    onCandidateWarningIssued(onWarningIssued);
     onCandidateViolationUpdated(onViolationUpdated);
     onCandidateDisqualified(onDisqualify);
     onTestEnded(onEnded);
@@ -629,6 +639,7 @@ export default function CandidateAITestScreen() {
     return () => {
       toast.dismiss();
       offCandidateWarning(onWarning);
+      offCandidateWarningIssued(onWarningIssued);
       offCandidateViolationUpdated(onViolationUpdated);
       offCandidateDisqualified(onDisqualify);
       offTestEnded(onEnded);
@@ -2323,6 +2334,13 @@ export default function CandidateAITestScreen() {
       <SessionSupersededOverlay
         isVisible={isSuperseded}
         message={supersededMessage}
+      />
+
+      {/* Official Proctor Warning Modal (BUG-64) */}
+      <ProctorWarningModal
+        warning={proctorWarningsQueue[0]}
+        queueCount={proctorWarningsQueue.length}
+        onAcknowledge={() => setProctorWarningsQueue((prev) => prev.slice(1))}
       />
     </div>
   );

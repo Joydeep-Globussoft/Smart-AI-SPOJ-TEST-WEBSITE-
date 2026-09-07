@@ -353,6 +353,68 @@ const disqualifyCandidate = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /candidates/:candidateId/warn
+ * Access: ADMIN or SUPER_ADMIN
+ * Issues an official proctor warning to a candidate with active/past malpractice violations (BUG-64)
+ */
+const warnCandidate = async (req, res, next) => {
+  try {
+    const { candidateId } = req.params;
+    const { testId, violationType: inputViolationType, logId } = req.body || {};
+    const Candidate = require('../models/Candidate');
+    const MalpracticeLog = require('../models/MalpracticeLog');
+
+    const candidate = await Candidate.findById(candidateId);
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
+
+    let targetLog = null;
+    let violationType = inputViolationType;
+
+    if (logId) {
+      targetLog = await MalpracticeLog.findById(logId);
+    } else if (testId) {
+      targetLog = await MalpracticeLog.findOne({ candidateId, testId }).sort({ detectedAt: -1 });
+    } else {
+      targetLog = await MalpracticeLog.findOne({ candidateId }).sort({ detectedAt: -1 });
+    }
+
+    if (targetLog) {
+      targetLog.adminAction = 'WARNED';
+      targetLog.adminReviewed = true;
+      targetLog.reviewedBy = req.user.id;
+      targetLog.reviewedAt = new Date();
+      await targetLog.save();
+      if (!violationType) {
+        violationType = targetLog.violationType;
+      }
+    }
+
+    if (!violationType) {
+      violationType = 'OTHER';
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`candidate:${candidateId}`).emit('candidate:warning-issued', {
+        warningId: (targetLog?._id || new (require('mongoose').Types.ObjectId)()).toString(),
+        violationType,
+        issuedAt: new Date().toISOString(),
+        adminName: req.user?.name || 'Proctor',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Official proctor warning delivered to candidate',
+      candidateId,
+      violationType,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAdmins,
   getAdminById,
@@ -364,4 +426,5 @@ module.exports = {
   updateMe,
   updateMyPassword,
   disqualifyCandidate,
+  warnCandidate,
 };
