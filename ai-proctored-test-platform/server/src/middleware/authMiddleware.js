@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Candidate = require('../models/Candidate');
 
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'supersecretjwtkeyglobussoft2026';
+
 /**
  * Verifies the JWT from Authorization: Bearer <token> header.
  * Attaches req.user = { id, role, type: 'admin' | 'candidate' }
@@ -15,7 +17,7 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
     req.user = decoded; // { id, role, type }
     next();
   } catch (err) {

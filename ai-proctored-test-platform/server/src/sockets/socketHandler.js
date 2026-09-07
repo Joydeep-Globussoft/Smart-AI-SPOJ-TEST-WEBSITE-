@@ -8,6 +8,8 @@
 
 const jwt = require('jsonwebtoken');
 
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'supersecretjwtkeyglobussoft2026';
+
 /**
  * Register all Socket.io event handlers
  * @param {import('socket.io').Server} io
@@ -20,7 +22,7 @@ const registerSocketHandlers = (io) => {
       return next(new Error('Authentication required'));
     }
     try {
-      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
       socket.user = decoded; // { id, role, type }
       next();
     } catch (err) {

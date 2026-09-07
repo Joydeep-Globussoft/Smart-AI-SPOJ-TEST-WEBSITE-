@@ -8,11 +8,14 @@ const Candidate = require('../models/Candidate');
 
 const BCRYPT_SALT_ROUNDS = 12; // >= 10 as required by Section 13
 
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'supersecretjwtkeyglobussoft2026';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.REFRESH_TOKEN_SECRET || 'supersecretrefreshkeyglobussoft2026';
+
 /**
  * Generate JWT access token
  */
 const generateAccessToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
+  jwt.sign(payload, JWT_ACCESS_SECRET, {
     expiresIn: process.env.JWT_ACCESS_EXPIRY || '15m',
   });
 
@@ -20,7 +23,7 @@ const generateAccessToken = (payload) =>
  * Generate JWT refresh token
  */
 const generateRefreshToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+  jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d',
   });
 
@@ -216,7 +219,7 @@ const refreshToken = async (req, res, next) => {
       return res.status(400).json({ error: 'refreshToken is required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET);
     // Generate new access token with same payload
     const newToken = generateAccessToken({
       id: decoded.id,
