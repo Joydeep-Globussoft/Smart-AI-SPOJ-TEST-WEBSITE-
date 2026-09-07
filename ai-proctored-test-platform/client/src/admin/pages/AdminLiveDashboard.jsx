@@ -384,9 +384,18 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             {!isTestEnded && (
               <button
                 onClick={() => onWarn(candidate)}
+                disabled={malpracticeCount < 1}
                 className="btn btn-secondary"
-                style={{ padding: '3px 6px', fontSize: '0.72rem', color: '#d97706' }}
-                title="Send Warning"
+                style={{
+                  padding: '3px 6px',
+                  fontSize: '0.72rem',
+                  color: malpracticeCount > 0 ? '#d97706' : '#9ca3af',
+                  borderColor: malpracticeCount > 0 ? '#f59e0b' : '#e5e7eb',
+                  background: malpracticeCount > 0 ? '#fffbeb' : '#f9fafb',
+                  opacity: malpracticeCount > 0 ? 1 : 0.55,
+                  cursor: malpracticeCount > 0 ? 'pointer' : 'not-allowed',
+                }}
+                title={malpracticeCount > 0 ? 'Send Warning' : 'No violations recorded'}
               >
                 Warn
               </button>
@@ -923,6 +932,11 @@ export default function AdminLiveDashboard() {
   const isTestEnded = test?.status === 'ENDED';
 
   const handleManualWarn = (candidate) => {
+    const count = candidate.malpracticeCount || 0;
+    if (count < 1) {
+      toast.error(`Cannot warn ${candidate.name || candidate.candidateName || 'candidate'}: No violations recorded`);
+      return;
+    }
     toast(`Sent warning to ${candidate.name || candidate.candidateName}`, { icon: '⚠️' });
   };
 
