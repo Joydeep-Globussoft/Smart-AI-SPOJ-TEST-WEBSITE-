@@ -357,9 +357,9 @@ export default function CandidateInstructions() {
   if (!joinData) return null;
 
   return (
-    <div className="app-layout" style={{ minHeight: '100vh', background: '#F7F9FA', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-layout" style={{ height: '100vh', background: '#F7F9FA', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ background: '#1A2B3C', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ background: '#1A2B3C', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <img
           src={globussoftLogo}
           alt="Globussoft Technology"
@@ -367,7 +367,7 @@ export default function CandidateInstructions() {
         />
       </div>
 
-      <div style={{ flex: 1, padding: 32, maxWidth: 960, margin: '0 auto', width: '100%' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 32, maxWidth: 960, margin: '0 auto', width: '100%', scrollbarGutter: 'stable' }}>
         <div style={{ marginBottom: 24 }}>
           <span className="badge badge-teal" style={{ marginBottom: 8 }}>
             {joinData.test.testType}
