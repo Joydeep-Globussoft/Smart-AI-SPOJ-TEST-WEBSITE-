@@ -130,7 +130,7 @@ export const api = {
   aiChat: (qId, data) => axios.post(`/ai-test/${qId}/chat`, data),
   saveFiles: (qId, data) => axios.post(`/ai-test/${qId}/save-files`, data),
   submitAiTest: (qId, data) => axios.post(`/ai-test/${qId}/submit`, data),
-  getPreview: (qId) => axios.get(`/ai-test/${qId}/preview`),
+  getPreview: (qId, config) => axios.get(`/ai-test/${qId}/preview`, config),
 
   // Proctoring
   submitFrame: (testId, formData) =>

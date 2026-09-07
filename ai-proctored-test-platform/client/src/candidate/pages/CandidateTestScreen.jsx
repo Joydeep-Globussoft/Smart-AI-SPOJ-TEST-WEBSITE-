@@ -361,8 +361,9 @@ export default function CandidateTestScreen() {
       setSession(s);
       setLanguage(s.test.supportedLanguages?.[0] || 'python');
 
-      // BUG-25 & BUG-57: Populate draft cache, attempted state & visible progress from stored submissions
+      // BUG-25 & BUG-57 & BUG-70: Populate draft cache, attempted state & visible progress from stored submissions
       if (s.submissions && Array.isArray(s.submissions)) {
+        const candidateId = user?.id || user?._id || s.candidateId;
         const initProgress = {};
         s.submissions.forEach((sub) => {
           if (sub.isAttempted) {
@@ -374,13 +375,13 @@ export default function CandidateTestScreen() {
               total: sub.visibleTestCasesTotal || 0,
             };
           }
-          if (sub.savedCodeByLanguage) {
+          if (sub.savedCodeByLanguage && candidateId) {
             Object.entries(sub.savedCodeByLanguage).forEach(([lang, c]) => {
-              sessionStorage.setItem(`draft_${s.test._id}_${sub.questionId}_${lang}`, c);
+              sessionStorage.setItem(`draft_${candidateId}_${s.test._id}_${sub.questionId}_${lang}`, c);
             });
           }
-          if (sub.language && sub.code) {
-            sessionStorage.setItem(`draft_${s.test._id}_${sub.questionId}_${sub.language}`, sub.code);
+          if (sub.language && sub.code && candidateId) {
+            sessionStorage.setItem(`draft_${candidateId}_${s.test._id}_${sub.questionId}_${sub.language}`, sub.code);
           }
         });
         if (Object.keys(initProgress).length > 0) {
@@ -622,14 +623,15 @@ export default function CandidateTestScreen() {
     if (!qId || codeToSave === undefined || isSubmittingAll.current) return;
     try {
       setSaveStatus('saving');
-      // 1. Synchronously persist to sessionStorage under per-question per-language key
-      if (session?.test?._id) {
-        const key = `draft_${session.test._id}_${qId}_${lang}`;
+      const candidateId = user?.id || user?._id || session?.candidateId;
+      // 1. Synchronously persist to sessionStorage under candidate + test + question + language key (BUG-70)
+      if (session?.test?._id && candidateId) {
+        const key = `draft_${candidateId}_${session.test._id}_${qId}_${lang}`;
         sessionStorage.setItem(key, codeToSave);
       }
 
-      // 2. Call backend POST /submissions/:questionId/save (no evaluation)
-      await api.saveCode(qId, { code: codeToSave, language: lang });
+      // 2. Call backend POST /submissions/:questionId/save (no evaluation) scoped by testId
+      await api.saveCode(qId, { code: codeToSave, language: lang, testId: session?.test?._id });
 
       setSaveStatus('saved');
       if (saveStatusTimerRef.current) clearTimeout(saveStatusTimerRef.current);
@@ -644,7 +646,7 @@ export default function CandidateTestScreen() {
         setSaveStatus('idle');
       }, 3500);
     }
-  }, [session?.test?._id]);
+  }, [session?.test?._id, session?.candidateId, user?.id, user?._id]);
 
   // ── Question Switch Handler (Requirement 1: Autosave before navigating away) ──
   const handleSelectQuestion = useCallback((newIdx) => {
@@ -720,9 +722,10 @@ export default function CandidateTestScreen() {
       }));
     }
 
-    // Instant local sync
-    if (activeQuestionRef.current && session?.test?._id) {
-      const key = `draft_${session.test._id}_${activeQuestionRef.current._id}_${languageRef.current}`;
+    // Instant local sync scoped per candidate + test + question + language (BUG-70)
+    const candidateId = user?.id || user?._id || session?.candidateId;
+    if (activeQuestionRef.current && session?.test?._id && candidateId) {
+      const key = `draft_${candidateId}_${session.test._id}_${activeQuestionRef.current._id}_${languageRef.current}`;
       sessionStorage.setItem(key, newCode);
     }
 
@@ -733,7 +736,7 @@ export default function CandidateTestScreen() {
         saveCodeToBackend(activeQuestionRef.current._id, languageRef.current, newCode);
       }
     }, 2000);
-  }, [session?.test?._id, disqualified, saveCodeToBackend, proctoring?.isCameraDisconnected]);
+  }, [session?.test?._id, session?.candidateId, user?.id, user?._id, disqualified, saveCodeToBackend, proctoring?.isCameraDisconnected]);
 
   // ── Periodic Autosave every 20s as Safety Net (Requirements 3 & 4) ────────────
   useAutosave(
@@ -852,7 +855,11 @@ export default function CandidateTestScreen() {
     if (!activeQuestion || !code || isValidating) return;
     setIsValidating(true);
     try {
-      const { data } = await api.validateCode(activeQuestion._id, { code, language });
+      const { data } = await api.validateCode(activeQuestion._id, {
+        code,
+        language,
+        testId: session?.test?._id,
+      });
       setAttemptedQuestions((prev) => new Set([...prev, activeQuestion._id]));
       setValidationResultsByQuestion((prev) => ({
         ...prev,
@@ -892,7 +899,7 @@ export default function CandidateTestScreen() {
       // 1. Save current active question code draft before final submit
       if (activeQuestion?._id && code) {
         try {
-          await saveCodeToBackend(activeQuestion._id, code, language);
+          await saveCodeToBackend(activeQuestion._id, language, code);
         } catch (_) {}
       }
 
@@ -944,7 +951,10 @@ export default function CandidateTestScreen() {
       return;
     }
 
-    const key = `draft_${session.test._id}_${activeQuestion._id}_${language}`;
+    const candidateId = user?.id || user?._id || session?.candidateId;
+    const key = candidateId
+      ? `draft_${candidateId}_${session.test._id}_${activeQuestion._id}_${language}`
+      : `draft_${session.test._id}_${activeQuestion._id}_${language}`;
     const saved = sessionStorage.getItem(key);
 
     if (saved !== null) {
@@ -1007,7 +1017,7 @@ export default function CandidateTestScreen() {
     return () => {
       isMounted = false;
     };
-  }, [activeQuestion?._id, language, session?.test?._id, defaultTemplates]);
+  }, [activeQuestion?._id, language, session?.test?._id, session?.candidateId, user?.id, user?._id, defaultTemplates]);
 
   if (loadError) {
     return (

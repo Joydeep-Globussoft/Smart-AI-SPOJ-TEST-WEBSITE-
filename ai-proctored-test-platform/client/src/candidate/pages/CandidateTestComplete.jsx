@@ -10,6 +10,23 @@ export default function CandidateTestComplete() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const purgeCandidateStorage = () => {
+    try {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (
+          key.startsWith('draft_') ||
+          key === 'testSession' ||
+          key === 'joinData' ||
+          key.startsWith('test_') ||
+          key.startsWith('ai_test_') ||
+          key.startsWith('questions_panel_')
+        ) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (_) {}
+  };
+
   useEffect(() => {
     // 1. Immediately dismiss all leftover proctoring violation warnings and toasts
     toast.dismiss();
@@ -17,6 +34,8 @@ export default function CandidateTestComplete() {
     stopScreenStream();
     // 3. Disconnect candidate socket to close any in-flight proctoring streams
     disconnectSocket();
+    // 4. Purge candidate test drafts and active session data from sessionStorage (BUG-70)
+    purgeCandidateStorage();
   }, []);
 
   const handleDone = () => {
@@ -24,8 +43,7 @@ export default function CandidateTestComplete() {
     toast.dismiss();
     stopScreenStream();
     disconnectSocket();
-    sessionStorage.removeItem('testSession');
-    sessionStorage.removeItem('joinData');
+    purgeCandidateStorage();
     logout();
     navigate('/candidate/login');
   };

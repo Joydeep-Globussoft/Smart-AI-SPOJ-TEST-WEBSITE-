@@ -27,7 +27,22 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const purgeCandidateSessionStorage = () => {
+    try {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (
+          key.startsWith('draft_') ||
+          key === 'testSession' ||
+          key === 'joinData'
+        ) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (_) {}
+  };
+
   const login = useCallback((userData, accessToken, refreshToken) => {
+    purgeCandidateSessionStorage();
     localStorage.setItem('token', accessToken);
     localStorage.setItem('user', JSON.stringify(userData));
     if (refreshToken) {
@@ -40,6 +55,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     disconnectSocket();
+    purgeCandidateSessionStorage();
     localStorage.clear();
     setToken(null);
     setUser(null);

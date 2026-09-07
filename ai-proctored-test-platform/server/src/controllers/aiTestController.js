@@ -7,18 +7,32 @@ const Question = require('../models/Question');
 const kimiService = require('../services/kimiService');
 
 // ── POST /ai-test/:questionId/chat ────────────────────────────────────────────
-// Body: { message }
+// Body: { message, testId }
 // Response: { reply }
 // Proxies to Kimi, appends to promptLog (FR-6.2)
 // AC: Every chat message and AI reply appended to promptLog with timestamp
 const aiChat = async (req, res, next) => {
   try {
     const { questionId } = req.params;
-    const { message } = req.body;
+    const { message, testId } = req.body;
     const candidateId = req.user.id;
 
     if (!message) {
       return res.status(400).json({ error: 'message is required' });
+    }
+
+    let targetTestId = testId || req.query.testId;
+    if (!targetTestId) {
+      const activeSub = await Submission.findOne({
+        candidateId,
+        questionId,
+        status: 'IN_PROGRESS',
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = activeSub?.testId;
+    }
+
+    if (!targetTestId) {
+      return res.status(400).json({ error: 'testId is required' });
     }
 
     // Get question context for Kimi
@@ -32,7 +46,7 @@ const aiChat = async (req, res, next) => {
     // Append to promptLog with timestamps (FR-6.2)
     const timestamp = new Date();
     await Submission.findOneAndUpdate(
-      { candidateId, questionId },
+      { candidateId, testId: targetTestId, questionId },
       {
         $push: {
           promptLog: {
@@ -53,16 +67,30 @@ const aiChat = async (req, res, next) => {
 };
 
 // ── POST /ai-test/:questionId/save-files ──────────────────────────────────────
-// Body: { filesJson }
+// Body: { filesJson, testId }
 // Response: { success: true }
 const saveFiles = async (req, res, next) => {
   try {
     const { questionId } = req.params;
-    const { filesJson } = req.body;
+    const { filesJson, testId } = req.body;
     const candidateId = req.user.id;
 
+    let targetTestId = testId || req.query.testId;
+    if (!targetTestId) {
+      const activeSub = await Submission.findOne({
+        candidateId,
+        questionId,
+        status: 'IN_PROGRESS',
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = activeSub?.testId;
+    }
+
+    if (!targetTestId) {
+      return res.status(400).json({ error: 'testId is required to save files' });
+    }
+
     await Submission.findOneAndUpdate(
-      { candidateId, questionId },
+      { candidateId, testId: targetTestId, questionId },
       { filesJson },
       { upsert: false }
     );
@@ -74,20 +102,34 @@ const saveFiles = async (req, res, next) => {
 };
 
 // ── POST /ai-test/:questionId/submit ──────────────────────────────────────────
-// Body: { filesJson, promptLog }
+// Body: { filesJson, promptLog, testId }
 // Response: { submission }
 const submitAiTest = async (req, res, next) => {
   try {
     const { questionId } = req.params;
-    const { filesJson, promptLog } = req.body;
+    const { filesJson, promptLog, testId } = req.body;
     const candidateId = req.user.id;
 
     if (!filesJson) {
       return res.status(400).json({ error: 'filesJson is required' });
     }
 
+    let targetTestId = testId || req.query.testId;
+    if (!targetTestId) {
+      const activeSub = await Submission.findOne({
+        candidateId,
+        questionId,
+        status: 'IN_PROGRESS',
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = activeSub?.testId;
+    }
+
+    if (!targetTestId) {
+      return res.status(400).json({ error: 'testId is required to submit AI test' });
+    }
+
     const submission = await Submission.findOneAndUpdate(
-      { candidateId, questionId },
+      { candidateId, testId: targetTestId, questionId },
       {
         filesJson,
         // Replace promptLog if provided (full log from client as backup — server log is authoritative)
@@ -121,10 +163,16 @@ const getPreview = async (req, res, next) => {
   try {
     const { questionId } = req.params;
     const candidateId = req.user.id;
+    const targetTestId = req.query.testId || req.body?.testId;
+
+    const query = { candidateId, questionId };
+    if (targetTestId) {
+      query.testId = targetTestId;
+    }
 
     // Only return the current filesJson — Sandpack renders client-side (FR-6.3)
     const submission = await Submission.findOne(
-      { candidateId, questionId },
+      query,
       { filesJson: 1 }
     );
 

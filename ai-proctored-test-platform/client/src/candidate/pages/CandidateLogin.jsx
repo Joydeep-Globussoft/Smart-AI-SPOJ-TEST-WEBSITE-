@@ -25,6 +25,9 @@ export default function CandidateLogin() {
     try {
       const { data } = await api.candidateLogin(form);
       const candidate = { ...data.candidate, type: 'candidate' };
+      try {
+        sessionStorage.clear();
+      } catch (_) {}
       login(candidate, data.token, data.refreshToken);
       toast.success(`Welcome back, ${data.candidate.name}!`);
       navigate('/candidate/join');

@@ -505,9 +505,16 @@ const getQuestion = async (req, res, next) => {
 
     let submission = null;
     if (req.user?.id) {
+      const query = {
+        candidateId: req.user.id,
+        questionId: req.params.questionId,
+      };
+      if (req.params.testId) {
+        query.testId = req.params.testId;
+      }
       submission = await Submission.findOne(
-        { candidateId: req.user.id, questionId: req.params.questionId },
-        { code: 1, language: 1, savedCodeByLanguage: 1, status: 1 }
+        query,
+        { code: 1, language: 1, savedCodeByLanguage: 1, status: 1, isAttempted: 1, visibleTestCasesPassed: 1, visibleTestCasesTotal: 1 }
       );
     }
 
@@ -578,9 +585,23 @@ const runCode = async (req, res, next) => {
 // Autosave — no evaluation (Section 9.5, NFR: autosave every 30s)
 const saveCode = async (req, res, next) => {
   try {
-    const { code, language } = req.body;
+    const { code, language, testId } = req.body;
     const { questionId } = req.params;
     const candidateId = req.user.id;
+
+    let targetTestId = testId || req.query.testId;
+    if (!targetTestId) {
+      const activeSub = await Submission.findOne({
+        candidateId,
+        questionId,
+        status: 'IN_PROGRESS',
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = activeSub?.testId;
+    }
+
+    if (!targetTestId) {
+      return res.status(400).json({ error: 'testId is required to save code' });
+    }
 
     const savedAt = new Date();
     const lang = language || 'python';
@@ -592,7 +613,7 @@ const saveCode = async (req, res, next) => {
     };
 
     const submission = await Submission.findOneAndUpdate(
-      { candidateId, questionId },
+      { candidateId, testId: targetTestId, questionId },
       {
         $set: update,
         $setOnInsert: { status: 'IN_PROGRESS' },
@@ -616,12 +637,26 @@ const saveCode = async (req, res, next) => {
 // Final submit — triggers evaluation worker
 const submitCode = async (req, res, next) => {
   try {
-    const { code, language } = req.body;
+    const { code, language, testId } = req.body;
     const { questionId } = req.params;
     const candidateId = req.user.id;
 
     if (!code || !language) {
       return res.status(400).json({ error: 'code and language are required' });
+    }
+
+    let targetTestId = testId || req.query.testId;
+    if (!targetTestId) {
+      const activeSub = await Submission.findOne({
+        candidateId,
+        questionId,
+        status: 'IN_PROGRESS',
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = activeSub?.testId;
+    }
+
+    if (!targetTestId) {
+      return res.status(400).json({ error: 'testId is required to submit code' });
     }
 
     const question = await Question.findById(questionId, { hiddenTestCases: 0 });
@@ -639,7 +674,7 @@ const submitCode = async (req, res, next) => {
 
     // Update submission
     const submission = await Submission.findOneAndUpdate(
-      { candidateId, questionId },
+      { candidateId, testId: targetTestId, questionId },
       {
         code,
         language,
@@ -661,11 +696,13 @@ const submitCode = async (req, res, next) => {
 
     // Broadcast progress update via Socket.io
     const io = req.app.get('io');
-    io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
-      candidateId,
-      roomId: submission.roomId,
-      questionsCompleted: visiblePassed / Math.max(question.visibleTestCases.length, 1),
-    });
+    if (io) {
+      io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
+        candidateId,
+        roomId: submission.roomId,
+        questionsCompleted: visiblePassed / Math.max(question.visibleTestCases.length, 1),
+      });
+    }
 
     res.json({ submission });
   } catch (err) {
@@ -705,13 +742,15 @@ const submitAll = async (req, res, next) => {
 
     // Emit candidate:submitted to admin room (Section 10.2)
     const io = req.app.get('io');
-    // Get candidate name for announcement
-    const Candidate = require('../models/Candidate');
-    const candidate = await Candidate.findById(candidateId, 'name');
-    io.to(`test:${testId}:admin`).emit('candidate:submitted', {
-      candidateId,
-      candidateName: candidate?.name || 'Unknown',
-    });
+    if (io) {
+      // Get candidate name for announcement
+      const Candidate = require('../models/Candidate');
+      const candidate = await Candidate.findById(candidateId, 'name');
+      io.to(`test:${testId}:admin`).emit('candidate:submitted', {
+        candidateId,
+        candidateName: candidate?.name || 'Unknown',
+      });
+    }
 
     // BUG-21: Broadcast updated Tentative Time and seatmap status immediately on candidate submit
     Submission.findOne({ candidateId, testId }, { roomId: 1 }).then((s) => {
@@ -743,12 +782,26 @@ const submitAll = async (req, res, next) => {
 // Non-finalizing validation against Hidden Test Cases with visible-test-case gating
 const validateCode = async (req, res, next) => {
   try {
-    const { code, language } = req.body;
+    const { code, language, testId } = req.body;
     const { questionId } = req.params;
     const candidateId = req.user.id;
 
     if (!code || !language) {
       return res.status(400).json({ error: 'code and language are required' });
+    }
+
+    let targetTestId = testId || req.query.testId;
+    if (!targetTestId) {
+      const activeSub = await Submission.findOne({
+        candidateId,
+        questionId,
+        status: 'IN_PROGRESS',
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = activeSub?.testId;
+    }
+
+    if (!targetTestId) {
+      return res.status(400).json({ error: 'testId is required to validate code' });
     }
 
     const question = await Question.findById(questionId);
@@ -803,7 +856,7 @@ const validateCode = async (req, res, next) => {
     }
 
     // Retrieve existing submission to check prior isAttempted state
-    let submission = await Submission.findOne({ candidateId, questionId });
+    let submission = await Submission.findOne({ candidateId, testId: targetTestId, questionId });
     if (!submission) {
       return res.status(404).json({ error: 'Submission session not found. Call start-attempt first.' });
     }

@@ -514,7 +514,7 @@ export default function CandidateAITestScreen() {
               ? filesRef.current
               : questionFilesRef.current[qIdStr] || DEFAULT_FILES;
           try {
-            await api.submitAiTest(q._id, { filesJson: filesToSubmit, promptLog: chatMessages });
+            await api.submitAiTest(q._id, { filesJson: filesToSubmit, promptLog: chatMessages, testId: session?.test?._id });
           } catch (_) {}
         }
       }
@@ -655,11 +655,11 @@ export default function CandidateAITestScreen() {
       if (!activeQuestion || !files || disqualified || proctoring?.isCameraDisconnected) return;
       try {
         setIsSaving(true);
-        await api.saveFiles(activeQuestion._id, { filesJson: files });
+        await api.saveFiles(activeQuestion._id, { filesJson: files, testId: session?.test?._id });
       } catch (_) {} finally {
         setIsSaving(false);
       }
-    }, [activeQuestion, files, disqualified, proctoring?.isCameraDisconnected]),
+    }, [activeQuestion, files, disqualified, proctoring?.isCameraDisconnected, session?.test?._id]),
     30000,
     !!session && !disqualified
   );
@@ -746,6 +746,7 @@ export default function CandidateAITestScreen() {
       const { data } = await api.kimiChat(activeQuestion._id, {
         message: msg,
         filesContext: files,
+        testId: session?.test?._id,
         chatHistory: chatMessages.slice(-6).map((m) => ({
           role: m.role === 'candidate' ? 'user' : 'assistant',
           content: m.message,
@@ -788,6 +789,7 @@ export default function CandidateAITestScreen() {
       await api.submitAiTest(activeQuestion._id, {
         filesJson: files,
         promptLog: chatMessages,
+        testId: session?.test?._id,
       });
       setSubmittedQuestions(prev => new Set([...prev, qIdStr]));
       toast.success(`Q${activeQuestionIdx + 1} project submitted successfully!`);
@@ -827,7 +829,7 @@ export default function CandidateAITestScreen() {
               : questionFilesRef.current[qIdStr] || DEFAULT_FILES;
           console.log(`[SubmitAll] Submitting AI question ${qIdStr}...`);
           try {
-            await api.submitAiTest(q._id, { filesJson: filesToSubmit, promptLog: chatMessages });
+            await api.submitAiTest(q._id, { filesJson: filesToSubmit, promptLog: chatMessages, testId: session?.test?._id });
           } catch (qErr) {
             console.warn(`[SubmitAll] AI question ${qIdStr} submit warning:`, qErr);
           }
