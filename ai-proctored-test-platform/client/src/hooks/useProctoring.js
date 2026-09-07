@@ -24,6 +24,7 @@ export function useProctoring({
   candidateId,
   enabled = true,
   allowInternalCopyPaste = false, // true only for AI Test internal chat-to-editor (FR-6.1)
+  isSubmitting = false, // BUG-65 Part B: suppress false-positive violations during submission
   onWarning,
   onDisqualified,
 }) {
@@ -66,6 +67,8 @@ export function useProctoring({
   const testIdRef = useRef(testId);
   const roomIdRef = useRef(roomId);
   const onWarningRef = useRef(onWarning);
+  const isSubmittingRef = useRef(isSubmitting);
+  const isIntentionalTeardownRef = useRef(false);
   const hasCheckedInitialFullscreenRef = useRef(false);
 
   useEffect(() => {
@@ -73,7 +76,23 @@ export function useProctoring({
     testIdRef.current = testId;
     roomIdRef.current = roomId;
     onWarningRef.current = onWarning;
-  }, [candidateId, testId, roomId, onWarning]);
+    isSubmittingRef.current = isSubmitting;
+  }, [candidateId, testId, roomId, onWarning, isSubmitting]);
+
+  // BUG-65 Part B: Helper to explicitly suppress/resume violations during submit lifecycle
+  const suppressViolations = useCallback(() => {
+    console.log('[Proctoring] Suppressing all violation logging for intentional submission teardown');
+    isIntentionalTeardownRef.current = true;
+    isSubmittingRef.current = true;
+    delayedViolationTimeoutsRef.current.forEach((id) => clearTimeout(id));
+    delayedViolationTimeoutsRef.current.clear();
+  }, []);
+
+  const resumeViolations = useCallback(() => {
+    console.log('[Proctoring] Resuming violation logging');
+    isIntentionalTeardownRef.current = false;
+    isSubmittingRef.current = false;
+  }, []);
 
   // Absence Tracking for NO_FACE_15MIN (PRD FR-7.1)
   const noFaceStartTimeRef = useRef(null);
@@ -379,6 +398,11 @@ export function useProctoring({
     const tId = testIdRef.current || testId;
     const rId = roomIdRef.current || roomId;
 
+    if (isSubmittingRef.current || isIntentionalTeardownRef.current) {
+      console.log(`[Proctoring] Suppressing violation API for ${violationType} (intentional submission teardown)`);
+      return;
+    }
+
     console.warn(`[Proctoring] Submitting violation to API: ${violationType} with proof screenshot (detectedAt: ${detectedAt})`);
     try {
       await api.reportViolation({
@@ -396,6 +420,7 @@ export function useProctoring({
 
   // ── Helper: Immediate Violation Reporter (MULTIPLE_FACES, NO_FACE_15MIN, CAMERA_DISCONNECTED) ──
   const reportViolation = useCallback(async (violationType, screenshotBase64) => {
+    if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
     const now = Date.now();
     const lastTime = lastViolationTimeRef.current[violationType] || 0;
     if (now - lastTime < 5000) {
@@ -411,6 +436,7 @@ export function useProctoring({
 
   // ── Post-Transition (1s Delay) Screen Capture for TAB_SWITCH & FULLSCREEN_EXIT (BUG-51) ──
   const triggerDelayedScreenViolation = useCallback((violationType, onImmediate) => {
+    if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
     const now = Date.now();
     const lastTime = lastViolationTimeRef.current[violationType] || 0;
     if (now - lastTime < 5000) {
@@ -487,7 +513,12 @@ export function useProctoring({
 
   // ── Camera Disconnect Handler (Immediate Fullscreen Blocking & Lockdown) ────
   const handleCameraDisconnected = useCallback(async () => {
-    if (isCameraDisconnectedRef.current) return;
+    if (isCameraDisconnectedRef.current || isSubmittingRef.current || isIntentionalTeardownRef.current) {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) {
+        console.log('[Proctoring] Suppressing camera disconnect violation (intentional submission teardown)');
+      }
+      return;
+    }
     isCameraDisconnectedRef.current = true;
     setIsCameraDisconnected(true);
     setHasHardwareCamera(false);
@@ -568,19 +599,23 @@ export function useProctoring({
       activeTrackRef.current = track;
       activeDeviceIdRef.current = track.getSettings()?.deviceId || activeDeviceIdRef.current;
       track.onended = () => {
+        if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
         console.warn('[Proctoring] videoTrack onended dispatched');
         handleCameraDisconnected();
       };
       track.onmute = () => {
+        if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
         console.warn('[Proctoring] videoTrack onmute dispatched');
         handleCameraDisconnected();
       };
     }
     stream.onremovetrack = () => {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
       console.warn('[Proctoring] stream onremovetrack dispatched');
       handleCameraDisconnected();
     };
     stream.oninactive = () => {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
       console.warn('[Proctoring] stream oninactive dispatched');
       handleCameraDisconnected();
     };
@@ -851,7 +886,7 @@ export function useProctoring({
 
       // ── Physical Camera Disconnect Check (Immediate Fullscreen Blocking) ────
       if (isTrackEnded || (isVideoUnavailable && isMediaReady) || isFrameStalled) {
-        if (!isCameraDisconnectedRef.current) {
+        if (!isCameraDisconnectedRef.current && !isSubmittingRef.current && !isIntentionalTeardownRef.current) {
           console.warn(`[Proctoring] Physical camera disconnect detected! (trackEnded: ${isTrackEnded}, videoUnavailable: ${isVideoUnavailable}, frameStalled: ${isFrameStalled}, msSinceFrame: ${timeSinceLastFrame})`);
           handleCameraDisconnected();
         }
@@ -984,6 +1019,7 @@ export function useProctoring({
     if (!enabled || !isMediaReady || !testId) return;
 
     const captureAndSendFrame = () => {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
       if (!videoRef.current || videoRef.current.readyState < 2) return;
 
       try {
@@ -1109,6 +1145,7 @@ export function useProctoring({
     if (!enabled) return;
 
     const handleFullscreenChange = () => {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
       const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
       setIsFullscreen(inFullscreen);
 
@@ -1164,6 +1201,7 @@ export function useProctoring({
     let blurTimer = null;
 
     const handleVisibilityChange = () => {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
       if (document.hidden) {
         // BUG-31: Immediate detection, socket alert, and toast; 1s delayed screen-capture screenshot
         triggerDelayedScreenViolation('TAB_SWITCH', () => {
@@ -1188,6 +1226,7 @@ export function useProctoring({
     };
 
     const handleWindowBlur = () => {
+      if (isSubmittingRef.current || isIntentionalTeardownRef.current) return;
       // BUG-48: If candidate clicked into the application's internal preview iframe,
       // focus moves into the iframe causing window blur, but they never left the test.
       // Check immediately and with a short 60ms grace period to suppress false TAB_SWITCH.
@@ -1339,8 +1378,15 @@ export function useProctoring({
     });
 
     return () => {
+      isIntentionalTeardownRef.current = true;
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        try {
+          streamRef.current.getTracks().forEach((t) => {
+            t.onended = null;
+            t.onmute = null;
+            t.stop();
+          });
+        } catch {}
       }
     };
   }, [initMediaStream]);
@@ -1363,6 +1409,8 @@ export function useProctoring({
     hasHardwareCamera,
     isVerifyingFace,
     reconnectCamera,
+    suppressViolations,
+    resumeViolations,
   };
 }
 

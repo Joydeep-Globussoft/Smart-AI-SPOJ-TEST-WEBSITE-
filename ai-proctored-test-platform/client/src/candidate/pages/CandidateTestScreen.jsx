@@ -174,6 +174,7 @@ export default function CandidateTestScreen() {
   const [loadError, setLoadError] = useState('');
   const heartbeatRef = useRef(null);
   const isSubmittingAll = useRef(false);
+  const [isSubmittingAllState, setIsSubmittingAllState] = useState(false);
   const saveStatusTimerRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const codeRef = useRef('');
@@ -448,6 +449,7 @@ export default function CandidateTestScreen() {
   // Client-side timer expiry triggers submit-all as backup.
   const handleTimerExpire = useCallback(async () => {
     if (isSubmittingAll.current) return;
+    proctoring?.suppressViolations?.();
     isSubmittingAll.current = true;
     setIsSubmittingAllState(true);
     toast('⏰ Time is up! Submitting your test...', { icon: '⏰' });
@@ -514,6 +516,7 @@ export default function CandidateTestScreen() {
     candidateId: user?.id || user?._id,
     enabled: Boolean(session && user && !disqualified),
     allowInternalCopyPaste: false,
+    isSubmitting: isSubmittingAllState,
     onWarning: handleProctorWarning,
   });
 
@@ -873,7 +876,6 @@ export default function CandidateTestScreen() {
     }
   };
 
-  const [isSubmittingAllState, setIsSubmittingAllState] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
 
   // ── Submit all ────────────────────────────────────────────────────────────────
@@ -881,6 +883,7 @@ export default function CandidateTestScreen() {
     if (isSubmittingAllState || isSubmittingAll.current) return;
     if (!window.confirm('Submit the entire test? This cannot be undone.')) return;
 
+    proctoring?.suppressViolations?.();
     setIsSubmittingAllState(true);
     isSubmittingAll.current = true;
     console.log('[SubmitAll] Starting final test submission flow...');
@@ -918,6 +921,7 @@ export default function CandidateTestScreen() {
       console.error('[SubmitAll] Final submission error:', err);
       const errMsg = err.response?.data?.error || err.message || 'Submit all failed';
       toast.error(`Submit failed: ${errMsg}. Please try again.`);
+      proctoring?.resumeViolations?.();
       setIsSubmittingAllState(false);
       isSubmittingAll.current = false;
     }

@@ -113,6 +113,18 @@ const reportViolation = async (req, res, next) => {
       return res.status(400).json({ error: 'candidateId, testId, roomId, violationType are required' });
     }
 
+    // BUG-65 Part B: If candidate has already completed test (no IN_PROGRESS submissions), suppress spurious violation reports
+    const Submission = require('../models/Submission');
+    const activeSubmissionsCount = await Submission.countDocuments({
+      candidateId,
+      testId,
+      status: 'IN_PROGRESS',
+    });
+    if (activeSubmissionsCount === 0) {
+      console.log(`[Proctoring] Suppressing violation ${violationType} for candidate ${candidateId} (test already concluded)`);
+      return res.json({ success: true, message: 'Test already concluded; violation suppressed.' });
+    }
+
     // Upload screenshot to Cloudinary
     let proofScreenshotUrl = null;
     if (screenshotBase64) {
@@ -324,6 +336,18 @@ const reportCameraDisconnected = async (req, res, next) => {
 
     if (!candidateId || !testId) {
       return res.status(400).json({ error: 'candidateId and testId are required' });
+    }
+
+    // BUG-65 Part B: If candidate has already completed test (no IN_PROGRESS submissions), suppress spurious camera disconnect
+    const Submission = require('../models/Submission');
+    const activeSubmissionsCount = await Submission.countDocuments({
+      candidateId,
+      testId,
+      status: 'IN_PROGRESS',
+    });
+    if (activeSubmissionsCount === 0) {
+      console.log(`[Proctoring] Suppressing camera disconnect for candidate ${candidateId} (test already concluded)`);
+      return res.json({ success: true, message: 'Test already concluded; camera disconnect suppressed.' });
     }
 
     // Check if there is already an open CAMERA_DISCONNECTED log for this candidate & test
