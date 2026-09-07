@@ -23,15 +23,25 @@ const { registerSocketHandlers } = require('./sockets/socketHandler');
 const app = express();
 const server = http.createServer(app);
 
+// Enable trust proxy for cloud deployments (Render, Railway, Heroku, AWS)
+app.set('trust proxy', 1);
+
 // ── Dynamic CORS Origin Check ──────────────────────────────────────────────────
 const allowedOriginCheck = (origin, callback) => {
+  const allowedEnvOrigins = [
+    process.env.CLIENT_URL,
+    process.env.CORS_ORIGIN,
+    process.env.SOCKET_CORS_ORIGIN,
+  ].filter(Boolean);
+
   if (
     !origin ||
     origin.startsWith('http://localhost:') ||
     origin.startsWith('http://127.0.0.1:') ||
-    origin === process.env.CLIENT_URL ||
-    origin === process.env.CORS_ORIGIN ||
-    origin === process.env.SOCKET_CORS_ORIGIN
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.onrender.com') ||
+    allowedEnvOrigins.includes(origin) ||
+    allowedEnvOrigins.some((url) => origin === url || origin.startsWith(url))
   ) {
     callback(null, true);
   } else {
