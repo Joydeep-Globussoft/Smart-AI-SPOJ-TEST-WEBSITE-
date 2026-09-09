@@ -53,7 +53,7 @@ export default function AdminTests() {
     if (creating) return;
     setShowCreateModal(false);
     if (modalOrigin === 'dashboard') {
-      navigate('/admin/dashboard');
+      navigate('/admin');
     }
   };
 

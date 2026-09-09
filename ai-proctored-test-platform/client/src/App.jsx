@@ -70,6 +70,7 @@ function AppRoutes() {
         {/* ── Admin Routes ── */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+        <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="/admin/tests" element={<RequireAdmin><AdminTests /></RequireAdmin>} />
         <Route path="/admin/tests/:testId" element={<RequireAdmin><AdminTestDetail /></RequireAdmin>} />
         <Route path="/admin/tests/:testId/live" element={<RequireAdmin><AdminLiveDashboard /></RequireAdmin>} />

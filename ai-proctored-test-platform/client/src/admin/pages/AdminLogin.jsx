@@ -1,5 +1,5 @@
 // Admin Login page
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
@@ -8,11 +8,17 @@ import globussoftLogo from '../../assets/globussoft-logo.png';
 import PasswordInput from '../../shared/PasswordInput';
 
 export default function AdminLogin() {
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user && user.type === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
