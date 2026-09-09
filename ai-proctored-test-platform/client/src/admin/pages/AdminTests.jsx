@@ -1,7 +1,7 @@
 // AdminTests.jsx — Test Management Page
 // Implements PRD Section 9.2, Section 11.2 (FR-2.1, FR-2.2, FR-2.3), Section 12.1
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
@@ -18,6 +18,7 @@ const PROGRAMMING_LANGUAGES = ['python', 'java', 'cpp', 'c', 'javascript', 'reac
 
 export default function AdminTests() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tests, setTests] = useState([]);
   const [questionSets, setQuestionSets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,7 @@ export default function AdminTests() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Create Modal State
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(() => searchParams.get('createNew') === 'true');
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -71,6 +72,17 @@ export default function AdminTests() {
     fetchTests();
     fetchQuestionSets();
   }, [fetchTests, fetchQuestionSets]);
+
+  useEffect(() => {
+    if (searchParams.get('createNew') === 'true') {
+      setShowCreateModal(true);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('createNew');
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;

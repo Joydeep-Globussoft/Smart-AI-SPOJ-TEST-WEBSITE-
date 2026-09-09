@@ -28,24 +28,32 @@ app.set('trust proxy', 1);
 
 // ── Dynamic CORS Origin Check ──────────────────────────────────────────────────
 const allowedOriginCheck = (origin, callback) => {
-  const allowedEnvOrigins = [
+  const envOrigins = [
     process.env.CLIENT_URL,
     process.env.CORS_ORIGIN,
     process.env.SOCKET_CORS_ORIGIN,
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .flatMap((val) => val.split(',').map((u) => u.trim().replace(/\/+$/, '')))
+    .filter(Boolean);
+
+  const cleanOrigin = origin ? origin.replace(/\/+$/, '') : '';
 
   if (
     !origin ||
-    origin.startsWith('http://localhost:') ||
-    origin.startsWith('http://127.0.0.1:') ||
-    origin.endsWith('.vercel.app') ||
-    origin.endsWith('.onrender.com') ||
-    allowedEnvOrigins.includes(origin) ||
-    allowedEnvOrigins.some((url) => origin === url || origin.startsWith(url))
+    cleanOrigin.startsWith('http://localhost:') ||
+    cleanOrigin.startsWith('http://127.0.0.1:') ||
+    cleanOrigin.endsWith('.vercel.app') ||
+    cleanOrigin.endsWith('.onrender.com') ||
+    cleanOrigin.endsWith('.netlify.app') ||
+    cleanOrigin.endsWith('.railway.app') ||
+    cleanOrigin.endsWith('.pages.dev') ||
+    envOrigins.includes(cleanOrigin) ||
+    envOrigins.some((url) => cleanOrigin === url || cleanOrigin.startsWith(url))
   ) {
     callback(null, true);
   } else {
-    callback(new Error('Not allowed by CORS'));
+    callback(new Error(`Not allowed by CORS: ${origin}`));
   }
 };
 
