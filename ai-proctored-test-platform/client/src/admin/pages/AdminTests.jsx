@@ -29,6 +29,7 @@ export default function AdminTests() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Create Modal State
+  const [modalOrigin, setModalOrigin] = useState(() => searchParams.get('origin') || null);
   const [showCreateModal, setShowCreateModal] = useState(() => searchParams.get('createNew') === 'true');
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,6 +43,19 @@ export default function AdminTests() {
     supportedLanguages: ['python', 'java', 'cpp', 'javascript'],
     instructions: '1. Maintain full-screen mode throughout the test.\n2. Do not switch tabs or use secondary monitors.\n3. Keep your webcam on and ensure your face is clearly visible.\n4. Mobile phones and electronic gadgets are strictly prohibited.',
   });
+
+  const handleOpenCreateModal = () => {
+    setModalOrigin(null);
+    setShowCreateModal(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    if (creating) return;
+    setShowCreateModal(false);
+    if (modalOrigin === 'dashboard') {
+      navigate('/admin/dashboard');
+    }
+  };
 
   // Delete Confirmation Modal
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -75,10 +89,15 @@ export default function AdminTests() {
 
   useEffect(() => {
     if (searchParams.get('createNew') === 'true') {
+      const originParam = searchParams.get('origin');
+      if (originParam) {
+        setModalOrigin(originParam);
+      }
       setShowCreateModal(true);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.delete('createNew');
+        next.delete('origin');
         return next;
       }, { replace: true });
     }
@@ -197,7 +216,7 @@ export default function AdminTests() {
             </p>
           </div>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleOpenCreateModal}
             className="btn btn-primary"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
@@ -261,7 +280,7 @@ export default function AdminTests() {
                 ? 'Try adjusting your search or filters'
                 : 'Get started by creating your first proctored test'}
             </p>
-            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+            <button onClick={handleOpenCreateModal} className="btn btn-primary">
               + Create New Test
             </button>
           </div>
@@ -388,13 +407,13 @@ export default function AdminTests() {
 
         {/* ── Create Test Modal (FR-2.1, Section 12.1) ── */}
         {showCreateModal && (
-          <div className="modal-backdrop" onClick={() => !creating && setShowCreateModal(false)}>
+          <div className="modal-backdrop" onClick={handleCloseCreateModal}>
             <div className="modal-container" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3 className="modal-title">Create New Test</h3>
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={handleCloseCreateModal}
                   style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#6b7280' }}
                 >
                   ✕
@@ -610,7 +629,7 @@ export default function AdminTests() {
                 <div className="modal-footer">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={handleCloseCreateModal}
                     className="btn btn-secondary"
                     disabled={creating}
                   >

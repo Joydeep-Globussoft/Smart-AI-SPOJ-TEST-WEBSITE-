@@ -68,7 +68,7 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ display: 'flex', gap: 12 }}>
-              <Link to="/admin/tests?createNew=true" className="btn btn-primary">
+              <Link to="/admin/tests?createNew=true&origin=dashboard" className="btn btn-primary">
                 + Create New Test
               </Link>
             </div>
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
             ) : tests.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 16px', color: '#6b7280' }}>
                 <p style={{ marginBottom: 12 }}>No tests created yet.</p>
-                <Link to="/admin/tests?createNew=true" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
+                <Link to="/admin/tests?createNew=true&origin=dashboard" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
                   Create First Test
                 </Link>
               </div>
