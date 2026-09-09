@@ -1,18 +1,21 @@
 // AdminDashboard.jsx — Admin Overview & Landing Screen
 // Note: Per user instruction and PRD Rule 1, summary widgets and metrics are flagged as // ASSUMPTION
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
+import CreateTestModal from '../../shared/CreateTestModal';
 import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const { user, isSuperAdmin } = useAuth();
 
   const [tests, setTests] = useState([]);
   const [questionSets, setQuestionSets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch overview data
   const fetchDashboardData = useCallback(async () => {
@@ -68,9 +71,13 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ display: 'flex', gap: 12 }}>
-              <Link to="/admin/tests?createNew=true&origin=dashboard" className="btn btn-primary">
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(true)}
+                className="btn btn-primary"
+              >
                 + Create New Test
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -114,9 +121,14 @@ export default function AdminDashboard() {
             ) : tests.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 16px', color: '#6b7280' }}>
                 <p style={{ marginBottom: 12 }}>No tests created yet.</p>
-                <Link to="/admin/tests?createNew=true&origin=dashboard" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.85rem' }}
+                >
                   Create First Test
-                </Link>
+                </button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -256,6 +268,22 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+
+      {/* ── Standalone Create Test Modal mounted directly on Dashboard ── */}
+      <CreateTestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(createdTest) => {
+          setIsCreateModalOpen(false);
+          fetchDashboardData();
+          if (createdTest?._id) {
+            navigate(`/admin/tests/${createdTest._id}`);
+          } else {
+            navigate('/admin/tests');
+          }
+        }}
+        questionSets={questionSets}
+      />
     </div>
   );
 }
