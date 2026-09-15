@@ -70,7 +70,12 @@ const io = new Server(server, {
 app.set('io', io);
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
-app.use(helmet());
+// BUG-72: Disable helmet frameguard and CSP frame-ancestors to permit cross-origin embedding of PDF assets
+app.use(helmet({
+  frameguard: false,
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(cors({
   origin: allowedOriginCheck,
   credentials: true,

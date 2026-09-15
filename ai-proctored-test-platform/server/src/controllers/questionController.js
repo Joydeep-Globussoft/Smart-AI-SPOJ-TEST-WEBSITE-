@@ -453,7 +453,7 @@ const uploadPdfBatch = async (req, res, next) => {
 };
 
 // ── GET /questions/pdf-asset/:filename ────────────────────────────────────────
-// Serves stored PDF files for candidate/admin embedded PDF viewers
+// Serves stored PDF files for candidate/admin embedded PDF viewers (BUG-72: Cross-origin iframe enabled)
 const servePdfAsset = async (req, res, next) => {
   try {
     const path = require('path');
@@ -465,10 +465,17 @@ const servePdfAsset = async (req, res, next) => {
       return res.status(404).json({ error: 'PDF asset not found.' });
     }
 
+    // Explicitly allow cross-origin iframe framing across all hosting origins (Render <-> Vercel / localhost)
+    res.removeHeader('X-Frame-Options');
+    res.removeHeader('Content-Security-Policy');
+    res.setHeader('Content-Security-Policy', "frame-ancestors *");
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
 
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);

@@ -1,6 +1,6 @@
 // EmbeddedPdfViewer.jsx — Candidate-Facing Embedded PDF Problem Statement Viewer
-// Implements FEATURE-009: Displays original PDF page(s) replacing structured text boxes
-import React, { useState, useEffect } from 'react';
+// Implements FEATURE-009 & BUG-72: Displays original PDF page(s) with resilient in-app loading & retry
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../../services/apiClient';
 
 export default function EmbeddedPdfViewer({
@@ -20,11 +20,92 @@ export default function EmbeddedPdfViewer({
 
   const [currentPage, setCurrentPage] = useState(startPage);
   const [zoomFit, setZoomFit] = useState(true);
+  const [loadState, setLoadState] = useState('loading'); // 'loading' | 'ready' | 'retrying' | 'error'
+  const [retryCount, setRetryCount] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('Loading problem statement...');
+
+  const maxRetries = 3;
+  const retryTimerRef = useRef(null);
+  const probeAbortRef = useRef(null);
 
   // Reset active page whenever the selected question or page range changes
   useEffect(() => {
     setCurrentPage(startPage);
   }, [question?._id, startPage]);
+
+  const pdfUrl = activeFileName ? api.getPdfAssetUrl(activeFileName) : '';
+  const iframeSrc = pdfUrl ? `${pdfUrl}#page=${currentPage}&view=${zoomFit ? 'FitH' : 'Fit'}&toolbar=0&navpanes=0` : '';
+
+  // Asset availability probe to gracefully catch cold-starts or network errors
+  const probeAsset = useCallback(async (attempt = 1) => {
+    if (!activeFileName) return;
+    if (probeAbortRef.current) {
+      probeAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    probeAbortRef.current = controller;
+
+    try {
+      if (attempt > 1) {
+        setLoadState('retrying');
+        setStatusMessage(`Reconnecting to test server... (Attempt ${attempt} of ${maxRetries})`);
+      } else {
+        setLoadState('loading');
+        setStatusMessage('Loading problem statement...');
+      }
+
+      // Probe asset endpoint with a 6-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(pdfUrl, {
+        method: 'GET',
+        headers: { Range: 'bytes=0-1024' }, // Lightweight range probe
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok || res.status === 206 || res.status === 304) {
+        setLoadState('ready');
+        setRetryCount(0);
+      } else if (res.status === 404) {
+        setLoadState('error');
+        setStatusMessage('The PDF problem statement for this question could not be found.');
+      } else {
+        throw new Error(`Server returned status ${res.status}`);
+      }
+    } catch (err) {
+      if (err.name === 'AbortError' || err.message?.includes('aborted')) {
+        // Timeout or cancelled
+      }
+      if (attempt < maxRetries) {
+        setRetryCount(attempt);
+        const delay = Math.min(attempt * 1500, 4000);
+        setStatusMessage(`Server is warming up. Retrying in ${Math.round(delay / 1000)}s... (Attempt ${attempt} of ${maxRetries})`);
+        retryTimerRef.current = setTimeout(() => {
+          probeAsset(attempt + 1);
+        }, delay);
+      } else {
+        setLoadState('error');
+        setRetryCount(maxRetries);
+        setStatusMessage('Problem statement is temporarily unreachable from the server.');
+      }
+    }
+  }, [activeFileName, pdfUrl]);
+
+  useEffect(() => {
+    if (activeFileName) {
+      probeAsset(1);
+    }
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (probeAbortRef.current) probeAbortRef.current.abort();
+    };
+  }, [activeFileName, probeAsset]);
+
+  const handleManualRetry = () => {
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    setRetryCount(0);
+    probeAsset(1);
+  };
 
   if (!activeFileName) {
     return (
@@ -54,9 +135,6 @@ export default function EmbeddedPdfViewer({
       </div>
     );
   }
-
-  const pdfUrl = api.getPdfAssetUrl(activeFileName);
-  const iframeSrc = `${pdfUrl}#page=${currentPage}&view=${zoomFit ? 'FitH' : 'Fit'}&toolbar=0&navpanes=0`;
 
   const pageNumbers = [];
   for (let p = startPage; p <= endPage; p++) {
@@ -206,20 +284,150 @@ export default function EmbeddedPdfViewer({
         </div>
       </div>
 
-      {/* ── PDF Embed Frame ── */}
+      {/* ── PDF Embed Frame & Graceful States ── */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#1c1e2f' }}>
-        <iframe
-          key={`${question._id}_page_${currentPage}_${zoomFit}`}
-          src={iframeSrc}
-          title={`Problem Statement PDF - Q${questionIndex + 1}`}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            display: 'block',
-            background: '#ffffff',
-          }}
-        />
+        {loadState === 'error' ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: 280,
+              background: '#0d111c',
+              color: '#e2e8f0',
+              padding: 28,
+              textAlign: 'center',
+              gap: 16,
+            }}
+          >
+            <div style={{ fontSize: '2.5rem' }}>⚠️</div>
+            <div>
+              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '1rem', marginBottom: 6 }}>
+                Problem Statement Loading Delayed
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#94a3b8', maxWidth: 420, lineHeight: 1.5 }}>
+                {statusMessage}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={handleManualRetry}
+                style={{
+                  background: '#8b5cf6',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '8px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.35)',
+                }}
+              >
+                🔄 Retry Loading
+              </button>
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: '#1e293b',
+                  color: '#38bdf8',
+                  border: '1px solid #334155',
+                  borderRadius: 6,
+                  padding: '8px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                ↗ Open PDF Directly
+              </a>
+            </div>
+          </div>
+        ) : (
+          <>
+            {(loadState === 'loading' || loadState === 'retrying') && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 10,
+                  background: 'rgba(15, 23, 42, 0.88)',
+                  backdropFilter: 'blur(3px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 12,
+                  color: '#e2e8f0',
+                  padding: 20,
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    border: '3px solid rgba(139, 92, 246, 0.3)',
+                    borderTopColor: '#8b5cf6',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                  }}
+                />
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc' }}>
+                  {statusMessage}
+                </div>
+                {retryCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleManualRetry}
+                    style={{
+                      background: 'transparent',
+                      color: '#a78bfa',
+                      border: '1px solid rgba(167, 139, 250, 0.4)',
+                      borderRadius: 4,
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      marginTop: 4,
+                    }}
+                  >
+                    Retry Now
+                  </button>
+                )}
+              </div>
+            )}
+            <iframe
+              id="pdf-viewer-iframe"
+              data-preview-iframe="true"
+              data-pdf-iframe="true"
+              key={`${question?._id || activeFileName}_page_${currentPage}_${zoomFit}`}
+              src={iframeSrc}
+              title={`Problem Statement PDF - Q${qNum}`}
+              onLoad={() => {
+                setLoadState('ready');
+              }}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                display: 'block',
+                background: '#ffffff',
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );
