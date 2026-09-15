@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const {
   joinRoom, startAttempt, getQuestion,
-  runCode, saveCode, validateCode, submitCode, submitAll,
+  runCode, saveCode, submitCode, submitAll,
 } = require('../controllers/submissionController');
 const { verifyToken, requireCandidate } = require('../middleware/authMiddleware');
 
@@ -14,7 +14,6 @@ router.post('/tests/:testId/start-attempt', candidateAuth, startAttempt);
 router.get('/tests/:testId/questions/:questionId', candidateAuth, getQuestion);
 router.post('/submissions/:questionId/run', candidateAuth, runCode);
 router.post('/submissions/:questionId/save', candidateAuth, saveCode);
-router.post('/submissions/:questionId/validate', candidateAuth, validateCode);
 router.post('/submissions/:questionId/submit', candidateAuth, submitCode);
 router.post('/tests/:testId/submit-all', candidateAuth, submitAll);
 

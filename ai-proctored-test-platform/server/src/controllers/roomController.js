@@ -312,7 +312,7 @@ const getLiveCandidates = async (req, res, next) => {
       if (sub.isAttempted) {
         attemptedCounts[cid] = (attemptedCounts[cid] || 0) + 1;
       }
-      if (sub.visibleTestCasesPassed > 0) {
+      if (sub.visibleTestCasesTotal > 0 && sub.visibleTestCasesPassed === sub.visibleTestCasesTotal) {
         completedCounts[cid] = (completedCounts[cid] || 0) + 1;
       }
     }

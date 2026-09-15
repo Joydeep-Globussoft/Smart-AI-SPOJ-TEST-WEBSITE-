@@ -167,10 +167,8 @@ export default function CandidateTestScreen() {
   const [language, setLanguage] = useState('python');
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const [isRunning, setIsRunning] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  const [attemptedQuestions, setAttemptedQuestions] = useState(new Set()); // Set of questionIds that have been validated at least once
+  const [attemptedQuestions, setAttemptedQuestions] = useState(new Set()); // Set of questionIds that have passed all visible cases
   const [passedVisibleByQuestion, setPassedVisibleByQuestion] = useState({}); // { [qId]: boolean }
-  const [validationResultsByQuestion, setValidationResultsByQuestion] = useState({}); // { [qId]: validationData }
   const [questionProgress, setQuestionProgress] = useState({}); // { questionId: { passed, total } }
   const [disqualified, setDisqualified] = useState(false);
   const [isSuperseded, setIsSuperseded] = useState(false);
@@ -807,15 +805,18 @@ export default function CandidateTestScreen() {
       } else if (data.isCustom || isCustomSelected) {
         computedStatus = 'CUSTOM';
       } else {
-        const allPassed = results.length > 0 && results.every((r) => r.passed);
+        const allPassed = data.allPassed !== undefined ? data.allPassed : (results.length > 0 && results.every((r) => r.passed));
         computedStatus = allPassed ? 'ACCEPTED' : 'WRONG_ANSWER';
         setPassedVisibleByQuestion((prev) => ({ ...prev, [qId]: allPassed }));
-        const passedCount = results.filter((r) => r && r.passed).length;
+        const passedCount = typeof data.visibleTestCasesPassed === 'number' ? data.visibleTestCasesPassed : results.filter((r) => r && r.passed).length;
         const totalCount = activeQuestion.visibleTestCases?.length || results.length || 0;
         setQuestionProgress((prev) => ({
           ...prev,
           [qId]: { passed: passedCount, total: totalCount },
         }));
+        if (allPassed || data.isAttempted) {
+          setAttemptedQuestions((prev) => new Set([...prev, qId]));
+        }
       }
 
       setRunDataByQuestion((prev) => ({
@@ -852,40 +853,6 @@ export default function CandidateTestScreen() {
       }
     } finally {
       setIsRunning(false);
-    }
-  };
-
-  // ── Validate single question against hidden testcases (FEATURE-007) ──────────
-  const handleValidate = async () => {
-    if (proctoring?.isCameraDisconnected) return;
-    if (!activeQuestion || !code || isValidating) return;
-    setIsValidating(true);
-    try {
-      const { data } = await api.validateCode(activeQuestion._id, {
-        code,
-        language,
-        testId: session?.test?._id,
-      });
-      setAttemptedQuestions((prev) => new Set([...prev, activeQuestion._id]));
-      setValidationResultsByQuestion((prev) => ({
-        ...prev,
-        [activeQuestion._id]: {
-          ...data,
-          validatedAt: new Date(),
-        },
-      }));
-      toast.success(`Q${activeQuestionIdx + 1} validated! ${data.hiddenTestCasesPassed}/${data.hiddenTestCasesTotal} hidden test cases passed.`);
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Validation failed';
-      toast.error(msg);
-      if (err.response?.data?.visibleGatingFailed) {
-        setPassedVisibleByQuestion((prev) => ({
-          ...prev,
-          [activeQuestion._id]: false,
-        }));
-      }
-    } finally {
-      setIsValidating(false);
     }
   };
 
@@ -1310,7 +1277,7 @@ export default function CandidateTestScreen() {
                       {attemptedQuestions.has(activeQuestion._id) && (
                         <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
                           <span style={{ fontSize: '0.9em', lineHeight: 1, fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>✓</span>
-                          <span>Validated</span>
+                          <span>Attempted</span>
                         </span>
                       )}
                     </div>
@@ -1477,34 +1444,6 @@ export default function CandidateTestScreen() {
                 >
                   {isRunning ? <><span className="spinner" style={{ borderTopColor: '#cdd6f4', width: 14, height: 14 }} /> Running...</> : '▶ Run'}
                 </button>
-                {(() => {
-                  const isValidateGated = !passedVisibleByQuestion[activeQuestion?._id];
-                  const isValidateDisabled = isValidateGated || isValidating || isRunning || !code || disqualified || Boolean(proctoring?.isCameraDisconnected);
-
-                  return (
-                    <button
-                      id="validate-btn"
-                      className="btn btn-primary btn-sm"
-                      onClick={handleValidate}
-                      disabled={isValidateDisabled}
-                      title={isValidateGated ? 'Pass all visible test cases first' : 'Validate code against hidden test cases'}
-                      style={{
-                        fontWeight: 700,
-                        opacity: isValidateGated ? 0.45 : 1,
-                        cursor: isValidateGated ? 'not-allowed' : 'pointer',
-                        transition: 'all 150ms ease',
-                      }}
-                    >
-                      {isValidating ? (
-                        <>
-                          <span className="spinner" style={{ width: 14, height: 14 }} /> Validating...
-                        </>
-                      ) : (
-                        'Validate'
-                      )}
-                    </button>
-                  );
-                })()}
               </div>
             </div>
 
@@ -1818,80 +1757,6 @@ export default function CandidateTestScreen() {
                   flexDirection: 'column',
                 }}
               >
-                {/* ── Candidate-Facing Hidden Test Validation Card with Circular Donut Ring (FEATURE-007) ── */}
-                {(() => {
-                  const currentValidation = activeQuestion?._id ? validationResultsByQuestion[activeQuestion._id] : null;
-                  if (!currentValidation) return null;
-
-                  const total = currentValidation.hiddenTestCasesTotal || 0;
-                  const passed = currentValidation.hiddenTestCasesPassed || 0;
-                  const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
-                  const radius = 22;
-                  const circumference = 2 * Math.PI * radius;
-                  const strokeDashoffset = circumference - (pct / 100) * circumference;
-
-                  return (
-                    <div
-                      style={{
-                        background: '#161829',
-                        border: '1px solid rgba(139, 92, 246, 0.45)',
-                        borderRadius: 8,
-                        padding: '10px 14px',
-                        marginBottom: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        boxShadow: '0 0 10px rgba(124, 58, 237, 0.15)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Hidden Test Validation
-                        </div>
-                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f8fafc' }}>
-                          {passed} / {total} testcases passed
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                          Validation attempts: unlimited • Not locked
-                        </div>
-                      </div>
-
-                      {/* Circular Donut Ring */}
-                      <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="56" height="56" viewBox="0 0 56 56" style={{ transform: 'rotate(-90deg)' }}>
-                          <circle
-                            cx="28"
-                            cy="28"
-                            r={radius}
-                            stroke="#282a40"
-                            strokeWidth="4.5"
-                            fill="transparent"
-                          />
-                          <circle
-                            cx="28"
-                            cy="28"
-                            r={radius}
-                            stroke="#8b5cf6"
-                            strokeWidth="4.5"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeDashoffset}
-                            strokeLinecap="round"
-                            fill="transparent"
-                            style={{
-                              transition: 'stroke-dashoffset 400ms ease',
-                              filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.7))',
-                            }}
-                          />
-                        </svg>
-                        <span style={{ position: 'absolute', fontSize: '0.75rem', fontWeight: 800, color: '#f8fafc' }}>
-                          {pct}%
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 {!lastRunStatus && runResults.length === 0 && !runOutput ? (
                   <div style={{ color: '#6b7280', fontSize: '0.85rem', padding: '16px 0', textAlign: 'center' }}>
                     Click &quot;▶ Run&quot; to execute your code against test cases.

@@ -96,15 +96,14 @@ async function runTests() {
 
   assert(
     questionControllerCode.includes('uploadPdfBatch') &&
-    questionControllerCode.includes('servePdfAsset') &&
-    questionControllerCode.includes('hasIncompleteQuestions'),
-    'questionController.js implements uploadPdfBatch, servePdfAsset, and incomplete hydration'
+    questionControllerCode.includes('servePdfAsset'),
+    'questionController.js implements uploadPdfBatch and servePdfAsset'
   );
 
   assert(
-    testControllerCode.includes('isIncomplete') &&
-    testControllerCode.includes('incomplete question'),
-    'testController.js strictly gates test creation and update on incomplete question sets'
+    testControllerCode.includes('createTest') &&
+    testControllerCode.includes('updateTest'),
+    'testController.js implements createTest and updateTest'
   );
 
   assert(
@@ -141,9 +140,9 @@ async function runTests() {
   );
 
   assert(
-    createTestModalCode.includes('hasIncompleteQuestions') &&
-    createTestModalCode.includes('(Incomplete — Hidden Cases Required)'),
-    'CreateTestModal.jsx tags incomplete sets and blocks test submission'
+    createTestModalCode.includes('CreateTestModal') &&
+    createTestModalCode.includes('passingCriteria'),
+    'CreateTestModal.jsx supports test creation with passing criteria'
   );
 
   // ── PART 2: Unit Testing PDF Parser Service ─────────────────────────────────
@@ -430,12 +429,12 @@ startxref
   assert(
     firstQ.isPdfImported === true &&
     Boolean(firstQ.pdfFileName) &&
-    firstQ.isIncomplete === true &&
+    firstQ.isIncomplete === false &&
     firstQ.hiddenTestCases.length === 0,
-    'Created Question has isPdfImported: true, isIncomplete: true, and empty hiddenTestCases'
+    'Created Question has isPdfImported: true, isIncomplete: false, and empty hiddenTestCases (FEATURE-010)'
   );
 
-  // 2. Test getQuestionSets incomplete detection (BUG-59 & FEATURE-009)
+  // 2. Test getQuestionSets returns question set with accurate questionCount
   let setsResponseBody = null;
   await getQuestionSets(
     { user: { id: testAdmin._id.toString() } },
@@ -450,17 +449,17 @@ startxref
 
   const retrievedSet = setsResponseBody?.questionSets?.find((s) => s._id.toString() === createdSetId.toString());
   assert(
-    retrievedSet && retrievedSet.hasIncompleteQuestions === true && retrievedSet.incompleteCount >= 1,
-    'getQuestionSets tags set with hasIncompleteQuestions: true and accurate incompleteCount'
+    retrievedSet && (retrievedSet.questionCount ?? retrievedSet.questionIds?.length) >= 1,
+    'getQuestionSets returns imported Question Set with accurate questionCount'
   );
 
-  // 3. Test Incomplete Gating in testController.createTest
-  let createTestStatus = 200;
-  let createTestError = null;
+  // 3. Test Direct Test Creation in testController.createTest without hidden test cases
+  let validTestStatus = 200;
+  let validTestBody = null;
   const mockCreateTestReq = {
     user: { id: testAdmin._id.toString(), type: 'admin' },
     body: {
-      title: 'QA Blocked Test With Incomplete Questions',
+      title: 'QA Test With PDF Questions (FEATURE-010)',
       testType: 'SPOJ',
       questionSetId: createdSetId,
       durationMinutes: 60,
@@ -470,63 +469,6 @@ startxref
       startTestWindowMinutes: 10,
     },
   };
-  const mockCreateTestRes = {
-    status: (code) => {
-      createTestStatus = code;
-      return mockCreateTestRes;
-    },
-    json: (body) => {
-      createTestError = body;
-    },
-  };
-
-  await createTest(mockCreateTestReq, mockCreateTestRes, (err) => {
-    if (err) createTestError = { error: err.message };
-  });
-
-  assert(
-    createTestStatus === 400 && createTestError?.error?.includes('incomplete question'),
-    'testController.createTest rejects Question Sets containing incomplete questions with HTTP 400'
-  );
-
-  // 4. Update Question with Hidden Test Cases -> isIncomplete cleared
-  let updateQStatus = 200;
-  let updateQBody = null;
-  const mockUpdateQReq = {
-    params: { questionId: firstQ._id.toString() },
-    body: {
-      hiddenTestCases: [{ input: '5\n1 2 3 4 5', expectedOutput: '5' }],
-    },
-  };
-  const mockUpdateQRes = {
-    status: (code) => {
-      updateQStatus = code;
-      return mockUpdateQRes;
-    },
-    json: (body) => {
-      updateQBody = body;
-    },
-  };
-
-  await updateQuestion(mockUpdateQReq, mockUpdateQRes, () => {});
-
-  const updatedQ = await Question.findById(firstQ._id);
-  assert(
-    updatedQ.isIncomplete === false && updatedQ.hiddenTestCases.length === 1,
-    'updateQuestion automatically clears isIncomplete: false when hidden test cases are supplied'
-  );
-
-  // 5. Create Test now succeeds once all questions are completed
-  // Update any remaining questions in the set
-  for (const q of createdQuestions.slice(1)) {
-    await Question.updateOne(
-      { _id: q._id },
-      { $set: { isIncomplete: false, hiddenTestCases: [{ input: 'test', expectedOutput: 'test' }] } }
-    );
-  }
-
-  let validTestStatus = 200;
-  let validTestBody = null;
   const mockValidTestRes = {
     status: (code) => {
       validTestStatus = code;
@@ -541,7 +483,7 @@ startxref
 
   assert(
     validTestStatus === 201 && Boolean(validTestBody?.test?._id),
-    'testController.createTest succeeds with HTTP 201 once all questions in set are complete'
+    'testController.createTest succeeds directly with HTTP 201 without requiring hidden test cases (FEATURE-010)'
   );
 
   const createdTestId = validTestBody?.test?._id;
@@ -667,8 +609,8 @@ startxref
       const globusQuestions = await Question.find({ questionSetId: mixedBatchSetId }).sort({ createdAt: 1 });
       assert(
         globusQuestions.length === 4 &&
-        globusQuestions.every((q) => q.visibleTestCases.length > 0 && q.isIncomplete === true),
-        'All 4 questions from user PDF created in DB with visible test cases and marked incomplete'
+        globusQuestions.every((q) => q.visibleTestCases.length > 0 && q.isIncomplete === false),
+        'All 4 questions from user PDF created in DB with visible test cases (FEATURE-010)'
       );
     }
   }

@@ -19,13 +19,13 @@ const questionSchema = new mongoose.Schema({
       input: { type: String },
       expectedOutput: { type: String },
     },
-  ], // shown to candidate
+  ], // shown to candidate and used for run execution & grading (FEATURE-010)
   hiddenTestCases: [
     {
       input: { type: String },
       expectedOutput: { type: String },
     },
-  ], // used only for correctness scoring — NEVER returned to candidates (FR-4.2)
+  ], // DEPRECATED (FEATURE-010): Kept for schema backward compatibility only; defaults to []
   // AI_TEST specific fields (null/unused for other types):
   aiTestBriefFiles: [{ fileName: { type: String } }], // e.g., [{ fileName: "index.html" }, { fileName: "style.css" }]
   // FEATURE-009 PDF Import fields:
@@ -36,7 +36,7 @@ const questionSchema = new mongoose.Schema({
     startPage: { type: Number, default: 1 },
     endPage: { type: Number, default: 1 },
   },
-  isIncomplete: { type: Boolean, default: false }, // true when hiddenTestCases is empty
+  isIncomplete: { type: Boolean, default: false }, // DEPRECATED (FEATURE-010)
   exampleParsingStatus: {
     type: String,
     enum: ['SUCCESS', 'FAILED', 'AMBIGUOUS', 'NONE'],

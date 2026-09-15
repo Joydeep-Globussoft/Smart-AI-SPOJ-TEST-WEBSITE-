@@ -142,6 +142,32 @@ const executeCode = async (code, language, stdin = '', expectedOutput = '') => {
     }
   } catch (err) {
     console.error('[Judge0] Code execution request failed:', err.message);
+    if (!isProduction) {
+      try {
+        const { spawnSync } = require('child_process');
+        if (language === 'python') {
+          const py = spawnSync('python', ['-c', code], { input: stdin || '', encoding: 'utf-8', timeout: 5000 });
+          const stdout = (py.stdout || '').trim();
+          const stderr = (py.stderr || '').trim();
+          return {
+            stdout,
+            stderr: stderr || null,
+            status: { id: stderr ? 11 : 3, description: stderr ? 'Runtime Error' : 'Accepted' },
+            time: '0.01',
+          };
+        } else if (language === 'javascript' || language === 'react') {
+          const js = spawnSync('node', ['-e', code], { input: stdin || '', encoding: 'utf-8', timeout: 5000 });
+          const stdout = (js.stdout || '').trim();
+          const stderr = (js.stderr || '').trim();
+          return {
+            stdout,
+            stderr: stderr || null,
+            status: { id: stderr ? 11 : 3, description: stderr ? 'Runtime Error' : 'Accepted' },
+            time: '0.01',
+          };
+        }
+      } catch (_) {}
+    }
     startJudge0Containers();
     return {
       stdout: null,

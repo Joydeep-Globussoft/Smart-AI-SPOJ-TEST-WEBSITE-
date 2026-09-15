@@ -113,37 +113,54 @@ async function runFeature007Test() {
 
     console.log('[Test Setup] Candidate, Question, Test, Room, and Submission ready.');
 
-    // Step A: Attempt Validate with INCORRECT code (fails visible gating)
-    console.log('\n[Step A] Testing Validate with failing code...');
-    const failingCode = 'import sys\nprint(0)';
-    const failHttpRes = await fetch(`${BASE_URL}/api/v1/submissions/${question._id}/validate`, {
+    // Step 0: Verify Validate endpoint is completely removed (returns 404)
+    console.log('\n[Step 0] Testing Validate endpoint removal (FEATURE-010)...');
+    const validateRes = await fetch(`${BASE_URL}/api/v1/submissions/${question._id}/validate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ code: failingCode, language: 'python' }),
+      body: JSON.stringify({ code: 'print("hello")', language: 'python' }),
+    });
+    console.log('Validate endpoint response status:', validateRes.status);
+    if (validateRes.status === 404) {
+      console.log('✓ PASS: /validate route correctly removed and returns 404.');
+    } else {
+      console.error('✕ FAIL: /validate route still active, expected 404.');
+    }
+
+    // Step A: Attempt Run with INCORRECT code (fails visible test cases -> isAttempted remains false)
+    console.log('\n[Step A] Testing Run with failing code...');
+    const failingCode = 'import sys\nprint(0)';
+    const failHttpRes = await fetch(`${BASE_URL}/api/v1/submissions/${question._id}/run`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ code: failingCode, language: 'python', testId: testDoc._id }),
     });
 
     const failBody = await failHttpRes.json().catch(() => ({}));
     console.log('Failing code response status:', failHttpRes.status);
     console.log('Failing code response body:', failBody);
-    if (failHttpRes.status === 400 && failBody.visibleGatingFailed) {
-      console.log('✓ PASS: Server correctly rejected validation when visible test cases failed.');
+    if (failHttpRes.status === 200 && failBody.isAttempted === false && failBody.visibleTestCasesPassed < failBody.visibleTestCasesTotal) {
+      console.log('✓ PASS: Run returned visible test results without setting isAttempted.');
     } else {
-      console.error('✕ FAIL: Server did not reject invalid code with 400.');
+      console.error('✕ FAIL: Run improperly marked failing code as attempted.');
     }
 
-    // Step B: Attempt Validate with CORRECT code (passes visible gating & runs hidden test cases)
-    console.log('\n[Step B] Testing Validate with correct code...');
+    // Step B: Attempt Run with CORRECT code (passes all visible test cases -> marks isAttempted: true)
+    console.log('\n[Step B] Testing Run with correct code...');
     const correctCode = 'import sys\nlines = sys.stdin.read().split()\nif len(lines) >= 2:\n    print(int(lines[0]) + int(lines[1]))';
-    const passHttpRes = await fetch(`${BASE_URL}/api/v1/submissions/${question._id}/validate`, {
+    const passHttpRes = await fetch(`${BASE_URL}/api/v1/submissions/${question._id}/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ code: correctCode, language: 'python' }),
+      body: JSON.stringify({ code: correctCode, language: 'python', testId: testDoc._id }),
     });
 
     const passBody = await passHttpRes.json().catch(() => ({}));
@@ -152,13 +169,13 @@ async function runFeature007Test() {
 
     if (
       passHttpRes.status === 200 &&
-      passBody.hiddenTestCasesPassed === 3 &&
-      passBody.hiddenTestCasesTotal === 3 &&
+      passBody.visibleTestCasesPassed === 2 &&
+      passBody.visibleTestCasesTotal === 2 &&
       passBody.isAttempted === true
     ) {
-      console.log('✓ PASS: Server executed hidden test cases, returned 3/3 passed, and marked attempted.');
+      console.log('✓ PASS: Run passed all visible test cases and marked isAttempted: true.');
     } else {
-      console.error('✕ FAIL: Server did not return expected hidden testcase pass count.');
+      console.error('✕ FAIL: Run did not return expected pass counts or isAttempted state.');
     }
 
     // Step C: Verify Submission status in DB is still IN_PROGRESS (NOT finalized/locked)
@@ -166,10 +183,10 @@ async function runFeature007Test() {
     const updatedSub = await Submission.findById(submission._id);
     console.log('Submission in DB status:', updatedSub.status);
     console.log('Submission in DB isAttempted:', updatedSub.isAttempted);
-    console.log('Submission in DB hiddenTestCasesPassed:', updatedSub.hiddenTestCasesPassed);
+    console.log('Submission in DB visibleTestCasesPassed:', updatedSub.visibleTestCasesPassed);
 
-    if (updatedSub.status === 'IN_PROGRESS' && updatedSub.isAttempted === true) {
-      console.log('✓ PASS: Submission remained IN_PROGRESS and candidate is not locked out.');
+    if (updatedSub.status === 'IN_PROGRESS' && updatedSub.isAttempted === true && updatedSub.visibleTestCasesPassed === 2) {
+      console.log('✓ PASS: Submission remained IN_PROGRESS with isAttempted: true.');
     } else {
       console.error('✕ FAIL: Submission status was improperly altered.');
     }

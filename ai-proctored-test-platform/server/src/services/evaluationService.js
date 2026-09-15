@@ -88,44 +88,15 @@ const evaluateSingleSubmission = async (submissionId) => {
       };
       finalScorePerQuestion = computeAiTestScore(scoreBreakdown);
     } else {
-      // Standard coding test (SPOJ, REACT, JAVASCRIPT)
-      // FR-9.1: Run against hidden test cases via Judge0
-      const hiddenTestCases = question.hiddenTestCases || [];
-      let hiddenPassed = 0;
-      let hiddenTotal = hiddenTestCases.length;
+      // Standard coding test (SPOJ, REACT, JAVASCRIPT) — FEATURE-010
+      // Evaluated directly from candidate's visible test cases run outcome
+      const visibleTotal = submission.visibleTestCasesTotal || question.visibleTestCases?.length || 0;
+      const visiblePassed = submission.visibleTestCasesPassed || 0;
 
-      if (hiddenTotal > 0 && submission.code) {
-        try {
-          const hiddenResults = await judge0Service.runAgainstTestCases(
-            submission.code,
-            submission.language,
-            hiddenTestCases
-          );
-
-          hiddenPassed = hiddenResults.filter((r, i) => {
-            const expected = hiddenTestCases[i]?.expectedOutput?.trim();
-            const actual = r.stdout?.trim();
-            return actual === expected;
-          }).length;
-
-          // Update submission with hidden test case results
-          await Submission.findByIdAndUpdate(submissionId, {
-            hiddenTestCasesPassed: hiddenPassed,
-            hiddenTestCasesTotal: hiddenTotal,
-          });
-        } catch (err) {
-          console.error('[Eval] Judge0 hidden test cases error:', err);
-        }
-      }
-
-      // FR-9.1: codeCorrectness (30%) from hidden test cases
-      const codeCorrectness = hiddenTotal > 0 ? (hiddenPassed / hiddenTotal) * 10 : 0;
-
-      // FR-9.1: testCasePassPercent (10%) from visible test cases
+      // codeCorrectness (30%) & testCasePassPercent (10%) from visible test cases (FEATURE-010)
       const visiblePassPercent =
-        submission.visibleTestCasesTotal > 0
-          ? (submission.visibleTestCasesPassed / submission.visibleTestCasesTotal) * 10
-          : 0;
+        visibleTotal > 0 ? (visiblePassed / visibleTotal) * 10 : 0;
+      const codeCorrectness = visiblePassPercent;
 
       // FR-9.2: LLM-based code quality scoring
       let llmScores = {
@@ -159,11 +130,15 @@ const evaluateSingleSubmission = async (submissionId) => {
       finalScorePerQuestion = computeStandardScore(scoreBreakdown);
     }
 
-    // questionsCompletedCount: visible test cases ratio (for live progress, FR-5.5)
-    const questionsCompletedCount =
-      submission.visibleTestCasesTotal > 0
-        ? Math.min(1.0, submission.visibleTestCasesPassed / submission.visibleTestCasesTotal)
-        : 0;
+    // questionsCompletedCount: 1.0 (Solved) if last run passed ALL visible test cases, else 0.0 (FEATURE-010)
+    let questionsCompletedCount = 0;
+    if (question.testType === 'AI_TEST') {
+      questionsCompletedCount = 1.0;
+    } else {
+      const vTotal = submission.visibleTestCasesTotal || question.visibleTestCases?.length || 0;
+      const vPassed = submission.visibleTestCasesPassed || 0;
+      questionsCompletedCount = (vTotal > 0 && vPassed === vTotal) ? 1.0 : 0.0;
+    }
 
     // Get test passing criteria
     const test = await Test.findById(submission.testId, 'passingCriteria');

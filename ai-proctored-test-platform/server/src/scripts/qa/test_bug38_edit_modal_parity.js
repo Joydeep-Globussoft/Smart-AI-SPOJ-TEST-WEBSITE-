@@ -36,12 +36,12 @@ async function runTests() {
   }
 
   const testDetailPath = path.join(__dirname, '../../../../client/src/admin/pages/AdminTestDetail.jsx');
-  const adminTestsPath = path.join(__dirname, '../../../../client/src/admin/pages/AdminTests.jsx');
+  const createModalPath = path.join(__dirname, '../../../../client/src/shared/CreateTestModal.jsx');
   const testModelPath = path.join(__dirname, '../../models/Test.js');
   const testControllerPath = path.join(__dirname, '../../controllers/testController.js');
 
   const testDetailCode = fs.readFileSync(testDetailPath, 'utf-8');
-  const adminTestsCode = fs.readFileSync(adminTestsPath, 'utf-8');
+  const createModalCode = fs.readFileSync(createModalPath, 'utf-8');
   const testModelCode = fs.readFileSync(testModelPath, 'utf-8');
   const testControllerCode = fs.readFileSync(testControllerPath, 'utf-8');
 
@@ -100,12 +100,12 @@ async function runTests() {
   console.log('\n--- TEST 4: Unified Labeling & Helper Sub-Text ---');
   assert(
     testDetailCode.includes('Join Window / Password Validity (Minutes)') &&
-    adminTestsCode.includes('Join Window / Password Validity (Minutes)'),
+    createModalCode.includes('Join Window / Password Validity (Minutes)'),
     'Both Create and Edit modals use "Join Window / Password Validity (Minutes)" label'
   );
   assert(
     testDetailCode.includes('Room passwords expire after this window from room creation (FR-3.3).') &&
-    adminTestsCode.includes('Room passwords expire after this window from room creation (FR-3.3).'),
+    createModalCode.includes('Room passwords expire after this window from room creation (FR-3.3).'),
     'Both Create and Edit modals include the FR-3.3 room password expiration sub-text'
   );
 
@@ -120,17 +120,17 @@ async function runTests() {
   );
 
   const detailLangs = testDetailCode.match(/const PROGRAMMING_LANGUAGES = \[(.*?)\];/s)?.[1] || '';
-  const adminLangs = adminTestsCode.match(/const PROGRAMMING_LANGUAGES = \[(.*?)\];/s)?.[1] || '';
+  const createLangs = createModalCode.match(/const PROGRAMMING_LANGUAGES = \[(.*?)\];/s)?.[1] || '';
 
   const cleanDetail = detailLangs.replace(/\s+/g, '').replace(/'/g, '"');
-  const cleanAdmin = adminLangs.replace(/\s+/g, '').replace(/'/g, '"');
+  const cleanCreate = createLangs.replace(/\s+/g, '').replace(/'/g, '"');
 
   assert(
-    cleanDetail.includes('react') && cleanAdmin.includes('react'),
+    cleanDetail.includes('react') && cleanCreate.includes('react'),
     'Both Create and Edit modals include "react" in PROGRAMMING_LANGUAGES'
   );
   assert(
-    cleanDetail === cleanAdmin,
+    cleanDetail === cleanCreate,
     `Create and Edit modal languages match identically (${cleanDetail})`
   );
 

@@ -32,37 +32,32 @@ const getQuestionSets = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Query question counts, questionIds, and incomplete status for each question set to guarantee accurate, real-time counts (BUG-59, FEATURE-009)
+    // Query question counts and questionIds for each question set to guarantee accurate, real-time counts (BUG-59, FEATURE-010)
     const setIds = questionSets.map((s) => s._id);
     const questionsBySet = await Question.find(
       { questionSetId: { $in: setIds } },
-      { _id: 1, questionSetId: 1, isIncomplete: 1, hiddenTestCases: 1 }
+      { _id: 1, questionSetId: 1 }
     ).lean();
 
     const countMap = {};
     const idsMap = {};
-    const incompleteMap = {};
     for (const q of questionsBySet) {
       const sId = q.questionSetId.toString();
       countMap[sId] = (countMap[sId] || 0) + 1;
       if (!idsMap[sId]) idsMap[sId] = [];
       idsMap[sId].push(q._id);
-      if (q.isIncomplete || !q.hiddenTestCases || q.hiddenTestCases.length === 0) {
-        incompleteMap[sId] = (incompleteMap[sId] || 0) + 1;
-      }
     }
 
     const hydratedSets = questionSets.map((s) => {
       const sId = s._id.toString();
       const actualIds = idsMap[sId] || [];
       const questionCount = countMap[sId] || 0;
-      const incompleteCount = incompleteMap[sId] || 0;
       return {
         ...s,
         questionIds: actualIds,
         questionCount,
-        incompleteCount,
-        hasIncompleteQuestions: incompleteCount > 0,
+        incompleteCount: 0,
+        hasIncompleteQuestions: false,
       };
     });
 
@@ -147,12 +142,9 @@ const createQuestion = async (req, res, next) => {
       return res.status(400).json({ error: 'title and description are required' });
     }
 
-    // FR-4.1: Must have at least 1 visible AND 1 hidden test case
+    // At least 1 visible test case is required for non-AI standard tests
     if (!visibleTestCases || visibleTestCases.length === 0) {
-      return res.status(400).json({ error: 'At least 1 visible test case is required (FR-4.1)' });
-    }
-    if (!hiddenTestCases || hiddenTestCases.length === 0) {
-      return res.status(400).json({ error: 'At least 1 hidden test case is required (FR-4.1)' });
+      return res.status(400).json({ error: 'At least 1 visible test case is required' });
     }
 
     const questionSet = await QuestionSet.findById(setId);
@@ -170,6 +162,7 @@ const createQuestion = async (req, res, next) => {
       visibleTestCases: visibleTestCases || [],
       hiddenTestCases: hiddenTestCases || [],
       aiTestBriefFiles: aiTestBriefFiles || [],
+      isIncomplete: false,
     });
 
     // Add question to set's questionIds array
@@ -205,16 +198,10 @@ const updateQuestion = async (req, res, next) => {
 
     // Validate test cases if being updated
     if (req.body.visibleTestCases !== undefined && req.body.visibleTestCases.length === 0) {
-      return res.status(400).json({ error: 'At least 1 visible test case is required (FR-4.1)' });
-    }
-    if (req.body.hiddenTestCases !== undefined && req.body.hiddenTestCases.length === 0) {
-      return res.status(400).json({ error: 'At least 1 hidden test case is required (FR-4.1)' });
+      return res.status(400).json({ error: 'At least 1 visible test case is required' });
     }
 
-    // If hidden test cases are supplied, clear isIncomplete flag
-    if (Array.isArray(req.body.hiddenTestCases) && req.body.hiddenTestCases.length > 0) {
-      req.body.isIncomplete = false;
-    }
+    req.body.isIncomplete = false;
 
     const question = await Question.findByIdAndUpdate(req.params.questionId, req.body, {
       new: true,
@@ -406,14 +393,13 @@ const uploadPdfBatch = async (req, res, next) => {
             startPage: q.startPage,
             endPage: q.endPage,
           },
-          isIncomplete: true, // Flagged incomplete until admin adds hidden cases
+          isIncomplete: false,
           exampleParsingStatus: q.exampleParsingStatus,
         });
 
         createdQuestionIds.push(question._id);
         summary.totalQuestionsCreated++;
         summary.questionsCreated++;
-        summary.incompleteQuestions++;
 
         if (visibleCases.length > 0) {
           summary.questionsWithVisibleCases++;

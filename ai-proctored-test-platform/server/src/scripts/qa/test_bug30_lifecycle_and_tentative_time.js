@@ -36,7 +36,47 @@ async function runTests() {
   // TEST 1: Final test auto-transitions to ENDED (Criterion 1 & 2)
   // ──────────────────────────────────────────────────────────────────────────
   console.log('--- TEST 1: Verify "Final test" auto-transitions to ENDED ---');
-  const finalTestBefore = await Test.findOne({ title: /final test/i });
+  let finalTestBefore = await Test.findOne({ title: /final test/i });
+  if (!finalTestBefore) {
+    finalTestBefore = await Test.create({
+      title: 'Final Test Auto-End',
+      testType: 'SPOJ',
+      createdBy: new mongoose.Types.ObjectId(),
+      questionSetId: new mongoose.Types.ObjectId(),
+      durationMinutes: 60,
+      totalQuestions: 1,
+      passingCriteria: 1,
+      instructions: 'Final test instructions',
+      status: 'LIVE',
+      createdAt: new Date(Date.now() - 3600000 * 2),
+    });
+    await Room.create({
+      testId: finalTestBefore._id,
+      roomCode: 'FINAL' + Math.floor(1000 + Math.random() * 9000),
+      roomName: 'Final Test Room',
+      roomPassword: 'PASSWORD',
+      status: 'ACTIVE',
+      passwordValidUntil: new Date(Date.now() - 1000 * 60),
+    });
+  } else {
+    finalTestBefore.status = 'LIVE';
+    await finalTestBefore.save();
+    let r = await Room.findOne({ testId: finalTestBefore._id });
+    if (!r) {
+      r = await Room.create({
+        testId: finalTestBefore._id,
+        roomCode: 'FINAL' + Math.floor(1000 + Math.random() * 9000),
+        roomName: 'Final Test Room',
+        roomPassword: 'PASSWORD',
+        status: 'ACTIVE',
+        passwordValidUntil: new Date(Date.now() - 1000 * 60),
+      });
+    } else {
+      r.status = 'ACTIVE';
+      r.passwordValidUntil = new Date(Date.now() - 1000 * 60);
+      await r.save();
+    }
+  }
   assert(finalTestBefore !== null, 'Found "Final test" in DB');
 
   if (finalTestBefore) {

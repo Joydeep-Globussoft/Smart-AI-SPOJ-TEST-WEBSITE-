@@ -64,13 +64,11 @@ export default function AdminQuestionBank() {
     outputFormat: '',
     constraints: '',
     visibleTestCases: [{ input: '', expectedOutput: '' }],
-    hiddenTestCases: [{ input: '', expectedOutput: '' }],
     aiTestBriefFiles: [{ fileName: 'index.html' }, { fileName: 'style.css' }, { fileName: 'app.js' }],
     isPdfImported: false,
     pdfFileName: '',
     pdfOriginalName: '',
     pdfPageRange: { startPage: 1, endPage: 1 },
-    isIncomplete: false,
   });
 
   // Expanded Question Details
@@ -235,7 +233,6 @@ export default function AdminQuestionBank() {
       outputFormat: '',
       constraints: '',
       visibleTestCases: [{ input: '', expectedOutput: '' }],
-      hiddenTestCases: [{ input: '', expectedOutput: '' }],
       aiTestBriefFiles: selectedSet.testType === 'AI_TEST'
         ? [{ fileName: 'index.html' }, { fileName: 'style.css' }, { fileName: 'app.js' }]
         : [],
@@ -254,13 +251,11 @@ export default function AdminQuestionBank() {
       outputFormat: q.outputFormat || '',
       constraints: q.constraints || '',
       visibleTestCases: q.visibleTestCases?.length > 0 ? q.visibleTestCases : [{ input: '', expectedOutput: '' }],
-      hiddenTestCases: q.hiddenTestCases?.length > 0 ? q.hiddenTestCases : [{ input: '', expectedOutput: '' }],
       aiTestBriefFiles: q.aiTestBriefFiles?.length > 0 ? q.aiTestBriefFiles : [],
       isPdfImported: Boolean(q.isPdfImported),
       pdfFileName: q.pdfFileName || '',
       pdfOriginalName: q.pdfOriginalName || '',
       pdfPageRange: q.pdfPageRange || { startPage: 1, endPage: 1 },
-      isIncomplete: Boolean(q.isIncomplete),
     });
     setShowQuestionModal(true);
   };
@@ -429,17 +424,12 @@ export default function AdminQuestionBank() {
       }
     }
 
-    // Filter valid test cases
+    // Filter valid visible test cases
     const validVisible = questionForm.visibleTestCases.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
-    const validHidden = questionForm.hiddenTestCases.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
 
     if (!questionForm.isPdfImported) {
-      // FR-4.1: Must have at least 1 visible AND 1 hidden test case for manual creation
       if (validVisible.length === 0) {
         return toast.error('At least 1 visible test case is required (FR-4.1)');
-      }
-      if (validHidden.length === 0) {
-        return toast.error('At least 1 hidden test case is required (FR-4.1)');
       }
     }
 
@@ -448,7 +438,7 @@ export default function AdminQuestionBank() {
       title: questionForm.title.trim(),
       description: questionForm.description.trim(),
       visibleTestCases: validVisible,
-      hiddenTestCases: validHidden,
+      hiddenTestCases: [],
       aiTestBriefFiles: selectedSet.testType === 'AI_TEST' ? questionForm.aiTestBriefFiles.filter((f) => f.fileName.trim()) : undefined,
     };
 
@@ -713,7 +703,7 @@ export default function AdminQuestionBank() {
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💡</div>
                     <h3 style={{ color: '#1A2B3C', marginBottom: 6 }}>No questions in this set yet</h3>
                     <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: 20 }}>
-                      Every question must have at least 1 visible and 1 hidden test case before being added (FR-4.1).
+                      Every question must have at least 1 visible test case before being added (FR-4.1).
                     </p>
                     <button onClick={handleOpenCreateQuestion} className="btn btn-primary">
                       + Add First Question
@@ -728,15 +718,13 @@ export default function AdminQuestionBank() {
                       if (q.difficulty === 'MEDIUM') diffBadge = 'badge-warning';
                       if (q.difficulty === 'EASY') diffBadge = 'badge-success';
 
-                      const hasIncompleteCases = q.isIncomplete || (!q.hiddenTestCases || q.hiddenTestCases.length === 0);
-
                       return (
                         <div
                           key={q._id}
                           className="card"
                           style={{
                             padding: 20,
-                            borderLeft: isExpanded ? '4px solid #0E7C86' : hasIncompleteCases ? '4px solid #f87171' : '1px solid #e5e7eb',
+                            borderLeft: isExpanded ? '4px solid #0E7C86' : '1px solid #e5e7eb',
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
@@ -767,20 +755,6 @@ export default function AdminQuestionBank() {
                                     }}
                                   >
                                     📄 PDF: {q.pdfFileName} (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1})
-                                  </span>
-                                )}
-                                {hasIncompleteCases && (
-                                  <span
-                                    className="badge"
-                                    style={{
-                                      fontSize: '0.68rem',
-                                      background: '#fef2f2',
-                                      color: '#b91c1c',
-                                      border: '1px solid #fecaca',
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    ⚠️ Incomplete — Hidden Cases Required
                                   </span>
                                 )}
                                 {q.exampleParsingStatus && q.exampleParsingStatus !== 'SUCCESS' && (
@@ -849,13 +823,6 @@ export default function AdminQuestionBank() {
                           <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6', fontSize: '0.78rem', color: '#6b7280', flexWrap: 'wrap' }}>
                             <span>
                               👁️ Visible Cases: <strong>{q.visibleTestCases?.length || 0}</strong>
-                            </span>
-                            <span>
-                              🔒 Hidden Cases:{' '}
-                              <strong style={{ color: hasIncompleteCases ? '#dc2626' : 'inherit' }}>
-                                {q.hiddenTestCases?.length || 0}
-                              </strong>{' '}
-                              {hasIncompleteCases ? '(Action Required)' : '(FR-4.1 Verified)'}
                             </span>
                             {q.constraints && (
                               <span>
@@ -927,44 +894,6 @@ export default function AdminQuestionBank() {
                                 ) : (
                                   <div style={{ padding: 10, background: '#f9fafb', borderRadius: 6, fontSize: '0.78rem', color: '#6b7280', marginTop: 4 }}>
                                     No visible test cases defined.
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Hidden Test Cases (FR-4.2) */}
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>
-                                    🔒 Hidden Test Cases (Scoring Only - FR-4.2):
-                                  </strong>
-                                  <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>
-                                    Admin Only
-                                  </span>
-                                  {hasIncompleteCases && (
-                                    <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
-                                      ⚠️ At least 1 hidden test case required to enable this question for live tests
-                                    </span>
-                                  )}
-                                </div>
-                                {q.hiddenTestCases?.length > 0 ? (
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
-                                    {q.hiddenTestCases.map((tc, tcIdx) => (
-                                      <div key={tcIdx} style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
-                                        <div style={{ fontWeight: 600, color: '#d97706', marginBottom: 4 }}>Hidden #{tcIdx + 1}</div>
-                                        <div style={{ marginBottom: 4 }}>
-                                          <span style={{ color: '#6b7280' }}>Input: </span>
-                                          <code>{tc.input || '(empty)'}</code>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: '#6b7280' }}>Output: </span>
-                                          <code>{tc.expectedOutput || '(empty)'}</code>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div style={{ padding: 12, background: '#fef2f2', border: '1px dashed #f87171', borderRadius: 6, fontSize: '0.8rem', color: '#b91c1c', marginTop: 6 }}>
-                                    ⚠️ No hidden test cases added yet. Click <strong>Edit</strong> above to add hidden test cases.
                                   </div>
                                 )}
                               </div>
@@ -1399,73 +1328,6 @@ export default function AdminQuestionBank() {
                                 placeholder="Expected output..."
                                 value={tc.expectedOutput}
                                 onChange={(e) => handleTestCaseChange('visibleTestCases', idx, 'expectedOutput', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* ── Hidden Test Cases (FR-4.1, FR-4.2: At least 1 required) ── */}
-                  <div style={{ background: '#fffbeb', border: '1.5px solid #fef3c7', borderRadius: 8, padding: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div>
-                        <strong style={{ fontSize: '0.9rem', color: '#92400e' }}>
-                          🔒 Hidden Test Cases * (FR-4.1, FR-4.2)
-                        </strong>
-                        <div style={{ fontSize: '0.75rem', color: '#b45309' }}>
-                          Used exclusively for Judge0 final scoring. Never returned to candidates. (Minimum 1 required for active tests).
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAddTestCase('hiddenTestCases')}
-                        className="btn btn-secondary"
-                        style={{ padding: '4px 10px', fontSize: '0.78rem' }}
-                      >
-                        + Add Hidden Case
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {questionForm.hiddenTestCases.map((tc, idx) => (
-                        <div key={idx} style={{ background: 'white', border: '1px solid #fde68a', borderRadius: 6, padding: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.78rem', fontWeight: 600, color: '#d97706' }}>
-                            <span>Hidden Case #{idx + 1}</span>
-                            {questionForm.hiddenTestCases.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveTestCase('hiddenTestCases', idx)}
-                                style={{ background: 'none', border: 'none', color: '#E74C3C', cursor: 'pointer', fontSize: '0.75rem' }}
-                              >
-                                Remove Case
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                            <div>
-                              <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: 4 }}>
-                                Standard Input (stdin)
-                              </label>
-                              <textarea
-                                className="form-control"
-                                rows={2}
-                                placeholder="Hidden input..."
-                                value={tc.input}
-                                onChange={(e) => handleTestCaseChange('hiddenTestCases', idx, 'input', e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: 4 }}>
-                                Expected Output (stdout)
-                              </label>
-                              <textarea
-                                className="form-control"
-                                rows={2}
-                                placeholder="Hidden expected output..."
-                                value={tc.expectedOutput}
-                                onChange={(e) => handleTestCaseChange('hiddenTestCases', idx, 'expectedOutput', e.target.value)}
                               />
                             </div>
                           </div>
