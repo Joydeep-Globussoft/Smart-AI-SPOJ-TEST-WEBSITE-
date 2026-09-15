@@ -274,9 +274,9 @@ const startAttempt = async (req, res, next) => {
       candidateEndTime = new Date(now.getTime() + test.durationMinutes * 60 * 1000);
     }
 
-    // Get questions from question set (visible test cases only — FR-4.2, BUG-59)
+    // Get questions from question set (visible test cases only — FR-4.2, BUG-59, FEATURE-009)
     const questionSet = test.questionSetId;
-    let allQuestions = (questionSet?.questionIds && questionSet.questionIds.length > 0 && questionSet.questionIds[0]?.title)
+    let allQuestions = (questionSet?.questionIds && questionSet.questionIds.length > 0 && questionSet.questionIds[0]?._id)
       ? questionSet.questionIds
       : [];
     if (allQuestions.length === 0 && questionSet) {
@@ -295,6 +295,11 @@ const startAttempt = async (req, res, next) => {
       visibleTestCases: q.visibleTestCases, // visible only — hiddenTestCases excluded
       aiTestBriefFiles: q.aiTestBriefFiles,
       testType: q.testType,
+      isPdfImported: Boolean(q.isPdfImported),
+      pdfFileName: q.pdfFileName,
+      pdfOriginalName: q.pdfOriginalName,
+      pdfPageRange: q.pdfPageRange,
+      isIncomplete: Boolean(q.isIncomplete),
     }));
 
     // Find the room for this candidate (from req.body or fallback to room where candidate joined)

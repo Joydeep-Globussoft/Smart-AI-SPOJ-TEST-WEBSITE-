@@ -9,3 +9,6 @@ build/
 __pycache__/
 *.pyc
 pyrightconfig.json
+server/uploads/pdf_questions/*
+!server/uploads/pdf_questions/.gitkeep
+

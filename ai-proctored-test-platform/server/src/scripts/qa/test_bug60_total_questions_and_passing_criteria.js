@@ -35,13 +35,12 @@ async function runTests() {
   console.log('QA VERIFICATION SUITE: BUG-60 (Total Questions Lock & Criteria Validation)');
   console.log('========================================================================\n');
 
-  // --- PART 1: Static Code Inspection ---
-  console.log('--- Part 1: Static Code Inspection ---');
   const adminTestsPath = path.resolve(__dirname, '../../../../client/src/admin/pages/AdminTests.jsx');
+  const createTestModalPath = path.resolve(__dirname, '../../../../client/src/shared/CreateTestModal.jsx');
   const adminTestDetailPath = path.resolve(__dirname, '../../../../client/src/admin/pages/AdminTestDetail.jsx');
   const testControllerPath = path.resolve(__dirname, '../../controllers/testController.js');
 
-  const adminTestsCode = fs.readFileSync(adminTestsPath, 'utf8');
+  const adminTestsCode = fs.readFileSync(adminTestsPath, 'utf8') + (fs.existsSync(createTestModalPath) ? fs.readFileSync(createTestModalPath, 'utf8') : '');
   const adminTestDetailCode = fs.readFileSync(adminTestDetailPath, 'utf8');
   const testControllerCode = fs.readFileSync(testControllerPath, 'utf8');
 
@@ -50,13 +49,13 @@ async function runTests() {
     adminTestsCode.includes('totalQuestions: qCount') &&
     adminTestsCode.includes('disabled') &&
     adminTestsCode.includes('readOnly'),
-    'AdminTests.jsx auto-populates totalQuestions and sets input to disabled and readOnly'
+    'CreateTestModal / AdminTests.jsx auto-populates totalQuestions and sets input to disabled and readOnly'
   );
 
   assert(
     adminTestsCode.includes('formData.passingCriteria > qCount') ||
     adminTestsCode.includes('formData.passingCriteria > formData.totalQuestions'),
-    'AdminTests.jsx validates that passingCriteria does not exceed Total Questions'
+    'CreateTestModal / AdminTests.jsx validates that passingCriteria does not exceed Total Questions'
   );
 
   assert(

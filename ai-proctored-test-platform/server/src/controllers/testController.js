@@ -39,6 +39,17 @@ const createTest = async (req, res, next) => {
       });
     }
 
+    // Gating for incomplete questions (missing hidden test cases) (FEATURE-009)
+    const incompleteCount = await Question.countDocuments({
+      questionSetId,
+      $or: [{ isIncomplete: true }, { hiddenTestCases: { $size: 0 } }],
+    });
+    if (incompleteCount > 0) {
+      return res.status(400).json({
+        error: `Selected Question Set contains ${incompleteCount} incomplete question(s) missing hidden test cases. Please add hidden test cases in the Question Bank before creating a test.`,
+      });
+    }
+
     const parsedPassingCriteria = Number(passingCriteria);
     if (isNaN(parsedPassingCriteria) || parsedPassingCriteria < 0) {
       return res.status(400).json({ error: 'Passing criteria must be a non-negative number' });
@@ -182,6 +193,18 @@ const updateTest = async (req, res, next) => {
           error: 'Selected Question Set contains 0 questions. Please add questions to the set before assigning.',
         });
       }
+
+      // Gating for incomplete questions (missing hidden test cases) (FEATURE-009)
+      const incompleteCount = await Question.countDocuments({
+        questionSetId: req.body.questionSetId,
+        $or: [{ isIncomplete: true }, { hiddenTestCases: { $size: 0 } }],
+      });
+      if (incompleteCount > 0) {
+        return res.status(400).json({
+          error: `Selected Question Set contains ${incompleteCount} incomplete question(s) missing hidden test cases. Please add hidden test cases in the Question Bank before assigning.`,
+        });
+      }
+
       req.body.totalQuestions = questionCount;
       if (existing.passingCriteria > questionCount) {
         req.body.passingCriteria = questionCount;

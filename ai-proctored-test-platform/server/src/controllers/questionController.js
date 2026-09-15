@@ -32,30 +32,37 @@ const getQuestionSets = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Query question counts and questionIds for each question set to guarantee accurate, real-time counts (BUG-59)
+    // Query question counts, questionIds, and incomplete status for each question set to guarantee accurate, real-time counts (BUG-59, FEATURE-009)
     const setIds = questionSets.map((s) => s._id);
     const questionsBySet = await Question.find(
       { questionSetId: { $in: setIds } },
-      { _id: 1, questionSetId: 1 }
+      { _id: 1, questionSetId: 1, isIncomplete: 1, hiddenTestCases: 1 }
     ).lean();
 
     const countMap = {};
     const idsMap = {};
+    const incompleteMap = {};
     for (const q of questionsBySet) {
       const sId = q.questionSetId.toString();
       countMap[sId] = (countMap[sId] || 0) + 1;
       if (!idsMap[sId]) idsMap[sId] = [];
       idsMap[sId].push(q._id);
+      if (q.isIncomplete || !q.hiddenTestCases || q.hiddenTestCases.length === 0) {
+        incompleteMap[sId] = (incompleteMap[sId] || 0) + 1;
+      }
     }
 
     const hydratedSets = questionSets.map((s) => {
       const sId = s._id.toString();
       const actualIds = idsMap[sId] || [];
       const questionCount = countMap[sId] || 0;
+      const incompleteCount = incompleteMap[sId] || 0;
       return {
         ...s,
         questionIds: actualIds,
         questionCount,
+        incompleteCount,
+        hasIncompleteQuestions: incompleteCount > 0,
       };
     });
 
@@ -204,6 +211,11 @@ const updateQuestion = async (req, res, next) => {
       return res.status(400).json({ error: 'At least 1 hidden test case is required (FR-4.1)' });
     }
 
+    // If hidden test cases are supplied, clear isIncomplete flag
+    if (Array.isArray(req.body.hiddenTestCases) && req.body.hiddenTestCases.length > 0) {
+      req.body.isIncomplete = false;
+    }
+
     const question = await Question.findByIdAndUpdate(req.params.questionId, req.body, {
       new: true,
       runValidators: true,
@@ -261,6 +273,224 @@ const deleteQuestionSet = async (req, res, next) => {
   }
 };
 
+// ── POST /question-sets/upload-pdf-batch ──────────────────────────────────────
+// FEATURE-009: Bulk PDF upload to Question Bank
+const uploadPdfBatch = async (req, res, next) => {
+  try {
+    const { testType } = req.body;
+    const validTypes = ['SPOJ', 'REACT', 'JAVASCRIPT', 'AI_TEST'];
+    if (!testType || !validTypes.includes(testType)) {
+      return res.status(400).json({
+        error: `Invalid or missing testType. Must be one of: ${validTypes.join(', ')}`,
+      });
+    }
+
+    const files = req.files || [];
+    if (files.length === 0) {
+      return res.status(400).json({ error: 'No PDF files were uploaded.' });
+    }
+
+    const path = require('path');
+    const fs = require('fs');
+    const { v4: uuidv4 } = require('uuid');
+    const { parsePdfQuestions, sanitizeQuestionSetName } = require('../services/pdfParserService');
+
+    // Ensure storage directory exists
+    const uploadDir = path.resolve(__dirname, '../../uploads/pdf_questions');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const summary = {
+      totalPdfs: files.length,
+      totalPdfsReceived: files.length,
+      questionSetsCreated: 0,
+      totalQuestionSetsCreated: 0,
+      questionsCreated: 0,
+      totalQuestionsCreated: 0,
+      incompleteQuestions: 0,
+      questionsWithVisibleCases: 0,
+      questionsNeedingReview: 0,
+      failedPdfsCount: 0,
+      createdSets: [],
+      failedPdfs: [],
+      fileReports: [],
+    };
+
+    for (const file of files) {
+      const originalName = file.originalname || 'unknown.pdf';
+      const isPdf = originalName.toLowerCase().endsWith('.pdf') || file.mimetype === 'application/pdf';
+
+      console.log(`[UploadPdfBatch] Processing file "${originalName}" (size: ${file.size || file.buffer?.length} bytes)`);
+
+      if (!isPdf) {
+        const failReason = 'File does not have a .pdf extension or is not a valid PDF MIME type.';
+        summary.failedPdfs.push({
+          fileName: originalName,
+          originalName: originalName,
+          reason: failReason,
+        });
+        summary.fileReports.push({
+          status: 'FAILED',
+          originalName: originalName,
+          setName: originalName,
+          questionCount: 0,
+          questions: [],
+          reason: failReason,
+        });
+        continue;
+      }
+
+      // Parse PDF for question boundaries and visible test cases
+      const parsed = await parsePdfQuestions(file.buffer, originalName);
+
+      if (!parsed.success || !parsed.questions || parsed.questions.length === 0) {
+        const failReason = parsed.reason || 'Could not detect any valid question boundaries in PDF.';
+        console.warn(`[UploadPdfBatch] PDF parsing failed for "${originalName}": ${failReason}`);
+        summary.failedPdfs.push({
+          fileName: originalName,
+          originalName: originalName,
+          reason: failReason,
+        });
+        summary.fileReports.push({
+          status: 'FAILED',
+          originalName: originalName,
+          setName: originalName,
+          questionCount: 0,
+          questions: [],
+          reason: failReason,
+        });
+        continue;
+      }
+
+      // Save original PDF file to disk with unique identifier
+      const safeOriginalBase = path.basename(originalName).replace(/[^a-zA-Z0-9._-]/g, '_');
+      const uniqueFileName = `${Date.now()}_${uuidv4().slice(0, 8)}_${safeOriginalBase}`;
+      const filePath = path.join(uploadDir, uniqueFileName);
+      fs.writeFileSync(filePath, file.buffer);
+
+      // Derive distinct Question Set name with collision handling
+      const baseSetName = sanitizeQuestionSetName(originalName);
+      let setName = baseSetName;
+      let collisionSuffix = 1;
+      while (await QuestionSet.findOne({ name: setName })) {
+        setName = `${baseSetName} (${collisionSuffix++})`;
+      }
+
+      // 1. Create QuestionSet
+      const questionSet = await QuestionSet.create({
+        name: setName,
+        testType,
+        createdBy: req.user.id,
+        questionIds: [],
+      });
+
+      // 2. Create Question records for each detected question
+      const createdQuestionIds = [];
+      for (const q of parsed.questions) {
+        const visibleCases = q.visibleTestCases || [];
+        const isExtractionOk = q.exampleParsingStatus === 'SUCCESS';
+
+        const question = await Question.create({
+          questionSetId: questionSet._id,
+          testType,
+          title: '', // No title per Decision #2
+          description: '', // PDF page is the statement per Decision #4
+          difficulty: null, // No difficulty per Decision #3
+          visibleTestCases: visibleCases,
+          hiddenTestCases: [], // Empty per Decision #5
+          isPdfImported: true,
+          pdfFileName: uniqueFileName,
+          pdfOriginalName: originalName,
+          pdfPageRange: {
+            startPage: q.startPage,
+            endPage: q.endPage,
+          },
+          isIncomplete: true, // Flagged incomplete until admin adds hidden cases
+          exampleParsingStatus: q.exampleParsingStatus,
+        });
+
+        createdQuestionIds.push(question._id);
+        summary.totalQuestionsCreated++;
+        summary.questionsCreated++;
+        summary.incompleteQuestions++;
+
+        if (visibleCases.length > 0) {
+          summary.questionsWithVisibleCases++;
+        }
+        if (!isExtractionOk || visibleCases.length === 0) {
+          summary.questionsNeedingReview++;
+        }
+      }
+
+      // Update QuestionSet with question IDs
+      await QuestionSet.findByIdAndUpdate(questionSet._id, {
+        questionIds: createdQuestionIds,
+      });
+
+      summary.totalQuestionSetsCreated++;
+      summary.questionSetsCreated++;
+      summary.createdSets.push({
+        _id: questionSet._id,
+        name: questionSet.name,
+        testType: questionSet.testType,
+        questionCount: createdQuestionIds.length,
+        pdfFileName: uniqueFileName,
+      });
+
+      summary.fileReports.push({
+        status: 'SUCCESS',
+        originalName: originalName,
+        setName: questionSet.name,
+        questionCount: createdQuestionIds.length,
+        questions: parsed.questions.map((q, qIdx) => ({
+          questionIndex: qIdx + 1,
+          questionNumber: q.questionNumber,
+          pageRange: { startPage: q.startPage, endPage: q.endPage },
+          visibleTestCasesCount: q.visibleTestCases?.length || 0,
+          exampleParsingStatus: q.exampleParsingStatus,
+        })),
+        reason: null,
+      });
+    }
+
+    summary.failedPdfsCount = summary.failedPdfs.length;
+
+    res.status(200).json({
+      success: true,
+      message: `Processed ${files.length} PDF(s): ${summary.questionSetsCreated} Question Set(s) created, ${summary.failedPdfs.length} failed.`,
+      summary,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /questions/pdf-asset/:filename ────────────────────────────────────────
+// Serves stored PDF files for candidate/admin embedded PDF viewers
+const servePdfAsset = async (req, res, next) => {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const safeFilename = path.basename(req.params.filename);
+    const filePath = path.resolve(__dirname, '../../uploads/pdf_questions', safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'PDF asset not found.' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createQuestionSet,
   getQuestionSets,
@@ -270,4 +500,6 @@ module.exports = {
   getQuestions,
   updateQuestion,
   deleteQuestion,
+  uploadPdfBatch,
+  servePdfAsset,
 };

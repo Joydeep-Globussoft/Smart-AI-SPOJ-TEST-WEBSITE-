@@ -1,8 +1,7 @@
-// AdminQuestionBank.jsx — Question Bank & Question Set Management
-// Implements PRD Section 8.2 (aiTestBriefFiles), Section 9.4, Section 11.4 (FR-4.1, FR-4.2)
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
+import EmbeddedPdfViewer from '../../candidate/components/EmbeddedPdfViewer';
 import api from '../../services/apiClient';
 
 const TEST_TYPES = [
@@ -21,6 +20,17 @@ export default function AdminQuestionBank() {
 
   // Filter question sets by type
   const [filterType, setFilterType] = useState('ALL');
+
+  // Bulk Upload PDFs State (FEATURE-009)
+  const [showUploadPdfModal, setShowUploadPdfModal] = useState(false);
+  const [uploadTestType, setUploadTestType] = useState('SPOJ');
+  const [uploadFiles, setUploadFiles] = useState([]);
+  const [isDraggingFolder, setIsDraggingFolder] = useState(false);
+  const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSummary, setUploadSummary] = useState(null);
+  const folderInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // New Question Set Modal State
   const [showNewSetModal, setShowNewSetModal] = useState(false);
@@ -56,6 +66,11 @@ export default function AdminQuestionBank() {
     visibleTestCases: [{ input: '', expectedOutput: '' }],
     hiddenTestCases: [{ input: '', expectedOutput: '' }],
     aiTestBriefFiles: [{ fileName: 'index.html' }, { fileName: 'style.css' }, { fileName: 'app.js' }],
+    isPdfImported: false,
+    pdfFileName: '',
+    pdfOriginalName: '',
+    pdfPageRange: { startPage: 1, endPage: 1 },
+    isIncomplete: false,
   });
 
   // Expanded Question Details
@@ -241,8 +256,121 @@ export default function AdminQuestionBank() {
       visibleTestCases: q.visibleTestCases?.length > 0 ? q.visibleTestCases : [{ input: '', expectedOutput: '' }],
       hiddenTestCases: q.hiddenTestCases?.length > 0 ? q.hiddenTestCases : [{ input: '', expectedOutput: '' }],
       aiTestBriefFiles: q.aiTestBriefFiles?.length > 0 ? q.aiTestBriefFiles : [],
+      isPdfImported: Boolean(q.isPdfImported),
+      pdfFileName: q.pdfFileName || '',
+      pdfOriginalName: q.pdfOriginalName || '',
+      pdfPageRange: q.pdfPageRange || { startPage: 1, endPage: 1 },
+      isIncomplete: Boolean(q.isIncomplete),
     });
     setShowQuestionModal(true);
+  };
+
+  // ── PDF Bulk Upload Handlers (FEATURE-009) ──────────────────────────────────
+  const handleFolderSelect = (e) => {
+    const rawFiles = Array.from(e.target.files || []);
+    const pdfFiles = rawFiles.filter((f) =>
+      f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf'
+    );
+    if (pdfFiles.length === 0) {
+      toast.error('No PDF files found in the selected folder.');
+      return;
+    }
+    setUploadFiles(pdfFiles);
+    setUploadSummary(null);
+  };
+
+  const handleFileSelect = (e) => {
+    const rawFiles = Array.from(e.target.files || []);
+    const pdfFiles = rawFiles.filter((f) =>
+      f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf'
+    );
+    if (pdfFiles.length === 0) {
+      toast.error('No PDF files selected.');
+      return;
+    }
+    setUploadFiles(pdfFiles);
+    setUploadSummary(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFolder(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFolder(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFolder(false);
+    const items = e.dataTransfer.files;
+    const pdfFiles = Array.from(items || []).filter((f) =>
+      f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf'
+    );
+    if (pdfFiles.length === 0) {
+      toast.error('No PDF files found in dropped item.');
+      return;
+    }
+    setUploadFiles(pdfFiles);
+    setUploadSummary(null);
+  };
+
+  const handleUploadPdfSubmit = async (e) => {
+    e.preventDefault();
+    if (!uploadTestType) {
+      return toast.error('Please select a Test Type first');
+    }
+    if (uploadFiles.length === 0) {
+      return toast.error('Please select or drop a folder containing PDF files');
+    }
+
+    const formData = new FormData();
+    formData.append('testType', uploadTestType);
+    uploadFiles.forEach((f) => formData.append('files', f));
+
+    try {
+      setIsUploadingPdfs(true);
+      setUploadProgress(15);
+      const res = await api.uploadPdfBatch(formData, (progressEvent) => {
+        if (progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 90) / progressEvent.total);
+          setUploadProgress(Math.max(15, percent));
+        }
+      });
+      setUploadProgress(100);
+      const summary = res.data.summary;
+      setUploadSummary(summary);
+      toast.success(res.data.message || 'PDF batch processed successfully!');
+
+      // Immediately refresh question sets in sidebar (BUG-59)
+      const updatedSetsRes = await api.getQuestionSets();
+      const sets = updatedSetsRes.data.questionSets || [];
+      setQuestionSets(sets);
+
+      if (summary.createdSets?.length > 0) {
+        const firstCreated = sets.find((s) => s._id === summary.createdSets[0]._id);
+        if (firstCreated) {
+          setSelectedSet(firstCreated);
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to upload and parse PDF batch');
+    } finally {
+      setIsUploadingPdfs(false);
+    }
+  };
+
+  const handleCloseUploadModal = () => {
+    if (isUploadingPdfs) return;
+    setShowUploadPdfModal(false);
+    setUploadFiles([]);
+    setUploadSummary(null);
+    setUploadProgress(0);
   };
 
   // Dynamic Test Case Handlers
@@ -295,23 +423,30 @@ export default function AdminQuestionBank() {
   const handleQuestionSubmit = async (e) => {
     e.preventDefault();
 
-    if (!questionForm.title.trim() || !questionForm.description.trim()) {
-      return toast.error('Title and description are required');
+    if (!questionForm.isPdfImported) {
+      if (!questionForm.title.trim() || !questionForm.description.trim()) {
+        return toast.error('Title and description are required');
+      }
     }
 
-    // FR-4.1: Must have at least 1 visible AND 1 hidden test case
+    // Filter valid test cases
     const validVisible = questionForm.visibleTestCases.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
     const validHidden = questionForm.hiddenTestCases.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
 
-    if (validVisible.length === 0) {
-      return toast.error('At least 1 visible test case is required (FR-4.1)');
-    }
-    if (validHidden.length === 0) {
-      return toast.error('At least 1 hidden test case is required (FR-4.1)');
+    if (!questionForm.isPdfImported) {
+      // FR-4.1: Must have at least 1 visible AND 1 hidden test case for manual creation
+      if (validVisible.length === 0) {
+        return toast.error('At least 1 visible test case is required (FR-4.1)');
+      }
+      if (validHidden.length === 0) {
+        return toast.error('At least 1 hidden test case is required (FR-4.1)');
+      }
     }
 
     const payload = {
       ...questionForm,
+      title: questionForm.title.trim(),
+      description: questionForm.description.trim(),
       visibleTestCases: validVisible,
       hiddenTestCases: validHidden,
       aiTestBriefFiles: selectedSet.testType === 'AI_TEST' ? questionForm.aiTestBriefFiles.filter((f) => f.fileName.trim()) : undefined,
@@ -395,6 +530,19 @@ export default function AdminQuestionBank() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              id="upload-pdfs-btn"
+              onClick={() => {
+                setShowUploadPdfModal(true);
+                setUploadFiles([]);
+                setUploadSummary(null);
+                setUploadProgress(0);
+              }}
+              className="btn btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              📁 Upload PDFs
+            </button>
             <button
               onClick={() => setShowNewSetModal(true)}
               className="btn btn-secondary"
@@ -580,44 +728,95 @@ export default function AdminQuestionBank() {
                       if (q.difficulty === 'MEDIUM') diffBadge = 'badge-warning';
                       if (q.difficulty === 'EASY') diffBadge = 'badge-success';
 
+                      const hasIncompleteCases = q.isIncomplete || (!q.hiddenTestCases || q.hiddenTestCases.length === 0);
+
                       return (
                         <div
                           key={q._id}
                           className="card"
                           style={{
                             padding: 20,
-                            borderLeft: isExpanded ? '4px solid #0E7C86' : '1px solid #e5e7eb',
+                            borderLeft: isExpanded ? '4px solid #0E7C86' : hasIncompleteCases ? '4px solid #f87171' : '1px solid #e5e7eb',
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: 260 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 700, color: '#0E7C86', fontSize: '0.9rem' }}>
                                   Q{idx + 1}.
                                 </span>
                                 <h4 style={{ fontSize: '1.05rem', color: '#1A2B3C', margin: 0 }}>
-                                  {q.title}
+                                  {q.title || (q.isPdfImported ? `${q.pdfOriginalName || q.pdfFileName} (Problem ${idx + 1})` : 'Untitled Question')}
                                 </h4>
                                 {q.difficulty && (
                                   <span className={`badge ${diffBadge}`} style={{ fontSize: '0.65rem' }}>
                                     {q.difficulty}
                                   </span>
                                 )}
+                                {q.isPdfImported && (
+                                  <span
+                                    className="badge badge-secondary"
+                                    style={{
+                                      fontSize: '0.68rem',
+                                      background: '#f0fdfa',
+                                      color: '#0d9488',
+                                      border: '1px solid #ccfbf1',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                  >
+                                    📄 PDF: {q.pdfFileName} (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1})
+                                  </span>
+                                )}
+                                {hasIncompleteCases && (
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      fontSize: '0.68rem',
+                                      background: '#fef2f2',
+                                      color: '#b91c1c',
+                                      border: '1px solid #fecaca',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    ⚠️ Incomplete — Hidden Cases Required
+                                  </span>
+                                )}
+                                {q.exampleParsingStatus && q.exampleParsingStatus !== 'SUCCESS' && (
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      fontSize: '0.68rem',
+                                      background: '#fffbeb',
+                                      color: '#b45309',
+                                      border: '1px solid #fde68a',
+                                    }}
+                                  >
+                                    {q.exampleParsingStatus === 'AMBIGUOUS' ? '⚠️ Ambiguous Test Cases' : '⚠️ No Examples Detected'}
+                                  </span>
+                                )}
                               </div>
-                              <p
-                                style={{
-                                  color: '#4b5563',
-                                  fontSize: '0.85rem',
-                                  lineHeight: 1.5,
-                                  display: isExpanded ? 'block' : '-webkit-box',
-                                  WebkitLineClamp: isExpanded ? 'none' : 2,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: isExpanded ? 'visible' : 'hidden',
-                                  whiteSpace: isExpanded ? 'pre-line' : 'normal',
-                                }}
-                              >
-                                {q.description}
-                              </p>
+                              {q.description ? (
+                                <p
+                                  style={{
+                                    color: '#4b5563',
+                                    fontSize: '0.85rem',
+                                    lineHeight: 1.5,
+                                    display: isExpanded ? 'block' : '-webkit-box',
+                                    WebkitLineClamp: isExpanded ? 'none' : 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: isExpanded ? 'visible' : 'hidden',
+                                    whiteSpace: isExpanded ? 'pre-line' : 'normal',
+                                  }}
+                                >
+                                  {q.description}
+                                </p>
+                              ) : q.isPdfImported ? (
+                                <p style={{ color: '#0d9488', fontSize: '0.82rem', fontStyle: 'italic', margin: '4px 0 0 0' }}>
+                                  Rendered directly from original PDF (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1})
+                                </p>
+                              ) : null}
                             </div>
 
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -647,12 +846,16 @@ export default function AdminQuestionBank() {
                           </div>
 
                           {/* Test Cases Count summary */}
-                          <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6', fontSize: '0.78rem', color: '#6b7280' }}>
+                          <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6', fontSize: '0.78rem', color: '#6b7280', flexWrap: 'wrap' }}>
                             <span>
                               👁️ Visible Cases: <strong>{q.visibleTestCases?.length || 0}</strong>
                             </span>
                             <span>
-                              🔒 Hidden Cases: <strong>{q.hiddenTestCases?.length || 0}</strong> (FR-4.1)
+                              🔒 Hidden Cases:{' '}
+                              <strong style={{ color: hasIncompleteCases ? '#dc2626' : 'inherit' }}>
+                                {q.hiddenTestCases?.length || 0}
+                              </strong>{' '}
+                              {hasIncompleteCases ? '(Action Required)' : '(FR-4.1 Verified)'}
                             </span>
                             {q.constraints && (
                               <span>
@@ -664,6 +867,25 @@ export default function AdminQuestionBank() {
                           {/* Expanded Full Details */}
                           {isExpanded && (
                             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                              {/* PDF Problem Statement Preview for PDF-imported questions */}
+                              {q.isPdfImported && (
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <strong style={{ fontSize: '0.82rem', color: '#1A2B3C' }}>
+                                      📄 Candidate Problem Statement Preview (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1}):
+                                    </strong>
+                                  </div>
+                                  <div style={{ height: 440, borderRadius: 8, overflow: 'hidden', border: '1.5px solid #0E7C86' }}>
+                                    <EmbeddedPdfViewer
+                                      fileName={q.pdfFileName}
+                                      originalName={q.pdfOriginalName}
+                                      pageRange={q.pdfPageRange}
+                                      questionNumber={idx + 1}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
                               {q.inputFormat && (
                                 <div>
                                   <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>Input Format:</strong>
@@ -686,21 +908,27 @@ export default function AdminQuestionBank() {
                                 <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>
                                   👁️ Visible Test Cases (Shown to Candidate):
                                 </strong>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
-                                  {q.visibleTestCases?.map((tc, tcIdx) => (
-                                    <div key={tcIdx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
-                                      <div style={{ fontWeight: 600, color: '#0E7C86', marginBottom: 4 }}>Case #{tcIdx + 1}</div>
-                                      <div style={{ marginBottom: 4 }}>
-                                        <span style={{ color: '#6b7280' }}>Input: </span>
-                                        <code>{tc.input || '(empty)'}</code>
+                                {q.visibleTestCases?.length > 0 ? (
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
+                                    {q.visibleTestCases.map((tc, tcIdx) => (
+                                      <div key={tcIdx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
+                                        <div style={{ fontWeight: 600, color: '#0E7C86', marginBottom: 4 }}>Case #{tcIdx + 1}</div>
+                                        <div style={{ marginBottom: 4 }}>
+                                          <span style={{ color: '#6b7280' }}>Input: </span>
+                                          <code>{tc.input || '(empty)'}</code>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: '#6b7280' }}>Output: </span>
+                                          <code>{tc.expectedOutput || '(empty)'}</code>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <span style={{ color: '#6b7280' }}>Output: </span>
-                                        <code>{tc.expectedOutput || '(empty)'}</code>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div style={{ padding: 10, background: '#f9fafb', borderRadius: 6, fontSize: '0.78rem', color: '#6b7280', marginTop: 4 }}>
+                                    No visible test cases defined.
+                                  </div>
+                                )}
                               </div>
 
                               {/* Hidden Test Cases (FR-4.2) */}
@@ -712,22 +940,33 @@ export default function AdminQuestionBank() {
                                   <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>
                                     Admin Only
                                   </span>
+                                  {hasIncompleteCases && (
+                                    <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
+                                      ⚠️ At least 1 hidden test case required to enable this question for live tests
+                                    </span>
+                                  )}
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
-                                  {q.hiddenTestCases?.map((tc, tcIdx) => (
-                                    <div key={tcIdx} style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
-                                      <div style={{ fontWeight: 600, color: '#d97706', marginBottom: 4 }}>Hidden #{tcIdx + 1}</div>
-                                      <div style={{ marginBottom: 4 }}>
-                                        <span style={{ color: '#6b7280' }}>Input: </span>
-                                        <code>{tc.input || '(empty)'}</code>
+                                {q.hiddenTestCases?.length > 0 ? (
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
+                                    {q.hiddenTestCases.map((tc, tcIdx) => (
+                                      <div key={tcIdx} style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
+                                        <div style={{ fontWeight: 600, color: '#d97706', marginBottom: 4 }}>Hidden #{tcIdx + 1}</div>
+                                        <div style={{ marginBottom: 4 }}>
+                                          <span style={{ color: '#6b7280' }}>Input: </span>
+                                          <code>{tc.input || '(empty)'}</code>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: '#6b7280' }}>Output: </span>
+                                          <code>{tc.expectedOutput || '(empty)'}</code>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <span style={{ color: '#6b7280' }}>Output: </span>
-                                        <code>{tc.expectedOutput || '(empty)'}</code>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div style={{ padding: 12, background: '#fef2f2', border: '1px dashed #f87171', borderRadius: 6, fontSize: '0.8rem', color: '#b91c1c', marginTop: 6 }}>
+                                    ⚠️ No hidden test cases added yet. Click <strong>Edit</strong> above to add hidden test cases.
+                                  </div>
+                                )}
                               </div>
 
                               {/* AI Test Brief Files */}
@@ -968,17 +1207,34 @@ export default function AdminQuestionBank() {
               <form onSubmit={handleQuestionSubmit}>
                 <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
                   
+                  {/* PDF Imported Question Informational Banner */}
+                  {questionForm.isPdfImported && (
+                    <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: '#0f766e' }}>
+                      <div style={{ fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span>📄 PDF Imported Question</span>
+                        <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>
+                          {questionForm.pdfFileName} (pp. {questionForm.pdfPageRange?.startPage}–{questionForm.pdfPageRange?.endPage})
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', lineHeight: 1.4 }}>
+                        The original PDF page is rendered directly to candidates as their problem statement. Title and Description are optional. Add at least 1 hidden test case below to mark this question complete for live tests.
+                      </div>
+                    </div>
+                  )}
+
                   {/* Basic Info */}
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                     <div className="form-group">
-                      <label className="form-label">Question Title *</label>
+                      <label className="form-label">
+                        Question Title {questionForm.isPdfImported ? '(Optional)' : '*'}
+                      </label>
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="e.g. Reverse Linked List II"
+                        placeholder={questionForm.isPdfImported ? "e.g. Problem 1 (or leave blank to use PDF name)" : "e.g. Reverse Linked List II"}
                         value={questionForm.title}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, title: e.target.value }))}
-                        required
+                        required={!questionForm.isPdfImported}
                       />
                     </div>
 
@@ -999,15 +1255,15 @@ export default function AdminQuestionBank() {
                   {/* Problem Description */}
                   <div className="form-group">
                     <label className="form-label">
-                      {selectedSet?.testType === 'AI_TEST' ? 'Project Brief / Objective *' : 'Problem Description *'}
+                      {selectedSet?.testType === 'AI_TEST' ? 'Project Brief / Objective' : 'Problem Description'} {questionForm.isPdfImported ? '(Optional — Rendered from PDF)' : '*'}
                     </label>
                     <textarea
                       className="form-control"
-                      rows={5}
-                      placeholder="Write the complete problem statement..."
+                      rows={questionForm.isPdfImported ? 3 : 5}
+                      placeholder={questionForm.isPdfImported ? "Optional additional notes (PDF page statement will be displayed to candidates)..." : "Write the complete problem statement..."}
                       value={questionForm.description}
                       onChange={(e) => setQuestionForm((p) => ({ ...p, description: e.target.value }))}
-                      required
+                      required={!questionForm.isPdfImported}
                     />
                   </div>
 
@@ -1092,7 +1348,7 @@ export default function AdminQuestionBank() {
                           👁️ Visible Test Cases * (FR-4.1)
                         </strong>
                         <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                          Displayed to candidates during the test for code verification. (Minimum 1 required).
+                          Displayed to candidates during the test for code verification.
                         </div>
                       </div>
                       <button
@@ -1159,7 +1415,7 @@ export default function AdminQuestionBank() {
                           🔒 Hidden Test Cases * (FR-4.1, FR-4.2)
                         </strong>
                         <div style={{ fontSize: '0.75rem', color: '#b45309' }}>
-                          Used exclusively for Judge0 final scoring. Never returned to candidates. (Minimum 1 required).
+                          Used exclusively for Judge0 final scoring. Never returned to candidates. (Minimum 1 required for active tests).
                         </div>
                       </div>
                       <button
@@ -1258,7 +1514,7 @@ export default function AdminQuestionBank() {
               </div>
               <div className="modal-body">
                 <p style={{ color: '#374151', fontSize: '0.9rem' }}>
-                  Are you sure you want to delete question <strong>"{deleteTarget.title}"</strong> from this set?
+                  Are you sure you want to delete question <strong>"{deleteTarget.title || deleteTarget.pdfFileName || 'this question'}"</strong> from this set?
                 </p>
               </div>
               <div className="modal-footer">
@@ -1279,6 +1535,394 @@ export default function AdminQuestionBank() {
                   {deleting ? 'Deleting...' : 'Confirm Delete'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Bulk Upload PDFs Modal (FEATURE-009) ── */}
+        {showUploadPdfModal && (
+          <div className="modal-backdrop" onClick={handleCloseUploadModal}>
+            <div
+              className="modal-container"
+              style={{ maxWidth: uploadSummary ? 820 : 640 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: '1.4rem' }}>📁</span>
+                  <div>
+                    <h3 className="modal-title" style={{ margin: 0 }}>
+                      Bulk Upload PDFs to Question Bank
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
+                      Upload a folder containing PDF files (or choose PDFs) to auto-create Question Sets & Questions
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseUploadModal}
+                  disabled={isUploadingPdfs}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {!uploadSummary ? (
+                <form onSubmit={handleUploadPdfSubmit}>
+                  <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {/* Step 1: Select Test Type */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span style={{ background: '#0E7C86', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                          1
+                        </span>
+                        <label className="form-label" style={{ margin: 0, fontWeight: 700, color: '#1A2B3C' }}>
+                          Select Test Type for Batch *
+                        </label>
+                      </div>
+                      <select
+                        className="form-select"
+                        value={uploadTestType}
+                        onChange={(e) => setUploadTestType(e.target.value)}
+                        disabled={isUploadingPdfs}
+                        required
+                      >
+                        {TEST_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '6px 0 0 0' }}>
+                        All uploaded PDFs in this batch will be assigned to this test type ({uploadTestType}).
+                      </p>
+                    </div>
+
+                    {/* Step 2: Upload Folder / PDFs */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ background: '#0E7C86', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                          2
+                        </span>
+                        <label className="form-label" style={{ margin: 0, fontWeight: 700, color: '#1A2B3C' }}>
+                          Select Folder or PDF Files *
+                        </label>
+                      </div>
+
+                      {/* Drag & Drop Zone */}
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        style={{
+                          border: isDraggingFolder ? '2px dashed #0E7C86' : '2px dashed #cbd5e1',
+                          background: isDraggingFolder ? '#f0fdfa' : '#ffffff',
+                          borderRadius: 10,
+                          padding: '28px 20px',
+                          textAlign: 'center',
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>
+                          {isDraggingFolder ? '📥' : '📂'}
+                        </div>
+                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', color: '#1e293b' }}>
+                          {isDraggingFolder ? 'Drop folder here!' : 'Drag & drop a folder containing PDF files'}
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 16px 0' }}>
+                          Supports bulk folder upload (~100 PDFs) or individual PDF selection.
+                        </p>
+
+                        {/* Hidden Inputs */}
+                        <input
+                          type="file"
+                          ref={folderInputRef}
+                          webkitdirectory="true"
+                          directory="true"
+                          multiple
+                          onChange={handleFolderSelect}
+                          style={{ display: 'none' }}
+                        />
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept=".pdf,application/pdf"
+                          multiple
+                          onChange={handleFileSelect}
+                          style={{ display: 'none' }}
+                        />
+
+                        {/* Buttons */}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => folderInputRef.current?.click()}
+                            className="btn btn-primary"
+                            disabled={isUploadingPdfs}
+                            style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          >
+                            📁 Choose Folder
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="btn btn-secondary"
+                            disabled={isUploadingPdfs}
+                            style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          >
+                            📄 Choose PDF Files
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Selected Files Preview */}
+                      {uploadFiles.length > 0 && (
+                        <div style={{ marginTop: 14, background: '#f1f5f9', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '1.1rem' }}>📄</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>
+                              {uploadFiles.length} PDF file(s) selected
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                              ({(uploadFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB total)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUploadFiles([])}
+                            disabled={isUploadingPdfs}
+                            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                          >
+                            ✕ Clear
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Upload Progress Bar */}
+                    {isUploadingPdfs && (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
+                          <span style={{ color: '#0E7C86', fontWeight: 600 }}>Parsing and uploading PDFs...</span>
+                          <span style={{ color: '#64748b' }}>{uploadProgress}%</span>
+                        </div>
+                        <div style={{ width: '100%', background: '#e2e8f0', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width: `${uploadProgress}%`,
+                              background: '#0E7C86',
+                              height: '100%',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      onClick={handleCloseUploadModal}
+                      className="btn btn-secondary"
+                      disabled={isUploadingPdfs}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={isUploadingPdfs || uploadFiles.length === 0}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    >
+                      {isUploadingPdfs ? (
+                        <>
+                          <div className="spinner spinner-dark" style={{ width: 16, height: 16, borderTopColor: '#ffffff' }} />
+                          Processing {uploadFiles.length} PDFs...
+                        </>
+                      ) : (
+                        `Upload & Process ${uploadFiles.length > 0 ? `(${uploadFiles.length} PDFs)` : ''}`
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Upload Summary Report */
+                <div>
+                  <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Stats Banner */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                      <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f766e' }}>
+                          {uploadSummary?.totalPdfs ?? uploadSummary?.totalPdfsReceived ?? 0}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#115e59', fontWeight: 600 }}>PDFs Processed</div>
+                      </div>
+                      <div style={{ background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1d4ed8' }}>
+                          {uploadSummary?.questionSetsCreated ?? uploadSummary?.totalQuestionSetsCreated ?? 0}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#1e40af', fontWeight: 600 }}>Question Sets Created</div>
+                      </div>
+                      <div style={{ background: '#f0fdf4', border: '1px solid #dcfce7', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#15803d' }}>
+                          {uploadSummary?.questionsCreated ?? uploadSummary?.totalQuestionsCreated ?? 0}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>Questions Created</div>
+                      </div>
+                      <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#b91c1c' }}>
+                          {uploadSummary?.incompleteQuestions ?? 0}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#991b1b', fontWeight: 600 }}>Incomplete (Need Hidden)</div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
+                      ℹ️ <strong>Next Step:</strong> All imported questions have visible test cases populated from PDF examples, but their <strong>Hidden Test Cases</strong> are empty. You must add at least 1 hidden test case to each question before creating a live test from these sets.
+                    </div>
+
+                    {/* Breakdown Table */}
+                    <div>
+                      <h4 style={{ fontSize: '0.9rem', color: '#1e293b', marginBottom: 8 }}>Per-File Processing Breakdown</h4>
+                      <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                          <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                            <tr>
+                              <th style={{ padding: '8px 12px' }}>File / Set Name</th>
+                              <th style={{ padding: '8px 12px' }}>Questions</th>
+                              <th style={{ padding: '8px 12px' }}>Visible Cases / Diagnostics</th>
+                              <th style={{ padding: '8px 12px' }}>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              const reports = (uploadSummary?.fileReports && uploadSummary.fileReports.length > 0)
+                                ? uploadSummary.fileReports
+                                : [
+                                    ...(uploadSummary?.createdSets || []).map((cs) => ({
+                                      status: 'SUCCESS',
+                                      setName: cs.name,
+                                      originalName: cs.pdfFileName,
+                                      questionCount: cs.questionCount,
+                                      questions: [],
+                                    })),
+                                    ...(uploadSummary?.failedPdfs || []).map((fp) => ({
+                                      status: 'FAILED',
+                                      setName: fp.fileName || fp.originalName,
+                                      originalName: fp.fileName || fp.originalName,
+                                      questionCount: 0,
+                                      reason: fp.reason || 'Failed to process PDF',
+                                    })),
+                                  ];
+
+                              if (reports.length === 0) {
+                                return (
+                                  <tr>
+                                    <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                                      No file reports available.
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
+                              return reports.map((r, rIdx) => {
+                                const isSuccess = r.status === 'SUCCESS';
+                                return (
+                                  <tr key={rIdx} style={{ borderBottom: '1px solid #f1f5f9', background: isSuccess ? '#ffffff' : '#fff5f5' }}>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      <div style={{ fontWeight: 600, color: isSuccess ? '#1e293b' : '#b91c1c' }}>
+                                        {r.setName || r.originalName || 'Unknown Set'}
+                                      </div>
+                                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{r.originalName || r.fileName}</div>
+                                    </td>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      <span
+                                        className="badge"
+                                        style={{
+                                          fontSize: '0.75rem',
+                                          background: isSuccess ? '#f1f5f9' : '#fee2e2',
+                                          color: isSuccess ? '#475569' : '#991b1b',
+                                          border: `1px solid ${isSuccess ? '#e2e8f0' : '#fecaca'}`,
+                                        }}
+                                      >
+                                        {r.questionCount} question(s)
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      {isSuccess ? (
+                                        r.questions && r.questions.length > 0 ? (
+                                          r.questions.map((qInfo, qIdx) => (
+                                            <div key={qIdx} style={{ fontSize: '0.75rem', marginBottom: 2 }}>
+                                              Q{qInfo.questionNumber || qIdx + 1} (pp. {qInfo.pageRange?.startPage}–{qInfo.pageRange?.endPage}):{' '}
+                                              <strong>{qInfo.visibleTestCasesCount} case(s)</strong>
+                                              {qInfo.exampleParsingStatus === 'AMBIGUOUS' && (
+                                                <span style={{ color: '#d97706', marginLeft: 4 }}>⚠️ Ambiguous Example</span>
+                                              )}
+                                              {qInfo.exampleParsingStatus === 'FAILED' && (
+                                                <span style={{ color: '#dc2626', marginLeft: 4 }}>⚠️ Example Parse Failed</span>
+                                              )}
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>No question details</span>
+                                        )
+                                      ) : (
+                                        <div style={{ fontSize: '0.75rem', color: '#b91c1c', background: '#fee2e2', padding: '4px 8px', borderRadius: 4, border: '1px solid #fecaca' }}>
+                                          ⚠️ <strong>Failure Reason:</strong> {r.reason || 'Could not parse question boundaries.'}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      {isSuccess ? (
+                                        <span
+                                          className="badge"
+                                          style={{
+                                            fontSize: '0.7rem',
+                                            background: '#fef2f2',
+                                            color: '#b91c1c',
+                                            border: '1px solid #fecaca',
+                                          }}
+                                        >
+                                          Incomplete
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className="badge"
+                                          style={{
+                                            fontSize: '0.7rem',
+                                            background: '#fee2e2',
+                                            color: '#991b1b',
+                                            border: '1px solid #f87171',
+                                            fontWeight: 700,
+                                          }}
+                                        >
+                                          Failed
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      onClick={handleCloseUploadModal}
+                      className="btn btn-primary"
+                    >
+                      Done / View Question Sets
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

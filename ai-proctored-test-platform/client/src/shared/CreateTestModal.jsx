@@ -94,6 +94,9 @@ export default function CreateTestModal({
     if (qCount <= 0) {
       return toast.error('Selected Question Set contains 0 questions. Please add questions before creating a test.');
     }
+    if (selectedQs?.hasIncompleteQuestions || selectedQs?.incompleteCount > 0) {
+      return toast.error('Selected Question Set contains incomplete questions (Hidden Test Cases are required). Please add hidden test cases in Question Bank before creating a test.');
+    }
     if (!formData.durationMinutes || formData.durationMinutes <= 0) {
       return toast.error('Duration must be greater than 0');
     }
@@ -204,9 +207,10 @@ export default function CreateTestModal({
                   <option value="">Select a Question Set...</option>
                   {filteredQuestionSets.map((qs) => {
                     const qCount = qs.questionCount ?? qs.questionIds?.length ?? 0;
+                    const isIncomplete = qs.hasIncompleteQuestions || qs.incompleteCount > 0;
                     return (
                       <option key={qs._id} value={qs._id}>
-                        {qs.name} ({qs.testType}) — {qCount} Qs
+                        {qs.name} ({qs.testType}) — {qCount} Qs {isIncomplete ? '⚠️ (Incomplete — Hidden Cases Required)' : ''}
                       </option>
                     );
                   })}
@@ -218,6 +222,10 @@ export default function CreateTestModal({
                 ) : formData.questionSetId && formData.totalQuestions === 0 ? (
                   <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
                     Warning: This Question Set contains 0 questions. Add questions in Question Bank before creating a test.
+                  </p>
+                ) : formData.questionSetId && availableQuestionSets.find((qs) => qs._id === formData.questionSetId)?.hasIncompleteQuestions ? (
+                  <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4, fontWeight: 600 }}>
+                    ⚠️ This Question Set contains incomplete questions missing Hidden Test Cases. Add hidden test cases in Question Bank before creating a live test.
                   </p>
                 ) : null}
               </div>

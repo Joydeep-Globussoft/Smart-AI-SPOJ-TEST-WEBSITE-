@@ -25,6 +25,7 @@ import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
 import ProctorWarningModal from '../components/ProctorWarningModal';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import TestFooter from '../components/TestFooter';
+import EmbeddedPdfViewer from '../components/EmbeddedPdfViewer';
 import Editor from '@monaco-editor/react';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 
@@ -1173,58 +1174,72 @@ export default function CandidateAITestScreen() {
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '14px 16px',
+              padding: activeQuestion?.isPdfImported ? 0 : '14px 16px',
               color: '#e2e8f0',
               fontSize: '0.85rem',
               lineHeight: 1.6,
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <div style={{ marginBottom: 12 }}>
-              <span
-                style={{
-                  background: '#0284c7',
-                  color: '#ffffff',
-                  fontSize: '0.68rem',
-                  fontWeight: 800,
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  letterSpacing: '0.04em',
-                }}
-              >
-                AI DEVELOPMENT TASK
-              </span>
-              <h2
-                style={{
-                  color: '#ffffff',
-                  fontSize: '1.05rem',
-                  fontWeight: 700,
-                  margin: '8px 0 8px 0',
-                }}
-              >
-                Q{activeQuestionIdx + 1}. {activeQuestion?.title || 'Build an AI Task Manager'}
-              </h2>
-            </div>
-
-            <div style={{ color: '#cbd5e1', whiteSpace: 'pre-wrap', marginBottom: 16 }}>
-              {activeQuestion?.description}
-            </div>
-
-            <div
-              style={{
-                background: '#0a0f1d',
-                padding: '10px 12px',
-                borderRadius: 6,
-                border: '1px solid #1e293b',
-                marginTop: 12,
-              }}
-            >
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>
-                💡 Hint
+            {activeQuestion?.isPdfImported ? (
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <EmbeddedPdfViewer
+                  question={activeQuestion}
+                  questionIndex={activeQuestionIdx}
+                  style={{ borderRadius: 0, border: 'none' }}
+                />
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                Focus on clean UI/UX and efficient state management.
-              </div>
-            </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: 12 }}>
+                  <span
+                    style={{
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    AI DEVELOPMENT TASK
+                  </span>
+                  <h2
+                    style={{
+                      color: '#ffffff',
+                      fontSize: '1.05rem',
+                      fontWeight: 700,
+                      margin: '8px 0 8px 0',
+                    }}
+                  >
+                    Q{activeQuestionIdx + 1}. {activeQuestion?.title || 'Build an AI Task Manager'}
+                  </h2>
+                </div>
+
+                <div style={{ color: '#cbd5e1', whiteSpace: 'pre-wrap', marginBottom: 16 }}>
+                  {activeQuestion?.description}
+                </div>
+
+                <div
+                  style={{
+                    background: '#0a0f1d',
+                    padding: '10px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #1e293b',
+                    marginTop: 12,
+                  }}
+                >
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>
+                    💡 Hint
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    Focus on clean UI/UX and efficient state management.
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Question Prev / Next Navigation Controls (BUG-XX) */}
             {session?.questions && session.questions.length > 1 && (

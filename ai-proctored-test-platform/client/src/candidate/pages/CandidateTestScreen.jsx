@@ -25,6 +25,7 @@ import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
 import ProctorWarningModal from '../components/ProctorWarningModal';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import TestFooter from '../components/TestFooter';
+import EmbeddedPdfViewer from '../components/EmbeddedPdfViewer';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 
 // ── Monaco Editor (lazy-loaded to avoid bundle bloat) ─────────────────────────
@@ -41,12 +42,15 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
   const isFullyPassed = visibleTotal > 0 && visiblePassed === visibleTotal;
 
   if (isCollapsed) {
+    const qTitle = question.isPdfImported
+      ? `Q${index + 1}`
+      : `Q${index + 1}. ${question.title || ''} (${question.difficulty || 'N/A'})`;
     return (
       <button
         type="button"
         onClick={disabled ? undefined : onClick}
         disabled={disabled}
-        title={`Q${index + 1}. ${question.title} (${question.difficulty || 'N/A'}) - ${visiblePassed}/${visibleTotal} passed${isSubmitted ? ' (Submitted)' : ''}`}
+        title={`${qTitle} - ${visiblePassed}/${visibleTotal} passed${isSubmitted ? ' (Submitted)' : ''}`}
         style={{
           width: '100%',
           padding: '12px 4px',
@@ -125,16 +129,18 @@ const QuestionTab = memo(({ question, index, isActive, visiblePassed, visibleTot
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontWeight: 600, fontSize: '0.875rem', color: isActive ? '#f8fafc' : '#e2e8f0' }}>
-          Q{index + 1}. {question.title}
+          Q{index + 1}{!question.isPdfImported && question.title ? `. ${question.title}` : ''}
         </span>
-        <span
-          className={`badge badge-${
-            question.difficulty === 'HARD' ? 'danger' : question.difficulty === 'MEDIUM' ? 'warning' : 'success'
-          }`}
-          style={{ fontSize: '0.65rem' }}
-        >
-          {question.difficulty || 'N/A'}
-        </span>
+        {!question.isPdfImported && question.difficulty && (
+          <span
+            className={`badge badge-${
+              question.difficulty === 'HARD' ? 'danger' : question.difficulty === 'MEDIUM' ? 'warning' : 'success'
+            }`}
+            style={{ fontSize: '0.65rem' }}
+          >
+            {question.difficulty || 'N/A'}
+          </span>
+        )}
       </div>
       {visibleTotal > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1284,82 +1290,91 @@ export default function CandidateTestScreen() {
               borderRight: 'none',
               overflowY: 'auto',
               transition: isDraggingDetail ? 'none' : 'width 150ms ease',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {activeQuestion && (
-              <>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontWeight: 800, fontSize: '1rem', color: '#f8fafc' }}>
-                      Q{activeQuestionIdx + 1}. {activeQuestion.title}
-                    </span>
-                    {attemptedQuestions.has(activeQuestion._id) && (
-                      <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '0.9em', lineHeight: 1, fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>✓</span>
-                        <span>Validated</span>
+              activeQuestion.isPdfImported ? (
+                <EmbeddedPdfViewer
+                  question={activeQuestion}
+                  questionIndex={activeQuestionIdx}
+                />
+              ) : (
+                <>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontWeight: 800, fontSize: '1rem', color: '#f8fafc' }}>
+                        Q{activeQuestionIdx + 1}. {activeQuestion.title}
                       </span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {activeQuestion.difficulty && (
-                      <span className={`badge badge-${activeQuestion.difficulty === 'HARD' ? 'danger' : activeQuestion.difficulty === 'MEDIUM' ? 'warning' : 'success'}`}>
-                        {activeQuestion.difficulty}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ lineHeight: 1.7, color: '#cbd5e1', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
-                  {activeQuestion.description}
-                </div>
-
-                {activeQuestion.inputFormat && (
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Input Format</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#191b2c', border: '1px solid #282a40', color: '#cbd5e1', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
-                      {activeQuestion.inputFormat}
+                      {attemptedQuestions.has(activeQuestion._id) && (
+                        <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.9em', lineHeight: 1, fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>✓</span>
+                          <span>Validated</span>
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {activeQuestion.difficulty && (
+                        <span className={`badge badge-${activeQuestion.difficulty === 'HARD' ? 'danger' : activeQuestion.difficulty === 'MEDIUM' ? 'warning' : 'success'}`}>
+                          {activeQuestion.difficulty}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {activeQuestion.outputFormat && (
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Output Format</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#191b2c', border: '1px solid #282a40', color: '#cbd5e1', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
-                      {activeQuestion.outputFormat}
-                    </div>
+                  <div style={{ lineHeight: 1.7, color: '#cbd5e1', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
+                    {activeQuestion.description}
                   </div>
-                )}
 
-                {activeQuestion.constraints && (
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Constraints</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.35)', color: '#fef08a', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
-                      {activeQuestion.constraints}
-                    </div>
-                  </div>
-                )}
-
-                {/* Visible test cases (FR-4.2: shown to candidate) */}
-                {activeQuestion.visibleTestCases?.length > 0 && (
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 8 }}>
-                      Sample Test Cases
-                    </div>
-                    {activeQuestion.visibleTestCases.map((tc, i) => (
-                      <div key={i} style={{ background: '#191b2c', borderRadius: 6, padding: 10, marginBottom: 8, border: '1px solid #282a40' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>
-                          Example {i + 1}
-                        </div>
-                        <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#e2e8f0' }}>
-                          <div><strong>Input:</strong> {tc.input}</div>
-                          <div><strong>Output:</strong> {tc.expectedOutput}</div>
-                        </div>
+                  {activeQuestion.inputFormat && (
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Input Format</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#191b2c', border: '1px solid #282a40', color: '#cbd5e1', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
+                        {activeQuestion.inputFormat}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </>
+                    </div>
+                  )}
+
+                  {activeQuestion.outputFormat && (
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Output Format</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#191b2c', border: '1px solid #282a40', color: '#cbd5e1', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
+                        {activeQuestion.outputFormat}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeQuestion.constraints && (
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 4 }}>Constraints</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.35)', color: '#fef08a', padding: 10, borderRadius: 6, whiteSpace: 'pre-wrap' }}>
+                        {activeQuestion.constraints}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Visible test cases (FR-4.2: shown to candidate) */}
+                  {activeQuestion.visibleTestCases?.length > 0 && (
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#f8fafc', marginBottom: 8 }}>
+                        Sample Test Cases
+                      </div>
+                      {activeQuestion.visibleTestCases.map((tc, i) => (
+                        <div key={i} style={{ background: '#191b2c', borderRadius: 6, padding: 10, marginBottom: 8, border: '1px solid #282a40' }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>
+                            Example {i + 1}
+                          </div>
+                          <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                            <div><strong>Input:</strong> {tc.input}</div>
+                            <div><strong>Output:</strong> {tc.expectedOutput}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
             )}
           </div>
         </div>

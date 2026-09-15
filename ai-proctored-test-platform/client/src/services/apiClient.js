@@ -116,6 +116,15 @@ export const api = {
   getQuestions: (setId) => axios.get(`/question-sets/${setId}/questions`),
   updateQuestion: (qId, data) => axios.patch(`/questions/${qId}`, data),
   deleteQuestion: (qId) => axios.delete(`/questions/${qId}`),
+  uploadPdfBatch: (formData, onUploadProgress) =>
+    axios.post('/question-sets/upload-pdf-batch', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
+    }),
+  getPdfAssetUrl: (filename) => {
+    const base = API_BASE.replace(/\/+$/, '');
+    return `${base}/questions/pdf-asset/${encodeURIComponent(filename)}`;
+  },
 
   // Candidate Test-Taking
   joinRoom: (data) => axios.post('/rooms/join', data),
