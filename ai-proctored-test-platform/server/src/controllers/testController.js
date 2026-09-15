@@ -25,6 +25,7 @@ const createTest = async (req, res, next) => {
 
     const Question = require('../models/Question');
     const QuestionSet = require('../models/QuestionSet');
+    const pdfStorageService = require('../services/pdfStorageService');
 
     const questionSet = await QuestionSet.findById(questionSetId);
     if (!questionSet) {
@@ -32,11 +33,25 @@ const createTest = async (req, res, next) => {
     }
 
     // Authoritative question count from Question collection (BUG-60)
-    const actualQuestionCount = await Question.countDocuments({ questionSetId });
+    const questionsInSet = await Question.find({ questionSetId });
+    const actualQuestionCount = questionsInSet.length;
     if (actualQuestionCount <= 0) {
       return res.status(400).json({
         error: 'Selected Question Set contains 0 questions. Please add questions to the set before creating a test.',
       });
+    }
+
+    // BUG-005: Validate that all assigned questions have accessible PDF statements
+    for (let i = 0; i < questionsInSet.length; i++) {
+      const q = questionsInSet[i];
+      if (q.isPdfImported) {
+        const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+        if (!exists) {
+          return res.status(400).json({
+            error: `Cannot create test: Question Q${i + 1} (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
+          });
+        }
+      }
     }
 
     const parsedPassingCriteria = Number(passingCriteria);
@@ -173,14 +188,29 @@ const updateTest = async (req, res, next) => {
       return res.status(400).json({ error: 'Instructions cannot be empty' });
     }
 
-    // If questionSetId is updated, derive totalQuestions from the new set (BUG-60)
+    // If questionSetId is updated, derive totalQuestions from the new set (BUG-60) and validate PDF assets (BUG-005)
     if (req.body.questionSetId) {
       const Question = require('../models/Question');
-      const questionCount = await Question.countDocuments({ questionSetId: req.body.questionSetId });
+      const pdfStorageService = require('../services/pdfStorageService');
+      const questionsInSet = await Question.find({ questionSetId: req.body.questionSetId });
+      const questionCount = questionsInSet.length;
       if (questionCount <= 0) {
         return res.status(400).json({
           error: 'Selected Question Set contains 0 questions. Please add questions to the set before assigning.',
         });
+      }
+
+      // BUG-005: Validate that all assigned questions have accessible PDF statements
+      for (let i = 0; i < questionsInSet.length; i++) {
+        const q = questionsInSet[i];
+        if (q.isPdfImported) {
+          const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+          if (!exists) {
+            return res.status(400).json({
+              error: `Cannot update test: Question Q${i + 1} (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
+            });
+          }
+        }
       }
 
       req.body.totalQuestions = questionCount;
@@ -291,6 +321,24 @@ const startTest = async (req, res, next) => {
     const now = new Date();
     const existing = await Test.findById(req.params.testId);
     if (!existing) return res.status(404).json({ error: 'Test not found' });
+
+    // BUG-005: Validate that all assigned questions have accessible PDF statements before going LIVE
+    if (existing.questionSetId) {
+      const Question = require('../models/Question');
+      const pdfStorageService = require('../services/pdfStorageService');
+      const questionsInSet = await Question.find({ questionSetId: existing.questionSetId });
+      for (let i = 0; i < questionsInSet.length; i++) {
+        const q = questionsInSet[i];
+        if (q.isPdfImported) {
+          const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+          if (!exists) {
+            return res.status(400).json({
+              error: `Cannot start test: Question Q${i + 1} (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
+            });
+          }
+        }
+      }
+    }
 
     const updates = { status: 'LIVE' };
     if (!existing.liveStartedAt) {

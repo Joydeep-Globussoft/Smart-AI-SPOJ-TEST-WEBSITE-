@@ -67,8 +67,14 @@ export default function EmbeddedPdfViewer({
         setLoadState('ready');
         setRetryCount(0);
       } else if (res.status === 404) {
+        console.warn('[EmbeddedPdfViewer] PDF asset not found (404):', {
+          questionId: question?._id,
+          fileName: activeFileName,
+          pdfUrl,
+          status: res.status,
+        });
         setLoadState('error');
-        setStatusMessage('The PDF problem statement for this question could not be found.');
+        setStatusMessage('The PDF problem statement for this question could not be found on the server.');
       } else {
         throw new Error(`Server returned status ${res.status}`);
       }
@@ -84,12 +90,18 @@ export default function EmbeddedPdfViewer({
           probeAsset(attempt + 1);
         }, delay);
       } else {
+        console.error('[EmbeddedPdfViewer] Probe retries exhausted for PDF asset:', {
+          questionId: question?._id,
+          fileName: activeFileName,
+          pdfUrl,
+          error: err.message,
+        });
         setLoadState('error');
         setRetryCount(maxRetries);
         setStatusMessage('Problem statement is temporarily unreachable from the server.');
       }
     }
-  }, [activeFileName, pdfUrl]);
+  }, [activeFileName, pdfUrl, question?._id]);
 
   useEffect(() => {
     if (activeFileName) {
@@ -140,6 +152,9 @@ export default function EmbeddedPdfViewer({
   for (let p = startPage; p <= endPage; p++) {
     pageNumbers.push(p);
   }
+
+  const fallbackDescription = question?.description || '';
+  const fallbackTitle = question?.title || '';
 
   return (
     <div
@@ -285,7 +300,7 @@ export default function EmbeddedPdfViewer({
       </div>
 
       {/* ── PDF Embed Frame & Graceful States ── */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#1c1e2f' }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#1c1e2f', overflowY: 'auto' }}>
         {loadState === 'error' ? (
           <div
             style={{
@@ -293,24 +308,49 @@ export default function EmbeddedPdfViewer({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              height: '100%',
               minHeight: 280,
               background: '#0d111c',
               color: '#e2e8f0',
-              padding: 28,
+              padding: 24,
               textAlign: 'center',
-              gap: 16,
+              gap: 14,
             }}
           >
             <div style={{ fontSize: '2.5rem' }}>⚠️</div>
             <div>
-              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '1rem', marginBottom: 6 }}>
+              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '1rem', marginBottom: 4 }}>
                 Problem Statement Loading Delayed
               </div>
               <div style={{ fontSize: '0.85rem', color: '#94a3b8', maxWidth: 420, lineHeight: 1.5 }}>
                 {statusMessage}
               </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
+                Asset: {activeFileName}
+              </div>
             </div>
+
+            {/* Fallback problem statement description if available */}
+            {fallbackDescription && (
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 500,
+                  textAlign: 'left',
+                  background: '#16192b',
+                  border: '1px solid #2d3748',
+                  borderRadius: 6,
+                  padding: 14,
+                  fontSize: '0.85rem',
+                  color: '#cbd5e1',
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.6,
+                }}
+              >
+                {fallbackTitle && <strong style={{ color: '#f8fafc', display: 'block', marginBottom: 6 }}>{fallbackTitle}</strong>}
+                {fallbackDescription}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button
                 type="button"

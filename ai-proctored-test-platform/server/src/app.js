@@ -119,6 +119,10 @@ mongoose
     // Ensure Super Admin exists in database
     await seedSuperAdmin();
 
+    // BUG-005: Bi-directional synchronization between local disk and persistent MongoDB PDF storage
+    const { syncAllPdfAssets } = require('./services/pdfStorageService');
+    await syncAllPdfAssets();
+
     // Register Socket.io handlers after DB is ready
     registerSocketHandlers(io);
 

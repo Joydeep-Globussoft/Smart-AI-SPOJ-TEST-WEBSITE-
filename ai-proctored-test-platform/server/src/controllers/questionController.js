@@ -1,8 +1,11 @@
 // Question Bank Controller — Module 2
 // Implements all endpoints from Section 9.4 exactly
+const path = require('path');
+const fs = require('fs');
 const QuestionSet = require('../models/QuestionSet');
 const Question = require('../models/Question');
 const Test = require('../models/Test');
+const pdfStorageService = require('../services/pdfStorageService');
 
 // ── POST /question-sets ───────────────────────────────────────────────────────
 const createQuestionSet = async (req, res, next) => {
@@ -350,11 +353,10 @@ const uploadPdfBatch = async (req, res, next) => {
         continue;
       }
 
-      // Save original PDF file to disk with unique identifier
+      // Save original PDF file to disk and persistent MongoDB Atlas storage (BUG-005)
       const safeOriginalBase = path.basename(originalName).replace(/[^a-zA-Z0-9._-]/g, '_');
       const uniqueFileName = `${Date.now()}_${uuidv4().slice(0, 8)}_${safeOriginalBase}`;
-      const filePath = path.join(uploadDir, uniqueFileName);
-      fs.writeFileSync(filePath, file.buffer);
+      await pdfStorageService.savePdfAsset(uniqueFileName, originalName, file.buffer, req.user?.id);
 
       // Derive distinct Question Set name with collision handling
       const baseSetName = sanitizeQuestionSetName(originalName);
@@ -453,17 +455,17 @@ const uploadPdfBatch = async (req, res, next) => {
 };
 
 // ── GET /questions/pdf-asset/:filename ────────────────────────────────────────
-// Serves stored PDF files for candidate/admin embedded PDF viewers (BUG-72: Cross-origin iframe enabled)
+// Serves stored PDF files for candidate/admin embedded PDF viewers (BUG-72 & BUG-005)
 const servePdfAsset = async (req, res, next) => {
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const safeFilename = path.basename(req.params.filename);
-    const filePath = path.resolve(__dirname, '../../uploads/pdf_questions', safeFilename);
+    const asset = await pdfStorageService.getPdfAsset(req.params.filename);
 
-    if (!fs.existsSync(filePath)) {
+    if (!asset) {
+      console.warn(`[servePdfAsset] PDF asset not found on disk or in MongoDB: "${req.params.filename}"`);
       return res.status(404).json({ error: 'PDF asset not found.' });
     }
+
+    const safeFilename = path.basename(req.params.filename);
 
     // Explicitly allow cross-origin iframe framing across all hosting origins (Render <-> Vercel / localhost)
     res.removeHeader('X-Frame-Options');
@@ -477,7 +479,11 @@ const servePdfAsset = async (req, res, next) => {
     res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
     res.setHeader('Cache-Control', 'public, max-age=86400');
 
-    const stream = fs.createReadStream(filePath);
+    if (asset.buffer) {
+      return res.send(asset.buffer);
+    }
+
+    const stream = fs.createReadStream(asset.filePath);
     stream.pipe(res);
   } catch (err) {
     next(err);
