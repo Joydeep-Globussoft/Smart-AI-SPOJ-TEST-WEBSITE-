@@ -99,11 +99,11 @@ async function runTests() {
     'Implements ResizeObserver for automatic recalculation on layout/panel resize'
   );
 
-  // Test 10: Open PDF direct link preserved
+  // Test 10: Open PDF direct link preserved for error fallback
   assert(
-    code.includes('↗ Open PDF') &&
+    code.includes('Open PDF Directly') &&
     code.includes('href={pdfUrl}'),
-    'Fallback ↗ Open PDF link is preserved'
+    'Fallback ↗ Open PDF Directly link is preserved'
   );
 
   console.log('\n========================================================================');

@@ -456,10 +456,10 @@ export default function AdminQuestionBank() {
             prev.map((s) =>
               s._id === selectedSet._id
                 ? {
-                    ...s,
-                    questionCount: (s.questionCount ?? s.questionIds?.length ?? 0) + 1,
-                    questionIds: [...(s.questionIds || []), newQ._id],
-                  }
+                  ...s,
+                  questionCount: (s.questionCount ?? s.questionIds?.length ?? 0) + 1,
+                  questionIds: [...(s.questionIds || []), newQ._id],
+                }
                 : s
             )
           );
@@ -486,10 +486,10 @@ export default function AdminQuestionBank() {
         prev.map((s) =>
           s._id === selectedSet._id
             ? {
-                ...s,
-                questionCount: Math.max(0, (s.questionCount ?? s.questionIds?.length ?? 0) - 1),
-                questionIds: (s.questionIds || []).filter((id) => (id?._id || id) !== deleteTarget._id),
-              }
+              ...s,
+              questionCount: Math.max(0, (s.questionCount ?? s.questionIds?.length ?? 0) - 1),
+              questionIds: (s.questionIds || []).filter((id) => (id?._id || id) !== deleteTarget._id),
+            }
             : s
         )
       );
@@ -515,9 +515,7 @@ export default function AdminQuestionBank() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{ fontSize: '1.8rem', color: '#1A2B3C', fontWeight: 800 }}>Question Bank</h1>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: 4 }}>
-              Manage reusable Question Sets, problem statements, and visible/hidden test cases (PRD §9.4, §11.4).
-            </p>
+
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <button
@@ -551,7 +549,7 @@ export default function AdminQuestionBank() {
 
         {/* 2-Column Split: Question Sets (Sidebar) and Questions Roster */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, alignItems: 'start' }}>
-          
+
           {/* ── Left Column: Question Sets ── */}
           <div className="card" style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -1135,7 +1133,7 @@ export default function AdminQuestionBank() {
 
               <form onSubmit={handleQuestionSubmit}>
                 <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  
+
                   {/* PDF Imported Question Informational Banner */}
                   {questionForm.isPdfImported && (
                     <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: '#0f766e' }}>
@@ -1663,21 +1661,21 @@ export default function AdminQuestionBank() {
                               const reports = (uploadSummary?.fileReports && uploadSummary.fileReports.length > 0)
                                 ? uploadSummary.fileReports
                                 : [
-                                    ...(uploadSummary?.createdSets || []).map((cs) => ({
-                                      status: 'SUCCESS',
-                                      setName: cs.name,
-                                      originalName: cs.pdfFileName,
-                                      questionCount: cs.questionCount,
-                                      questions: [],
-                                    })),
-                                    ...(uploadSummary?.failedPdfs || []).map((fp) => ({
-                                      status: 'FAILED',
-                                      setName: fp.fileName || fp.originalName,
-                                      originalName: fp.fileName || fp.originalName,
-                                      questionCount: 0,
-                                      reason: fp.reason || 'Failed to process PDF',
-                                    })),
-                                  ];
+                                  ...(uploadSummary?.createdSets || []).map((cs) => ({
+                                    status: 'SUCCESS',
+                                    setName: cs.name,
+                                    originalName: cs.pdfFileName,
+                                    questionCount: cs.questionCount,
+                                    questions: [],
+                                  })),
+                                  ...(uploadSummary?.failedPdfs || []).map((fp) => ({
+                                    status: 'FAILED',
+                                    setName: fp.fileName || fp.originalName,
+                                    originalName: fp.fileName || fp.originalName,
+                                    questionCount: 0,
+                                    reason: fp.reason || 'Failed to process PDF',
+                                  })),
+                                ];
 
                               if (reports.length === 0) {
                                 return (

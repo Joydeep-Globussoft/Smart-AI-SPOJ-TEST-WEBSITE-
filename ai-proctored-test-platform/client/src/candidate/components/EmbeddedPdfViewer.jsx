@@ -514,29 +514,6 @@ export default function EmbeddedPdfViewer({
           >
             －
           </button>
-
-          {/* Open PDF in new tab */}
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: 'rgba(14, 124, 134, 0.2)',
-              color: '#38bdf8',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              borderRadius: 4,
-              padding: '3px 8px',
-              fontSize: '0.7rem',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 3,
-              cursor: 'pointer',
-            }}
-            title="Open PDF in new tab"
-          >
-            ↗ Open PDF
-          </a>
         </div>
       </div>
 
