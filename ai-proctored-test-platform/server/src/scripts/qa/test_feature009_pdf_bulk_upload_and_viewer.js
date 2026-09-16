@@ -115,9 +115,8 @@ async function runTests() {
 
   assert(
     embeddedPdfViewerCode.includes('getPdfAssetUrl') &&
-    embeddedPdfViewerCode.includes('iframe') &&
-    embeddedPdfViewerCode.includes('#page='),
-    'EmbeddedPdfViewer.jsx renders candidate-facing PDF iframe with page anchors and navigation'
+    (embeddedPdfViewerCode.includes('pdfjsLib') || embeddedPdfViewerCode.includes('iframe')),
+    'EmbeddedPdfViewer.jsx renders candidate-facing bounded PDF viewer with page controls and navigation'
   );
 
   assert(

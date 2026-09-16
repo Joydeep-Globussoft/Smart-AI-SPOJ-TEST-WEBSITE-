@@ -11,6 +11,82 @@ const TEST_TYPES = [
   { value: 'AI_TEST', label: 'AI Test (Kimi Assisted)' },
 ];
 
+// ── Helper to recursively extract all File objects from Drag-and-Drop DataTransfer (BUG-77) ──
+export const extractFilesFromDataTransfer = async (dataTransfer) => {
+  const files = [];
+  if (!dataTransfer) return files;
+
+  // Helper to read all entries from a FileSystemDirectoryReader (looping until empty array)
+  const readAllDirectoryEntries = async (dirReader) => {
+    const entries = [];
+    let batch;
+    do {
+      batch = await new Promise((resolve, reject) => {
+        dirReader.readEntries(resolve, reject);
+      });
+      if (batch && batch.length > 0) {
+        entries.push(...batch);
+      }
+    } while (batch && batch.length > 0);
+    return entries;
+  };
+
+  // Helper to recursively traverse FileSystemEntry (file or directory)
+  const traverseEntry = async (entry) => {
+    if (!entry) return;
+    if (entry.isFile) {
+      try {
+        const file = await new Promise((resolve, reject) => {
+          entry.file(resolve, reject);
+        });
+        if (file) files.push(file);
+      } catch (err) {
+        console.warn('[extractFilesFromDataTransfer] Could not read file entry:', entry.name, err);
+      }
+    } else if (entry.isDirectory) {
+      try {
+        const dirReader = entry.createReader();
+        const entries = await readAllDirectoryEntries(dirReader);
+        for (const child of entries) {
+          await traverseEntry(child);
+        }
+      } catch (err) {
+        console.warn('[extractFilesFromDataTransfer] Could not read directory entry:', entry.name, err);
+      }
+    }
+  };
+
+  // Try reading via webkitGetAsEntry from dataTransfer.items
+  if (dataTransfer.items && dataTransfer.items.length > 0) {
+    const entryPromises = [];
+    for (let i = 0; i < dataTransfer.items.length; i++) {
+      const item = dataTransfer.items[i];
+      if (item.kind === 'file') {
+        const entry = item.webkitGetAsEntry
+          ? item.webkitGetAsEntry()
+          : (item.getAsEntry ? item.getAsEntry() : null);
+
+        if (entry) {
+          entryPromises.push(traverseEntry(entry));
+        } else {
+          const file = item.getAsFile ? item.getAsFile() : null;
+          if (file) files.push(file);
+        }
+      }
+    }
+    if (entryPromises.length > 0) {
+      await Promise.all(entryPromises);
+    }
+  }
+
+  // Fallback: if no files retrieved via items or items unsupported, use dataTransfer.files
+  if (files.length === 0 && dataTransfer.files && dataTransfer.files.length > 0) {
+    files.push(...Array.from(dataTransfer.files));
+  }
+
+  return files;
+};
+
 export default function AdminQuestionBank() {
   const [questionSets, setQuestionSets] = useState([]);
   const [selectedSet, setSelectedSet] = useState(null);
@@ -260,31 +336,34 @@ export default function AdminQuestionBank() {
     setShowQuestionModal(true);
   };
 
-  // ── PDF Bulk Upload Handlers (FEATURE-009) ──────────────────────────────────
-  const handleFolderSelect = (e) => {
-    const rawFiles = Array.from(e.target.files || []);
-    const pdfFiles = rawFiles.filter((f) =>
-      f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf'
+  // ── PDF Bulk Upload Handlers (FEATURE-009 & BUG-77) ─────────────────────────
+  const processSelectedPdfFiles = (rawFiles, source = 'drop') => {
+    const pdfFiles = Array.from(rawFiles || []).filter((f) =>
+      f && (f.name?.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf')
     );
     if (pdfFiles.length === 0) {
-      toast.error('No PDF files found in the selected folder.');
-      return;
+      if (source === 'folder') {
+        toast.error('No PDF files found in the selected folder.');
+      } else if (source === 'file') {
+        toast.error('No PDF files selected.');
+      } else {
+        toast.error('No PDF files found in dropped item.');
+      }
+      return false;
     }
     setUploadFiles(pdfFiles);
     setUploadSummary(null);
+    return true;
+  };
+
+  const handleFolderSelect = (e) => {
+    const rawFiles = Array.from(e.target.files || []);
+    processSelectedPdfFiles(rawFiles, 'folder');
   };
 
   const handleFileSelect = (e) => {
     const rawFiles = Array.from(e.target.files || []);
-    const pdfFiles = rawFiles.filter((f) =>
-      f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf'
-    );
-    if (pdfFiles.length === 0) {
-      toast.error('No PDF files selected.');
-      return;
-    }
-    setUploadFiles(pdfFiles);
-    setUploadSummary(null);
+    processSelectedPdfFiles(rawFiles, 'file');
   };
 
   const handleDragOver = (e) => {
@@ -299,20 +378,18 @@ export default function AdminQuestionBank() {
     setIsDraggingFolder(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingFolder(false);
-    const items = e.dataTransfer.files;
-    const pdfFiles = Array.from(items || []).filter((f) =>
-      f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf'
-    );
-    if (pdfFiles.length === 0) {
-      toast.error('No PDF files found in dropped item.');
-      return;
+    try {
+      const rawFiles = await extractFilesFromDataTransfer(e.dataTransfer);
+      processSelectedPdfFiles(rawFiles, 'drop');
+    } catch (err) {
+      console.error('[BulkUpload] Error extracting dropped files:', err);
+      const fallbackFiles = Array.from(e.dataTransfer?.files || []);
+      processSelectedPdfFiles(fallbackFiles, 'drop');
     }
-    setUploadFiles(pdfFiles);
-    setUploadSummary(null);
   };
 
   const handleUploadPdfSubmit = async (e) => {
@@ -1144,7 +1221,7 @@ export default function AdminQuestionBank() {
                         </span>
                       </div>
                       <div style={{ fontSize: '0.8rem', lineHeight: 1.4, color: 'var(--color-text)' }}>
-                        The original PDF page is rendered directly to candidates as their problem statement. Title and Description are optional. Add at least 1 hidden test case below to mark this question complete for live tests.
+                        The original PDF page is rendered directly to candidates as their problem statement.
                       </div>
                     </div>
                   )}
@@ -1182,12 +1259,12 @@ export default function AdminQuestionBank() {
                   {/* Problem Description */}
                   <div className="form-group">
                     <label className="form-label">
-                      {selectedSet?.testType === 'AI_TEST' ? 'Project Brief / Objective' : 'Problem Description'} {questionForm.isPdfImported ? '(Optional — Rendered from PDF)' : '*'}
+                      {selectedSet?.testType === 'AI_TEST' ? 'Project Brief / Objective' : 'Problem Description'} {questionForm.isPdfImported ? '(Optional)' : '*'}
                     </label>
                     <textarea
                       className="form-control"
                       rows={questionForm.isPdfImported ? 3 : 5}
-                      placeholder={questionForm.isPdfImported ? "Optional additional notes (PDF page statement will be displayed to candidates)..." : "Write the complete problem statement..."}
+                      placeholder={questionForm.isPdfImported ? "Write the complete problem statement..." : "Write the complete problem statement..."}
                       value={questionForm.description}
                       onChange={(e) => setQuestionForm((p) => ({ ...p, description: e.target.value }))}
                       required={!questionForm.isPdfImported}
@@ -1197,7 +1274,9 @@ export default function AdminQuestionBank() {
                   {/* Input / Output Formats & Constraints */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="form-group">
-                      <label className="form-label">Input Format</label>
+                      <label className="form-label">
+                        Input Format {questionForm.isPdfImported ? '(Optional)' : '*'}
+                      </label>
                       <input
                         type="text"
                         className="form-control"
@@ -1207,7 +1286,7 @@ export default function AdminQuestionBank() {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Output Format</label>
+                      <label className="form-label">Output Format {questionForm.isPdfImported ? '(Optional)' : '*'}</label>
                       <input
                         type="text"
                         className="form-control"
@@ -1219,11 +1298,11 @@ export default function AdminQuestionBank() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Constraints</label>
+                    <label className="form-label">Constraints {questionForm.isPdfImported ? '(Optional)' : '*'}</label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. 1 <= N <= 10^5, -1000 <= val <= 1000"
+                      placeholder="e.g. 1 <= N <= 10^5 or -1000 <= val <= 1000"
                       value={questionForm.constraints}
                       onChange={(e) => setQuestionForm((p) => ({ ...p, constraints: e.target.value }))}
                     />
@@ -1272,7 +1351,7 @@ export default function AdminQuestionBank() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div>
                         <strong style={{ fontSize: '0.9rem', color: 'var(--color-navy)' }}>
-                          👁️ Visible Test Cases * (FR-4.1)
+                          👁️ Visible Test Cases *
                         </strong>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                           Displayed to candidates during the test for code verification.
@@ -1439,7 +1518,7 @@ export default function AdminQuestionBank() {
                           1
                         </span>
                         <label className="form-label" style={{ margin: 0, fontWeight: 700, color: 'var(--color-navy)' }}>
-                          Select Test Type for Batch *
+                          Select Test Type *
                         </label>
                       </div>
                       <select
@@ -1635,17 +1714,17 @@ export default function AdminQuestionBank() {
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#b91c1c' }}>
                           {uploadSummary?.incompleteQuestions ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Incomplete (Need Hidden)</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Incomplete</div>
                       </div>
                     </div>
 
                     <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
-                      ℹ️ <strong>Next Step:</strong> All imported questions have visible test cases populated from PDF examples, but their <strong>Hidden Test Cases</strong> are empty. You must add at least 1 hidden test case to each question before creating a live test from these sets.
+                      ℹ️ <strong>Note:</strong> All imported questions have visible test cases populated from PDF examples.
                     </div>
 
                     {/* Breakdown Table */}
                     <div>
-                      <h4 style={{ fontSize: '0.9rem', color: 'var(--color-navy)', marginBottom: 8 }}>Per-File Processing Breakdown</h4>
+                      <h4 style={{ fontSize: '0.9rem', color: 'var(--color-navy)', marginBottom: 8 }}>File Processing Breakdown</h4>
                       <div style={{ border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
                           <thead style={{ background: 'var(--color-table-header-bg)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-table-header-text)' }}>
@@ -1742,7 +1821,7 @@ export default function AdminQuestionBank() {
                                             fontSize: '0.7rem',
                                             background: '#fef2f2',
                                             color: '#b91c1c',
-                                            border: '1px solid #fecaca',
+                                            border: '1.5px solid #f40606ff',
                                           }}
                                         >
                                           Incomplete
@@ -1778,7 +1857,7 @@ export default function AdminQuestionBank() {
                       onClick={handleCloseUploadModal}
                       className="btn btn-primary"
                     >
-                      Done / View Question Sets
+                      Done
                     </button>
                   </div>
                 </div>
