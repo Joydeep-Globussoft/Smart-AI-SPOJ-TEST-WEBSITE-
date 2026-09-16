@@ -387,7 +387,7 @@ export default function AdminResults() {
           <div className="card">
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 className="card-title">Ranked Shortlist (Rank Ascending = Score Descending)</h3>
+                <h3 className="card-title">Ranked Shortlist</h3>
                 <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
                   Generated on {shortlist?.generatedAt ? new Date(shortlist.generatedAt).toLocaleString() : '—'}
                 </p>
