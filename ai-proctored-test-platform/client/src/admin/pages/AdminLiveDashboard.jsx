@@ -196,10 +196,10 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
           {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
             ? 'Not started'
             : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-            ? `${candidate.questionsCompleted ?? 0} Qs Solved`
-            : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
-            ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
-            : `${candidate.questionsCompleted ?? 0} Qs Solved`}
+              ? `${candidate.questionsCompleted ?? 0} Qs Solved`
+              : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
+                ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
+                : `${candidate.questionsCompleted ?? 0} Qs Solved`}
         </div>
       </div>
 
@@ -318,15 +318,15 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         >
           {isTestEnded
             ? (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || colorStatus === 'RED'
-                ? 'DISQUALIFIED'
-                : candidate.status === 'NOT_STARTED' || colorStatus === 'WHITE'
+              ? 'DISQUALIFIED'
+              : candidate.status === 'NOT_STARTED' || colorStatus === 'WHITE'
                 ? 'NOT_STARTED'
                 : candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-                ? 'SUBMITTED (TIME UP)'
-                : 'SUBMITTED')
+                  ? 'SUBMITTED (TIME UP)'
+                  : 'SUBMITTED')
             : candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-            ? 'SUBMITTED (TIME UP)'
-            : (candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : colorStatus) || 'IN_PROGRESS')}
+              ? 'SUBMITTED (TIME UP)'
+              : (candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : colorStatus) || 'IN_PROGRESS')}
         </span>
       </div>
 
@@ -334,10 +334,10 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
           ? '—'
           : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-          ? `${candidate.questionsCompleted ?? 0} Qs Solved`
-          : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
-          ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
-          : `${candidate.questionsCompleted ?? 0} Qs Solved`}
+            ? `${candidate.questionsCompleted ?? 0} Qs Solved`
+            : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
+              ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
+              : `${candidate.questionsCompleted ?? 0} Qs Solved`}
       </div>
 
       <div>
@@ -542,7 +542,7 @@ export default function AdminLiveDashboard() {
             return updated;
           });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }, 10000);
     return () => clearInterval(interval);
   }, [testId]);
@@ -665,7 +665,7 @@ export default function AdminLiveDashboard() {
     // Section 10.2: malpractice:alert (FR-7.3)
     const handleMalpracticeAlert = (alertData) => {
       console.log('[Socket] Malpractice Alert received:', alertData);
-      
+
       // Update candidate's persistent malpractice counter in map (FR-7.3)
       if (alertData.candidateId) {
         const cid = alertData.candidateId;
@@ -715,7 +715,7 @@ export default function AdminLiveDashboard() {
               return updated;
             });
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
 
       toast.error(`⚠️ Malpractice: ${alertData.candidateName || 'Candidate'} (${alertData.violationType})`, {
@@ -766,7 +766,7 @@ export default function AdminLiveDashboard() {
 
     // Section 10.2: room:updated
     const handleRoomUpdated = () => {
-      api.getRooms(testId).then((res) => setRooms(res.data.rooms || [])).catch(() => {});
+      api.getRooms(testId).then((res) => setRooms(res.data.rooms || [])).catch(() => { });
       api.getLiveCandidates(testId).then((res) => {
         if (res.data?.candidates) {
           setCandidatesMap((prev) => {
@@ -781,7 +781,7 @@ export default function AdminLiveDashboard() {
             return updated;
           });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     };
 
     // Section 10.2: test:ended
@@ -857,7 +857,7 @@ export default function AdminLiveDashboard() {
             return updated;
           });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     };
 
     onDashboardUpdate(handleDashboardUpdate);
@@ -1248,7 +1248,7 @@ export default function AdminLiveDashboard() {
                     alignItems: 'center',
                     gap: 8,
                     padding: '4px 12px',
-                    background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                    background: 'linear-gradient(135deg, #2d4c95ff 0%, #1E293B 100%)',
                     borderRadius: 8,
                     border: '1px solid #334155',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
@@ -1257,10 +1257,10 @@ export default function AdminLiveDashboard() {
                     isTestEnded
                       ? 'Test Concluded: Operational summary and malpractice review'
                       : tentativeTimer.hasActive
-                      ? `Tentative Time: Session concludes when the last candidate finishes in ${tentativeTimer.formatted}`
-                      : tentativeTimer.formatted === 'Session concluded'
-                      ? 'Tentative Time: All candidates have finished or reached terminal states'
-                      : 'Tentative Time: No candidates have started yet'
+                        ? `Tentative Time: Session concludes when the last candidate finishes in ${tentativeTimer.formatted}`
+                        : tentativeTimer.formatted === 'Session concluded'
+                          ? 'Tentative Time: All candidates have finished or reached terminal states'
+                          : 'Tentative Time: No candidates have started yet'
                   }
                 >
                   <span style={{ fontSize: '1rem' }}>{isTestEnded ? '🏁' : '⏱️'}</span>
@@ -1441,12 +1441,9 @@ export default function AdminLiveDashboard() {
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h3 className="card-title">
-                {isTestEnded ? 'Physical Seat Map Summary (FR-8.1, FR-8.2)' : 'Live Physical Seat Map (FR-8.1, FR-8.2)'}
+                {isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}
               </h3>
               <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
-                {isTestEnded
-                  ? 'Final candidate submission status and persistent violation counters (⚠️ count).'
-                  : 'Persistent violation counters (⚠️ count) visible directly on each seat tile (FR-7.3).'}
               </p>
             </div>
 
@@ -1806,8 +1803,8 @@ export default function AdminLiveDashboard() {
                           return activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.isDisqualified
                             ? 'Disqualified'
                             : activeInspectCandidate.status === 'NOT_STARTED'
-                            ? 'Not Started'
-                            : 'Test Ended';
+                              ? 'Not Started'
+                              : 'Test Ended';
                         }
                         // BUG-24: Only candidates actively IN_PROGRESS have a live countdown.
                         // Terminal or completed states (SUBMITTED, DISQUALIFIED, etc.) or NOT_STARTED show '—'.
@@ -1885,11 +1882,10 @@ export default function AdminLiveDashboard() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <span
-                                  className={`badge ${
-                                    log.violationType === 'PHONE_DETECTED' || log.violationType === 'MULTIPLE_FACES' || log.violationType === 'CAMERA_DISCONNECTED'
-                                      ? 'badge-danger'
-                                      : 'badge-warning'
-                                  }`}
+                                  className={`badge ${log.violationType === 'PHONE_DETECTED' || log.violationType === 'MULTIPLE_FACES' || log.violationType === 'CAMERA_DISCONNECTED'
+                                    ? 'badge-danger'
+                                    : 'badge-warning'
+                                    }`}
                                   style={{ fontWeight: 700, fontSize: '0.75rem', padding: '3px 8px' }}
                                 >
                                   {log.violationType === 'PHONE_DETECTED' && '📱 Phone Detected'}

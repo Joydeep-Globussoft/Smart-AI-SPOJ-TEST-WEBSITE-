@@ -68,7 +68,7 @@ export default function AdminResults() {
         try {
           const genRes = await api.regenerateShortlist(testId);
           setShortlist(genRes.data.shortlist);
-        } catch (_) {}
+        } catch (_) { }
       }
     } catch (err) {
       toast.error('Failed to load results and shortlist');
@@ -240,9 +240,6 @@ export default function AdminResults() {
                   {test?.testType}
                 </span>
               </div>
-              <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                Automated evaluation results, weighted scores, and official Globussoft shortlist (PRD §9.7, §11.10).
-              </p>
             </div>
 
             {/* Top Actions: Export PDF & Regenerate */}
@@ -262,7 +259,7 @@ export default function AdminResults() {
                 className="btn btn-primary"
                 disabled={exportingPdf || totalShortlisted === 0}
                 style={{ background: '#0E7C86' }}
-                title="Export official shortlist PDF with Globussoft branding (FR-10.2)"
+                title="Download shortlisted PDF"
               >
                 📄 {exportingPdf ? 'Generating PDF...' : 'Export Shortlist PDF'}
               </button>
@@ -603,7 +600,7 @@ export default function AdminResults() {
               </div>
 
               <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                
+
                 {/* Rubric Score Grid (FR-9.4) */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                   {selectedResult.scoreBreakdown &&

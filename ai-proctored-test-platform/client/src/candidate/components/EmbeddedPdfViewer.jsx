@@ -35,6 +35,7 @@ export default function EmbeddedPdfViewer({
   const [zoomMode, setZoomMode] = useState('fitWidth'); // 'fitWidth' | 'fitPage' | 'custom'
   const [customZoom, setCustomZoom] = useState(1.0);
   const [renderedPages, setRenderedPages] = useState({});
+  const [dynamicHeight, setDynamicHeight] = useState(null);
 
   const containerRef = useRef(null);
   const scrollAreaRef = useRef(null);
@@ -131,15 +132,23 @@ export default function EmbeddedPdfViewer({
     visiblePageNumbers.push(p);
   }
 
-  // ── 3. Render Canvas for Each Page in Range ───────────────────────────────
+  // ── 3. Render Canvas for Each Page in Range (BUG-74 / BUG-75) ─────────────
   const renderAllPages = useCallback(async () => {
     if (!pdfDoc || loadState !== 'ready') return;
     const container = scrollAreaRef.current;
     if (!container) return;
 
-    const availableWidth = container.clientWidth > 40 ? container.clientWidth - 32 : 580;
-    const availableHeight = container.clientHeight > 40 ? container.clientHeight - 40 : 700;
+    const parentEl = containerRef.current?.parentElement || containerRef.current;
+    const parentWidth = parentEl?.clientWidth || container.clientWidth || 580;
+    const parentHeight = parentEl?.clientHeight || window.innerHeight;
+
+    // Available width for canvas is container width minus margins/padding
+    const availableWidth = Math.max(100, (container.clientWidth > 40 ? container.clientWidth - 24 : parentWidth - 24));
+    const availableHeight = Math.max(100, (container.clientHeight > 40 ? container.clientHeight - 40 : parentHeight - 56));
     const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2.5) : 1;
+
+    let cumulativePagesHeight = 0;
+    const hasMultiplePages = visiblePageNumbers.length > 1;
 
     for (const pageNum of visiblePageNumbers) {
       try {
@@ -148,16 +157,20 @@ export default function EmbeddedPdfViewer({
 
         let computedScale = 1.0;
         if (zoomMode === 'fitWidth') {
-          computedScale = Math.max(0.5, availableWidth / unscaledViewport.width);
+          // Dynamic scale strictly matching available width (no artificial min-clamp causing overflow)
+          computedScale = Math.max(0.1, availableWidth / unscaledViewport.width);
         } else if (zoomMode === 'fitPage') {
           const widthScale = availableWidth / unscaledViewport.width;
           const heightScale = availableHeight / unscaledViewport.height;
-          computedScale = Math.max(0.5, Math.min(widthScale, heightScale));
+          computedScale = Math.max(0.1, Math.min(widthScale, heightScale));
         } else {
           computedScale = customZoom;
         }
 
         const viewport = page.getViewport({ scale: computedScale });
+        cumulativePagesHeight += viewport.height;
+        if (hasMultiplePages) cumulativePagesHeight += 24; // page label banner
+
         const canvas = canvasRefs.current[pageNum];
         if (!canvas) continue;
 
@@ -192,29 +205,43 @@ export default function EmbeddedPdfViewer({
         }
       }
     }
+
+    // Dynamic height calculation in lockstep with rendered content (BUG-75)
+    if (visiblePageNumbers.length > 0 && cumulativePagesHeight > 0) {
+      const gaps = (visiblePageNumbers.length - 1) * 16;
+      const padding = 32; // 16px top + 16px bottom
+      const toolbarHeight = 44;
+      const totalRequiredHeight = Math.ceil(cumulativePagesHeight + gaps + padding + toolbarHeight);
+
+      if (parentHeight && parentHeight > 100) {
+        setDynamicHeight(Math.min(totalRequiredHeight, parentHeight));
+      } else {
+        setDynamicHeight(totalRequiredHeight);
+      }
+    }
   }, [pdfDoc, loadState, visiblePageNumbers.join(','), zoomMode, customZoom]);
 
   useEffect(() => {
     renderAllPages();
   }, [renderAllPages]);
 
-  // Handle container resize (e.g. splitting panel or window resize)
+  // Handle container resize (divider drag or window resize) with requestAnimationFrame (BUG-75)
   useEffect(() => {
-    const el = scrollAreaRef.current;
+    const el = containerRef.current?.parentElement || scrollAreaRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
 
-    let resizeTimer = null;
+    let rafId = null;
     const observer = new ResizeObserver(() => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
         renderAllPages();
-      }, 150);
+      });
     });
 
     observer.observe(el);
     return () => {
       observer.disconnect();
-      clearTimeout(resizeTimer);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [renderAllPages]);
 
@@ -271,12 +298,14 @@ export default function EmbeddedPdfViewer({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: dynamicHeight ? `${dynamicHeight}px` : '100%',
+        maxHeight: '100%',
         width: '100%',
         background: '#0d0f18',
         borderRadius: 8,
         overflow: 'hidden',
         border: '1px solid #1e293b',
+        transition: 'height 80ms ease-out',
         ...style,
       }}
     >
@@ -457,7 +486,7 @@ export default function EmbeddedPdfViewer({
         </div>
       </div>
 
-      {/* ── Bounded PDF Canvas Viewport (BUG-74) ── */}
+      {/* ── Bounded PDF Canvas Viewport (BUG-74 / BUG-75) ── */}
       <div
         id="pdf-viewer-iframe"
         data-preview-iframe="true"
@@ -467,13 +496,14 @@ export default function EmbeddedPdfViewer({
           flex: 1,
           position: 'relative',
           overflowY: 'auto',
-          overflowX: 'auto',
+          overflowX: 'hidden',
           background: '#1c1e2f',
           padding: '16px 12px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: 16,
+          minHeight: 0,
         }}
       >
         {loadState === 'loading' || loadState === 'retrying' ? (
