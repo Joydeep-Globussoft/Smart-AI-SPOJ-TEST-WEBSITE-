@@ -237,6 +237,10 @@ export default function AdminTestDetail() {
 
   // Handle Start Test (DRAFT -> LIVE)
   const handleStartTest = async () => {
+    if (rooms.length === 0) {
+      setShowStartModal(false);
+      return toast.error('Add at least one Physical Room before starting this test');
+    }
     try {
       setStarting(true);
       const res = await api.startTest(testId);
@@ -570,9 +574,25 @@ export default function AdminTestDetail() {
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               {test.status === 'DRAFT' && (
                 <button
-                  onClick={() => setShowStartModal(true)}
+                  onClick={() => {
+                    if (rooms.length === 0) {
+                      return toast.error('Add at least one Physical Room before starting this test');
+                    }
+                    setShowStartModal(true);
+                  }}
                   className="btn btn-primary"
-                  style={{ background: '#2ECC71', border: 'none' }}
+                  disabled={rooms.length === 0 || starting}
+                  style={{
+                    background: rooms.length === 0 ? '#9ca3af' : '#2ECC71',
+                    border: 'none',
+                    cursor: rooms.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: rooms.length === 0 ? 0.7 : 1,
+                  }}
+                  title={
+                    rooms.length === 0
+                      ? 'Add at least one Physical Room before starting this test'
+                      : 'Start Test (Make LIVE)'
+                  }
                 >
                   🚀 Start Test (Make LIVE)
                 </button>
@@ -789,9 +809,26 @@ export default function AdminTestDetail() {
               <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🏢</div>
                 <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>No rooms added yet</h4>
-                <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>
+                <p style={{ fontSize: '0.85rem', marginBottom: 12 }}>
                   Add physical test rooms to generate unique Room Codes and Passwords for candidates.
                 </p>
+                {test?.status === 'DRAFT' && (
+                  <div
+                    style={{
+                      background: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      borderRadius: 6,
+                      padding: '8px 12px',
+                      fontSize: '0.8rem',
+                      color: '#92400e',
+                      maxWidth: 420,
+                      margin: '0 auto 16px auto',
+                      fontWeight: 500,
+                    }}
+                  >
+                    ⚠️ A test requires at least one Physical Room to be started (Make LIVE).
+                  </div>
+                )}
                 {test?.status !== 'ENDED' && (
                   <button
                     onClick={() => setShowAddRoomModal(true)}

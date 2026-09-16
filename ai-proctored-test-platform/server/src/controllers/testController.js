@@ -322,6 +322,14 @@ const startTest = async (req, res, next) => {
     const existing = await Test.findById(req.params.testId);
     if (!existing) return res.status(404).json({ error: 'Test not found' });
 
+    // BUG-73: Validate that at least one Physical Room exists before transitioning test to LIVE
+    const roomCount = await Room.countDocuments({ testId: existing._id });
+    if (roomCount === 0) {
+      return res.status(400).json({
+        error: 'Cannot start test: Add at least one Physical Room before making the test LIVE.',
+      });
+    }
+
     // BUG-005: Validate that all assigned questions have accessible PDF statements before going LIVE
     if (existing.questionSetId) {
       const Question = require('../models/Question');
