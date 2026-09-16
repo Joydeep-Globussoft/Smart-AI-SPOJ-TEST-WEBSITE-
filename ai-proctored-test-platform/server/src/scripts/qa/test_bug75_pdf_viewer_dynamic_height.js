@@ -84,10 +84,10 @@ async function runTests() {
     'Cumulative height calculation correctly accounts for multi-page question headers'
   );
 
-  // Test 8: Horizontal overflow hidden on scroll container
+  // Test 8: Horizontal overflow hidden on scroll container when not zoomed
   assert(
-    code.includes("overflowX: 'hidden'"),
-    'Scroll container sets overflowX: hidden to prevent unwanted horizontal scrollbar'
+    code.includes("overflowX: isHorizontalOverflow ? 'auto' : 'hidden'") || code.includes("overflowX: 'hidden'"),
+    'Scroll container sets overflowX: hidden when not overflowing to prevent unwanted horizontal scrollbar'
   );
 
   console.log('\n========================================================================');

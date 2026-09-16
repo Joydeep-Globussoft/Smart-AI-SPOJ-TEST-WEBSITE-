@@ -36,12 +36,16 @@ export default function EmbeddedPdfViewer({
   const [customZoom, setCustomZoom] = useState(1.0);
   const [renderedPages, setRenderedPages] = useState({});
   const [dynamicHeight, setDynamicHeight] = useState(null);
+  const [isHorizontalOverflow, setIsHorizontalOverflow] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
 
   const containerRef = useRef(null);
   const scrollAreaRef = useRef(null);
   const canvasRefs = useRef({});
   const renderTasksRef = useRef({});
   const activeDocRef = useRef(null);
+  const currentScaleRef = useRef(1.0);
+  const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const maxRetries = 3;
   const retryTimerRef = useRef(null);
 
@@ -119,6 +123,7 @@ export default function EmbeddedPdfViewer({
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = 0;
+      scrollAreaRef.current.scrollLeft = 0;
     }
   }, [question?._id, startPage]);
 
@@ -132,7 +137,7 @@ export default function EmbeddedPdfViewer({
     visiblePageNumbers.push(p);
   }
 
-  // ── 3. Render Canvas for Each Page in Range (BUG-74 / BUG-75) ─────────────
+  // ── 3. Render Canvas for Each Page in Range (BUG-74 / BUG-75 / BUG-76) ─────
   const renderAllPages = useCallback(async () => {
     if (!pdfDoc || loadState !== 'ready') return;
     const container = scrollAreaRef.current;
@@ -148,6 +153,7 @@ export default function EmbeddedPdfViewer({
     const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2.5) : 1;
 
     let cumulativePagesHeight = 0;
+    let maxPageWidth = 0;
     const hasMultiplePages = visiblePageNumbers.length > 1;
 
     for (const pageNum of visiblePageNumbers) {
@@ -167,9 +173,12 @@ export default function EmbeddedPdfViewer({
           computedScale = customZoom;
         }
 
+        currentScaleRef.current = computedScale;
+
         const viewport = page.getViewport({ scale: computedScale });
         cumulativePagesHeight += viewport.height;
         if (hasMultiplePages) cumulativePagesHeight += 24; // page label banner
+        maxPageWidth = Math.max(maxPageWidth, viewport.width);
 
         const canvas = canvasRefs.current[pageNum];
         if (!canvas) continue;
@@ -219,6 +228,11 @@ export default function EmbeddedPdfViewer({
         setDynamicHeight(totalRequiredHeight);
       }
     }
+
+    // Conditional horizontal overflow tracking (BUG-76)
+    const effectiveContainerWidth = container.clientWidth > 40 ? container.clientWidth - 24 : availableWidth;
+    const isOverflowing = zoomMode === 'custom' ? (maxPageWidth > effectiveContainerWidth) : false;
+    setIsHorizontalOverflow(isOverflowing);
   }, [pdfDoc, loadState, visiblePageNumbers.join(','), zoomMode, customZoom]);
 
   useEffect(() => {
@@ -251,6 +265,52 @@ export default function EmbeddedPdfViewer({
     if (target && scrollAreaRef.current) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  // Zoom handlers with smooth relative step scaling (BUG-76)
+  const handleZoomIn = () => {
+    setZoomMode('custom');
+    setCustomZoom((prev) => {
+      const base = zoomMode === 'custom' ? prev : (currentScaleRef.current || 1.0);
+      return Math.min(Number((base + 0.2).toFixed(2)), 3.0);
+    });
+  };
+
+  const handleZoomOut = () => {
+    setZoomMode('custom');
+    setCustomZoom((prev) => {
+      const base = zoomMode === 'custom' ? prev : (currentScaleRef.current || 1.0);
+      return Math.max(Number((base - 0.2).toFixed(2)), 0.3);
+    });
+  };
+
+  // Click-and-drag panning for zoomed content (BUG-76)
+  const handleMouseDown = (e) => {
+    if (!scrollAreaRef.current) return;
+    const isOverflowing = scrollAreaRef.current.scrollWidth > scrollAreaRef.current.clientWidth ||
+                          scrollAreaRef.current.scrollHeight > scrollAreaRef.current.clientHeight;
+    if (!isOverflowing || e.button !== 0) return;
+
+    setIsPanning(true);
+    panStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: scrollAreaRef.current.scrollLeft,
+      scrollTop: scrollAreaRef.current.scrollTop,
+    };
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isPanning || !scrollAreaRef.current) return;
+    e.preventDefault();
+    const dx = e.clientX - panStartRef.current.x;
+    const dy = e.clientY - panStartRef.current.y;
+    scrollAreaRef.current.scrollLeft = panStartRef.current.scrollLeft - dx;
+    scrollAreaRef.current.scrollTop = panStartRef.current.scrollTop - dy;
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
   };
 
   const handleManualRetry = () => {
@@ -420,10 +480,7 @@ export default function EmbeddedPdfViewer({
           {/* Zoom In (+) */}
           <button
             type="button"
-            onClick={() => {
-              setZoomMode('custom');
-              setCustomZoom((prev) => Math.min(prev + 0.2, 2.5));
-            }}
+            onClick={handleZoomIn}
             style={{
               background: '#1e293b',
               color: '#94a3b8',
@@ -442,10 +499,7 @@ export default function EmbeddedPdfViewer({
           {/* Zoom Out (-) */}
           <button
             type="button"
-            onClick={() => {
-              setZoomMode('custom');
-              setCustomZoom((prev) => Math.max(prev - 0.2, 0.5));
-            }}
+            onClick={handleZoomOut}
             style={{
               background: '#1e293b',
               color: '#94a3b8',
@@ -486,24 +540,30 @@ export default function EmbeddedPdfViewer({
         </div>
       </div>
 
-      {/* ── Bounded PDF Canvas Viewport (BUG-74 / BUG-75) ── */}
+      {/* ── Bounded PDF Canvas Viewport (BUG-74 / BUG-75 / BUG-76) ── */}
       <div
         id="pdf-viewer-iframe"
         data-preview-iframe="true"
         ref={scrollAreaRef}
         className="embedded-pdf-scroll-area"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         style={{
           flex: 1,
           position: 'relative',
           overflowY: 'auto',
-          overflowX: 'hidden',
+          overflowX: isHorizontalOverflow ? 'auto' : 'hidden',
           background: '#13141f',
-          padding: '16px 12px',
+          padding: isHorizontalOverflow ? '16px 12px 24px 12px' : '16px 12px',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: isHorizontalOverflow ? 'flex-start' : 'center',
           gap: 16,
           minHeight: 0,
+          cursor: isHorizontalOverflow ? (isPanning ? 'grabbing' : 'grab') : 'default',
+          userSelect: isPanning ? 'none' : 'auto',
         }}
       >
         {loadState === 'loading' || loadState === 'retrying' ? (
@@ -657,6 +717,8 @@ export default function EmbeddedPdfViewer({
                 background: '#ffffff',
                 overflow: 'hidden',
                 position: 'relative',
+                margin: isHorizontalOverflow ? '0 auto' : '0',
+                flexShrink: 0,
               }}
             >
               {visiblePageNumbers.length > 1 && (
