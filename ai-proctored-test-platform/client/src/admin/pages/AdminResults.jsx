@@ -297,9 +297,7 @@ export default function AdminResults() {
                 <strong style={{ fontSize: '0.9rem', color: '#1A2B3C', display: 'block' }}>
                   Adjust Shortlist Criteria
                 </strong>
-                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                  Shortlist re-ranks dynamically on save (FR-10.1).
-                </span>
+
               </div>
 
               {/* Passing Criteria Input (FR-2.2) */}

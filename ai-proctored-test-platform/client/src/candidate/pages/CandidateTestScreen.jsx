@@ -1266,6 +1266,7 @@ export default function CandidateTestScreen() {
                 <EmbeddedPdfViewer
                   question={activeQuestion}
                   questionIndex={activeQuestionIdx}
+                  style={{ height: '100%', border: 'none', borderRadius: 0, background: 'transparent' }}
                 />
               ) : (
                 <>
