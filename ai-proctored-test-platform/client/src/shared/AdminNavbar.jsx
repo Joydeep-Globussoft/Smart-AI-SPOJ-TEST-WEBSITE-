@@ -1,7 +1,8 @@
-// Shared Navbar component — Globussoft branding (Section 14), Avatar Dropdown (BUG-05)
+// Shared Navbar component — Globussoft branding (Section 14), Avatar Dropdown (BUG-05), Theme Toggle (FEATURE-011)
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuthContext';
+import { useTheme } from '../hooks/useTheme';
 import toast from 'react-hot-toast';
 import api from '../services/apiClient';
 
@@ -9,6 +10,7 @@ import globussoftLogo from '../assets/globussoft-logo.png';
 
 export default function AdminNavbar() {
   const { user, logout, isSuperAdmin } = useAuth();
+  const { theme, isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -85,12 +87,39 @@ export default function AdminNavbar() {
             </Link>
           )}
 
+          {/* Theme Toggle Button (FEATURE-011) */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            id="admin-theme-toggle-btn"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.12)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.05rem',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              cursor: 'pointer',
+              marginLeft: 8,
+              transition: 'all var(--transition)',
+              outline: 'none',
+            }}
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+
           {/* Avatar-Only Dropdown Trigger (BUG-05) */}
           <div
             ref={dropdownRef}
             style={{
               position: 'relative',
-              marginLeft: 16,
+              marginLeft: 8,
             }}
           >
             <button
@@ -100,7 +129,7 @@ export default function AdminNavbar() {
                 width: 38,
                 height: 38,
                 borderRadius: '50%',
-                background: '#0E7C86',
+                background: 'var(--color-primary)',
                 color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
@@ -127,25 +156,25 @@ export default function AdminNavbar() {
                   top: 'calc(100% + 10px)',
                   right: 0,
                   width: 250,
-                  background: '#FFFFFF',
-                  color: '#1A2B3C',
+                  background: 'var(--color-dropdown-bg)',
+                  color: 'var(--color-text)',
                   borderRadius: 10,
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-                  border: '1px solid #E2E8F0',
+                  boxShadow: 'var(--shadow-lg)',
+                  border: '1px solid var(--color-dropdown-border)',
                   zIndex: 1050,
                   overflow: 'hidden',
                   animation: 'fadeIn 0.15s ease',
                 }}
               >
                 {/* Header Block: Avatar, Name, Role, Email */}
-                <div style={{ padding: '14px 16px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                <div style={{ padding: '14px 16px', background: 'var(--color-bg-subtle)', borderBottom: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div
                       style={{
                         width: 36,
                         height: 36,
                         borderRadius: '50%',
-                        background: '#0E7C86',
+                        background: 'var(--color-primary)',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
@@ -161,7 +190,7 @@ export default function AdminNavbar() {
                       <strong
                         style={{
                           fontSize: '0.88rem',
-                          color: '#1A2B3C',
+                          color: 'var(--color-navy)',
                           display: 'block',
                           lineHeight: 1.2,
                           whiteSpace: 'nowrap',
@@ -175,7 +204,7 @@ export default function AdminNavbar() {
                         <span
                           style={{
                             fontSize: '0.74rem',
-                            color: '#64748B',
+                            color: 'var(--color-text-muted)',
                             display: 'block',
                             whiteSpace: 'nowrap',
                             textOverflow: 'ellipsis',
@@ -212,13 +241,13 @@ export default function AdminNavbar() {
                       alignItems: 'center',
                       gap: 12,
                       padding: '10px 16px',
-                      color: '#334155',
+                      color: 'var(--color-text)',
                       fontSize: '0.85rem',
                       textDecoration: 'none',
                       fontWeight: 500,
                       transition: 'background 0.1s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F5F9')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
                     <span style={{ fontSize: '1rem' }}>👤</span>
@@ -234,13 +263,13 @@ export default function AdminNavbar() {
                       alignItems: 'center',
                       gap: 12,
                       padding: '10px 16px',
-                      color: '#334155',
+                      color: 'var(--color-text)',
                       fontSize: '0.85rem',
                       textDecoration: 'none',
                       fontWeight: 500,
                       transition: 'background 0.1s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F5F9')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
                     <span style={{ fontSize: '1rem' }}>⚙️</span>
@@ -256,20 +285,20 @@ export default function AdminNavbar() {
                       alignItems: 'center',
                       gap: 12,
                       padding: '10px 16px',
-                      color: '#334155',
+                      color: 'var(--color-text)',
                       fontSize: '0.85rem',
                       textDecoration: 'none',
                       fontWeight: 500,
                       transition: 'background 0.1s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F1F5F9')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
                     <span style={{ fontSize: '1rem' }}>❓</span>
                     <span>Help</span>
                   </Link>
 
-                  <div style={{ borderTop: '1px solid #F1F5F9', margin: '4px 0' }} />
+                  <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                   {/* 4. Logout */}
                   <button
@@ -293,7 +322,7 @@ export default function AdminNavbar() {
                       fontWeight: 500,
                       transition: 'background 0.1s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#FEF2F2')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
                     <span style={{ fontSize: '1rem' }}>🚪</span>
@@ -314,23 +343,23 @@ export default function AdminNavbar() {
             style={{ maxWidth: 400 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header" style={{ borderBottom: '1px solid #F1F5F9', padding: '16px 20px' }}>
+            <div className="modal-header" style={{ borderBottom: '1px solid var(--color-border)', padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: '1.2rem' }}>🚪</span>
-                <h3 className="modal-title" style={{ fontSize: '1.1rem', color: '#1A2B3C' }}>
+                <h3 className="modal-title" style={{ fontSize: '1.1rem', color: 'var(--color-navy)' }}>
                   Sign Out
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowLogoutConfirm(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#64748b' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--color-text-muted)' }}
               >
                 ✕
               </button>
             </div>
 
-            <div className="modal-body" style={{ padding: '20px', fontSize: '0.9rem', color: '#4B5563' }}>
+            <div className="modal-body" style={{ padding: '20px', fontSize: '0.9rem', color: 'var(--color-text)' }}>
               Are you sure you want to sign out of the Admin Panel?
             </div>
 
@@ -341,8 +370,8 @@ export default function AdminNavbar() {
                 display: 'flex',
                 justifyContent: 'flex-end',
                 gap: 10,
-                borderTop: '1px solid #F1F5F9',
-                background: '#F8FAFC',
+                borderTop: '1px solid var(--color-border)',
+                background: 'var(--color-modal-footer-bg)',
               }}
             >
               <button

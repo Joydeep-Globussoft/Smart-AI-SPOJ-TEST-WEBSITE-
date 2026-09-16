@@ -92,8 +92,8 @@ export default function AdminTests() {
         {/* Page Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ fontSize: '1.8rem', color: '#1A2B3C', fontWeight: 800 }}>Test Management</h1>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: 4 }}>
+            <h1 style={{ fontSize: '1.8rem', color: 'var(--color-navy)', fontWeight: 800 }}>Test Management</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: 4 }}>
               Create, configure, and manage proctored coding assessments and rooms.
             </p>
           </div>
@@ -156,8 +156,8 @@ export default function AdminTests() {
         ) : filteredTests.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>📋</div>
-            <h3 style={{ color: '#1A2B3C', marginBottom: 8 }}>No tests found</h3>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: 20 }}>
+            <h3 style={{ color: 'var(--color-navy)', marginBottom: 8 }}>No tests found</h3>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>
               {searchQuery || filterType !== 'ALL' || filterStatus !== 'ALL'
                 ? 'Try adjusting your search or filters'
                 : 'Get started by creating your first proctored test'}
@@ -193,7 +193,7 @@ export default function AdminTests() {
                       <td style={{ fontWeight: 600 }}>
                         <Link
                           to={`/admin/tests/${test._id}`}
-                          style={{ color: '#1A2B3C', textDecoration: 'none' }}
+                          style={{ color: 'var(--color-navy)', textDecoration: 'none' }}
                           className="hover-underline"
                         >
                           {test.title}
@@ -218,16 +218,16 @@ export default function AdminTests() {
                           style={{ fontSize: '0.75rem' }}
                         />
                       </td>
-                      <td style={{ color: '#4b5563', fontSize: '0.85rem' }}>
+                      <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                         {test.durationMinutes} mins
                       </td>
-                      <td style={{ color: '#4b5563', fontSize: '0.85rem' }}>
+                      <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                         ≥ {test.passingCriteria} Qs
                       </td>
-                      <td style={{ color: '#4b5563', fontSize: '0.85rem' }}>
+                      <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                         {test.questionSetId?.name || '—'}
                       </td>
-                      <td style={{ color: '#9ca3af', fontSize: '0.8rem' }}>
+                      <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
                         {new Date(test.createdAt).toLocaleDateString()}
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -310,13 +310,13 @@ export default function AdminTests() {
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text)' }}
                 >
                   ✕
                 </button>
               </div>
               <div className="modal-body">
-                <p style={{ color: '#374151', fontSize: '0.9rem' }}>
+                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem' }}>
                   Are you sure you want to delete test <strong>"{deleteTarget.title}"</strong>? This action cannot be undone.
                 </p>
               </div>

@@ -114,21 +114,21 @@ export default function AdminProfile() {
       <main className="main-content">
         {/* Breadcrumbs */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin" style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <Link to="/admin" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
             ← Dashboard
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>My Profile</span>
+          <span style={{ color: 'var(--color-text-light)' }}>/</span>
+          <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>My Profile</span>
         </div>
 
         {/* Header card */}
         <div className="card" style={{ marginBottom: 24, padding: '24px 28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <h1 style={{ fontSize: '1.6rem', color: '#1A2B3C', fontWeight: 800 }}>
+              <h1 style={{ fontSize: '1.6rem', color: 'var(--color-navy)', fontWeight: 800 }}>
                 Administrator Profile
               </h1>
-              <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: 4 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
                 View and manage your personal administrator account details.
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function AdminProfile() {
         {/* Profile Card */}
         <div className="card" style={{ maxWidth: 720, margin: '0 auto', padding: '32px 36px' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-muted)' }}>
               <div className="spinner spinner-dark" style={{ width: 32, height: 32, borderWidth: 3, margin: '0 auto 12px' }} />
               <p style={{ fontSize: '0.85rem' }}>Loading profile information...</p>
             </div>
@@ -162,7 +162,7 @@ export default function AdminProfile() {
                   alignItems: 'center',
                   gap: 20,
                   paddingBottom: 24,
-                  borderBottom: '1px solid #E2E8F0',
+                  borderBottom: '1px solid var(--color-border)',
                   marginBottom: 24,
                 }}
               >
@@ -171,7 +171,7 @@ export default function AdminProfile() {
                     width: 68,
                     height: 68,
                     borderRadius: '50%',
-                    background: '#0E7C86',
+                    background: 'var(--color-primary)',
                     color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
@@ -179,14 +179,14 @@ export default function AdminProfile() {
                     fontSize: '1.8rem',
                     fontWeight: 700,
                     boxShadow: '0 4px 12px rgba(14, 124, 134, 0.25)',
-                    border: '3px solid #E6F4F5',
+                    border: '3px solid rgba(14, 124, 134, 0.25)',
                   }}
                 >
                   {profile.name ? profile.name.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <h2 style={{ fontSize: '1.4rem', color: '#1A2B3C', fontWeight: 700, margin: 0 }}>
+                    <h2 style={{ fontSize: '1.4rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
                       {profile.name}
                     </h2>
                     {profile.role === 'SUPER_ADMIN' ? (
@@ -199,7 +199,7 @@ export default function AdminProfile() {
                       </span>
                     )}
                   </div>
-                  <span style={{ fontSize: '0.85rem', color: '#64748B', display: 'block', marginTop: 4 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 4 }}>
                     {profile.email}
                   </span>
                 </div>
@@ -207,38 +207,38 @@ export default function AdminProfile() {
 
               {/* Detail Rows */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-                <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontWeight: 600 }}>
+                <div style={{ background: 'var(--color-bg-subtle)', padding: '16px 20px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                     Full Name
                   </span>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1A2B3C', marginTop: 4 }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-navy)', marginTop: 4 }}>
                     {profile.name}
                   </div>
                 </div>
 
-                <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                <div style={{ background: 'var(--color-bg-subtle)', padding: '16px 20px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                       Email Address
                     </span>
-                    <span style={{ fontSize: '0.7rem', color: '#64748B' }}>🔒 Read-only</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>🔒 Read-only</span>
                   </div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1A2B3C', marginTop: 4 }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-navy)', marginTop: 4 }}>
                     <code>{profile.email}</code>
                   </div>
                 </div>
 
-                <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontWeight: 600 }}>
+                <div style={{ background: 'var(--color-bg-subtle)', padding: '16px 20px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                     Phone Number
                   </span>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: profile.phone ? '#1A2B3C' : '#94A3B8', marginTop: 4 }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: profile.phone ? 'var(--color-navy)' : 'var(--color-text-light)', marginTop: 4 }}>
                     {profile.phone || 'Not provided'}
                   </div>
                 </div>
 
-                <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontWeight: 600 }}>
+                <div style={{ background: 'var(--color-bg-subtle)', padding: '16px 20px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                     Role & Permissions
                   </span>
                   <div style={{ marginTop: 6 }}>
@@ -283,11 +283,11 @@ export default function AdminProfile() {
                 </div>
 
                 {profile.createdAt && (
-                  <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontWeight: 600 }}>
+                  <div style={{ background: 'var(--color-bg-subtle)', padding: '16px 20px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                       Account Created
                     </span>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1A2B3C', marginTop: 4 }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-navy)', marginTop: 4 }}>
                       {new Date(profile.createdAt).toLocaleDateString(undefined, {
                         year: 'numeric',
                         month: 'long',
@@ -303,11 +303,11 @@ export default function AdminProfile() {
                 style={{
                   marginTop: 28,
                   padding: '14px 18px',
-                  background: '#E6F4F5',
-                  border: '1px solid #B2DFDB',
+                  background: 'var(--color-bg-subtle)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 8,
                   fontSize: '0.85rem',
-                  color: '#004D40',
+                  color: 'var(--color-text)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -319,7 +319,7 @@ export default function AdminProfile() {
                 <Link
                   to="/admin/settings"
                   style={{
-                    color: '#0E7C86',
+                    color: 'var(--color-primary)',
                     fontWeight: 700,
                     textDecoration: 'underline',
                     whiteSpace: 'nowrap',
@@ -333,10 +333,10 @@ export default function AdminProfile() {
           ) : (
             /* ── Edit Mode Form ── */
             <form onSubmit={handleSaveProfile}>
-              <h2 style={{ fontSize: '1.25rem', color: '#1A2B3C', fontWeight: 700, marginBottom: 6 }}>
+              <h2 style={{ fontSize: '1.25rem', color: 'var(--color-navy)', fontWeight: 700, marginBottom: 6 }}>
                 Edit Personal Information
               </h2>
-              <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 20 }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 20 }}>
                 Update your display name and contact phone number.
               </p>
 
@@ -368,7 +368,7 @@ export default function AdminProfile() {
                     onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                     placeholder="e.g. +91 98765 43210"
                   />
-                  <small style={{ color: '#64748B', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                     Optional contact number for emergency test operations.
                   </small>
                 </div>
@@ -379,14 +379,14 @@ export default function AdminProfile() {
                     <label className="form-label" style={{ fontWeight: 600 }}>
                       Email Address
                     </label>
-                    <span style={{ fontSize: '0.72rem', color: '#64748B' }}>🔒 Cannot be changed</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>🔒 Cannot be changed</span>
                   </div>
                   <input
                     type="email"
                     className="form-control"
                     value={profile.email}
                     disabled
-                    style={{ background: '#F8FAFC', color: '#64748B', cursor: 'not-allowed' }}
+                    style={{ background: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)', cursor: 'not-allowed' }}
                   />
                 </div>
 
@@ -396,7 +396,7 @@ export default function AdminProfile() {
                     <label className="form-label" style={{ fontWeight: 600 }}>
                       Role Assignment
                     </label>
-                    <span style={{ fontSize: '0.72rem', color: '#64748B' }}>🔒 Super Admin managed</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>🔒 Super Admin managed</span>
                   </div>
                   <div>
                     {profile.role === 'SUPER_ADMIN' ? (

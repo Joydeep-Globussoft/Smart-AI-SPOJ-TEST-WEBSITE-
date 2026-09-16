@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuthContext';
+import { ThemeProvider } from './hooks/useTheme';
 import './styles/global.css';
 import ErrorBoundary from './shared/ErrorBoundary';
 import { lazyWithRetry } from './shared/lazyWithRetry';
@@ -104,20 +105,22 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ErrorBoundary>
-          <AppRoutes />
-        </ErrorBoundary>
-        {/* React Hot Toast for notifications */}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              fontFamily: 'Inter, system-ui, sans-serif',
-              fontSize: '0.875rem',
-            },
-          }}
-        />
+        <ThemeProvider>
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+          {/* React Hot Toast for notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: '0.875rem',
+              },
+            }}
+          />
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

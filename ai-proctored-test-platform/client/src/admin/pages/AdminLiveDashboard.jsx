@@ -118,8 +118,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
     <div
       onClick={() => onClick(candidate)}
       style={{
-        background: isWhite ? '#ffffff' : `${color}15`,
-        border: `2px solid ${isWhite ? '#111827' : color}`,
+        background: isWhite ? 'var(--color-bg-card)' : `${color}15`,
+        border: `2px solid ${isWhite ? 'var(--color-border)' : color}`,
         borderRadius: 10,
         padding: '12px 14px',
         cursor: 'pointer',
@@ -141,7 +141,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
           <strong
             style={{
               fontSize: '0.85rem',
-              color: '#1A2B3C',
+              color: 'var(--color-navy)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -159,9 +159,9 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
               padding: '1px 5px',
               fontWeight: 700,
               flexShrink: 0,
-              backgroundColor: malpracticeCount > 0 ? '#E74C3C' : '#f3f4f6',
-              color: malpracticeCount > 0 ? '#ffffff' : '#6b7280',
-              border: malpracticeCount > 0 ? 'none' : '1px solid #e5e7eb',
+              backgroundColor: malpracticeCount > 0 ? '#E74C3C' : 'var(--color-bg-subtle)',
+              color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-text-muted)',
+              border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border)',
             }}
             title={`Persistent Malpractice Counter: ${malpracticeCount} violations`}
           >
@@ -177,7 +177,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             height: 10,
             borderRadius: '50%',
             backgroundColor: isWhite ? '#94A3B8' : color,
-            border: isWhite ? '1.5px solid #111827' : `1px solid ${color}`,
+            border: isWhite ? '1.5px solid var(--color-border)' : `1px solid ${color}`,
             display: 'inline-block',
             boxShadow: isWhite ? 'none' : `0 0 6px ${color}`,
             flexShrink: 0,
@@ -190,9 +190,9 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
       </div>
 
       {/* Room and progress */}
-      <div style={{ margin: '6px 0', fontSize: '0.75rem', color: '#6b7280' }}>
+      <div style={{ margin: '6px 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
         <div>{roomName || candidate.roomName || 'Room'}</div>
-        <div style={{ fontWeight: 600, color: '#374151', marginTop: 2 }}>
+        <div style={{ fontWeight: 600, color: 'var(--color-text)', marginTop: 2 }}>
           {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
             ? 'Not started'
             : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
@@ -205,7 +205,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
 
       {/* Bottom Footer: Live Countdown Timer / Status (BUG-32: redundant color label removed) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', marginTop: 4 }}>
-        <span style={{ color: '#4b5563', fontFamily: 'monospace', fontWeight: 600 }}>
+        <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontWeight: 600 }}>
           {formattedTimer}
         </span>
       </div>
@@ -259,9 +259,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1.2fr 1.2fr 1.5fr',
         alignItems: 'center',
         padding: '8px 16px',
-        borderBottom: '1px solid #f3f4f6',
+        borderBottom: '1px solid var(--color-border)',
         fontSize: '0.85rem',
-        background: 'white',
+        background: 'var(--color-bg-card)',
         opacity: 1,
       }}
     >
@@ -274,7 +274,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             height: 8,
             borderRadius: '50%',
             backgroundColor: isWhite ? '#94A3B8' : color,
-            border: isWhite ? '1.5px solid #111827' : `1px solid ${color}`,
+            border: isWhite ? '1.5px solid var(--color-border)' : `1px solid ${color}`,
             flexShrink: 0,
             boxShadow: isCandidateInProgress ? `0 0 6px ${color}` : 'none',
             transformOrigin: 'center',
@@ -282,7 +282,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             willChange: isYellowDot ? 'opacity, transform' : 'auto',
           }}
         />
-        <strong style={{ color: '#1A2B3C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <strong style={{ color: 'var(--color-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {candidate.name || candidate.candidateName || 'Candidate'}
         </strong>
         {/* FR-7.3: Persistent Malpractice counter directly beside name */}
@@ -293,9 +293,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             padding: '1px 5px',
             fontWeight: 700,
             flexShrink: 0,
-            backgroundColor: malpracticeCount > 0 ? '#E74C3C' : '#f3f4f6',
-            color: malpracticeCount > 0 ? '#ffffff' : '#6b7280',
-            border: malpracticeCount > 0 ? 'none' : '1px solid #e5e7eb',
+            backgroundColor: malpracticeCount > 0 ? '#E74C3C' : 'var(--color-bg-subtle)',
+            color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-text-muted)',
+            border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border)',
           }}
           title={`Persistent Malpractice Counter: ${malpracticeCount}`}
         >
@@ -303,14 +303,14 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         </span>
       </div>
 
-      <div style={{ color: '#4b5563' }}>{roomName || candidate.roomName || 'Room'}</div>
+      <div style={{ color: 'var(--color-text-muted)' }}>{roomName || candidate.roomName || 'Room'}</div>
 
       <div>
         <span
           className="badge"
           style={{
             background: `${color}20`,
-            color: color === '#F1C40F' ? '#b45309' : (color === '#E0E0E0' ? '#6b7280' : color),
+            color: color === '#F1C40F' ? '#b45309' : (color === '#E0E0E0' ? 'var(--color-text-muted)' : color),
             border: `1px solid ${color}60`,
             fontSize: '0.72rem',
             fontWeight: 600,
@@ -330,7 +330,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         </span>
       </div>
 
-      <div style={{ color: '#1A2B3C', fontWeight: 600 }}>
+      <div style={{ color: 'var(--color-navy)', fontWeight: 600 }}>
         {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
           ? '—'
           : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
@@ -367,7 +367,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       </div>
 
       {/* Countdown timer / Status for roster */}
-      <div style={{ color: '#6b7280', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+      <div style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '0.8rem' }}>
         {formattedTimer}
       </div>
 
@@ -389,9 +389,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
                 style={{
                   padding: '3px 6px',
                   fontSize: '0.72rem',
-                  color: malpracticeCount > 0 ? '#d97706' : '#9ca3af',
-                  borderColor: malpracticeCount > 0 ? '#f59e0b' : '#e5e7eb',
-                  background: malpracticeCount > 0 ? '#fffbeb' : '#f9fafb',
+                  color: malpracticeCount > 0 ? '#d97706' : 'var(--color-text-muted)',
+                  borderColor: malpracticeCount > 0 ? '#f59e0b' : 'var(--color-border)',
+                  background: malpracticeCount > 0 ? '#fffbeb' : 'var(--color-bg-subtle)',
                   opacity: malpracticeCount > 0 ? 1 : 0.55,
                   cursor: malpracticeCount > 0 ? 'pointer' : 'not-allowed',
                 }}
@@ -1212,15 +1212,15 @@ export default function AdminLiveDashboard() {
       <main className="main-content">
         {/* Breadcrumb Navigation (FEATURE-008: Dynamically rename post-test) */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin/tests" style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <Link to="/admin/tests" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
             ← Tests
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <Link to={`/admin/tests/${testId}`} style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <span style={{ color: 'var(--color-text-muted)' }}>/</span>
+          <Link to={`/admin/tests/${testId}`} style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
             {test?.title || 'Test Details'}
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>
+          <span style={{ color: 'var(--color-text-muted)' }}>/</span>
+          <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>
             {isTestEnded ? 'Test Summary' : 'Live Monitoring'}
           </span>
         </div>
@@ -1230,7 +1230,7 @@ export default function AdminLiveDashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <h1 style={{ fontSize: '1.6rem', color: '#1A2B3C', fontWeight: 800 }}>
+                <h1 style={{ fontSize: '1.6rem', color: 'var(--color-navy)', fontWeight: 800 }}>
                   {test?.title}
                 </h1>
                 <TestStatusBadge
@@ -1281,7 +1281,7 @@ export default function AdminLiveDashboard() {
                   </div>
                 </div>
               </div>
-              <p style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: 4 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 4 }}>
                 {isTestEnded
                   ? 'Post-test operational summary · Passing Threshold: '
                   : 'Real-time multi-room monitoring · Passing Threshold: '}
@@ -1338,7 +1338,7 @@ export default function AdminLiveDashboard() {
               marginBottom: 20,
               padding: '16px 20px',
               border: '1.5px solid #F59E0B',
-              background: '#FFFBEB',
+              background: 'var(--color-bg-card)',
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(245, 158, 11, 0.1)',
             }}
@@ -1347,10 +1347,10 @@ export default function AdminLiveDashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: '1.3rem' }}>🔔</span>
                 <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#92400E', margin: 0 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#d97706', margin: 0 }}>
                     Late Join Requests ({lateJoinRequests.length})
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: '#B45309', margin: 0 }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>
                     The following candidates are requesting entry after the room access window closed.
                   </p>
                 </div>
@@ -1367,17 +1367,17 @@ export default function AdminLiveDashboard() {
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: 12,
-                    background: '#FFFFFF',
+                    background: 'var(--color-bg-subtle)',
                     padding: '12px 16px',
                     borderRadius: '8px',
-                    border: '1px solid #FDE68A',
+                    border: '1px solid var(--color-border)',
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700, color: '#1A2B3C', fontSize: '0.95rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-navy)', fontSize: '0.95rem' }}>
                       {req.candidateName}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                       {req.candidateEmail} {req.candidatePhone ? `· ${req.candidatePhone}` : ''}
                       {' · '}Target: <strong>{req.roomName || req.roomCode}</strong>
                       {req.requestedAt && (
@@ -1443,7 +1443,7 @@ export default function AdminLiveDashboard() {
               <h3 className="card-title">
                 {isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
               </p>
             </div>
 
@@ -1462,16 +1462,16 @@ export default function AdminLiveDashboard() {
                 <span>Disqualified</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 3, background: '#ffffff', border: '2px solid #111827' }} />
+                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-border)' }} />
                 <span>Not Started</span>
               </div>
             </div>
           </div>
 
           {candidateList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📡</div>
-              <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>
+              <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>
                 {isTestEnded ? 'No candidates recorded for this test.' : 'Waiting for candidates to connect...'}
               </h4>
               <p style={{ fontSize: '0.85rem' }}>
@@ -1510,7 +1510,7 @@ export default function AdminLiveDashboard() {
               <h3 className="card-title">
                 {isTestEnded ? 'Candidate Proctoring Summary Roster' : 'Candidate Live Proctoring Roster'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                 {candidateList.length > 50
                   ? `⚡ Virtualized View Active (${candidateList.length} candidates — 60fps steady)`
                   : `Showing ${candidateList.length} ${isTestEnded ? 'candidate(s) in summary' : 'connected candidate(s)'}`}
@@ -1548,11 +1548,11 @@ export default function AdminLiveDashboard() {
               display: 'grid',
               gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1.2fr 1.2fr 1.5fr',
               padding: '10px 16px',
-              background: '#f9fafb',
-              borderBottom: '1.5px solid #e5e7eb',
+              background: 'var(--color-table-header-bg)',
+              borderBottom: '1.5px solid var(--color-border)',
               fontWeight: 700,
               fontSize: '0.8rem',
-              color: '#374151',
+              color: 'var(--color-table-header-text)',
             }}
           >
             <div>Candidate (FR-7.3 Counter)</div>
@@ -1566,7 +1566,7 @@ export default function AdminLiveDashboard() {
 
           {/* Table Body: Virtualized with react-window when > 50 candidates, standard when <= 50 */}
           {candidateList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 32, color: '#6b7280', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
               {isTestEnded ? 'No candidates recorded for this test.' : 'No matching candidates connected.'}
             </div>
           ) : candidateList.length > 50 ? (
@@ -1600,7 +1600,7 @@ export default function AdminLiveDashboard() {
         {activeAlert && (
           <div className="modal-backdrop" style={{ zIndex: 1100 }}>
             <div className="modal-container" style={{ maxWidth: 560, border: '2px solid #E74C3C' }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header" style={{ background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
+              <div className="modal-header" style={{ background: 'var(--color-modal-header-bg)', borderBottom: '1px solid var(--color-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: '1.4rem' }}>🚨</span>
                   <h3 className="modal-title" style={{ color: '#E74C3C' }}>
@@ -1619,33 +1619,33 @@ export default function AdminLiveDashboard() {
               <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem' }}>
                   <div>
-                    <span style={{ color: '#6b7280' }}>Candidate:</span>
-                    <strong style={{ display: 'block', color: '#1A2B3C' }}>{activeAlert.candidateName}</strong>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Candidate:</span>
+                    <strong style={{ display: 'block', color: 'var(--color-navy)' }}>{activeAlert.candidateName}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#6b7280' }}>Violation Type:</span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Violation Type:</span>
                     <span className="badge badge-danger" style={{ display: 'inline-block', marginTop: 2 }}>
                       {activeAlert.violationType}
                     </span>
                   </div>
                   <div>
-                    <span style={{ color: '#6b7280' }}>Violation Count:</span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Violation Count:</span>
                     <strong style={{ display: 'block', color: '#E74C3C' }}>
                       Incident #{activeAlert.currentCount || 1}
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: '#6b7280' }}>Timestamp:</span>
-                    <span style={{ display: 'block', color: '#4b5563' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Timestamp:</span>
+                    <span style={{ display: 'block', color: 'var(--color-text)' }}>
                       {new Date().toLocaleTimeString()}
                     </span>
                   </div>
                   {activeAlert.violationType === 'CAMERA_DISCONNECTED' && (
-                    <div style={{ gridColumn: 'span 2', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px' }}>
-                      <span style={{ fontWeight: 700, color: '#b91c1c', display: 'block', fontSize: '0.85rem' }}>
+                    <div style={{ gridColumn: 'span 2', background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '8px 12px' }}>
+                      <span style={{ fontWeight: 700, color: '#dc2626', display: 'block', fontSize: '0.85rem' }}>
                         📷 Camera Disconnected Security Alert
                       </span>
-                      <span style={{ color: '#7f1d1d', fontSize: '0.78rem' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
                         Candidate camera was disconnected. Fullscreen opaque blackout overlay and editor lock are active.
                       </span>
                       {activeAlert.durationSeconds !== null && activeAlert.durationSeconds !== undefined && (
@@ -1660,13 +1660,13 @@ export default function AdminLiveDashboard() {
                 {/* Proof Screenshot Image */}
                 {activeAlert.proofScreenshotUrl ? (
                   <div>
-                    <span style={{ fontSize: '0.8rem', color: '#6b7280', display: 'block', marginBottom: 6 }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>
                       📸 Captured Proof Frame:
                     </span>
                     <div
                       style={{
                         position: 'relative',
-                        border: '1.5px solid #e5e7eb',
+                        border: '1.5px solid var(--color-border)',
                         borderRadius: 8,
                         overflow: 'hidden',
                         cursor: 'zoom-in',
@@ -1684,12 +1684,12 @@ export default function AdminLiveDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ background: '#f3f4f6', padding: 16, borderRadius: 6, textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>
+                  <div style={{ background: 'var(--color-bg-subtle)', padding: 16, borderRadius: 6, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                     No frame capture available.
                   </div>
                 )}
 
-                <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 6, padding: 10, fontSize: '0.78rem', color: '#92400e' }}>
+                <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: 10, fontSize: '0.78rem', color: '#d97706' }}>
                   ℹ️ <strong>FR-7.4:</strong> Malpractice does not auto-disqualify during live test. Review proof above and select an admin action.
                 </div>
               </div>
@@ -1734,7 +1734,7 @@ export default function AdminLiveDashboard() {
                   <h3 className="modal-title" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                     🔍 Candidate Inspection &amp; Evidence
                   </h3>
-                  <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                     Live Proctoring &amp; Malpractice Review
                   </span>
                 </div>
@@ -1749,12 +1749,12 @@ export default function AdminLiveDashboard() {
 
               <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
                 {/* Top Info Card */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-bg-subtle)', padding: 14, borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <div>
-                    <h4 style={{ fontSize: '1.15rem', color: '#1A2B3C', fontWeight: 800, margin: 0 }}>
+                    <h4 style={{ fontSize: '1.15rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
                       {activeInspectCandidate.name || activeInspectCandidate.candidateName || 'Candidate'}
                     </h4>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                       {activeInspectCandidate.email || activeInspectCandidate.candidateEmail || ''} {activeInspectCandidate.email || activeInspectCandidate.candidateEmail ? '·' : ''} Room: <strong>{roomsById[activeInspectCandidate.roomId] || activeInspectCandidate.roomName || 'Assigned Room'}</strong>
                     </span>
                   </div>
@@ -1782,22 +1782,22 @@ export default function AdminLiveDashboard() {
                 </div>
 
                 {/* Key Metrics Grid */}
-                <div style={{ background: '#ffffff', padding: 12, borderRadius: 8, border: '1px solid #e5e7eb', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, fontSize: '0.85rem' }}>
+                <div style={{ background: 'var(--color-bg-card)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, fontSize: '0.85rem' }}>
                   <div>
-                    <span style={{ color: '#6b7280', fontSize: '0.78rem' }}>Questions Solved:</span>
-                    <strong style={{ display: 'block', color: '#1A2B3C', fontSize: '1.1rem', marginTop: 2 }}>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Questions Solved:</span>
+                    <strong style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
                       {activeInspectCandidate.status === 'NOT_STARTED' ? '—' : (activeInspectCandidate.questionsCompleted ?? 0)}
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: '#6b7280', fontSize: '0.78rem' }}>Total Violations:</span>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Total Violations:</span>
                     <strong style={{ display: 'block', color: (activeInspectCandidate.malpracticeCount || candidateLogs.length) > 0 ? '#E74C3C' : '#2ECC71', fontSize: '1.1rem', marginTop: 2 }}>
                       {Math.max(activeInspectCandidate.malpracticeCount || 0, candidateLogs.length)}
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: '#6b7280', fontSize: '0.78rem' }}>{isTestEnded ? 'Session Status:' : 'Time Remaining:'}</span>
-                    <span style={{ display: 'block', fontFamily: isTestEnded ? 'inherit' : 'monospace', fontWeight: 700, color: '#374151', fontSize: isTestEnded ? '0.9rem' : '0.95rem', marginTop: 2 }}>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>{isTestEnded ? 'Session Status:' : 'Time Remaining:'}</span>
+                    <span style={{ display: 'block', fontFamily: isTestEnded ? 'inherit' : 'monospace', fontWeight: 700, color: 'var(--color-text)', fontSize: isTestEnded ? '0.9rem' : '0.95rem', marginTop: 2 }}>
                       {(() => {
                         if (isTestEnded) {
                           return activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.isDisqualified
@@ -1829,7 +1829,7 @@ export default function AdminLiveDashboard() {
                 {/* Malpractice Logs & Evidence Section */}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1A2B3C', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                       <span>📸</span> Malpractice Violation History &amp; Proof Screenshots
                     </h4>
                     <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
@@ -1838,20 +1838,20 @@ export default function AdminLiveDashboard() {
                   </div>
 
                   {loadingLogs ? (
-                    <div style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
+                    <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                       <div className="spinner spinner-dark" style={{ width: 24, height: 24, margin: '0 auto 8px auto' }} />
                       Loading violation proof history...
                     </div>
                   ) : candidateLogs.length === 0 ? (
                     (activeInspectCandidate.malpracticeCount || 0) > 0 ? (
-                      <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', color: '#d97706', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: '1.4rem' }}>⚠️</span>
                         <div>
                           <strong>Violations Recorded:</strong> {activeInspectCandidate.malpracticeCount} violation(s) registered for this candidate. Loading incident history...
                         </div>
                       </div>
                     ) : (
-                      <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid #10b98140', color: '#059669', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: '1.4rem' }}>✓</span>
                         <div>
                           <strong>Clean Record:</strong> No malpractice violations or suspicious events have been logged for this candidate.
@@ -1869,8 +1869,8 @@ export default function AdminLiveDashboard() {
                           <div
                             key={log._id || index}
                             style={{
-                              background: '#f8fafc',
-                              border: `1.5px solid ${isDisqualified ? '#fca5a5' : isWarned ? '#fcd34d' : '#cbd5e1'}`,
+                              background: 'var(--color-bg-subtle)',
+                              border: `1.5px solid ${isDisqualified ? '#fca5a5' : isWarned ? '#fcd34d' : 'var(--color-border)'}`,
                               borderRadius: 8,
                               padding: 14,
                               display: 'flex',
@@ -1896,7 +1896,7 @@ export default function AdminLiveDashboard() {
                                   {log.violationType === 'CAMERA_DISCONNECTED' && '📷 Camera Disconnected'}
                                   {!['PHONE_DETECTED', 'MULTIPLE_FACES', 'NO_FACE_15MIN', 'TAB_SWITCH', 'FULLSCREEN_EXIT', 'CAMERA_DISCONNECTED'].includes(log.violationType) && (log.violationType || 'Violation')}
                                 </span>
-                                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                                   🕒 {new Date(log.detectedAt).toLocaleTimeString()} · {new Date(log.detectedAt).toLocaleDateString()}
                                 </span>
                               </div>
@@ -1913,7 +1913,7 @@ export default function AdminLiveDashboard() {
                                   </span>
                                 )}
                                 {isUnreviewed && (
-                                  <span className="badge badge-secondary" style={{ fontSize: '0.72rem', padding: '2px 8px', background: '#e2e8f0', color: '#475569' }}>
+                                  <span className="badge badge-secondary" style={{ fontSize: '0.72rem', padding: '2px 8px', background: 'var(--color-bg-card)', color: 'var(--color-text-muted)' }}>
                                     ⏳ Unreviewed
                                   </span>
                                 )}
@@ -1923,7 +1923,7 @@ export default function AdminLiveDashboard() {
                             {/* Camera Disconnect Specific Details */}
                             {log.violationType === 'CAMERA_DISCONNECTED' && (
                               <div style={{
-                                background: log.reconnectAt ? '#ecfdf5' : '#fef2f2',
+                                background: 'var(--color-bg-card)',
                                 border: `1px solid ${log.reconnectAt ? '#a7f3d0' : '#fecaca'}`,
                                 borderRadius: 6,
                                 padding: '8px 12px',
@@ -1933,16 +1933,16 @@ export default function AdminLiveDashboard() {
                                 gap: 4,
                               }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                                  <span style={{ fontWeight: 700, color: log.reconnectAt ? '#065f46' : '#991b1b' }}>
+                                  <span style={{ fontWeight: 700, color: log.reconnectAt ? '#065f46' : '#dc2626' }}>
                                     {log.reconnectAt ? '🟢 Resolved (Camera Reconnected & Face Verified)' : '🔴 Camera Disconnected — Opaque Overlay & Lock Active'}
                                   </span>
                                   {log.durationSeconds !== null && log.durationSeconds !== undefined && (
-                                    <span style={{ fontWeight: 800, color: '#0f172a', background: log.reconnectAt ? '#d1fae5' : '#fee2e2', padding: '2px 8px', borderRadius: 4, fontSize: '0.78rem' }}>
+                                    <span style={{ fontWeight: 800, color: 'var(--color-text)', background: 'var(--color-bg-subtle)', padding: '2px 8px', borderRadius: 4, fontSize: '0.78rem' }}>
                                       Duration: {log.durationSeconds}s {log.durationSeconds >= 60 ? `(${Math.floor(log.durationSeconds / 60)}m ${log.durationSeconds % 60}s)` : ''}
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ color: '#475569', fontSize: '0.75rem' }}>
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                                   Disconnected at: <strong>{new Date(log.disconnectAt || log.detectedAt).toLocaleTimeString()}</strong>
                                   {log.reconnectAt && (
                                     <span> · Reconnected at: <strong>{new Date(log.reconnectAt).toLocaleTimeString()}</strong></span>
@@ -1954,13 +1954,13 @@ export default function AdminLiveDashboard() {
                             {/* Proof Screenshot Frame */}
                             {log.proofScreenshotUrl ? (
                               <div>
-                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: 4 }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
                                   Captured Proof Evidence:
                                 </span>
                                 <div
                                   style={{
                                     position: 'relative',
-                                    border: '1px solid #cbd5e1',
+                                    border: '1px solid var(--color-border)',
                                     borderRadius: 6,
                                     overflow: 'hidden',
                                     cursor: 'zoom-in',
@@ -1989,14 +1989,14 @@ export default function AdminLiveDashboard() {
                                 </div>
                               </div>
                             ) : (
-                              <div style={{ background: '#f1f5f9', padding: '8px 12px', borderRadius: 6, color: '#64748b', fontSize: '0.78rem' }}>
+                              <div style={{ background: 'var(--color-bg-card)', padding: '8px 12px', borderRadius: 6, color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
                                 📷 No image frame captured for this event.
                               </div>
                             )}
 
                             {/* Review Action Buttons */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #e2e8f0' }}>
-                              <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--color-border)' }}>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                                 {log.reviewedBy ? `Reviewed by ${log.reviewedBy.name || 'Admin'}` : 'Admin Review Action:'}
                               </span>
                               <div style={{ display: 'flex', gap: 8 }}>
@@ -2038,7 +2038,7 @@ export default function AdminLiveDashboard() {
               </div>
 
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                   Proctoring Decision Logs (FR-7.3, FR-7.4)
                 </div>
                 <button
@@ -2072,7 +2072,7 @@ export default function AdminLiveDashboard() {
               style={{
                 maxWidth: 580,
                 width: '100%',
-                background: '#ffffff',
+                background: 'var(--color-modal-bg)',
                 borderRadius: 12,
                 boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
                 overflow: 'hidden',
@@ -2083,8 +2083,8 @@ export default function AdminLiveDashboard() {
             >
               <div
                 style={{
-                  background: '#fef2f2',
-                  borderBottom: '1px solid #fee2e2',
+                  background: 'var(--color-modal-header-bg)',
+                  borderBottom: '1px solid var(--color-border)',
                   padding: '16px 20px',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -2094,10 +2094,10 @@ export default function AdminLiveDashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>⚠️</span>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#991b1b', fontWeight: 700 }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#dc2626', fontWeight: 700 }}>
                       Real-Time Malpractice Alert
                     </h3>
-                    <span style={{ fontSize: '0.78rem', color: '#b91c1c' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                       Automated violation flagged by proctoring engine
                     </span>
                   </div>
@@ -2109,7 +2109,7 @@ export default function AdminLiveDashboard() {
                     background: 'none',
                     border: 'none',
                     fontSize: '1.25rem',
-                    color: '#991b1b',
+                    color: '#dc2626',
                     cursor: 'pointer',
                     padding: '4px 8px',
                     borderRadius: 4,
@@ -2126,35 +2126,35 @@ export default function AdminLiveDashboard() {
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: 12,
-                    background: '#f8fafc',
+                    background: 'var(--color-bg-subtle)',
                     padding: 14,
                     borderRadius: 8,
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--color-border)',
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                       Candidate
                     </div>
-                    <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-navy)', fontSize: '0.95rem' }}>
                       {activeAlert.candidateName || 'Candidate'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                       {activeAlert.candidateEmail || ''}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                       Assigned Room
                     </div>
-                    <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem' }}>
                       {activeAlert.roomName || 'Assigned Room'}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                       Violation Type
                     </div>
                     <span
@@ -2172,7 +2172,7 @@ export default function AdminLiveDashboard() {
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                       Total Violations
                     </div>
                     <div style={{ fontWeight: 800, color: '#dc2626', fontSize: '1rem' }}>
@@ -2185,17 +2185,17 @@ export default function AdminLiveDashboard() {
                 {activeAlert.proofScreenshotUrl ? (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text)' }}>
                         Captured Proof Evidence:
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                         Click image to enlarge
                       </span>
                     </div>
                     <div
                       style={{
                         position: 'relative',
-                        border: '1px solid #cbd5e1',
+                        border: '1px solid var(--color-border)',
                         borderRadius: 8,
                         overflow: 'hidden',
                         cursor: 'zoom-in',
@@ -2233,10 +2233,10 @@ export default function AdminLiveDashboard() {
                 ) : (
                   <div
                     style={{
-                      background: '#f1f5f9',
+                      background: 'var(--color-bg-card)',
                       padding: '12px 14px',
                       borderRadius: 6,
-                      color: '#64748b',
+                      color: 'var(--color-text-muted)',
                       fontSize: '0.8rem',
                       textAlign: 'center',
                     }}
@@ -2248,8 +2248,8 @@ export default function AdminLiveDashboard() {
 
               <div
                 style={{
-                  background: '#f8fafc',
-                  borderTop: '1px solid #e2e8f0',
+                  background: 'var(--color-bg-subtle)',
+                  borderTop: '1px solid var(--color-border)',
                   padding: '12px 20px',
                   display: 'flex',
                   justifyContent: 'space-between',

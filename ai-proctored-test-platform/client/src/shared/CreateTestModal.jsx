@@ -136,7 +136,7 @@ export default function CreateTestModal({
           <button
             type="button"
             onClick={handleClose}
-            style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#6b7280' }}
+            style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
           >
             ✕
           </button>
@@ -241,7 +241,7 @@ export default function CreateTestModal({
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label className="form-label" style={{ marginBottom: 0 }}>Total Questions</label>
-                  <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                     (Auto-derived)
                   </span>
                 </div>
@@ -253,13 +253,13 @@ export default function CreateTestModal({
                   disabled
                   readOnly
                   style={{
-                    backgroundColor: '#f3f4f6',
+                    backgroundColor: 'var(--color-bg-subtle)',
                     cursor: 'not-allowed',
-                    color: '#374151',
+                    color: 'var(--color-text-muted)',
                     fontWeight: 600,
                   }}
                 />
-                <small style={{ color: '#6b7280', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
+                <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
                   Locked to Question Set's count ({formData.totalQuestions} Qs).
                 </small>
               </div>
@@ -295,7 +295,7 @@ export default function CreateTestModal({
                 value={formData.startTestWindowMinutes}
                 onChange={handleInputChange}
               />
-              <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+              <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                 Room passwords expire after this window from room creation (FR-3.3).
               </small>
             </div>
@@ -316,11 +316,12 @@ export default function CreateTestModal({
                         padding: '6px 12px',
                         borderRadius: 6,
                         border: formData.supportedLanguages.includes(lang)
-                          ? '1.5px solid #0E7C86'
-                          : '1.5px solid #e5e7eb',
+                          ? '1.5px solid var(--color-primary)'
+                          : '1.5px solid var(--color-border)',
                         background: formData.supportedLanguages.includes(lang)
-                          ? 'rgba(14, 124, 134, 0.08)'
-                          : 'white',
+                          ? 'rgba(14, 124, 134, 0.15)'
+                          : 'var(--color-bg-card)',
+                        color: 'var(--color-text)',
                       }}
                     >
                       <input

@@ -513,8 +513,8 @@ export default function AdminTestDetail() {
           <Link to="/admin/tests" style={{ color: '#0E7C86', fontWeight: 500 }}>
             ← All Tests
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>{test.title}</span>
+          <span style={{ color: 'var(--color-text-light)' }}>/</span>
+          <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{test.title}</span>
         </div>
 
         {/* Top Header Card */}
@@ -522,7 +522,7 @@ export default function AdminTestDetail() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: '1.7rem', color: '#1A2B3C', fontWeight: 800 }}>{test.title}</h1>
+                <h1 style={{ fontSize: '1.7rem', color: 'var(--color-navy)', fontWeight: 800 }}>{test.title}</h1>
                 <TestStatusBadge
                   status={test.status}
                   style={{ fontSize: '0.8rem', padding: '4px 10px' }}
@@ -540,7 +540,7 @@ export default function AdminTestDetail() {
                   {test.testType}
                 </span>
               </div>
-              <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div>
                   Created by <strong>{test.createdBy?.name || 'Admin'}</strong> on{' '}
                   {new Date(test.createdAt).toLocaleDateString()}
@@ -554,9 +554,9 @@ export default function AdminTestDetail() {
                       <span
                         className="badge"
                         style={{
-                          background: '#f1f5f9',
-                          color: '#475569',
-                          border: '1px solid #e2e8f0',
+                          background: 'var(--color-bg-subtle)',
+                          color: 'var(--color-text)',
+                          border: '1px solid var(--color-border)',
                           fontSize: '0.75rem',
                           padding: '2px 8px',
                           fontWeight: 600,
@@ -652,7 +652,7 @@ export default function AdminTestDetail() {
                 <h3 className="card-title">Passing Criteria (FR-2.2)</h3>
                 <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Editable Anytime</span>
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: 16 }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
                 Number of questions a candidate must solve to pass. Changing this will <strong>automatically recalculate the shortlist</strong>.
               </p>
               <form onSubmit={handleUpdatePassingCriteria} style={{ display: 'flex', gap: 12 }}>
@@ -684,7 +684,7 @@ export default function AdminTestDetail() {
                   {test.status === 'ENDED' ? 'Active' : 'Post-Test Only'}
                 </span>
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: 16 }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
                 Candidates with malpractice counts strictly exceeding this threshold will be excluded from the shortlist.
                 <em> (Can only be set after test is ENDED).</em>
               </p>
@@ -708,7 +708,7 @@ export default function AdminTestDetail() {
                 </button>
               </form>
               {test.status !== 'ENDED' && (
-                <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 8 }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 8 }}>
                   🔒 Available when test status changes to ENDED.
                 </p>
               )}
@@ -730,7 +730,6 @@ export default function AdminTestDetail() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
-                      borderColor: '#cbd5e1',
                       fontWeight: 600,
                     }}
                   >
@@ -739,43 +738,43 @@ export default function AdminTestDetail() {
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.875rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 8 }}>
-                  <span style={{ color: '#6b7280' }}>Question Set</span>
-                  <span style={{ fontWeight: 600, color: '#1A2B3C' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Question Set</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
                     {test.questionSetId?.name || '—'}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 8 }}>
-                  <span style={{ color: '#6b7280' }}>Duration</span>
-                  <span style={{ fontWeight: 600, color: '#1A2B3C' }}>{test.durationMinutes} Minutes</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Duration</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.durationMinutes} Minutes</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 8 }}>
-                  <span style={{ color: '#6b7280' }}>Total Questions</span>
-                  <span style={{ fontWeight: 600, color: '#1A2B3C' }}>{test.totalQuestions}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Total Questions</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.totalQuestions}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 8 }}>
-                  <span style={{ color: '#6b7280' }}>Start Window</span>
-                  <span style={{ fontWeight: 600, color: '#1A2B3C' }}>{test.startTestWindowMinutes} Minutes</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Start Window</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.startTestWindowMinutes} Minutes</span>
                 </div>
                 {test.supportedLanguages?.length > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 8 }}>
-                    <span style={{ color: '#6b7280' }}>Languages</span>
-                    <span style={{ fontWeight: 600, color: '#1A2B3C' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Languages</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
                       {test.supportedLanguages.join(', ').toUpperCase()}
                     </span>
                   </div>
                 )}
                 <div>
-                  <span style={{ color: '#6b7280', display: 'block', marginBottom: 6 }}>Instructions:</span>
+                  <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Instructions:</span>
                   <div
                     style={{
-                      background: '#f9fafb',
+                      background: 'var(--color-bg-subtle)',
                       padding: 12,
                       borderRadius: 6,
                       fontSize: '0.8rem',
                       whiteSpace: 'pre-line',
-                      color: '#374151',
-                      border: '1px solid #e5e7eb',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
                     }}
                   >
                     {test.instructions}
@@ -790,7 +789,7 @@ export default function AdminTestDetail() {
             <div className="card-header">
               <div>
                 <h3 className="card-title">Physical Rooms ({rooms.length})</h3>
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                   Generate secure room codes &amp; passwords for physical test centers.
                 </p>
               </div>
@@ -806,9 +805,9 @@ export default function AdminTestDetail() {
             </div>
 
             {rooms.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🏢</div>
-                <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>No rooms added yet</h4>
+                <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No rooms added yet</h4>
                 <p style={{ fontSize: '0.85rem', marginBottom: 12 }}>
                   Add physical test rooms to generate unique Room Codes and Passwords for candidates.
                 </p>
@@ -852,18 +851,18 @@ export default function AdminTestDetail() {
                     <div
                       key={room._id}
                       style={{
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid var(--color-border)',
                         borderRadius: 10,
                         padding: 16,
-                        background: isClosed ? '#f9fafb' : 'white',
+                        background: isClosed ? 'var(--color-bg-subtle)' : 'var(--color-bg-card)',
                         opacity: isClosed ? 0.75 : 1,
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div>
-                          <strong style={{ fontSize: '1rem', color: '#1A2B3C' }}>{room.roomName}</strong>
+                          <strong style={{ fontSize: '1rem', color: 'var(--color-navy)' }}>{room.roomName}</strong>
                           {room.capacity && (
-                            <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: 8 }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: 8 }}>
                               (Cap: {room.capacity})
                             </span>
                           )}
@@ -886,8 +885,8 @@ export default function AdminTestDetail() {
                       {/* Credentials Box */}
                       <div
                         style={{
-                          background: '#F7F9FA',
-                          border: '1px solid #e5e7eb',
+                          background: 'var(--color-bg-subtle)',
+                          border: '1px solid var(--color-border)',
                           borderRadius: 8,
                           padding: 12,
                           display: 'grid',
@@ -897,11 +896,11 @@ export default function AdminTestDetail() {
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                             Room Code
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                            <code style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0E7C86' }}>
+                            <code style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                               {room.roomCode}
                             </code>
                             <button
@@ -915,11 +914,11 @@ export default function AdminTestDetail() {
                         </div>
 
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                             Room Password
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                            <code style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1A2B3C' }}>
+                            <code style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-navy)' }}>
                               {room.roomPassword}
                             </code>
                             <button
@@ -934,7 +933,7 @@ export default function AdminTestDetail() {
                       </div>
 
                       {/* Expiry Timestamp / Window Indicator (Requirement 3) */}
-                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: 12 }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 12 }}>
                         {isLive && room.passwordValidUntil ? (
                           <>
                             Valid Until: {new Date(room.passwordValidUntil).toLocaleTimeString()} (
@@ -943,7 +942,7 @@ export default function AdminTestDetail() {
                         ) : isEnded ? (
                           <span>Test concluded</span>
                         ) : (
-                          <span style={{ color: '#0E7C86', fontWeight: 600 }}>
+                          <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                             ⏳ Window starts when test goes LIVE
                           </span>
                         )}
@@ -1001,13 +1000,13 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   onClick={() => setShowStartModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
               </div>
               <div className="modal-body">
-                <p style={{ color: '#374151', fontSize: '0.9rem', marginBottom: 12 }}>
+                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: 12 }}>
                   Are you ready to make <strong>"{test.title}"</strong> LIVE?
                 </p>
                 <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
@@ -1046,13 +1045,13 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   onClick={() => setShowEndModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
               </div>
               <div className="modal-body">
-                <p style={{ color: '#374151', fontSize: '0.9rem', marginBottom: 12 }}>
+                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: 12 }}>
                   Are you sure you want to end <strong>"{test.title}"</strong>?
                 </p>
                 <div style={{ background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#991b1b' }}>
@@ -1090,7 +1089,7 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   onClick={() => setShowAddRoomModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -1121,7 +1120,7 @@ export default function AdminTestDetail() {
                     />
                   </div>
 
-                  <p style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                     💡 A cryptographic 6-character Room Code and Password will be automatically generated.
                   </p>
                 </div>
@@ -1170,7 +1169,7 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   onClick={() => setSelectedRoomCandidates(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -1181,7 +1180,7 @@ export default function AdminTestDetail() {
                     <div className="spinner spinner-dark" style={{ width: 28, height: 28 }} />
                   </div>
                 ) : selectedRoomCandidates.list.length === 0 ? (
-                  <p style={{ color: '#6b7280', textAlign: 'center', padding: 28 }}>
+                  <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 28 }}>
                     No candidates have joined this room yet.
                   </p>
                 ) : (
@@ -1199,9 +1198,9 @@ export default function AdminTestDetail() {
                     <tbody>
                       {selectedRoomCandidates.list.map((c) => (
                         <tr key={c._id || c.candidateId}>
-                          <td style={{ fontWeight: 600, color: '#1A2B3C' }}>{c.name}</td>
-                          <td style={{ color: '#4b5563', fontSize: '0.8rem' }}>{c.email}</td>
-                          <td style={{ fontWeight: 600, color: '#0E7C86' }}>
+                          <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{c.email}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                             {c.questionsCompleted ?? 0}
                           </td>
                           <td>
@@ -1248,7 +1247,7 @@ export default function AdminTestDetail() {
                               </span>
                             )}
                           </td>
-                          <td style={{ color: '#6b7280', fontSize: '0.78rem' }}>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
                             {c.submittedAt ? new Date(c.submittedAt).toLocaleTimeString() : '—'}
                           </td>
                         </tr>
@@ -1258,7 +1257,7 @@ export default function AdminTestDetail() {
                 )}
               </div>
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                   Total: <strong>{selectedRoomCandidates.list.length}</strong> candidate{selectedRoomCandidates.list.length === 1 ? '' : 's'}
                 </span>
                 <button
@@ -1289,7 +1288,7 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                   disabled={editingConfig}
                 >
                   ✕
@@ -1391,7 +1390,7 @@ export default function AdminTestDetail() {
                     <div className="form-group">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>Total Questions</label>
-                        <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                           (Auto-derived)
                         </span>
                       </div>
@@ -1403,13 +1402,13 @@ export default function AdminTestDetail() {
                         disabled
                         readOnly
                         style={{
-                          backgroundColor: '#f3f4f6',
+                          backgroundColor: 'var(--color-bg-subtle)',
                           cursor: 'not-allowed',
-                          color: '#374151',
+                          color: 'var(--color-text-muted)',
                           fontWeight: 600,
                         }}
                       />
-                      <small style={{ color: '#6b7280', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
+                      <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
                         Locked to Question Set's count ({editFormData.totalQuestions} Qs).
                       </small>
                     </div>
@@ -1428,7 +1427,7 @@ export default function AdminTestDetail() {
                       onChange={(e) => setEditFormData((p) => ({ ...p, startTestWindowMinutes: e.target.value }))}
                       required
                     />
-                    <small style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                       Room passwords expire after this window from room creation (FR-3.3).
                     </small>
                   </div>
@@ -1450,8 +1449,9 @@ export default function AdminTestDetail() {
                               cursor: 'pointer',
                               padding: '5px 12px',
                               borderRadius: 6,
-                              border: isChecked ? '1.5px solid #0E7C86' : '1.5px solid #e5e7eb',
-                              background: isChecked ? 'rgba(14, 124, 134, 0.08)' : 'white',
+                              border: isChecked ? '1.5px solid var(--color-primary)' : '1.5px solid var(--color-border)',
+                              background: isChecked ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
+                              color: 'var(--color-text)',
                             }}
                           >
                             <input

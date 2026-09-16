@@ -514,7 +514,7 @@ export default function AdminQuestionBank() {
         {/* Page Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ fontSize: '1.8rem', color: '#1A2B3C', fontWeight: 800 }}>Question Bank</h1>
+            <h1 style={{ fontSize: '1.8rem', color: 'var(--color-navy)', fontWeight: 800 }}>Question Bank</h1>
 
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -553,7 +553,7 @@ export default function AdminQuestionBank() {
           {/* ── Left Column: Question Sets ── */}
           <div className="card" style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ fontSize: '1rem', color: '#1A2B3C', fontWeight: 700 }}>Question Sets</h3>
+              <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700 }}>Question Sets</h3>
               <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>
                 {questionSets.length} Sets
               </span>
@@ -579,7 +579,7 @@ export default function AdminQuestionBank() {
                 <div className="spinner spinner-dark" style={{ width: 28, height: 28 }} />
               </div>
             ) : filteredSets.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 12px', color: '#6b7280', fontSize: '0.85rem' }}>
+              <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                 No question sets found.
                 <button
                   onClick={() => setShowNewSetModal(true)}
@@ -605,22 +605,22 @@ export default function AdminQuestionBank() {
                         textAlign: 'left',
                         padding: '12px 14px',
                         borderRadius: 8,
-                        border: isSelected ? '1.5px solid #0E7C86' : '1px solid #e5e7eb',
-                        background: isSelected ? 'rgba(14, 124, 134, 0.08)' : 'white',
+                        border: isSelected ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        background: isSelected ? 'rgba(14, 124, 134, 0.12)' : 'var(--color-bg-card)',
                         cursor: 'pointer',
                         transition: 'all 150ms',
                         fontFamily: 'inherit',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <strong style={{ fontSize: '0.875rem', color: isSelected ? '#0E7C86' : '#1A2B3C' }}>
+                        <strong style={{ fontSize: '0.875rem', color: isSelected ? 'var(--color-primary)' : 'var(--color-navy)' }}>
                           {qs.name}
                         </strong>
                         <span className="badge badge-secondary" style={{ fontSize: '0.65rem' }}>
                           {qCount} Qs
                         </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#6b7280' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                         <span>{qs.testType}</span>
                         <span>{new Date(qs.createdAt).toLocaleDateString()}</span>
                       </div>
@@ -639,7 +639,7 @@ export default function AdminQuestionBank() {
                 <div className="card" style={{ padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                      <h2 style={{ fontSize: '1.3rem', color: '#1A2B3C', margin: 0 }}>{selectedSet.name}</h2>
+                      <h2 style={{ fontSize: '1.3rem', color: 'var(--color-navy)', margin: 0 }}>{selectedSet.name}</h2>
                       <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
                         {selectedSet.testType}
                       </span>
@@ -678,7 +678,7 @@ export default function AdminQuestionBank() {
                         🗑 Delete Set
                       </button>
                     </div>
-                    <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 4 }}>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
                       Contains {questions.length} question(s) · Created by {selectedSet.createdBy?.name || 'Admin'}
                     </p>
                   </div>
@@ -699,8 +699,8 @@ export default function AdminQuestionBank() {
                 ) : questions.length === 0 ? (
                   <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💡</div>
-                    <h3 style={{ color: '#1A2B3C', marginBottom: 6 }}>No questions in this set yet</h3>
-                    <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: 20 }}>
+                    <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No questions in this set yet</h3>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: 20 }}>
                       Every question must have at least 1 visible test case before being added (FR-4.1).
                     </p>
                     <button onClick={handleOpenCreateQuestion} className="btn btn-primary">
@@ -722,16 +722,16 @@ export default function AdminQuestionBank() {
                           className="card"
                           style={{
                             padding: 20,
-                            borderLeft: isExpanded ? '4px solid #0E7C86' : '1px solid #e5e7eb',
+                            borderLeft: isExpanded ? '4px solid var(--color-primary)' : '1px solid var(--color-border)',
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: 260 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 700, color: '#0E7C86', fontSize: '0.9rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.9rem' }}>
                                   Q{idx + 1}.
                                 </span>
-                                <h4 style={{ fontSize: '1.05rem', color: '#1A2B3C', margin: 0 }}>
+                                <h4 style={{ fontSize: '1.05rem', color: 'var(--color-navy)', margin: 0 }}>
                                   {q.title || (q.isPdfImported ? `${q.pdfOriginalName || q.pdfFileName} (Problem ${idx + 1})` : 'Untitled Question')}
                                 </h4>
                                 {q.difficulty && (
@@ -744,9 +744,9 @@ export default function AdminQuestionBank() {
                                     className="badge badge-secondary"
                                     style={{
                                       fontSize: '0.68rem',
-                                      background: '#f0fdfa',
-                                      color: '#0d9488',
-                                      border: '1px solid #ccfbf1',
+                                      background: 'rgba(13, 148, 136, 0.1)',
+                                      color: 'var(--color-primary)',
+                                      border: '1px solid rgba(13, 148, 136, 0.25)',
                                       display: 'inline-flex',
                                       alignItems: 'center',
                                       gap: 4,
@@ -772,7 +772,7 @@ export default function AdminQuestionBank() {
                               {q.description ? (
                                 <p
                                   style={{
-                                    color: '#4b5563',
+                                    color: 'var(--color-text)',
                                     fontSize: '0.85rem',
                                     lineHeight: 1.5,
                                     display: isExpanded ? 'block' : '-webkit-box',
@@ -785,7 +785,7 @@ export default function AdminQuestionBank() {
                                   {q.description}
                                 </p>
                               ) : q.isPdfImported ? (
-                                <p style={{ color: '#0d9488', fontSize: '0.82rem', fontStyle: 'italic', margin: '4px 0 0 0' }}>
+                                <p style={{ color: 'var(--color-primary)', fontSize: '0.82rem', fontStyle: 'italic', margin: '4px 0 0 0' }}>
                                   Rendered directly from original PDF (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1})
                                 </p>
                               ) : null}
@@ -818,7 +818,7 @@ export default function AdminQuestionBank() {
                           </div>
 
                           {/* Test Cases Count summary */}
-                          <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6', fontSize: '0.78rem', color: '#6b7280', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)', fontSize: '0.78rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
                             <span>
                               👁️ Visible Cases: <strong>{q.visibleTestCases?.length || 0}</strong>
                             </span>
@@ -831,16 +831,16 @@ export default function AdminQuestionBank() {
 
                           {/* Expanded Full Details */}
                           {isExpanded && (
-                            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
                               {/* PDF Problem Statement Preview for PDF-imported questions */}
                               {q.isPdfImported && (
                                 <div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                    <strong style={{ fontSize: '0.82rem', color: '#1A2B3C' }}>
+                                    <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy)' }}>
                                       📄 Candidate Problem Statement Preview (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1}):
                                     </strong>
                                   </div>
-                                  <div style={{ height: 440, borderRadius: 8, overflow: 'hidden', border: '1.5px solid #0E7C86' }}>
+                                  <div style={{ height: 440, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--color-primary)' }}>
                                     <EmbeddedPdfViewer
                                       fileName={q.pdfFileName}
                                       originalName={q.pdfOriginalName}
@@ -853,16 +853,16 @@ export default function AdminQuestionBank() {
 
                               {q.inputFormat && (
                                 <div>
-                                  <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>Input Format:</strong>
-                                  <div style={{ background: '#f9fafb', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: '#374151' }}>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>Input Format:</strong>
+                                  <div style={{ background: 'var(--color-bg-subtle)', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
                                     {q.inputFormat}
                                   </div>
                                 </div>
                               )}
                               {q.outputFormat && (
                                 <div>
-                                  <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>Output Format:</strong>
-                                  <div style={{ background: '#f9fafb', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: '#374151' }}>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>Output Format:</strong>
+                                  <div style={{ background: 'var(--color-bg-subtle)', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
                                     {q.outputFormat}
                                   </div>
                                 </div>
@@ -870,27 +870,27 @@ export default function AdminQuestionBank() {
 
                               {/* Visible Test Cases */}
                               <div>
-                                <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>
+                                <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>
                                   👁️ Visible Test Cases (Shown to Candidate):
                                 </strong>
                                 {q.visibleTestCases?.length > 0 ? (
                                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
                                     {q.visibleTestCases.map((tc, tcIdx) => (
-                                      <div key={tcIdx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
-                                        <div style={{ fontWeight: 600, color: '#0E7C86', marginBottom: 4 }}>Case #{tcIdx + 1}</div>
+                                      <div key={tcIdx} style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--color-primary)', marginBottom: 4 }}>Case #{tcIdx + 1}</div>
                                         <div style={{ marginBottom: 4 }}>
-                                          <span style={{ color: '#6b7280' }}>Input: </span>
+                                          <span style={{ color: 'var(--color-text-muted)' }}>Input: </span>
                                           <code>{tc.input || '(empty)'}</code>
                                         </div>
                                         <div>
-                                          <span style={{ color: '#6b7280' }}>Output: </span>
+                                          <span style={{ color: 'var(--color-text-muted)' }}>Output: </span>
                                           <code>{tc.expectedOutput || '(empty)'}</code>
                                         </div>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div style={{ padding: 10, background: '#f9fafb', borderRadius: 6, fontSize: '0.78rem', color: '#6b7280', marginTop: 4 }}>
+                                  <div style={{ padding: 10, background: 'var(--color-bg-subtle)', borderRadius: 6, fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4, border: '1px solid var(--color-border)' }}>
                                     No visible test cases defined.
                                   </div>
                                 )}
@@ -899,7 +899,7 @@ export default function AdminQuestionBank() {
                               {/* AI Test Brief Files */}
                               {q.aiTestBriefFiles?.length > 0 && (
                                 <div>
-                                  <strong style={{ fontSize: '0.8rem', color: '#1A2B3C' }}>AI Test Starter Files:</strong>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>AI Test Starter Files:</strong>
                                   <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                                     {q.aiTestBriefFiles.map((f, fIdx) => (
                                       <span key={fIdx} className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
@@ -918,9 +918,9 @@ export default function AdminQuestionBank() {
                 )}
               </>
             ) : (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
+              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
-                <h3 style={{ color: '#1A2B3C', marginBottom: 6 }}>No Question Set Selected</h3>
+                <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No Question Set Selected</h3>
                 <p style={{ fontSize: '0.85rem' }}>
                   Please select a question set from the left panel or create a new set.
                 </p>
@@ -938,7 +938,7 @@ export default function AdminQuestionBank() {
                 <button
                   type="button"
                   onClick={() => setShowNewSetModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -1003,7 +1003,7 @@ export default function AdminQuestionBank() {
                   type="button"
                   id="close-edit-set-modal-btn"
                   onClick={() => setShowEditSetModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -1038,7 +1038,7 @@ export default function AdminQuestionBank() {
                       ))}
                     </select>
                     {questions.length > 0 && (
-                      <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: 4 }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
                         ℹ Test Type cannot be changed while this set contains {questions.length} question(s).
                       </p>
                     )}
@@ -1077,13 +1077,13 @@ export default function AdminQuestionBank() {
                 <button
                   type="button"
                   onClick={() => setShowDeleteSetModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
               </div>
               <div className="modal-body" style={{ gap: 12 }}>
-                <p style={{ fontSize: '0.95rem', color: '#374151', margin: 0 }}>
+                <p style={{ fontSize: '0.95rem', color: 'var(--color-text)', margin: 0 }}>
                   Are you sure you want to delete Question Set <strong>"{selectedSet.name}"</strong>?
                 </p>
                 {questions.length > 0 && (
@@ -1125,7 +1125,7 @@ export default function AdminQuestionBank() {
                 <button
                   type="button"
                   onClick={() => setShowQuestionModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -1136,14 +1136,14 @@ export default function AdminQuestionBank() {
 
                   {/* PDF Imported Question Informational Banner */}
                   {questionForm.isPdfImported && (
-                    <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: '#0f766e' }}>
+                    <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: 'var(--color-primary)' }}>
                       <div style={{ fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span>📄 PDF Imported Question</span>
                         <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>
                           {questionForm.pdfFileName} (pp. {questionForm.pdfPageRange?.startPage}–{questionForm.pdfPageRange?.endPage})
                         </span>
                       </div>
-                      <div style={{ fontSize: '0.8rem', lineHeight: 1.4 }}>
+                      <div style={{ fontSize: '0.8rem', lineHeight: 1.4, color: 'var(--color-text)' }}>
                         The original PDF page is rendered directly to candidates as their problem statement. Title and Description are optional. Add at least 1 hidden test case below to mark this question complete for live tests.
                       </div>
                     </div>
@@ -1268,13 +1268,13 @@ export default function AdminQuestionBank() {
                   )}
 
                   {/* ── Visible Test Cases (FR-4.1: At least 1 required) ── */}
-                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: 16 }}>
+                  <div style={{ background: 'var(--color-bg-subtle)', border: '1.5px solid var(--color-border)', borderRadius: 8, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div>
-                        <strong style={{ fontSize: '0.9rem', color: '#1A2B3C' }}>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--color-navy)' }}>
                           👁️ Visible Test Cases * (FR-4.1)
                         </strong>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                           Displayed to candidates during the test for code verification.
                         </div>
                       </div>
@@ -1290,8 +1290,8 @@ export default function AdminQuestionBank() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {questionForm.visibleTestCases.map((tc, idx) => (
-                        <div key={idx} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, padding: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.78rem', fontWeight: 600, color: '#0E7C86' }}>
+                        <div key={idx} style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 6, padding: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-primary)' }}>
                             <span>Visible Case #{idx + 1}</span>
                             {questionForm.visibleTestCases.length > 1 && (
                               <button
@@ -1305,7 +1305,7 @@ export default function AdminQuestionBank() {
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                             <div>
-                              <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: 4 }}>
+                              <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
                                 Standard Input (stdin)
                               </label>
                               <textarea
@@ -1317,7 +1317,7 @@ export default function AdminQuestionBank() {
                               />
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: 4 }}>
+                              <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
                                 Expected Output (stdout)
                               </label>
                               <textarea
@@ -1367,13 +1367,13 @@ export default function AdminQuestionBank() {
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
               </div>
               <div className="modal-body">
-                <p style={{ color: '#374151', fontSize: '0.9rem' }}>
+                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem' }}>
                   Are you sure you want to delete question <strong>"{deleteTarget.title || deleteTarget.pdfFileName || 'this question'}"</strong> from this set?
                 </p>
               </div>
@@ -1414,7 +1414,7 @@ export default function AdminQuestionBank() {
                     <h3 className="modal-title" style={{ margin: 0 }}>
                       Bulk Upload PDFs to Question Bank
                     </h3>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                       Upload a folder containing PDF files (or choose PDFs) to auto-create Question Sets & Questions
                     </p>
                   </div>
@@ -1423,7 +1423,7 @@ export default function AdminQuestionBank() {
                   type="button"
                   onClick={handleCloseUploadModal}
                   disabled={isUploadingPdfs}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -1433,12 +1433,12 @@ export default function AdminQuestionBank() {
                 <form onSubmit={handleUploadPdfSubmit}>
                   <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                     {/* Step 1: Select Test Type */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14 }}>
+                    <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <span style={{ background: '#0E7C86', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <span style={{ background: 'var(--color-primary)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                           1
                         </span>
-                        <label className="form-label" style={{ margin: 0, fontWeight: 700, color: '#1A2B3C' }}>
+                        <label className="form-label" style={{ margin: 0, fontWeight: 700, color: 'var(--color-navy)' }}>
                           Select Test Type for Batch *
                         </label>
                       </div>
@@ -1453,18 +1453,18 @@ export default function AdminQuestionBank() {
                           <option key={t.value} value={t.value}>{t.label}</option>
                         ))}
                       </select>
-                      <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '6px 0 0 0' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '6px 0 0 0' }}>
                         All uploaded PDFs in this batch will be assigned to this test type ({uploadTestType}).
                       </p>
                     </div>
 
                     {/* Step 2: Upload Folder / PDFs */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14 }}>
+                    <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ background: '#0E7C86', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <span style={{ background: 'var(--color-primary)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                           2
                         </span>
-                        <label className="form-label" style={{ margin: 0, fontWeight: 700, color: '#1A2B3C' }}>
+                        <label className="form-label" style={{ margin: 0, fontWeight: 700, color: 'var(--color-navy)' }}>
                           Select Folder or PDF Files *
                         </label>
                       </div>
@@ -1475,8 +1475,8 @@ export default function AdminQuestionBank() {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                          border: isDraggingFolder ? '2px dashed #0E7C86' : '2px dashed #cbd5e1',
-                          background: isDraggingFolder ? '#f0fdfa' : '#ffffff',
+                          border: isDraggingFolder ? '2px dashed var(--color-primary)' : '2px dashed var(--color-border)',
+                          background: isDraggingFolder ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
                           borderRadius: 10,
                           padding: '28px 20px',
                           textAlign: 'center',
@@ -1487,10 +1487,10 @@ export default function AdminQuestionBank() {
                         <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>
                           {isDraggingFolder ? '📥' : '📂'}
                         </div>
-                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', color: '#1e293b' }}>
+                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', color: 'var(--color-navy)' }}>
                           {isDraggingFolder ? 'Drop folder here!' : 'Drag & drop a folder containing PDF files'}
                         </h4>
-                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 16px 0' }}>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 16px 0' }}>
                           Supports bulk folder upload (~100 PDFs) or individual PDF selection.
                         </p>
 
@@ -1538,13 +1538,13 @@ export default function AdminQuestionBank() {
 
                       {/* Selected Files Preview */}
                       {uploadFiles.length > 0 && (
-                        <div style={{ marginTop: 14, background: '#f1f5f9', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ marginTop: 14, background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: '1.1rem' }}>📄</span>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-navy)' }}>
                               {uploadFiles.length} PDF file(s) selected
                             </span>
-                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                               ({(uploadFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB total)
                             </span>
                           </div>
@@ -1564,14 +1564,14 @@ export default function AdminQuestionBank() {
                     {isUploadingPdfs && (
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
-                          <span style={{ color: '#0E7C86', fontWeight: 600 }}>Parsing and uploading PDFs...</span>
-                          <span style={{ color: '#64748b' }}>{uploadProgress}%</span>
+                          <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Parsing and uploading PDFs...</span>
+                          <span style={{ color: 'var(--color-text-muted)' }}>{uploadProgress}%</span>
                         </div>
-                        <div style={{ width: '100%', background: '#e2e8f0', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                        <div style={{ width: '100%', background: 'var(--color-bg-subtle)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
                           <div
                             style={{
                               width: `${uploadProgress}%`,
-                              background: '#0E7C86',
+                              background: 'var(--color-primary)',
                               height: '100%',
                               transition: 'width 0.3s ease',
                             }}
@@ -1613,29 +1613,29 @@ export default function AdminQuestionBank() {
                   <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Stats Banner */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                      <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 8, padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f766e' }}>
+                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                           {uploadSummary?.totalPdfs ?? uploadSummary?.totalPdfsReceived ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#115e59', fontWeight: 600 }}>PDFs Processed</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>PDFs Processed</div>
                       </div>
-                      <div style={{ background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 8, padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1d4ed8' }}>
+                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                           {uploadSummary?.questionSetsCreated ?? uploadSummary?.totalQuestionSetsCreated ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#1e40af', fontWeight: 600 }}>Question Sets Created</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Question Sets Created</div>
                       </div>
-                      <div style={{ background: '#f0fdf4', border: '1px solid #dcfce7', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#15803d' }}>
                           {uploadSummary?.questionsCreated ?? uploadSummary?.totalQuestionsCreated ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>Questions Created</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Questions Created</div>
                       </div>
-                      <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#b91c1c' }}>
                           {uploadSummary?.incompleteQuestions ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#991b1b', fontWeight: 600 }}>Incomplete (Need Hidden)</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Incomplete (Need Hidden)</div>
                       </div>
                     </div>
 
@@ -1645,10 +1645,10 @@ export default function AdminQuestionBank() {
 
                     {/* Breakdown Table */}
                     <div>
-                      <h4 style={{ fontSize: '0.9rem', color: '#1e293b', marginBottom: 8 }}>Per-File Processing Breakdown</h4>
-                      <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                      <h4 style={{ fontSize: '0.9rem', color: 'var(--color-navy)', marginBottom: 8 }}>Per-File Processing Breakdown</h4>
+                      <div style={{ border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                          <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                          <thead style={{ background: 'var(--color-table-header-bg)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-table-header-text)' }}>
                             <tr>
                               <th style={{ padding: '8px 12px' }}>File / Set Name</th>
                               <th style={{ padding: '8px 12px' }}>Questions</th>
@@ -1680,7 +1680,7 @@ export default function AdminQuestionBank() {
                               if (reports.length === 0) {
                                 return (
                                   <tr>
-                                    <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                                    <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                                       No file reports available.
                                     </td>
                                   </tr>
@@ -1690,21 +1690,21 @@ export default function AdminQuestionBank() {
                               return reports.map((r, rIdx) => {
                                 const isSuccess = r.status === 'SUCCESS';
                                 return (
-                                  <tr key={rIdx} style={{ borderBottom: '1px solid #f1f5f9', background: isSuccess ? '#ffffff' : '#fff5f5' }}>
+                                  <tr key={rIdx} style={{ borderBottom: '1px solid var(--color-border)', background: isSuccess ? 'var(--color-bg-card)' : 'var(--color-bg-subtle)' }}>
                                     <td style={{ padding: '8px 12px' }}>
-                                      <div style={{ fontWeight: 600, color: isSuccess ? '#1e293b' : '#b91c1c' }}>
+                                      <div style={{ fontWeight: 600, color: isSuccess ? 'var(--color-navy)' : '#b91c1c' }}>
                                         {r.setName || r.originalName || 'Unknown Set'}
                                       </div>
-                                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{r.originalName || r.fileName}</div>
+                                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{r.originalName || r.fileName}</div>
                                     </td>
                                     <td style={{ padding: '8px 12px' }}>
                                       <span
                                         className="badge"
                                         style={{
                                           fontSize: '0.75rem',
-                                          background: isSuccess ? '#f1f5f9' : '#fee2e2',
-                                          color: isSuccess ? '#475569' : '#991b1b',
-                                          border: `1px solid ${isSuccess ? '#e2e8f0' : '#fecaca'}`,
+                                          background: isSuccess ? 'var(--color-bg-subtle)' : '#fee2e2',
+                                          color: isSuccess ? 'var(--color-text)' : '#991b1b',
+                                          border: `1px solid ${isSuccess ? 'var(--color-border)' : '#fecaca'}`,
                                         }}
                                       >
                                         {r.questionCount} question(s)
@@ -1726,7 +1726,7 @@ export default function AdminQuestionBank() {
                                             </div>
                                           ))
                                         ) : (
-                                          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>No question details</span>
+                                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>No question details</span>
                                         )
                                       ) : (
                                         <div style={{ fontSize: '0.75rem', color: '#b91c1c', background: '#fee2e2', padding: '4px 8px', borderRadius: 4, border: '1px solid #fecaca' }}>

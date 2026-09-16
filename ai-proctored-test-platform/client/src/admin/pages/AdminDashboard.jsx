@@ -58,14 +58,14 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <h1 style={{ fontSize: '1.8rem', color: '#1A2B3C', fontWeight: 800 }}>
+                <h1 style={{ fontSize: '1.8rem', color: 'var(--color-navy)', fontWeight: 800 }}>
                   Welcome back, {user?.name}
                 </h1>
                 <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
                   {user?.role}
                 </span>
               </div>
-              <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                 Globussoft Technology — AI Proctored Assessment Platform
               </p>
             </div>
@@ -88,8 +88,8 @@ export default function AdminDashboard() {
             <div className="stat-value" style={{ color: '#2ECC71' }}>{liveTests.length}</div>
             <div className="stat-label">Active LIVE Tests</div>
           </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #0E7C86' }}>
-            <div className="stat-value" style={{ color: '#0E7C86' }}>{tests.length}</div>
+          <div className="stat-card" style={{ borderLeft: '4px solid var(--color-primary)' }}>
+            <div className="stat-value" style={{ color: 'var(--color-primary)' }}>{tests.length}</div>
             <div className="stat-label">Total Tests Created</div>
           </div>
           <div className="stat-card" style={{ borderLeft: '4px solid #8e44ad' }}>
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
           <div className="card">
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="card-title">Recent Assessments</h3>
-              <Link to="/admin/tests" style={{ fontSize: '0.8rem', color: '#0E7C86', fontWeight: 600 }}>
+              <Link to="/admin/tests" style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                 View All ({tests.length}) →
               </Link>
             </div>
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
                 <div className="spinner spinner-dark" style={{ width: 32, height: 32 }} />
               </div>
             ) : tests.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '36px 16px', color: '#6b7280' }}>
+              <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--color-text-muted)' }}>
                 <p style={{ marginBottom: 12 }}>No tests created yet.</p>
                 <button
                   type="button"
@@ -139,8 +139,8 @@ export default function AdminDashboard() {
                       style={{
                         padding: 14,
                         borderRadius: 8,
-                        border: '1px solid #e5e7eb',
-                        background: '#F7F9FA',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-bg-subtle)',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
@@ -150,13 +150,13 @@ export default function AdminDashboard() {
                     >
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <strong style={{ fontSize: '0.95rem', color: '#1A2B3C' }}>{test.title}</strong>
+                          <strong style={{ fontSize: '0.95rem', color: 'var(--color-navy)' }}>{test.title}</strong>
                           <TestStatusBadge
                             status={test.status}
                             style={{ fontSize: '0.68rem' }}
                           />
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                           Type: <strong>{test.testType}</strong> · {test.durationMinutes} mins · Criteria: ≥ {test.passingCriteria} Qs
                         </div>
                       </div>
@@ -246,20 +246,20 @@ export default function AdminDashboard() {
                 <h3 className="card-title">System Services Status</h3>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: 6 }}>
-                  <span style={{ color: '#4b5563' }}>Socket.io Realtime Server</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Socket.io Realtime Server</span>
                   <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Ready</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: 6 }}>
-                  <span style={{ color: '#4b5563' }}>Judge0 Code Execution</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Judge0 Code Execution</span>
                   <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Connected</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: 6 }}>
-                  <span style={{ color: '#4b5563' }}>YOLOv8 Phone Detector</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>YOLOv8 Phone Detector</span>
                   <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Active</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#4b5563' }}>Kimi AI LLM Adapter</span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Kimi AI LLM Adapter</span>
                   <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Configured</span>
                 </div>
               </div>

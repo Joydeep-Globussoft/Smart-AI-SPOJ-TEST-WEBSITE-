@@ -66,19 +66,19 @@ export default function AdminSettings() {
       <main className="main-content">
         {/* Breadcrumbs */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin" style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <Link to="/admin" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
             ← Dashboard
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>Settings</span>
+          <span style={{ color: 'var(--color-text-light)' }}>/</span>
+          <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Settings</span>
         </div>
 
         {/* Header */}
         <div className="card" style={{ marginBottom: 24, padding: '24px 28px' }}>
-          <h1 style={{ fontSize: '1.6rem', color: '#1A2B3C', fontWeight: 800 }}>
+          <h1 style={{ fontSize: '1.6rem', color: 'var(--color-navy)', fontWeight: 800 }}>
             Account Settings
           </h1>
-          <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: 4 }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
             Manage your account security credentials and security preferences.
           </p>
         </div>
@@ -88,11 +88,11 @@ export default function AdminSettings() {
           <div className="card" style={{ padding: '28px 32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <span style={{ fontSize: '1.4rem' }}>🔐</span>
-              <h2 style={{ fontSize: '1.25rem', color: '#1A2B3C', fontWeight: 700, margin: 0 }}>
+              <h2 style={{ fontSize: '1.25rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
                 Change Password
               </h2>
             </div>
-            <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 20 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 20 }}>
               Update your account password. Must be at least 6 characters long.
             </p>
 
@@ -100,9 +100,9 @@ export default function AdminSettings() {
             {passwordMsg.error && (
               <div
                 style={{
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  color: '#dc2626',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444',
                   padding: '10px 14px',
                   borderRadius: 6,
                   fontSize: '0.85rem',
@@ -121,9 +121,9 @@ export default function AdminSettings() {
             {passwordMsg.success && (
               <div
                 style={{
-                  background: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  color: '#16a34a',
+                  background: 'rgba(34, 197, 94, 0.12)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  color: '#22c55e',
                   padding: '10px 14px',
                   borderRadius: 6,
                   fontSize: '0.85rem',
@@ -169,7 +169,7 @@ export default function AdminSettings() {
                     required
                     minLength={6}
                   />
-                  <small style={{ color: '#64748B', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                     Choose a strong password containing letters, numbers, and symbols.
                   </small>
                 </div>
@@ -206,37 +206,37 @@ export default function AdminSettings() {
           {/* Account Overview Card */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div className="card" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '1.05rem', color: '#1A2B3C', fontWeight: 700, marginBottom: 12 }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--color-navy)', fontWeight: 700, marginBottom: 12 }}>
                 Account Security Overview
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #F1F5F9' }}>
-                  <span style={{ color: '#64748B' }}>Account:</span>
-                  <strong style={{ color: '#1A2B3C' }}>{user?.name}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Account:</span>
+                  <strong style={{ color: 'var(--color-navy)' }}>{user?.name}</strong>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #F1F5F9' }}>
-                  <span style={{ color: '#64748B' }}>Role:</span>
-                  <span style={{ fontWeight: 600, color: '#0E7C86' }}>{user?.role}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Role:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{user?.role}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #F1F5F9' }}>
-                  <span style={{ color: '#64748B' }}>Session Status:</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Session Status:</span>
                   <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Active</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #F1F5F9' }}>
-                  <span style={{ color: '#64748B' }}>Encryption:</span>
-                  <span style={{ color: '#1A2B3C', fontSize: '0.8rem' }}>bcrypt (cost factor 12)</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Encryption:</span>
+                  <span style={{ color: 'var(--color-navy)', fontSize: '0.8rem' }}>bcrypt (cost factor 12)</span>
                 </div>
               </div>
 
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
                 <Link
                   to="/admin/profile"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    color: '#0E7C86',
+                    color: 'var(--color-primary)',
                     fontWeight: 600,
                     fontSize: '0.85rem',
                     textDecoration: 'none',
@@ -248,11 +248,11 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            <div className="card" style={{ padding: '24px', background: '#F8FAFC' }}>
-              <h4 style={{ fontSize: '0.9rem', color: '#1A2B3C', fontWeight: 700, marginBottom: 6 }}>
+            <div className="card" style={{ padding: '24px', background: 'var(--color-bg-subtle)' }}>
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--color-navy)', fontWeight: 700, marginBottom: 6 }}>
                 💡 Password Best Practices
               </h4>
-              <ul style={{ paddingLeft: 18, margin: 0, fontSize: '0.8rem', color: '#64748B', lineHeight: 1.6 }}>
+              <ul style={{ paddingLeft: 18, margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
                 <li>Do not reuse passwords across multiple systems.</li>
                 <li>Avoid predictable dictionary words or birthdays.</li>
                 <li>Use a unique passphrase with at least 8 characters.</li>

@@ -216,12 +216,12 @@ export default function AdminResults() {
           <Link to="/admin/tests" style={{ color: '#0E7C86', fontWeight: 500 }}>
             ← All Tests
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
+          <span style={{ color: 'var(--color-text-light)' }}>/</span>
           <Link to={`/admin/tests/${testId}`} style={{ color: '#0E7C86', fontWeight: 500 }}>
             {test?.title || 'Test'}
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>Results &amp; Shortlist</span>
+          <span style={{ color: 'var(--color-text-light)' }}>/</span>
+          <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>Results &amp; Shortlist</span>
         </div>
 
         {/* Top Header Card */}
@@ -229,7 +229,7 @@ export default function AdminResults() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                <h1 style={{ fontSize: '1.7rem', color: '#1A2B3C', fontWeight: 800 }}>
+                <h1 style={{ fontSize: '1.7rem', color: 'var(--color-navy)', fontWeight: 800 }}>
                   {test?.title} — Evaluation &amp; Shortlist
                 </h1>
                 <TestStatusBadge
@@ -294,7 +294,7 @@ export default function AdminResults() {
           <form onSubmit={handleUpdateThresholds} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
               <div>
-                <strong style={{ fontSize: '0.9rem', color: '#1A2B3C', display: 'block' }}>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--color-navy)', display: 'block' }}>
                   Adjust Shortlist Criteria
                 </strong>
 
@@ -302,7 +302,7 @@ export default function AdminResults() {
 
               {/* Passing Criteria Input (FR-2.2) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>
                   Passing Criteria (Min Qs):
                 </label>
                 <input
@@ -319,7 +319,7 @@ export default function AdminResults() {
 
               {/* Malpractice Threshold Input (FR-2.3, FR-7.5) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>
                   Max Malpractice Allowed:
                 </label>
                 <input
@@ -347,7 +347,7 @@ export default function AdminResults() {
         </div>
 
         {/* ── Navigation Tabs ── */}
-        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', marginBottom: 20, gap: 12 }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid var(--color-border)', marginBottom: 20, gap: 12 }}>
           <button
             onClick={() => setActiveTab('shortlist')}
             style={{
@@ -357,8 +357,8 @@ export default function AdminResults() {
               fontSize: '0.95rem',
               fontWeight: 700,
               cursor: 'pointer',
-              color: activeTab === 'shortlist' ? '#0E7C86' : '#6b7280',
-              borderBottom: activeTab === 'shortlist' ? '3px solid #0E7C86' : '3px solid transparent',
+              color: activeTab === 'shortlist' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              borderBottom: activeTab === 'shortlist' ? '3px solid var(--color-primary)' : '3px solid transparent',
               marginBottom: -2,
             }}
           >
@@ -373,8 +373,8 @@ export default function AdminResults() {
               fontSize: '0.95rem',
               fontWeight: 700,
               cursor: 'pointer',
-              color: activeTab === 'evaluations' ? '#0E7C86' : '#6b7280',
-              borderBottom: activeTab === 'evaluations' ? '3px solid #0E7C86' : '3px solid transparent',
+              color: activeTab === 'evaluations' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              borderBottom: activeTab === 'evaluations' ? '3px solid var(--color-primary)' : '3px solid transparent',
               marginBottom: -2,
             }}
           >
@@ -388,7 +388,7 @@ export default function AdminResults() {
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <h3 className="card-title">Ranked Shortlist</h3>
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                   Generated on {shortlist?.generatedAt ? new Date(shortlist.generatedAt).toLocaleString() : '—'}
                 </p>
               </div>
@@ -404,9 +404,9 @@ export default function AdminResults() {
             </div>
 
             {shortlistCandidates.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📋</div>
-                <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>No candidates on the shortlist</h4>
+                <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No candidates on the shortlist</h4>
                 <p style={{ fontSize: '0.85rem' }}>
                   {results.length === 0
                     ? 'Evaluations are still in progress or no submissions have been recorded.'
@@ -439,21 +439,21 @@ export default function AdminResults() {
                           <td>
                             <strong
                               style={{
-                                color: c.rank <= 3 ? '#d97706' : '#1A2B3C',
+                                color: c.rank <= 3 ? '#d97706' : 'var(--color-navy)',
                                 fontSize: '0.9rem',
                               }}
                             >
                               {rankBadge}
                             </strong>
                           </td>
-                          <td style={{ fontWeight: 600, color: '#1A2B3C' }}>{c.name}</td>
-                          <td style={{ color: '#4b5563', fontSize: '0.85rem' }}>{c.email}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{c.email}</td>
                           <td>
-                            <strong style={{ color: '#0E7C86', fontSize: '0.95rem' }}>
+                            <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>
                               {(c.score || 0).toFixed(2)}
                             </strong>
                           </td>
-                          <td style={{ color: '#374151', fontSize: '0.85rem' }}>
+                          <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                             {c.questionsCompleted} Qs
                           </td>
                           <td>
@@ -486,7 +486,7 @@ export default function AdminResults() {
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <h3 className="card-title">Per-Question Evaluation Scoring</h3>
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                   Granular 10-parameter weighted rubric &amp; Judge0 hidden test case results (FR-9.1-9.4).
                 </p>
               </div>
@@ -502,9 +502,9 @@ export default function AdminResults() {
             </div>
 
             {filteredResults.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⚙️</div>
-                <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>No evaluation results recorded yet</h4>
+                <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No evaluation results recorded yet</h4>
                 <p style={{ fontSize: '0.85rem' }}>
                   Evaluations run automatically after candidates submit their test questions.
                 </p>
@@ -535,25 +535,25 @@ export default function AdminResults() {
                       return (
                         <tr key={r._id}>
                           <td>
-                            <strong style={{ color: '#1A2B3C' }}>
+                            <strong style={{ color: 'var(--color-navy)' }}>
                               {r.candidateId?.name || 'Candidate'}
                             </strong>
                           </td>
-                          <td style={{ color: '#4b5563', fontSize: '0.85rem' }}>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                             {r.candidateId?.email || '—'}
                           </td>
                           <td>
-                            <strong style={{ color: '#0E7C86', fontSize: '1rem' }}>
+                            <strong style={{ color: 'var(--color-primary)', fontSize: '1rem' }}>
                               {(r.finalScorePerQuestion || 0).toFixed(2)} / 10
                             </strong>
                           </td>
-                          <td style={{ color: '#374151', fontSize: '0.85rem' }}>
+                          <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                             {correctness} / 10
                           </td>
-                          <td style={{ color: '#374151', fontSize: '0.85rem' }}>
+                          <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                             {complexity} / 10
                           </td>
-                          <td style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                             Opt: {(breakdown.codeOptimization || 0).toFixed(1)} · Exc: {(breakdown.exceptionHandling || 0).toFixed(1)}
                           </td>
                           <td style={{ textAlign: 'right' }}>
@@ -584,14 +584,14 @@ export default function AdminResults() {
                   <h3 className="modal-title">
                     Evaluation Breakdown: {selectedResult.candidateId?.name}
                   </h3>
-                  <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                     Weighted Final Score: <strong>{(selectedResult.finalScorePerQuestion || 0).toFixed(2)} / 10.0</strong>
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedResult(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -606,17 +606,17 @@ export default function AdminResults() {
                       <div
                         key={param}
                         style={{
-                          background: '#f9fafb',
-                          border: '1px solid #e5e7eb',
+                          background: 'var(--color-bg-subtle)',
+                          border: '1px solid var(--color-border)',
                           borderRadius: 8,
                           padding: 12,
                         }}
                       >
-                        <span style={{ fontSize: '0.72rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, display: 'block' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, display: 'block' }}>
                           {param.replace(/([A-Z])/g, ' $1')}
                         </span>
-                        <strong style={{ fontSize: '1.1rem', color: '#0E7C86', marginTop: 2, display: 'block' }}>
-                          {typeof score === 'number' ? score.toFixed(1) : score} <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>/ 10</span>
+                        <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)', marginTop: 2, display: 'block' }}>
+                          {typeof score === 'number' ? score.toFixed(1) : score} <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>/ 10</span>
                         </strong>
                       </div>
                     ))}
@@ -625,15 +625,15 @@ export default function AdminResults() {
                 {/* LLM Feedback & Rubric Notes */}
                 {selectedResult.llmFeedback && (
                   <div>
-                    <strong style={{ fontSize: '0.85rem', color: '#1A2B3C' }}>🤖 AI Evaluator Feedback:</strong>
+                    <strong style={{ fontSize: '0.85rem', color: 'var(--color-navy)' }}>🤖 AI Evaluator Feedback:</strong>
                     <div
                       style={{
-                        background: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
                         borderRadius: 8,
                         padding: 14,
                         fontSize: '0.85rem',
-                        color: '#166534',
+                        color: 'var(--color-text)',
                         marginTop: 6,
                         whiteSpace: 'pre-line',
                         lineHeight: 1.5,
@@ -647,13 +647,13 @@ export default function AdminResults() {
                 {/* AI Test Prompt Log Inspection (FR-6.2, FR-9.3) */}
                 {selectedResult.promptLog?.length > 0 && (
                   <div>
-                    <strong style={{ fontSize: '0.85rem', color: '#1A2B3C' }}>
+                    <strong style={{ fontSize: '0.85rem', color: 'var(--color-navy)' }}>
                       💬 AI Test Prompt Log ({selectedResult.promptLog.length} messages):
                     </strong>
                     <div
                       style={{
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--color-bg-subtle)',
+                        border: '1px solid var(--color-border)',
                         borderRadius: 8,
                         padding: 12,
                         marginTop: 6,
@@ -669,16 +669,16 @@ export default function AdminResults() {
                         <div
                           key={lIdx}
                           style={{
-                            background: log.role === 'user' ? '#e0f2fe' : '#ffffff',
-                            border: '1px solid #cbd5e1',
+                            background: log.role === 'user' ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
+                            border: '1px solid var(--color-border)',
                             borderRadius: 6,
                             padding: 8,
                           }}
                         >
-                          <span style={{ fontWeight: 700, color: log.role === 'user' ? '#0369a1' : '#475569' }}>
+                          <span style={{ fontWeight: 700, color: log.role === 'user' ? 'var(--color-primary)' : 'var(--color-text)' }}>
                             {log.role === 'user' ? 'Candidate Prompt:' : 'Kimi AI Reply:'}
                           </span>
-                          <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-wrap' }}>{log.content}</p>
+                          <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>{log.content}</p>
                         </div>
                       ))}
                     </div>
@@ -710,7 +710,7 @@ export default function AdminResults() {
                 <button
                   type="button"
                   onClick={() => setSelectedAuditSubmission(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
@@ -722,15 +722,15 @@ export default function AdminResults() {
                     <div className="spinner spinner-dark" style={{ width: 28, height: 28 }} />
                   </div>
                 ) : auditEvents.length === 0 ? (
-                  <p style={{ color: '#6b7280', textAlign: 'center', padding: 24 }}>
+                  <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 24 }}>
                     No prohibited copy-paste events recorded for this candidate.
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {auditEvents.map((evt, idx) => (
-                      <div key={idx} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: 10, fontSize: '0.8rem' }}>
+                      <div key={idx} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 6, padding: 10, fontSize: '0.8rem' }}>
                         <div style={{ fontWeight: 600, color: '#b91c1c' }}>{evt.eventType || 'PASTE_ATTEMPT'}</div>
-                        <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: 2 }}>
+                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 2 }}>
                           {new Date(evt.timestamp).toLocaleString()}
                         </div>
                       </div>

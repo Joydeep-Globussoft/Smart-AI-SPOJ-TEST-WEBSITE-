@@ -210,23 +210,23 @@ export default function AdminCreateAdmin() {
       <tr
         key={adm._id}
         style={{
-          borderBottom: '1px solid #f1f5f9',
-          background: 'white',
+          borderBottom: '1px solid var(--color-border)',
+          background: 'var(--color-bg-card)',
           transition: 'background 0.15s ease',
         }}
       >
         {/* Index (#) */}
-        <td style={{ padding: '14px 16px', color: '#64748b', fontWeight: 600, textAlign: 'center', fontSize: '0.82rem' }}>
+        <td style={{ padding: '14px 16px', color: 'var(--color-text-muted)', fontWeight: 600, textAlign: 'center', fontSize: '0.82rem' }}>
           {index}
         </td>
 
         {/* Name */}
-        <td style={{ padding: '14px 20px', color: '#1A2B3C', fontWeight: 600 }}>
+        <td style={{ padding: '14px 20px', color: 'var(--color-navy)', fontWeight: 600 }}>
           {adm.name}
         </td>
 
         {/* Email */}
-        <td style={{ padding: '14px 20px', color: '#475569' }}>
+        <td style={{ padding: '14px 20px', color: 'var(--color-text)' }}>
           <code>{adm.email}</code>
         </td>
 
@@ -254,9 +254,6 @@ export default function AdminCreateAdmin() {
               className="badge badge-danger"
               style={{
                 fontSize: '0.7rem',
-                background: '#fee2e2',
-                color: '#b91c1c',
-                border: '1px solid #fca5a5',
               }}
             >
               Deactivated
@@ -265,7 +262,7 @@ export default function AdminCreateAdmin() {
         </td>
 
         {/* Created Date */}
-        <td style={{ padding: '14px 20px', color: '#64748b', fontSize: '0.82rem' }}>
+        <td style={{ padding: '14px 20px', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>
           {adm.createdAt
             ? new Date(adm.createdAt).toLocaleDateString(undefined, {
                 year: 'numeric',
@@ -276,7 +273,7 @@ export default function AdminCreateAdmin() {
         </td>
 
         {/* Created By (BUG-02) */}
-        <td style={{ padding: '14px 20px', color: '#334155', fontSize: '0.82rem' }}>
+        <td style={{ padding: '14px 20px', color: 'var(--color-text)', fontSize: '0.82rem' }}>
           {adm.createdBy?.name ? (
             <span
               title={adm.createdBy.email ? `Created by ${adm.createdBy.name} (${adm.createdBy.email})` : ''}
@@ -285,7 +282,7 @@ export default function AdminCreateAdmin() {
               {adm.createdBy.name}
             </span>
           ) : (
-            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>System</span>
+            <span style={{ color: 'var(--color-text-light)', fontStyle: 'italic' }}>System</span>
           )}
         </td>
 
@@ -359,11 +356,11 @@ export default function AdminCreateAdmin() {
       <main className="main-content">
         {/* Breadcrumb Navigation */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin" style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <Link to="/admin" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
             ← Dashboard
           </Link>
-          <span style={{ color: '#9ca3af' }}>/</span>
-          <span style={{ color: '#4b5563', fontWeight: 600 }}>Manage Admins</span>
+          <span style={{ color: 'var(--color-text-light)' }}>/</span>
+          <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Manage Admins</span>
         </div>
 
         {/* Header */}
@@ -371,18 +368,18 @@ export default function AdminCreateAdmin() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <h1 style={{ fontSize: '1.7rem', color: '#1A2B3C', fontWeight: 800 }}>
+                <h1 style={{ fontSize: '1.7rem', color: 'var(--color-navy)', fontWeight: 800 }}>
                   Admin Account Management
                 </h1>
                 <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
                   Super Admin Only (FR-1.1)
                 </span>
               </div>
-              <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: 4 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
                 Provision and manage organizational admin accounts with Role-Based Access Control (RBAC).
               </p>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               Logged in as: <strong>{user?.name}</strong> (<span style={{ color: '#2ECC71', fontWeight: 700 }}>{user?.role}</span>)
             </div>
           </div>
@@ -450,7 +447,7 @@ export default function AdminCreateAdmin() {
                     <option value="ADMIN">ADMIN — Standard Access</option>
                     <option value="SUPER_ADMIN">SUPER_ADMIN — Full Control</option>
                   </select>
-                  <small style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                     {formData.role === 'SUPER_ADMIN'
                       ? '⚠️ SUPER_ADMIN can create and manage other Admin accounts.'
                       : 'ℹ️ ADMIN can create tests, manage rooms, monitor live sessions, and view results.'}
@@ -477,12 +474,12 @@ export default function AdminCreateAdmin() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.85rem' }}>
-                <div style={{ borderBottom: '1px solid #f3f4f6', paddingBottom: 10 }}>
+                <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>SUPER_ADMIN</span>
-                    <strong style={{ color: '#1A2B3C' }}>Full Platform Control</strong>
+                    <strong style={{ color: 'var(--color-navy)' }}>Full Platform Control</strong>
                   </div>
-                  <ul style={{ paddingLeft: 18, color: '#4b5563', lineHeight: 1.6, fontSize: '0.8rem' }}>
+                  <ul style={{ paddingLeft: 18, color: 'var(--color-text)', lineHeight: 1.6, fontSize: '0.8rem' }}>
                     <li>Create &amp; manage other Admin accounts (FR-1.1)</li>
                     <li>Create, configure, start, and end tests</li>
                     <li>Manage Question Sets &amp; Question Bank</li>
@@ -495,9 +492,9 @@ export default function AdminCreateAdmin() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>ADMIN</span>
-                    <strong style={{ color: '#1A2B3C' }}>Test Operations &amp; Proctoring</strong>
+                    <strong style={{ color: 'var(--color-navy)' }}>Test Operations &amp; Proctoring</strong>
                   </div>
-                  <ul style={{ paddingLeft: 18, color: '#4b5563', lineHeight: 1.6, fontSize: '0.8rem' }}>
+                  <ul style={{ paddingLeft: 18, color: 'var(--color-text)', lineHeight: 1.6, fontSize: '0.8rem' }}>
                     <li>Create &amp; manage tests and physical test rooms</li>
                     <li>Manage Question Sets &amp; Question Bank</li>
                     <li>Live proctoring monitoring &amp; malpractice review</li>
@@ -519,8 +516,8 @@ export default function AdminCreateAdmin() {
                     <div
                       key={adm.id || i}
                       style={{
-                        background: '#f9fafb',
-                        border: '1px solid #e5e7eb',
+                        background: 'var(--color-bg-subtle)',
+                        border: '1px solid var(--color-border)',
                         borderRadius: 8,
                         padding: 10,
                         display: 'flex',
@@ -530,8 +527,8 @@ export default function AdminCreateAdmin() {
                       }}
                     >
                       <div>
-                        <strong style={{ color: '#1A2B3C' }}>{adm.name}</strong>
-                        <div style={{ color: '#6b7280', fontSize: '0.78rem' }}>{adm.email}</div>
+                        <strong style={{ color: 'var(--color-navy)' }}>{adm.name}</strong>
+                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>{adm.email}</div>
                       </div>
                       <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
                         {adm.role}
@@ -550,28 +547,28 @@ export default function AdminCreateAdmin() {
             className="card-header"
             style={{
               padding: '20px 24px',
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid var(--color-border)',
             }}
           >
             <div>
               <h3 className="card-title" style={{ fontSize: '1.15rem' }}>
                 Active Admins
               </h3>
-              <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                 Full listing of organizational administrators, active states, and role assignments.
               </p>
             </div>
           </div>
 
           {loadingList && admins.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
               <div className="spinner spinner-dark" style={{ width: 28, height: 28, borderWidth: 3, margin: '0 auto 12px' }} />
               <p style={{ fontSize: '0.85rem' }}>Loading admin accounts...</p>
             </div>
           ) : displayedAdmins.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
               <div style={{ fontSize: '2.2rem', marginBottom: 8 }}>👥</div>
-              <h4 style={{ color: '#1A2B3C', marginBottom: 4 }}>No other admin accounts yet</h4>
+              <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No other admin accounts yet</h4>
               <p style={{ fontSize: '0.85rem' }}>
                 Use the form above to provision additional organizational administrators.
               </p>
@@ -581,15 +578,15 @@ export default function AdminCreateAdmin() {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                 <tbody>
                   {/* Group 1 Divider: Super Admins (BUG-03) */}
-                  <tr style={{ background: '#F1F5F9', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ background: 'var(--color-bg-subtle)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
                     <td
                       colSpan={8}
                       style={{
                         padding: '11px 20px',
                         fontWeight: 700,
                         fontSize: '0.85rem',
-                        color: '#1A2B3C',
-                        borderLeft: '4px solid #0E7C86',
+                        color: 'var(--color-navy)',
+                        borderLeft: '4px solid var(--color-primary)',
                       }}
                     >
                       Super Admins
@@ -599,9 +596,9 @@ export default function AdminCreateAdmin() {
                   {/* Super Admins Column Header Row */}
                   <tr
                     style={{
-                      background: '#F8FAFC',
-                      borderBottom: '1px solid #e5e7eb',
-                      color: '#475569',
+                      background: 'var(--color-table-header-bg)',
+                      borderBottom: '1px solid var(--color-border)',
+                      color: 'var(--color-table-header-text)',
                       fontSize: '0.75rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
@@ -625,11 +622,11 @@ export default function AdminCreateAdmin() {
                         style={{
                           padding: '16px 20px',
                           textAlign: 'center',
-                          color: '#94A3B8',
+                          color: 'var(--color-text-muted)',
                           fontSize: '0.82rem',
                           fontStyle: 'italic',
-                          background: '#ffffff',
-                          borderBottom: '1px solid #f1f5f9',
+                          background: 'var(--color-bg-card)',
+                          borderBottom: '1px solid var(--color-border)',
                         }}
                       >
                         No other Super Admins
@@ -640,15 +637,15 @@ export default function AdminCreateAdmin() {
                   )}
 
                   {/* Group 2 Divider: Admins (BUG-03) */}
-                  <tr style={{ background: '#F1F5F9', borderTop: '2px solid #cbd5e1', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ background: 'var(--color-bg-subtle)', borderTop: '2px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
                     <td
                       colSpan={8}
                       style={{
                         padding: '11px 20px',
                         fontWeight: 700,
                         fontSize: '0.85rem',
-                        color: '#1A2B3C',
-                        borderLeft: '4px solid #0E7C86',
+                        color: 'var(--color-navy)',
+                        borderLeft: '4px solid var(--color-primary)',
                       }}
                     >
                       Admins
@@ -658,9 +655,9 @@ export default function AdminCreateAdmin() {
                   {/* Admins Column Header Row */}
                   <tr
                     style={{
-                      background: '#F8FAFC',
-                      borderBottom: '1px solid #e5e7eb',
-                      color: '#475569',
+                      background: 'var(--color-table-header-bg)',
+                      borderBottom: '1px solid var(--color-border)',
+                      color: 'var(--color-table-header-text)',
                       fontSize: '0.75rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
