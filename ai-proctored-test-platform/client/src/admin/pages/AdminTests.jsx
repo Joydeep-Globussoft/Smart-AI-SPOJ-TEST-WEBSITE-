@@ -225,7 +225,7 @@ export default function AdminTests() {
                         ≥ {test.passingCriteria} Qs
                       </td>
                       <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                        {test.questionSetPoolId ? (
+                        {test.questionSetPoolId || test.folderId ? (
                           <span
                             className="badge"
                             style={{
@@ -235,9 +235,9 @@ export default function AdminTests() {
                               fontSize: '0.75rem',
                               fontWeight: 600,
                             }}
-                            title={test.questionSetPoolName || test.questionSetPoolId}
+                            title={test.questionSetPoolName || test.folderId?.name || test.questionSetPoolId}
                           >
-                            🎲 Pool ({test.poolSetCount || 'Batch'} Sets)
+                            📁 {test.questionSetPoolName || test.folderId?.name || 'Folder'} ({test.poolSetCount || 1} {test.poolSetCount === 1 ? 'Set' : 'Sets'})
                           </span>
                         ) : (
                           test.questionSetId?.name || '—'

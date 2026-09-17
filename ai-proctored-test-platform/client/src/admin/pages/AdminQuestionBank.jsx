@@ -1417,7 +1417,7 @@ export default function AdminQuestionBank() {
                                 <div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                     <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy)' }}>
-                                      📄 Candidate Problem Statement Preview (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1}):
+                                      📄 Problem Statement Preview :
                                     </strong>
                                   </div>
                                   <div style={{ height: 440, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--color-primary)' }}>

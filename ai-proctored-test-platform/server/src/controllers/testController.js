@@ -20,7 +20,7 @@ const createTest = async (req, res, next) => {
       supportedLanguages,
     } = req.body;
 
-    if (!title || !testType || (!questionSetId && !questionSetPoolId) || !durationMinutes || passingCriteria === undefined || passingCriteria === null || !instructions) {
+    if (!title || !testType || (!questionSetId && !questionSetPoolId && !req.body.folderId) || !durationMinutes || passingCriteria === undefined || passingCriteria === null || !instructions) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

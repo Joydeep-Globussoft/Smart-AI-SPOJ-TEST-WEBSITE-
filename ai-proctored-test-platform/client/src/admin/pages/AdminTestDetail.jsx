@@ -148,14 +148,11 @@ export default function AdminTestDetail() {
   // Edit Configuration Modal State (BUG-36, BUG-38)
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState(false);
-  const [questionSets, setQuestionSets] = useState([]);
-  const [pools, setPools] = useState([]);
-  const [questionMode, setQuestionMode] = useState('SINGLE'); // 'SINGLE' | 'POOL'
+  const [folders, setFolders] = useState([]);
   const [editFormData, setEditFormData] = useState({
     title: '',
     testType: 'SPOJ',
-    questionSetId: '',
-    questionSetPoolId: '',
+    folderId: '',
     durationMinutes: 90,
     totalQuestions: 5,
     startTestWindowMinutes: 10,
@@ -167,18 +164,18 @@ export default function AdminTestDetail() {
   const fetchTestAndRooms = useCallback(async () => {
     try {
       setLoading(true);
-      const [testRes, roomsRes, qsRes, poolRes] = await Promise.all([
+      const [testRes, roomsRes, poolRes] = await Promise.all([
         api.getTest(testId),
         api.getRooms(testId),
-        api.getQuestionSets().catch(() => ({ data: { questionSets: [] } })),
         api.getQuestionPools().catch(() => ({ data: { pools: [] } })),
       ]);
       const fetchedTest = testRes.data.test;
       setTest(fetchedTest);
+      setFolders(poolRes.data?.pools || []);
       setPassingCriteria(fetchedTest.passingCriteria || 0);
       setMalpracticeThreshold(
         fetchedTest.malpracticeDisqualifyThreshold !== null &&
-        fetchedTest.malpracticeDisqualifyThreshold !== undefined
+          fetchedTest.malpracticeDisqualifyThreshold !== undefined
           ? fetchedTest.malpracticeDisqualifyThreshold
           : ''
       );
@@ -210,7 +207,7 @@ export default function AdminTestDetail() {
           .then((res) => {
             setSelectedRoomCandidates((prev) => (prev ? { ...prev, list: res.data.candidates || [] } : prev));
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     };
 
@@ -235,7 +232,7 @@ export default function AdminTestDetail() {
       try {
         const res = await api.getRoomCandidates(selectedRoomCandidates.room._id);
         setSelectedRoomCandidates((prev) => (prev ? { ...prev, list: res.data.candidates || [] } : prev));
-      } catch (_) {}
+      } catch (_) { }
     }, 3000);
     return () => clearInterval(interval);
   }, [selectedRoomCandidates?.room?._id]);
@@ -356,50 +353,32 @@ export default function AdminTestDetail() {
     }
   };
 
-  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012: Edit Configuration Handlers ───────────
+  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012/013: Edit Configuration Handlers ───────────
   const handleOpenEditModal = async () => {
     if (test?.status !== 'DRAFT') return;
-    const isPoolMode = Boolean(test?.questionSetPoolId);
-    const qsId = test?.questionSetId?._id || test?.questionSetId || '';
-    const poolId = test?.questionSetPoolId || '';
+    const folderId = test?.folderId?._id || test?.folderId || test?.questionSetPoolId || '';
 
-    let loadedSets = questionSets;
-    let loadedPools = pools;
-    if (questionSets.length === 0 || pools.length === 0) {
+    let loadedFolders = folders;
+    if (loadedFolders.length === 0) {
       try {
-        const [qsRes, poolRes] = await Promise.all([
-          api.getQuestionSets().catch(() => ({ data: { questionSets: [] } })),
-          api.getQuestionPools().catch(() => ({ data: { pools: [] } })),
-        ]);
-        loadedSets = qsRes.data?.questionSets || [];
-        loadedPools = poolRes.data?.pools || [];
-        setQuestionSets(loadedSets);
-        setPools(loadedPools);
+        const poolRes = await api.getQuestionPools().catch(() => ({ data: { pools: [] } }));
+        loadedFolders = poolRes.data?.pools || [];
+        setFolders(loadedFolders);
       } catch (err) {
-        console.error('Failed to load question sets or pools:', err);
+        console.error('Failed to load folders:', err);
       }
     }
 
-    setQuestionMode(isPoolMode ? 'POOL' : 'SINGLE');
-
     let qCount = test?.totalQuestions ?? 0;
-    if (isPoolMode) {
-      const selectedP = loadedPools.find((p) => p.poolId === poolId);
-      if (selectedP && selectedP.isValid) {
-        qCount = selectedP.questionCount;
-      }
-    } else {
-      const selectedQs = loadedSets.find((qs) => qs._id === qsId);
-      if (selectedQs) {
-        qCount = selectedQs.questionCount ?? selectedQs.questionIds?.length ?? test?.totalQuestions ?? 0;
-      }
+    const selectedF = loadedFolders.find((p) => p.poolId === folderId);
+    if (selectedF && selectedF.isValid) {
+      qCount = selectedF.questionCount;
     }
 
     setEditFormData({
       title: test?.title || '',
       testType: test?.testType || 'SPOJ',
-      questionSetId: qsId,
-      questionSetPoolId: poolId,
+      folderId: folderId,
       durationMinutes: test?.durationMinutes ?? 90,
       totalQuestions: qCount,
       startTestWindowMinutes: test?.startTestWindowMinutes ?? 10,
@@ -417,8 +396,7 @@ export default function AdminTestDetail() {
     setEditFormData((prev) => ({
       ...prev,
       testType: newType,
-      questionSetId: '',
-      questionSetPoolId: '',
+      folderId: '',
       totalQuestions: 0,
     }));
   };
@@ -434,7 +412,8 @@ export default function AdminTestDetail() {
     });
   };
 
-  const handleSaveConfig = async (e) => {
+  // Edit Configuration Save Handler
+  const handleEditSave = async (e) => {
     e.preventDefault();
     if (test?.status !== 'DRAFT') {
       return toast.error('Editing is only allowed while the test is in DRAFT status');
@@ -443,26 +422,15 @@ export default function AdminTestDetail() {
       return toast.error('Test title is required');
     }
 
-    if (questionMode === 'POOL') {
-      if (!editFormData.questionSetPoolId) {
-        return toast.error('Please select a Question Set Pool');
-      }
-      const selectedP = pools.find((p) => p.poolId === editFormData.questionSetPoolId);
-      if (!selectedP || !selectedP.isValid) {
-        return toast.error(selectedP?.validationError || 'Selected Question Set Pool is invalid');
-      }
-      if (!editFormData.totalQuestions || Number(editFormData.totalQuestions) <= 0) {
-        return toast.error('Selected pool contains 0 questions per set');
-      }
-    } else {
-      if (!editFormData.questionSetId) {
-        return toast.error('Please select a Question Set');
-      }
-      const selectedQs = questionSets.find((qs) => qs._id === editFormData.questionSetId);
-      const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : editFormData.totalQuestions;
-      if (qCount <= 0) {
-        return toast.error('Selected Question Set contains 0 questions. Please add questions before updating the test.');
-      }
+    if (!editFormData.folderId) {
+      return toast.error('Please select a Question Folder');
+    }
+    const selectedF = folders.find((p) => p.poolId === editFormData.folderId);
+    if (!selectedF || !selectedF.isValid) {
+      return toast.error(selectedF?.validationError || 'Selected Question Folder is invalid');
+    }
+    if (!editFormData.totalQuestions || Number(editFormData.totalQuestions) <= 0) {
+      return toast.error('Selected folder contains 0 questions per set');
     }
 
     if (!editFormData.durationMinutes || Number(editFormData.durationMinutes) <= 0) {
@@ -486,8 +454,8 @@ export default function AdminTestDetail() {
       const payload = {
         title: editFormData.title.trim(),
         testType: editFormData.testType,
-        questionSetId: questionMode === 'SINGLE' ? editFormData.questionSetId : null,
-        questionSetPoolId: questionMode === 'POOL' ? editFormData.questionSetPoolId : null,
+        folderId: editFormData.folderId,
+        questionSetPoolId: editFormData.folderId,
         durationMinutes: Number(editFormData.durationMinutes),
         totalQuestions: editFormData.totalQuestions ? Number(editFormData.totalQuestions) : 5,
         startTestWindowMinutes: Number(editFormData.startTestWindowMinutes),
@@ -692,10 +660,10 @@ export default function AdminTestDetail() {
 
         {/* 2-Column Grid: Config / Dynamic Thresholds & Room Management */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.3fr)', gap: 24 }}>
-          
+
           {/* Column 1: Test Config & Dynamic Thresholds */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            
+
             {/* Dynamic Passing Criteria Card (FR-2.2) */}
             <div className="card">
               <div className="card-header">
@@ -790,11 +758,11 @@ export default function AdminTestDetail() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.875rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>
-                    {test.questionSetPoolId ? 'Question Set Pool' : 'Question Set'}
+                    Question Folder
                   </span>
                   <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
-                    {test.questionSetPoolId
-                      ? `🎲 ${test.questionSetPoolName || 'Pool'} (${test.poolSetCount || (test.poolSets?.length ?? '')} Sets)`
+                    {test.questionSetPoolName || test.folderId?.name
+                      ? `📁 ${test.questionSetPoolName || test.folderId?.name} (${test.poolSetCount || 1} ${test.poolSetCount === 1 ? 'Set' : 'Sets'})`
                       : (test.questionSetId?.name || '—')}
                   </span>
                 </div>
@@ -1383,156 +1351,63 @@ export default function AdminTestDetail() {
                     </div>
 
                     <div className="form-group">
-                      {/* Question Set Mode Switcher (FEATURE-012) */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>
-                          {questionMode === 'POOL' ? 'Question Set Pool *' : 'Question Set *'}
-                        </label>
-                        <div style={{ display: 'inline-flex', background: 'var(--color-bg-subtle)', borderRadius: 6, padding: 2 }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuestionMode('SINGLE');
-                              setEditFormData((p) => ({
-                                ...p,
-                                questionSetPoolId: '',
-                                questionSetId: '',
-                                totalQuestions: 0,
-                              }));
-                            }}
-                            style={{
-                              padding: '2px 8px',
-                              fontSize: '0.72rem',
-                              border: 'none',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                              background: questionMode === 'SINGLE' ? 'var(--color-primary)' : 'transparent',
-                              color: questionMode === 'SINGLE' ? '#ffffff' : 'var(--color-text-muted)',
-                            }}
-                          >
-                            Single Set
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuestionMode('POOL');
-                              setEditFormData((p) => ({
-                                ...p,
-                                questionSetId: '',
-                                questionSetPoolId: '',
-                                totalQuestions: 0,
-                              }));
-                            }}
-                            style={{
-                              padding: '2px 8px',
-                              fontSize: '0.72rem',
-                              border: 'none',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                              background: questionMode === 'POOL' ? 'var(--color-primary)' : 'transparent',
-                              color: questionMode === 'POOL' ? '#ffffff' : 'var(--color-text-muted)',
-                            }}
-                          >
-                            Pool (Folder)
-                          </button>
-                        </div>
-                      </div>
-
-                      {questionMode === 'SINGLE' ? (
-                        <>
-                          <select
-                            id="edit-question-set"
-                            className="form-select"
-                            value={editFormData.questionSetId}
-                            onChange={(e) => {
-                              const newSetId = e.target.value;
-                              const selectedQs = questionSets.find((qs) => qs._id === newSetId);
-                              const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : 0;
-                              setEditFormData((p) => ({
-                                ...p,
-                                questionSetId: newSetId,
-                                totalQuestions: qCount,
-                              }));
-                            }}
-                            required
-                          >
-                            <option value="">Select a Question Set...</option>
-                            {(() => {
-                              const filtered = questionSets.filter((qs) => qs.testType === editFormData.testType);
-                              const cur = test?.questionSetId && typeof test.questionSetId === 'object' ? test.questionSetId : null;
-                              const displayList = cur && cur.testType === editFormData.testType && !filtered.some((qs) => qs._id === cur._id)
-                                ? [cur, ...filtered]
-                                : filtered;
-                              return displayList.map((qs) => {
-                                const qCount = qs.questionCount ?? qs.questionIds?.length ?? 0;
-                                return (
-                                  <option key={qs._id} value={qs._id}>
-                                    {qs.name} ({qs.testType}) — {qCount} Qs
-                                  </option>
-                                );
-                              });
-                            })()}
-                          </select>
-                          {questionSets.filter((qs) => qs.testType === editFormData.testType).length === 0 && (
-                            <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
-                              No question sets found for {editFormData.testType}. Create one in Question Bank first.
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <select
-                            id="edit-question-set-pool"
-                            className="form-select"
-                            value={editFormData.questionSetPoolId}
-                            onChange={(e) => {
-                              const newPoolId = e.target.value;
-                              const p = pools.find((item) => item.poolId === newPoolId);
-                              const qCount = p && p.isValid ? (p.questionCount || 0) : 0;
-                              setEditFormData((p) => ({
-                                ...p,
-                                questionSetPoolId: newPoolId,
-                                totalQuestions: qCount,
-                              }));
-                            }}
-                            required
-                          >
-                            <option value="">Select Folder as Question Set Pool...</option>
-                            {pools.filter((p) => !editFormData.testType || p.testType === editFormData.testType).map((p) => (
-                              <option key={p.poolId} value={p.poolId}>
-                                📁 {p.poolName} ({p.setCount} Sets{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
-                              </option>
-                            ))}
-                          </select>
-                          {pools.filter((p) => !editFormData.testType || p.testType === editFormData.testType).length === 0 ? (
-                            <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
-                              No Folders found for {editFormData.testType}. Create a folder in Question Bank first.
-                            </p>
-                          ) : (() => {
-                            const selPool = pools.find((item) => item.poolId === editFormData.questionSetPoolId);
-                            if (selPool && !selPool.isValid) {
-                              return (
-                                <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
-                                  <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0, lineHeight: 1.4 }}>
-                                    ⚠️ {selPool.validationError}
-                                  </p>
-                                </div>
-                              );
-                            } else if (selPool && selPool.isValid) {
-                              return (
-                                <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
-                                  <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
-                                    ✓ Valid Pool: {selPool.setCount} Question Sets ({selPool.questionCount} Qs each) rotating round-robin per room.
-                                  </p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </>
-                      )}
+                      <label className="form-label" style={{ fontWeight: 600, marginBottom: 6 }}>
+                        Question Folder *
+                      </label>
+                      <select
+                        id="edit-question-folder"
+                        className="form-select"
+                        value={editFormData.folderId}
+                        onChange={(e) => {
+                          const newFolderId = e.target.value;
+                          const f = folders.find((item) => item.poolId === newFolderId);
+                          const qCount = f && f.isValid ? (f.questionCount || 0) : 0;
+                          setEditFormData((p) => ({
+                            ...p,
+                            folderId: newFolderId,
+                            totalQuestions: qCount,
+                          }));
+                        }}
+                        required
+                      >
+                        <option value="">Select a Question Folder...</option>
+                        {folders.filter((p) => !editFormData.testType || p.testType === editFormData.testType).map((p) => (
+                          <option key={p.poolId} value={p.poolId}>
+                            📁 {p.poolName} ({p.setCount} {p.setCount === 1 ? 'Set' : 'Sets'}{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
+                          </option>
+                        ))}
+                      </select>
+                      {folders.filter((p) => !editFormData.testType || p.testType === editFormData.testType).length === 0 ? (
+                        <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                          No Folders found for {editFormData.testType}. Create a folder in Question Bank first.
+                        </p>
+                      ) : (() => {
+                        const selFolder = folders.find((item) => item.poolId === editFormData.folderId);
+                        if (selFolder && !selFolder.isValid) {
+                          return (
+                            <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
+                              <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0, lineHeight: 1.4 }}>
+                                ⚠️ {selFolder.validationError}
+                              </p>
+                            </div>
+                          );
+                        } else if (selFolder && selFolder.isValid) {
+                          return (
+                            <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
+                              {selFolder.setCount === 1 ? (
+                                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                                  ✓ Folder contains 1 Question Set ({selFolder.questionCount} Qs). All candidates will receive this set.
+                                </p>
+                              ) : (
+                                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                                  ✓ Folder contains : {selFolder.setCount} Question Sets ({selFolder.questionCount} Qs each).
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
 

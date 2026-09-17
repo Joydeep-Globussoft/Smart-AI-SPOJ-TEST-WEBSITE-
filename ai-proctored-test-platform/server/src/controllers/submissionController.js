@@ -159,6 +159,7 @@ const joinRoom = async (req, res, next) => {
     if (existingJoinedEntry?.assignedQuestionSetId) {
       assignedQuestionSetId = existingJoinedEntry.assignedQuestionSetId;
       joinIndex = existingJoinedEntry.joinIndex;
+    } else {
       const poolContainerId = test.folderId || test.questionSetPoolId;
       if (poolContainerId) {
         // Pool mode: deterministic round-robin per room
@@ -374,9 +375,15 @@ const startAttempt = async (req, res, next) => {
 
     // Fallback if not yet recorded
     if (!assignedQuestionSetId) {
-      if (test.questionSetPoolId) {
+      const poolContainerId = test.folderId || test.questionSetPoolId;
+      if (poolContainerId) {
         const QuestionSet = require('../models/QuestionSet');
-        const poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }).sort({ createdAt: 1, _id: 1 });
+        const poolSets = await QuestionSet.find({
+          $or: [
+            { folderId: poolContainerId },
+            { uploadBatchId: poolContainerId },
+          ],
+        }).sort({ createdAt: 1, _id: 1 });
         if (poolSets.length > 0) {
           assignedQuestionSetId = poolSets[0]._id;
         }
