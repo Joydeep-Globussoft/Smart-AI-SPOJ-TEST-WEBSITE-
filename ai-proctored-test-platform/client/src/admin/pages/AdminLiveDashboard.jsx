@@ -191,7 +191,29 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
 
       {/* Room and progress */}
       <div style={{ margin: '6px 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-        <div>{roomName || candidate.roomName || 'Room'}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{roomName || candidate.roomName || 'Room'}</span>
+          {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
+            <span
+              style={{
+                fontSize: '0.65rem',
+                padding: '1px 5px',
+                fontWeight: 700,
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                color: '#4f46e5',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: 4,
+                whiteSpace: 'nowrap',
+                maxWidth: 90,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+              title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
+            >
+              🎲 {candidate.assignedSetIndex ? `Set ${candidate.assignedSetIndex}` : candidate.assignedQuestionSetName}
+            </span>
+          )}
+        </div>
         <div style={{ fontWeight: 600, color: 'var(--color-text)', marginTop: 2 }}>
           {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
             ? 'Not started'
@@ -303,7 +325,26 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         </span>
       </div>
 
-      <div style={{ color: 'var(--color-text-muted)' }}>{roomName || candidate.roomName || 'Room'}</div>
+      <div style={{ color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span>{roomName || candidate.roomName || 'Room'}</span>
+        {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
+          <span
+            style={{
+              fontSize: '0.68rem',
+              padding: '1px 5px',
+              fontWeight: 700,
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              color: '#4f46e5',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: 4,
+              whiteSpace: 'nowrap',
+            }}
+            title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
+          >
+            🎲 {candidate.assignedSetIndex ? `Set ${candidate.assignedSetIndex}` : candidate.assignedQuestionSetName}
+          </span>
+        )}
+      </div>
 
       <div>
         <span
@@ -1756,6 +1797,11 @@ export default function AdminLiveDashboard() {
                     </h4>
                     <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                       {activeInspectCandidate.email || activeInspectCandidate.candidateEmail || ''} {activeInspectCandidate.email || activeInspectCandidate.candidateEmail ? '·' : ''} Room: <strong>{roomsById[activeInspectCandidate.roomId] || activeInspectCandidate.roomName || 'Assigned Room'}</strong>
+                      {(activeInspectCandidate.assignedQuestionSetName || activeInspectCandidate.assignedSetIndex) && (
+                        <span style={{ marginLeft: 8 }}>
+                          · Set: <strong>{activeInspectCandidate.assignedQuestionSetName ? `${activeInspectCandidate.assignedQuestionSetName}${activeInspectCandidate.assignedSetIndex ? ` (Set ${activeInspectCandidate.assignedSetIndex})` : ''}` : `Set ${activeInspectCandidate.assignedSetIndex}`}</strong>
+                        </span>
+                      )}
                     </span>
                   </div>
                   {(() => {

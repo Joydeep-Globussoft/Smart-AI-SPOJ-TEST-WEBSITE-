@@ -10,7 +10,8 @@ const testSchema = new mongoose.Schema(
       required: true,
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
-    questionSetId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionSet', required: true },
+    questionSetId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionSet', default: null }, // Single Question Set
+    questionSetPoolId: { type: String, default: null, index: true }, // FEATURE-012: Question Set Pool (batch ID)
     durationMinutes: { type: Number, required: true },
     totalQuestions: { type: Number, required: true, default: 5 },
     passingCriteria: { type: Number, required: true }, // e.g., 2.5 (out of totalQuestions)

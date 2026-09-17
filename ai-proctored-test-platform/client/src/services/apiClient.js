@@ -110,6 +110,7 @@ export const api = {
   // Question Sets
   createQuestionSet: (data) => axios.post('/question-sets', data),
   getQuestionSets: () => axios.get('/question-sets'),
+  getQuestionPools: (params) => axios.get('/question-sets/pools', { params }), // FEATURE-012
   updateQuestionSet: (setId, data) => axios.patch(`/question-sets/${setId}`, data),
   deleteQuestionSet: (setId) => axios.delete(`/question-sets/${setId}`),
   createQuestion: (setId, data) => axios.post(`/question-sets/${setId}/questions`, data),

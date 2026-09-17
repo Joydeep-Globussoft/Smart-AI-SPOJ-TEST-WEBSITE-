@@ -10,6 +10,8 @@ const questionSetSchema = new mongoose.Schema({
   name: { type: String, required: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
   questionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }], // pool this set draws from
+  uploadBatchId: { type: String, default: null, index: true }, // FEATURE-012: PDF batch pool identifier
+  uploadBatchName: { type: String, default: null }, // FEATURE-012: User-friendly batch label
   createdAt: { type: Date, default: Date.now },
 });
 

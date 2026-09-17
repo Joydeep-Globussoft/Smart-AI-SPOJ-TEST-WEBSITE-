@@ -5,7 +5,7 @@ const {
   createQuestionSet, getQuestionSets, updateQuestionSet, deleteQuestionSet,
   createQuestion, getQuestions,
   updateQuestion, deleteQuestion,
-  uploadPdfBatch, servePdfAsset,
+  uploadPdfBatch, getQuestionPools, servePdfAsset,
 } = require('../controllers/questionController');
 const { verifyToken, requireAdmin } = require('../middleware/authMiddleware');
 
@@ -18,6 +18,7 @@ const upload = multer({
 // All other question bank management is admin-only
 router.post('/question-sets', verifyToken, requireAdmin, createQuestionSet);
 router.get('/question-sets', verifyToken, requireAdmin, getQuestionSets);
+router.get('/question-sets/pools', verifyToken, requireAdmin, getQuestionPools);
 router.patch('/question-sets/:setId', verifyToken, requireAdmin, updateQuestionSet);
 router.delete('/question-sets/:setId', verifyToken, requireAdmin, deleteQuestionSet);
 router.post('/question-sets/upload-pdf-batch', verifyToken, requireAdmin, upload.array('files', 150), uploadPdfBatch);

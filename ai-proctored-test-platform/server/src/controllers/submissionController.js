@@ -146,14 +146,85 @@ const joinRoom = async (req, res, next) => {
       });
     }
 
-    // Associate candidate with the room in DB
+    // Associate candidate with the room in DB and assign Question Set (FEATURE-012)
     const candidateId = req.user.id;
-    await Room.findByIdAndUpdate(
-      room._id,
-      {
-        $addToSet: { joinedCandidates: { candidateId, joinedAt: new Date() } },
-      }
+    let assignedQuestionSetId = null;
+    let joinIndex = null;
+
+    // Check if candidate already has an entry in this room (BUG-53 resume/reconnect)
+    const existingJoinedEntry = room.joinedCandidates?.find(
+      (j) => j.candidateId && j.candidateId.toString() === candidateId.toString()
     );
+
+    if (existingJoinedEntry?.assignedQuestionSetId) {
+      assignedQuestionSetId = existingJoinedEntry.assignedQuestionSetId;
+      joinIndex = existingJoinedEntry.joinIndex;
+    } else {
+      if (test.questionSetPoolId) {
+        // Pool mode: deterministic round-robin per room
+        const QuestionSet = require('../models/QuestionSet');
+        const poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }).sort({ createdAt: 1, _id: 1 });
+        if (!poolSets || poolSets.length === 0) {
+          return res.status(500).json({ error: 'Assigned Question Set Pool is invalid or empty.' });
+        }
+
+        // Atomically increment candidateJoinCounter for new joins in this room
+        const updatedRoom = await Room.findOneAndUpdate(
+          {
+            _id: room._id,
+            'joinedCandidates.candidateId': { $ne: candidateId },
+          },
+          {
+            $inc: { candidateJoinCounter: 1 },
+          },
+          { new: true }
+        );
+
+        if (updatedRoom) {
+          joinIndex = updatedRoom.candidateJoinCounter;
+          const setIndex = (joinIndex - 1) % poolSets.length;
+          assignedQuestionSetId = poolSets[setIndex]._id;
+
+          await Room.findByIdAndUpdate(room._id, {
+            $push: {
+              joinedCandidates: {
+                candidateId,
+                joinedAt: new Date(),
+                assignedQuestionSetId,
+                joinIndex,
+              },
+            },
+          });
+        } else {
+          // Re-fetch in case of concurrent join
+          const reloadedRoom = await Room.findById(room._id);
+          const found = reloadedRoom?.joinedCandidates?.find(
+            (j) => j.candidateId && j.candidateId.toString() === candidateId.toString()
+          );
+          assignedQuestionSetId = found?.assignedQuestionSetId || poolSets[0]._id;
+          joinIndex = found?.joinIndex || 1;
+        }
+      } else {
+        // Single set mode
+        assignedQuestionSetId = test.questionSetId?._id || test.questionSetId;
+        await Room.findOneAndUpdate(
+          {
+            _id: room._id,
+            'joinedCandidates.candidateId': { $ne: candidateId },
+          },
+          {
+            $push: {
+              joinedCandidates: {
+                candidateId,
+                joinedAt: new Date(),
+                assignedQuestionSetId,
+                joinIndex: 1,
+              },
+            },
+          }
+        );
+      }
+    }
 
     // If manualJoinOverride was active, clear it now that candidate joined
     if (candidate && (candidate.manualJoinOverride || candidate.lateJoinRequestedAt)) {
@@ -164,7 +235,7 @@ const joinRoom = async (req, res, next) => {
     }
 
     // Broadcast real-time candidate join to admin monitoring channels
-    const io = req.app.get('io');
+    const io = req.app?.get ? req.app.get('io') : null;
     if (io) {
       io.to(`test:${room.testId}:admin`).emit('room:updated', {
         roomId: room._id,
@@ -274,15 +345,50 @@ const startAttempt = async (req, res, next) => {
       candidateEndTime = new Date(now.getTime() + test.durationMinutes * 60 * 1000);
     }
 
-    // Get questions from question set (visible test cases only — FR-4.2, BUG-59, FEATURE-009)
-    const questionSet = test.questionSetId;
-    let allQuestions = (questionSet?.questionIds && questionSet.questionIds.length > 0 && questionSet.questionIds[0]?._id)
-      ? questionSet.questionIds
-      : [];
-    if (allQuestions.length === 0 && questionSet) {
-      const qSetId = questionSet._id || questionSet;
+    // Find the room for this candidate (from req.body or fallback to room where candidate joined)
+    let targetRoomId = req.body?.roomId;
+    let candidateRoom = null;
+    if (targetRoomId) {
+      candidateRoom = await Room.findById(targetRoomId);
+    } else {
+      candidateRoom = await Room.findOne({
+        testId,
+        'joinedCandidates.candidateId': candidateId,
+      });
+      if (candidateRoom) targetRoomId = candidateRoom._id;
+    }
+
+    // Resolve assignedQuestionSetId for this candidate (FEATURE-012)
+    let assignedQuestionSetId = existingSubmissions[0]?.assignedQuestionSetId || null;
+    if (!assignedQuestionSetId && candidateRoom) {
+      const entry = candidateRoom.joinedCandidates?.find(
+        (j) => j.candidateId && j.candidateId.toString() === candidateId.toString()
+      );
+      assignedQuestionSetId = entry?.assignedQuestionSetId || null;
+    }
+
+    // Fallback if not yet recorded
+    if (!assignedQuestionSetId) {
+      if (test.questionSetPoolId) {
+        const QuestionSet = require('../models/QuestionSet');
+        const poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }).sort({ createdAt: 1, _id: 1 });
+        if (poolSets.length > 0) {
+          assignedQuestionSetId = poolSets[0]._id;
+        }
+      } else {
+        assignedQuestionSetId = test.questionSetId?._id || test.questionSetId;
+      }
+    }
+
+    // Get questions from candidate's specific assigned question set (FR-4.2, BUG-59, FEATURE-009, FEATURE-012)
+    let allQuestions = [];
+    if (assignedQuestionSetId) {
+      allQuestions = await Question.find({ questionSetId: assignedQuestionSetId });
+    } else if (test.questionSetId) {
+      const qSetId = test.questionSetId._id || test.questionSetId;
       allQuestions = await Question.find({ questionSetId: qSetId });
     }
+
     // Limit to totalQuestions
     const questions = allQuestions.slice(0, test.totalQuestions).map((q) => ({
       _id: q._id,
@@ -302,27 +408,17 @@ const startAttempt = async (req, res, next) => {
       isIncomplete: Boolean(q.isIncomplete),
     }));
 
-    // Find the room for this candidate (from req.body or fallback to room where candidate joined)
-    let targetRoomId = req.body?.roomId;
-    if (!targetRoomId) {
-      const candidateRoom = await Room.findOne({
-        testId,
-        'joinedCandidates.candidateId': candidateId,
-      });
-      if (candidateRoom) targetRoomId = candidateRoom._id;
-    }
-
     if (targetRoomId) {
       await Room.findByIdAndUpdate(
         targetRoomId,
         {
-          $addToSet: { joinedCandidates: { candidateId, joinedAt: now } },
+          $addToSet: { joinedCandidates: { candidateId, joinedAt: now, assignedQuestionSetId } },
         }
       );
     }
 
     // Single-Session Invalidation: If existing session is superseded by new tab, notify previous tab (BUG-53)
-    const io = req.app.get('io');
+    const io = req.app?.get ? req.app.get('io') : null;
     if (io && hasStartedAttempt) {
       console.log(`[Session] Candidate ${candidateId} resumed test ${testId} with new session ${submissionSessionId}. Superseding previous tabs.`);
       io.to(`candidate:${candidateId}`).emit('session:superseded', {
@@ -352,6 +448,7 @@ const startAttempt = async (req, res, next) => {
               testId,
               roomId: targetRoomId,
               questionId: q._id,
+              assignedQuestionSetId,
               candidateStartTime,
               candidateEndTime,
               status: 'IN_PROGRESS',
@@ -364,7 +461,7 @@ const startAttempt = async (req, res, next) => {
       finalSubmissions = await Promise.all(submissionPromises);
     } else {
       // Fallback for tests without questions defined yet
-      const placeholderQId = test.questionSetId?._id || test._id;
+      const placeholderQId = assignedQuestionSetId || test.questionSetId?._id || test._id;
       const existing = existingSubmissions.find(
         (s) => s.questionId?.toString() === placeholderQId.toString()
       );
@@ -379,6 +476,7 @@ const startAttempt = async (req, res, next) => {
               testId,
               roomId: targetRoomId,
               questionId: placeholderQId,
+              assignedQuestionSetId,
               candidateStartTime,
               candidateEndTime,
               status: 'IN_PROGRESS',
@@ -618,6 +716,7 @@ const runCode = async (req, res, next) => {
             testId: targetTestId,
             roomId: roomDoc?._id || new (require('mongoose').Types.ObjectId)(),
             questionId,
+            assignedQuestionSetId: question.questionSetId || null,
             status: 'IN_PROGRESS',
             visibleTestCasesTotal: totalCount,
           });
@@ -653,7 +752,7 @@ const runCode = async (req, res, next) => {
             const testDoc = await Test.findById(submission.testId, 'totalQuestions questions');
             const totalQCount = testDoc?.totalQuestions || testDoc?.questions?.length || 1;
 
-            const io = req.app.get('io');
+            const io = req.app?.get ? req.app.get('io') : null;
             if (io) {
               io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
                 candidateId: candidateId.toString(),
@@ -796,7 +895,7 @@ const submitCode = async (req, res, next) => {
     evaluationService.evaluateSingleSubmission(submission._id.toString()).catch(console.error);
 
     // Broadcast progress update via Socket.io
-    const io = req.app.get('io');
+    const io = req.app?.get ? req.app.get('io') : null;
     if (io) {
       io.to(`test:${submission.testId}:admin`).emit('dashboard:update', {
         candidateId,
@@ -842,7 +941,7 @@ const submitAll = async (req, res, next) => {
     }
 
     // Emit candidate:submitted to admin room (Section 10.2)
-    const io = req.app.get('io');
+    const io = req.app?.get ? req.app.get('io') : null;
     if (io) {
       // Get candidate name for announcement
       const Candidate = require('../models/Candidate');

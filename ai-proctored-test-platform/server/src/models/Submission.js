@@ -6,6 +6,7 @@ const submissionSchema = new mongoose.Schema({
   testId: { type: mongoose.Schema.Types.ObjectId, ref: 'Test', required: true },
   roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
   questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Question', required: true },
+  assignedQuestionSetId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionSet', default: null }, // FEATURE-012
   code: { type: String }, // final submitted code (or file map JSON for AI Test)
   // for AI Test: { "index.html": "...", "style.css": "..." }
   filesJson: { type: Object, default: null },

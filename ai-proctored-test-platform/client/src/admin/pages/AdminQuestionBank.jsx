@@ -778,7 +778,7 @@ export default function AdminQuestionBank() {
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💡</div>
                     <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No questions in this set yet</h3>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: 20 }}>
-                      Every question must have at least 1 visible test case before being added (FR-4.1).
+                      Every question must have at least 1 visible test case before being added.
                     </p>
                     <button onClick={handleOpenCreateQuestion} className="btn btn-primary">
                       + Add First Question

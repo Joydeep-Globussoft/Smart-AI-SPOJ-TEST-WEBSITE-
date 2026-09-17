@@ -225,7 +225,23 @@ export default function AdminTests() {
                         ≥ {test.passingCriteria} Qs
                       </td>
                       <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                        {test.questionSetId?.name || '—'}
+                        {test.questionSetPoolId ? (
+                          <span
+                            className="badge"
+                            style={{
+                              background: 'rgba(14, 124, 134, 0.15)',
+                              color: 'var(--color-primary)',
+                              border: '1px solid var(--color-primary)',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                            }}
+                            title={test.questionSetPoolName || test.questionSetPoolId}
+                          >
+                            🎲 Pool ({test.poolSetCount || 'Batch'} Sets)
+                          </span>
+                        ) : (
+                          test.questionSetId?.name || '—'
+                        )}
                       </td>
                       <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
                         {new Date(test.createdAt).toLocaleDateString()}

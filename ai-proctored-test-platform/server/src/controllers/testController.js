@@ -12,6 +12,7 @@ const createTest = async (req, res, next) => {
       title,
       testType,
       questionSetId,
+      questionSetPoolId,
       durationMinutes,
       passingCriteria,
       instructions,
@@ -19,7 +20,7 @@ const createTest = async (req, res, next) => {
       supportedLanguages,
     } = req.body;
 
-    if (!title || !testType || !questionSetId || !durationMinutes || passingCriteria === undefined || passingCriteria === null || !instructions) {
+    if (!title || !testType || (!questionSetId && !questionSetPoolId) || !durationMinutes || passingCriteria === undefined || passingCriteria === null || !instructions) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -27,31 +28,95 @@ const createTest = async (req, res, next) => {
     const QuestionSet = require('../models/QuestionSet');
     const pdfStorageService = require('../services/pdfStorageService');
 
-    const questionSet = await QuestionSet.findById(questionSetId);
-    if (!questionSet) {
-      return res.status(404).json({ error: 'Selected Question Set not found' });
-    }
+    let actualQuestionCount = 0;
+    let finalQuestionSetId = null;
+    let finalQuestionSetPoolId = null;
 
-    // Authoritative question count from Question collection (BUG-60)
-    const questionsInSet = await Question.find({ questionSetId });
-    const actualQuestionCount = questionsInSet.length;
-    if (actualQuestionCount <= 0) {
-      return res.status(400).json({
-        error: 'Selected Question Set contains 0 questions. Please add questions to the set before creating a test.',
-      });
-    }
+    if (questionSetPoolId) {
+      // FEATURE-012: Pool-based Test creation
+      const poolSets = await QuestionSet.find({ uploadBatchId: questionSetPoolId });
+      if (!poolSets || poolSets.length === 0) {
+        return res.status(400).json({ error: 'Selected Question Set Pool not found or contains no question sets.' });
+      }
 
-    // BUG-005: Validate that all assigned questions have accessible PDF statements
-    for (let i = 0; i < questionsInSet.length; i++) {
-      const q = questionsInSet[i];
-      if (q.isPdfImported) {
-        const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
-        if (!exists) {
-          return res.status(400).json({
-            error: `Cannot create test: Question Q${i + 1} (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
-          });
+      // Query question counts for each set in the pool
+      const setIds = poolSets.map((s) => s._id);
+      const poolQuestions = await Question.find({ questionSetId: { $in: setIds } });
+      const countMap = {};
+      for (const q of poolQuestions) {
+        const sId = q.questionSetId.toString();
+        countMap[sId] = (countMap[sId] || 0) + 1;
+      }
+
+      const countDetails = poolSets.map((s) => ({
+        setId: s._id,
+        name: s.name,
+        count: countMap[s._id.toString()] || 0,
+      }));
+
+      // Validation 1: No set in pool can have 0 questions
+      const emptySets = countDetails.filter((d) => d.count === 0);
+      if (emptySets.length > 0) {
+        return res.status(400).json({
+          error: `Selected Question Set Pool contains set(s) with 0 questions: ${emptySets.map((e) => `"${e.name}"`).join(', ')}. Please add questions before creating a test.`,
+        });
+      }
+
+      // Validation 2: Every set in the pool must have identical question count
+      const firstCount = countDetails[0].count;
+      const isIdentical = countDetails.every((d) => d.count === firstCount);
+      if (!isIdentical) {
+        const mismatchList = countDetails.map((d) => `"${d.name}" (${d.count} Qs)`).join(', ');
+        return res.status(400).json({
+          error: `Question Set Pool validation failed: Question Sets in this pool have mismatched question counts: ${mismatchList}. All Question Sets in a pool must contain the exact same question count.`,
+        });
+      }
+
+      // BUG-005: Validate PDF assets for all questions across all pool sets
+      for (let i = 0; i < poolQuestions.length; i++) {
+        const q = poolQuestions[i];
+        if (q.isPdfImported) {
+          const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+          if (!exists) {
+            return res.status(400).json({
+              error: `Cannot create test: Question in set (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
+            });
+          }
         }
       }
+
+      actualQuestionCount = firstCount;
+      finalQuestionSetPoolId = questionSetPoolId;
+    } else {
+      // Single Question Set mode
+      const questionSet = await QuestionSet.findById(questionSetId);
+      if (!questionSet) {
+        return res.status(404).json({ error: 'Selected Question Set not found' });
+      }
+
+      // Authoritative question count from Question collection (BUG-60)
+      const questionsInSet = await Question.find({ questionSetId });
+      actualQuestionCount = questionsInSet.length;
+      if (actualQuestionCount <= 0) {
+        return res.status(400).json({
+          error: 'Selected Question Set contains 0 questions. Please add questions to the set before creating a test.',
+        });
+      }
+
+      // BUG-005: Validate that all assigned questions have accessible PDF statements
+      for (let i = 0; i < questionsInSet.length; i++) {
+        const q = questionsInSet[i];
+        if (q.isPdfImported) {
+          const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+          if (!exists) {
+            return res.status(400).json({
+              error: `Cannot create test: Question Q${i + 1} (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
+            });
+          }
+        }
+      }
+
+      finalQuestionSetId = questionSetId;
     }
 
     const parsedPassingCriteria = Number(passingCriteria);
@@ -67,7 +132,8 @@ const createTest = async (req, res, next) => {
     const test = await Test.create({
       title,
       testType,
-      questionSetId,
+      questionSetId: finalQuestionSetId,
+      questionSetPoolId: finalQuestionSetPoolId,
       durationMinutes,
       totalQuestions: actualQuestionCount, // Strictly locked to question set's real count (BUG-60)
       passingCriteria: parsedPassingCriteria,
@@ -89,13 +155,45 @@ const getTests = async (req, res, next) => {
   try {
     // BUG-30 Part A: Opportunistically check and auto-end any completed LIVE tests
     const { checkAndAutoEndAllLiveTests } = require('../services/testLifecycleService');
-    await checkAndAutoEndAllLiveTests(req.app.get('io'));
+    const io = req.app?.get ? req.app.get('io') : null;
+    await checkAndAutoEndAllLiveTests(io);
 
     const tests = await Test.find()
       .populate('createdBy', 'name email')
       .populate('questionSetId', 'name testType')
-      .sort({ createdAt: -1 });
-    res.json({ tests });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Hydrate pool information for pool-based tests (FEATURE-012)
+    const QuestionSet = require('../models/QuestionSet');
+    const poolBatchIds = tests.filter((t) => t.questionSetPoolId).map((t) => t.questionSetPoolId);
+    let poolSetsByBatch = {};
+    if (poolBatchIds.length > 0) {
+      const poolSets = await QuestionSet.find({ uploadBatchId: { $in: poolBatchIds } }, 'name uploadBatchId uploadBatchName testType').lean();
+      for (const ps of poolSets) {
+        if (!poolSetsByBatch[ps.uploadBatchId]) {
+          poolSetsByBatch[ps.uploadBatchId] = [];
+        }
+        poolSetsByBatch[ps.uploadBatchId].push(ps);
+      }
+    }
+
+    const enrichedTests = tests.map((t) => {
+      if (t.questionSetPoolId) {
+        const sets = poolSetsByBatch[t.questionSetPoolId] || [];
+        const batchName = sets[0]?.uploadBatchName || `PDF Pool (${sets.length} Sets)`;
+        return {
+          ...t,
+          isPool: true,
+          poolSetCount: sets.length,
+          questionSetPoolName: batchName,
+          poolSets: sets.map((s) => ({ _id: s._id, name: s.name })),
+        };
+      }
+      return t;
+    });
+
+    res.json({ tests: enrichedTests });
   } catch (err) {
     next(err);
   }
@@ -106,7 +204,8 @@ const getTest = async (req, res, next) => {
   try {
     // BUG-30 Part A: Opportunistically check and auto-end if this test has completed
     const { checkAndAutoEndTest } = require('../services/testLifecycleService');
-    await checkAndAutoEndTest(req.params.testId, req.app.get('io'));
+    const io = req.app?.get ? req.app.get('io') : null;
+    await checkAndAutoEndTest(req.params.testId, io);
 
     let test = await Test.findById(req.params.testId)
       .populate('createdBy', 'name email')
@@ -116,7 +215,6 @@ const getTest = async (req, res, next) => {
     // Backfill lifecycle timestamps for older tests that transitioned before these fields were added
     let needsSave = false;
     if ((test.status === 'LIVE' || test.status === 'ENDED') && !test.liveStartedAt) {
-      // ASSUMPTION: If liveStartedAt is missing on a LIVE/ENDED test, derive from earliest room or createdAt
       const earliestRoom = await Room.findOne({ testId: test._id }).sort({ createdAt: 1 });
       if (earliestRoom) {
         if (earliestRoom.passwordValidUntil) {
@@ -133,7 +231,6 @@ const getTest = async (req, res, next) => {
     }
 
     if (test.status === 'ENDED' && !test.endedAt) {
-      // ASSUMPTION: If endedAt is missing on an ENDED test, derive from updatedAt
       test.endedAt = test.updatedAt || new Date();
       needsSave = true;
     }
@@ -142,7 +239,19 @@ const getTest = async (req, res, next) => {
       await test.save();
     }
 
-    res.json({ test });
+    const testObj = test.toObject();
+
+    // Hydrate pool information if pool-based (FEATURE-012)
+    if (test.questionSetPoolId) {
+      const QuestionSet = require('../models/QuestionSet');
+      const poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }, 'name uploadBatchId uploadBatchName testType').lean();
+      testObj.isPool = true;
+      testObj.poolSetCount = poolSets.length;
+      testObj.questionSetPoolName = poolSets[0]?.uploadBatchName || `PDF Pool (${poolSets.length} Sets)`;
+      testObj.poolSets = poolSets.map((s) => ({ _id: s._id, name: s.name }));
+    }
+
+    res.json({ test: testObj });
   } catch (err) {
     next(err);
   }
@@ -188,10 +297,67 @@ const updateTest = async (req, res, next) => {
       return res.status(400).json({ error: 'Instructions cannot be empty' });
     }
 
-    // If questionSetId is updated, derive totalQuestions from the new set (BUG-60) and validate PDF assets (BUG-005)
-    if (req.body.questionSetId) {
-      const Question = require('../models/Question');
-      const pdfStorageService = require('../services/pdfStorageService');
+    const Question = require('../models/Question');
+    const QuestionSet = require('../models/QuestionSet');
+    const pdfStorageService = require('../services/pdfStorageService');
+
+    // If Question Set Pool is changed (FEATURE-012)
+    if (req.body.questionSetPoolId) {
+      const poolSets = await QuestionSet.find({ uploadBatchId: req.body.questionSetPoolId });
+      if (!poolSets || poolSets.length === 0) {
+        return res.status(400).json({ error: 'Selected Question Set Pool not found or contains no question sets.' });
+      }
+
+      const setIds = poolSets.map((s) => s._id);
+      const poolQuestions = await Question.find({ questionSetId: { $in: setIds } });
+      const countMap = {};
+      for (const q of poolQuestions) {
+        const sId = q.questionSetId.toString();
+        countMap[sId] = (countMap[sId] || 0) + 1;
+      }
+
+      const countDetails = poolSets.map((s) => ({
+        setId: s._id,
+        name: s.name,
+        count: countMap[s._id.toString()] || 0,
+      }));
+
+      const emptySets = countDetails.filter((d) => d.count === 0);
+      if (emptySets.length > 0) {
+        return res.status(400).json({
+          error: `Selected Question Set Pool contains set(s) with 0 questions: ${emptySets.map((e) => `"${e.name}"`).join(', ')}.`,
+        });
+      }
+
+      const firstCount = countDetails[0].count;
+      const isIdentical = countDetails.every((d) => d.count === firstCount);
+      if (!isIdentical) {
+        const mismatchList = countDetails.map((d) => `"${d.name}" (${d.count} Qs)`).join(', ');
+        return res.status(400).json({
+          error: `Question Set Pool validation failed: Question Sets in this pool have mismatched question counts: ${mismatchList}. All Question Sets in a pool must contain the exact same question count.`,
+        });
+      }
+
+      // BUG-005: Validate PDF assets across all questions in pool
+      for (let i = 0; i < poolQuestions.length; i++) {
+        const q = poolQuestions[i];
+        if (q.isPdfImported) {
+          const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+          if (!exists) {
+            return res.status(400).json({
+              error: `Cannot update test: Question in pool is missing its PDF statement asset.`,
+            });
+          }
+        }
+      }
+
+      req.body.questionSetId = null;
+      req.body.totalQuestions = firstCount;
+      if (existing.passingCriteria > firstCount) {
+        req.body.passingCriteria = firstCount;
+      }
+    } else if (req.body.questionSetId) {
+      // Single questionSetId is updated
       const questionsInSet = await Question.find({ questionSetId: req.body.questionSetId });
       const questionCount = questionsInSet.length;
       if (questionCount <= 0) {
@@ -213,6 +379,7 @@ const updateTest = async (req, res, next) => {
         }
       }
 
+      req.body.questionSetPoolId = null;
       req.body.totalQuestions = questionCount;
       if (existing.passingCriteria > questionCount) {
         req.body.passingCriteria = questionCount;
@@ -331,9 +498,26 @@ const startTest = async (req, res, next) => {
     }
 
     // BUG-005: Validate that all assigned questions have accessible PDF statements before going LIVE
-    if (existing.questionSetId) {
-      const Question = require('../models/Question');
-      const pdfStorageService = require('../services/pdfStorageService');
+    const Question = require('../models/Question');
+    const QuestionSet = require('../models/QuestionSet');
+    const pdfStorageService = require('../services/pdfStorageService');
+
+    if (existing.questionSetPoolId) {
+      const poolSets = await QuestionSet.find({ uploadBatchId: existing.questionSetPoolId });
+      const poolSetIds = poolSets.map((s) => s._id);
+      const poolQuestions = await Question.find({ questionSetId: { $in: poolSetIds } });
+      for (let i = 0; i < poolQuestions.length; i++) {
+        const q = poolQuestions[i];
+        if (q.isPdfImported) {
+          const exists = await pdfStorageService.validateQuestionPdfExists(q.pdfFileName);
+          if (!exists) {
+            return res.status(400).json({
+              error: `Cannot start test: Question in pool set (${q.pdfOriginalName || q.pdfFileName || 'PDF Question'}) is missing its PDF statement asset.`,
+            });
+          }
+        }
+      }
+    } else if (existing.questionSetId) {
       const questionsInSet = await Question.find({ questionSetId: existing.questionSetId });
       for (let i = 0; i < questionsInSet.length; i++) {
         const q = questionsInSet[i];

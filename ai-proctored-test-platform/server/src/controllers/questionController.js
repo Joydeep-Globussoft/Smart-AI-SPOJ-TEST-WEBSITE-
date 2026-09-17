@@ -291,7 +291,14 @@ const uploadPdfBatch = async (req, res, next) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
+    // FEATURE-012: Generate shared uploadBatchId and descriptive batch name for the pool
+    const uploadBatchId = `batch_${Date.now()}_${uuidv4().slice(0, 8)}`;
+    const batchDateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const uploadBatchName = `PDF Upload (${batchDateStr}) - ${files.length} Sets`;
+
     const summary = {
+      uploadBatchId,
+      uploadBatchName,
       totalPdfs: files.length,
       totalPdfsReceived: files.length,
       questionSetsCreated: 0,
@@ -366,12 +373,14 @@ const uploadPdfBatch = async (req, res, next) => {
         setName = `${baseSetName} (${collisionSuffix++})`;
       }
 
-      // 1. Create QuestionSet
+      // 1. Create QuestionSet with FEATURE-012 batch pool tracking
       const questionSet = await QuestionSet.create({
         name: setName,
         testType,
         createdBy: req.user.id,
         questionIds: [],
+        uploadBatchId,
+        uploadBatchName,
       });
 
       // 2. Create Question records for each detected question
@@ -454,6 +463,96 @@ const uploadPdfBatch = async (req, res, next) => {
   }
 };
 
+// ── GET /question-sets/pools ──────────────────────────────────────────────────
+// FEATURE-012: List all Question Set Pools (upload batches) with question count validation
+const getQuestionPools = async (req, res, next) => {
+  try {
+    const { testType } = req.query;
+    const filter = { uploadBatchId: { $ne: null } };
+    if (testType && testType !== 'ALL') {
+      filter.testType = testType;
+    }
+
+    const questionSets = await QuestionSet.find(filter)
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Query question counts for each set
+    const setIds = questionSets.map((s) => s._id);
+    const questions = await Question.find({ questionSetId: { $in: setIds } }, { _id: 1, questionSetId: 1 }).lean();
+
+    const countMap = {};
+    for (const q of questions) {
+      const sId = q.questionSetId.toString();
+      countMap[sId] = (countMap[sId] || 0) + 1;
+    }
+
+    // Group by uploadBatchId
+    const poolsMap = {};
+    for (const qs of questionSets) {
+      const batchId = qs.uploadBatchId;
+      const qCount = countMap[qs._id.toString()] || 0;
+      if (!poolsMap[batchId]) {
+        poolsMap[batchId] = {
+          poolId: batchId,
+          poolName: qs.uploadBatchName || `PDF Batch (${new Date(qs.createdAt).toLocaleDateString()})`,
+          testType: qs.testType,
+          createdAt: qs.createdAt,
+          createdBy: qs.createdBy,
+          sets: [],
+        };
+      }
+      poolsMap[batchId].sets.push({
+        _id: qs._id,
+        name: qs.name,
+        testType: qs.testType,
+        questionCount: qCount,
+        createdAt: qs.createdAt,
+      });
+    }
+
+    // Evaluate validity and shared question count for each pool
+    const pools = Object.values(poolsMap).map((pool) => {
+      const setCount = pool.sets.length;
+      if (setCount === 0) {
+        return { ...pool, setCount: 0, questionCount: 0, isValid: false, validationError: 'Pool contains 0 question sets.' };
+      }
+
+      // Check question counts
+      const counts = pool.sets.map((s) => s.questionCount);
+      const firstCount = counts[0];
+      const allSame = counts.every((c) => c === firstCount);
+      const hasEmptySet = counts.some((c) => c === 0);
+
+      let isValid = true;
+      let validationError = null;
+
+      if (hasEmptySet) {
+        isValid = false;
+        const emptySets = pool.sets.filter((s) => s.questionCount === 0).map((s) => `"${s.name}"`).join(', ');
+        validationError = `Pool contains sets with 0 questions: ${emptySets}.`;
+      } else if (!allSame) {
+        isValid = false;
+        const mismatchDetails = pool.sets.map((s) => `"${s.name}" (${s.questionCount} Qs)`).join(', ');
+        validationError = `Question Sets in this pool have mismatched question counts: ${mismatchDetails}. All sets in a pool must have the exact same question count.`;
+      }
+
+      return {
+        ...pool,
+        setCount,
+        questionCount: allSame && !hasEmptySet ? firstCount : null,
+        isValid,
+        validationError,
+      };
+    });
+
+    res.json({ pools });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── GET /questions/pdf-asset/:filename ────────────────────────────────────────
 // Serves stored PDF files for candidate/admin embedded PDF viewers (BUG-72 & BUG-005)
 const servePdfAsset = async (req, res, next) => {
@@ -500,5 +599,6 @@ module.exports = {
   updateQuestion,
   deleteQuestion,
   uploadPdfBatch,
+  getQuestionPools,
   servePdfAsset,
 };

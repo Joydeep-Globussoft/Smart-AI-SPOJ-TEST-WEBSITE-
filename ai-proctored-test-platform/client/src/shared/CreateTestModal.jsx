@@ -1,5 +1,5 @@
 // CreateTestModal.jsx — Standalone Reusable Create Test Modal
-// Implements PRD Section 9.2, Section 11.2 (FR-2.1, FR-2.2, FR-2.3), Section 12.1
+// Implements PRD Section 9.2, Section 11.2 (FR-2.1, FR-2.2, FR-2.3), Section 12.1, FEATURE-012
 // Preserves BUG-60 (auto-derived read-only Total Questions & passing criteria validation)
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ const INITIAL_FORM_STATE = {
   title: '',
   testType: 'SPOJ',
   questionSetId: '',
+  questionSetPoolId: '',
   durationMinutes: 90,
   totalQuestions: 0,
   passingCriteria: 0,
@@ -33,25 +34,29 @@ export default function CreateTestModal({
   questionSets: propQuestionSets,
 }) {
   const [internalQuestionSets, setInternalQuestionSets] = useState([]);
+  const [pools, setPools] = useState([]);
+  const [questionMode, setQuestionMode] = useState('SINGLE'); // 'SINGLE' | 'POOL' (FEATURE-012)
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
-  const fetchQuestionSets = useCallback(async () => {
+  const fetchQuestionData = useCallback(async () => {
     try {
-      const res = await api.getQuestionSets();
-      setInternalQuestionSets(res.data.questionSets || []);
+      const [qsRes, poolRes] = await Promise.all([
+        api.getQuestionSets().catch(() => ({ data: { questionSets: [] } })),
+        api.getQuestionPools().catch(() => ({ data: { pools: [] } })),
+      ]);
+      setInternalQuestionSets(qsRes.data?.questionSets || []);
+      setPools(poolRes.data?.pools || []);
     } catch (err) {
-      console.error('Failed to fetch question sets in CreateTestModal:', err);
+      console.error('Failed to fetch question sets or pools in CreateTestModal:', err);
     }
   }, []);
 
   useEffect(() => {
     if (isOpen) {
-      if (!propQuestionSets || propQuestionSets.length === 0) {
-        fetchQuestionSets();
-      }
+      fetchQuestionData();
     }
-  }, [isOpen, propQuestionSets, fetchQuestionSets]);
+  }, [isOpen, fetchQuestionData]);
 
   const availableQuestionSets = (propQuestionSets && propQuestionSets.length > 0)
     ? propQuestionSets
@@ -78,38 +83,66 @@ export default function CreateTestModal({
   const handleClose = () => {
     if (creating) return;
     setFormData(INITIAL_FORM_STATE);
+    setQuestionMode('SINGLE');
     if (onClose) onClose();
   };
+
+  const filteredPools = pools.filter(
+    (p) => !formData.testType || p.testType === formData.testType
+  );
+
+  const selectedPool = pools.find((p) => p.poolId === formData.questionSetPoolId);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
       return toast.error('Test title is required');
     }
-    if (!formData.questionSetId) {
-      return toast.error('Please select a Question Set');
+
+    if (questionMode === 'POOL') {
+      if (!formData.questionSetPoolId) {
+        return toast.error('Please select a Question Set Pool');
+      }
+      if (!selectedPool || !selectedPool.isValid) {
+        return toast.error(selectedPool?.validationError || 'Selected Question Set Pool is invalid');
+      }
+      if (!formData.totalQuestions || formData.totalQuestions <= 0) {
+        return toast.error('Selected pool contains 0 questions per set');
+      }
+    } else {
+      if (!formData.questionSetId) {
+        return toast.error('Please select a Question Set');
+      }
+      const selectedQs = availableQuestionSets.find((qs) => qs._id === formData.questionSetId);
+      const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : formData.totalQuestions;
+      if (qCount <= 0) {
+        return toast.error('Selected Question Set contains 0 questions. Please add questions before creating a test.');
+      }
     }
-    const selectedQs = availableQuestionSets.find((qs) => qs._id === formData.questionSetId);
-    const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : formData.totalQuestions;
-    if (qCount <= 0) {
-      return toast.error('Selected Question Set contains 0 questions. Please add questions before creating a test.');
-    }
+
     if (!formData.durationMinutes || formData.durationMinutes <= 0) {
       return toast.error('Duration must be greater than 0');
     }
     if (formData.passingCriteria < 0) {
       return toast.error('Passing criteria cannot be negative');
     }
-    if (formData.passingCriteria > qCount) {
-      return toast.error(`Passing criteria (${formData.passingCriteria}) cannot exceed Total Questions (${qCount})`);
+    if (formData.passingCriteria > formData.totalQuestions) {
+      return toast.error(`Passing criteria (${formData.passingCriteria}) cannot exceed Total Questions (${formData.totalQuestions})`);
     }
 
     try {
       setCreating(true);
-      const res = await api.createTest(formData);
+      const payload = {
+        ...formData,
+        questionSetId: questionMode === 'SINGLE' ? formData.questionSetId : null,
+        questionSetPoolId: questionMode === 'POOL' ? formData.questionSetPoolId : null,
+      };
+
+      const res = await api.createTest(payload);
       toast.success('Test created successfully (Status: DRAFT)');
       const createdTest = res.data.test;
       setFormData(INITIAL_FORM_STATE);
+      setQuestionMode('SINGLE');
       if (onSuccess) {
         onSuccess(createdTest);
       } else if (onClose) {
@@ -157,6 +190,7 @@ export default function CreateTestModal({
               />
             </div>
 
+            {/* Test Type & Question Bank Selection */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div className="form-group">
                 <label className="form-label">Test Type *</label>
@@ -170,6 +204,7 @@ export default function CreateTestModal({
                       ...prev,
                       testType: newType,
                       questionSetId: '',
+                      questionSetPoolId: '',
                       totalQuestions: 0,
                       passingCriteria: 0,
                     }));
@@ -183,43 +218,154 @@ export default function CreateTestModal({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Question Set *</label>
-                <select
-                  name="questionSetId"
-                  className="form-select"
-                  value={formData.questionSetId}
-                  onChange={(e) => {
-                    const newSetId = e.target.value;
-                    const selectedQs = availableQuestionSets.find((qs) => qs._id === newSetId);
-                    const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : 0;
-                    setFormData((prev) => ({
-                      ...prev,
-                      questionSetId: newSetId,
-                      totalQuestions: qCount,
-                      passingCriteria: prev.passingCriteria > qCount ? qCount : prev.passingCriteria,
-                    }));
-                  }}
-                  required
-                >
-                  <option value="">Select a Question Set...</option>
-                  {filteredQuestionSets.map((qs) => {
-                    const qCount = qs.questionCount ?? qs.questionIds?.length ?? 0;
-                    return (
-                      <option key={qs._id} value={qs._id}>
-                        {qs.name} ({qs.testType}) — {qCount} Qs
-                      </option>
-                    );
-                  })}
-                </select>
-                {filteredQuestionSets.length === 0 ? (
-                  <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
-                    No question sets found for {formData.testType}. Create one in Question Bank first.
-                  </p>
-                ) : formData.questionSetId && formData.totalQuestions === 0 ? (
-                  <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
-                    Warning: This Question Set contains 0 questions. Add questions in Question Bank before creating a test.
-                  </p>
-                ) : null}
+                {/* Question Set Mode Switcher (FEATURE-012) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>
+                    {questionMode === 'POOL' ? 'Question Set Pool *' : 'Question Set *'}
+                  </label>
+                  <div style={{ display: 'inline-flex', background: 'var(--color-bg-subtle)', borderRadius: 6, padding: 2 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuestionMode('SINGLE');
+                        setFormData((p) => ({
+                          ...p,
+                          questionSetPoolId: '',
+                          questionSetId: '',
+                          totalQuestions: 0,
+                          passingCriteria: 0,
+                        }));
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '0.72rem',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        background: questionMode === 'SINGLE' ? 'var(--color-primary)' : 'transparent',
+                        color: questionMode === 'SINGLE' ? '#ffffff' : 'var(--color-text-muted)',
+                      }}
+                    >
+                      Single Set
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuestionMode('POOL');
+                        setFormData((p) => ({
+                          ...p,
+                          questionSetId: '',
+                          questionSetPoolId: '',
+                          totalQuestions: 0,
+                          passingCriteria: 0,
+                        }));
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '0.72rem',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        background: questionMode === 'POOL' ? 'var(--color-primary)' : 'transparent',
+                        color: questionMode === 'POOL' ? '#ffffff' : 'var(--color-text-muted)',
+                      }}
+                    >
+                      Pool (Batch)
+                    </button>
+                  </div>
+                </div>
+
+                {questionMode === 'SINGLE' ? (
+                  <>
+                    <select
+                      name="questionSetId"
+                      className="form-select"
+                      value={formData.questionSetId}
+                      onChange={(e) => {
+                        const newSetId = e.target.value;
+                        const selectedQs = availableQuestionSets.find((qs) => qs._id === newSetId);
+                        const qCount = selectedQs ? (selectedQs.questionCount ?? selectedQs.questionIds?.length ?? 0) : 0;
+                        setFormData((prev) => ({
+                          ...prev,
+                          questionSetId: newSetId,
+                          totalQuestions: qCount,
+                          passingCriteria: prev.passingCriteria > qCount ? qCount : prev.passingCriteria,
+                        }));
+                      }}
+                      required
+                    >
+                      <option value="">Select a Question Set...</option>
+                      {filteredQuestionSets.map((qs) => {
+                        const qCount = qs.questionCount ?? qs.questionIds?.length ?? 0;
+                        return (
+                          <option key={qs._id} value={qs._id}>
+                            {qs.name} ({qs.testType}) — {qCount} Qs
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {filteredQuestionSets.length === 0 ? (
+                      <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                        No question sets found for {formData.testType}. Create one in Question Bank first.
+                      </p>
+                    ) : formData.questionSetId && formData.totalQuestions === 0 ? (
+                      <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                        Warning: This Question Set contains 0 questions. Add questions in Question Bank before creating a test.
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <select
+                      name="questionSetPoolId"
+                      className="form-select"
+                      value={formData.questionSetPoolId}
+                      onChange={(e) => {
+                        const newPoolId = e.target.value;
+                        const p = pools.find((item) => item.poolId === newPoolId);
+                        const qCount = p && p.isValid ? (p.questionCount || 0) : 0;
+                        setFormData((prev) => ({
+                          ...prev,
+                          questionSetPoolId: newPoolId,
+                          totalQuestions: qCount,
+                          passingCriteria: prev.passingCriteria > qCount ? qCount : prev.passingCriteria,
+                        }));
+                      }}
+                      required
+                    >
+                      <option value="">Select a Question Set Pool (Batch)...</option>
+                      {filteredPools.map((p) => (
+                        <option key={p.poolId} value={p.poolId}>
+                          {p.poolName} ({p.setCount} Sets{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
+                        </option>
+                      ))}
+                    </select>
+                    {filteredPools.length === 0 ? (
+                      <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                        No PDF upload batches found for {formData.testType}. Upload a folder of PDFs in Question Bank first.
+                      </p>
+                    ) : selectedPool && !selectedPool.isValid ? (
+                      <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
+                        <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0, lineHeight: 1.4 }}>
+                          ⚠️ {selectedPool.validationError}
+                        </p>
+                      </div>
+                    ) : selectedPool && selectedPool.isValid ? (
+                      <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                          ✓ Valid Pool: {selectedPool.setCount} Question Sets ({selectedPool.questionCount} Qs each) rotating round-robin per room.
+                        </p>
+                        {selectedPool.setCount === 1 && (
+                          <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
+                            ℹ️ Note: Pool contains only 1 set. All candidates in each room will receive the same questions.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </div>
             </div>
 
@@ -260,7 +406,9 @@ export default function CreateTestModal({
                   }}
                 />
                 <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
-                  Locked to Question Set's count ({formData.totalQuestions} Qs).
+                  {questionMode === 'POOL'
+                    ? `Locked to Pool's shared count (${formData.totalQuestions} Qs).`
+                    : `Locked to Question Set's count (${formData.totalQuestions} Qs).`}
                 </small>
               </div>
 
@@ -361,7 +509,7 @@ export default function CreateTestModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={creating}
+              disabled={creating || (questionMode === 'POOL' && selectedPool && !selectedPool.isValid)}
             >
               {creating ? 'Creating...' : 'Create Test (Draft)'}
             </button>

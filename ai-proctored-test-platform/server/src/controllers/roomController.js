@@ -5,6 +5,7 @@ const Room = require('../models/Room');
 const Test = require('../models/Test');
 const Candidate = require('../models/Candidate');
 const Submission = require('../models/Submission');
+const QuestionSet = require('../models/QuestionSet');
 
 /**
  * Generate a cryptographically random room code (Section 13: not guessable, not sequential)
@@ -156,12 +157,15 @@ const deleteRoom = async (req, res, next) => {
 const getRoomCandidates = async (req, res, next) => {
   try {
     const { roomId } = req.params;
-    const room = await Room.findById(roomId).populate('joinedCandidates.candidateId', 'name email phone isDisqualified');
+    const room = await Room.findById(roomId)
+      .populate('joinedCandidates.candidateId', 'name email phone isDisqualified')
+      .populate('joinedCandidates.assignedQuestionSetId', 'name testType');
     if (!room) return res.status(404).json({ error: 'Room not found' });
 
     // 1. Fetch all submissions for this room, sorted newest first
     const submissions = await Submission.find({ roomId })
       .populate('candidateId', 'name email phone isDisqualified')
+      .populate('assignedQuestionSetId', 'name testType')
       .sort({ createdAt: -1 });
 
     // 2. Fetch malpractice incident logs for this room
@@ -179,7 +183,18 @@ const getRoomCandidates = async (req, res, next) => {
       }
     });
 
-    // 3. Deduplicate by candidateId, preserving real-time status & progress
+    // 3. Map room join entries for fast lookup of assigned Question Set & index
+    const roomJoinedMap = {};
+    if (room.joinedCandidates && room.joinedCandidates.length > 0) {
+      for (const entry of room.joinedCandidates) {
+        const candidate = entry.candidateId;
+        if (!candidate) continue;
+        const cid = candidate._id ? candidate._id.toString() : entry.candidateId.toString();
+        roomJoinedMap[cid] = entry;
+      }
+    }
+
+    // 4. Deduplicate by candidateId, preserving real-time status & progress
     const candidateMap = {};
 
     // First, process active submissions
@@ -195,6 +210,12 @@ const getRoomCandidates = async (req, res, next) => {
           status = 'DISQUALIFIED';
         }
 
+        const joinedEntry = roomJoinedMap[cid];
+        const assignedSetObj = sub.assignedQuestionSetId || joinedEntry?.assignedQuestionSetId;
+        const assignedQuestionSetName = assignedSetObj?.name || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+        const assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+        const assignedSetIndex = joinedEntry?.joinIndex || null;
+
         candidateMap[cid] = {
           _id: cid,
           candidateId: cid,
@@ -208,6 +229,9 @@ const getRoomCandidates = async (req, res, next) => {
           startedAt: sub.candidateStartTime || sub.createdAt,
           candidateEndTime: sub.candidateEndTime,
           malpracticeCount: malpracticeCounts[cid] || 0,
+          assignedQuestionSetId,
+          assignedQuestionSetName,
+          assignedSetIndex,
         };
       }
     }
@@ -221,6 +245,11 @@ const getRoomCandidates = async (req, res, next) => {
 
         if (!candidateMap[cid]) {
           const isDisqualified = candidate.isDisqualified || false;
+          const assignedSetObj = entry.assignedQuestionSetId;
+          const assignedQuestionSetName = assignedSetObj?.name || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+          const assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+          const assignedSetIndex = entry.joinIndex || null;
+
           candidateMap[cid] = {
             _id: cid,
             candidateId: cid,
@@ -234,6 +263,9 @@ const getRoomCandidates = async (req, res, next) => {
             startedAt: entry.joinedAt || room.createdAt,
             candidateEndTime: null,
             malpracticeCount: malpracticeCounts[cid] || 0,
+            assignedQuestionSetId,
+            assignedQuestionSetName,
+            assignedSetIndex,
           };
         }
       }
@@ -258,6 +290,9 @@ const getRoomCandidates = async (req, res, next) => {
           startedAt: item.detectedAt || room.createdAt,
           candidateEndTime: null,
           malpracticeCount: malpracticeCounts[cid] || 0,
+          assignedQuestionSetId: null,
+          assignedQuestionSetName: null,
+          assignedSetIndex: null,
         };
       }
     }
@@ -284,10 +319,13 @@ const getLiveCandidates = async (req, res, next) => {
     // Fetch all submissions for this test
     const submissions = await Submission.find({ testId })
       .populate('candidateId', 'name email isDisqualified')
-      .populate('roomId', 'roomName roomCode');
+      .populate('roomId', 'roomName roomCode')
+      .populate('assignedQuestionSetId', 'name testType');
 
     // Fetch all rooms for this test to also capture candidates who joined a room but haven't started yet
-    const rooms = await Room.find({ testId }).populate('joinedCandidates.candidateId', 'name email isDisqualified');
+    const rooms = await Room.find({ testId })
+      .populate('joinedCandidates.candidateId', 'name email isDisqualified')
+      .populate('joinedCandidates.assignedQuestionSetId', 'name testType');
 
     // Fetch all malpractice logs for this test
     const MalpracticeLog = require('../models/MalpracticeLog');
@@ -317,19 +355,51 @@ const getLiveCandidates = async (req, res, next) => {
       }
     }
 
+    // If test is pool-based, pre-fetch pool sets to accurately resolve set indices and names
+    let poolSets = [];
+    if (test.questionSetPoolId) {
+      poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }).sort({ createdAt: 1, _id: 1 });
+    }
+
+    const resolveSetDetails = (assignedSetObj, joinIndex) => {
+      let assignedQuestionSetName = assignedSetObj?.name || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+      let assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+      let assignedSetIndex = joinIndex || null;
+
+      if (poolSets.length > 0 && assignedQuestionSetId) {
+        const foundIdx = poolSets.findIndex((s) => s._id.toString() === assignedQuestionSetId.toString());
+        if (foundIdx !== -1) {
+          assignedSetIndex = foundIdx + 1;
+          if (!assignedQuestionSetName) {
+            assignedQuestionSetName = poolSets[foundIdx].name;
+          }
+        }
+      } else if (poolSets.length > 0 && typeof joinIndex === 'number' && joinIndex > 0) {
+        assignedSetIndex = ((joinIndex - 1) % poolSets.length) + 1;
+        if (!assignedQuestionSetName && poolSets[assignedSetIndex - 1]) {
+          assignedQuestionSetName = poolSets[assignedSetIndex - 1].name;
+        }
+      }
+
+      return { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex };
+    };
+
     // 1. Seed candidates from rooms (joined candidates who may not have started test yet)
     for (const r of rooms) {
       for (const j of r.joinedCandidates || []) {
         const candidate = j.candidateId;
-        if (!candidate || !candidate._id) continue;
-        const cid = candidate._id.toString();
+        const cid = candidate?._id ? candidate._id.toString() : j.candidateId?.toString();
+        if (!cid) continue;
+
+        const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(j.assignedQuestionSetId, j.joinIndex);
+
         candidateMap[cid] = {
           candidateId: cid,
-          name: candidate.name,
-          email: candidate.email,
+          name: candidate?.name || 'Candidate',
+          email: candidate?.email || '—',
           roomId: r._id.toString(),
           roomName: r.roomName || 'Assigned Room',
-          status: candidate.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
+          status: candidate?.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
           timeRemaining: 0,
           candidateStartTime: null,
           candidateEndTime: null,
@@ -337,7 +407,10 @@ const getLiveCandidates = async (req, res, next) => {
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
-          colorStatus: candidate.isDisqualified ? 'RED' : 'WHITE',
+          colorStatus: candidate?.isDisqualified ? 'RED' : 'WHITE',
+          assignedQuestionSetId,
+          assignedQuestionSetName,
+          assignedSetIndex,
         };
       }
     }
@@ -360,11 +433,16 @@ const getLiveCandidates = async (req, res, next) => {
       }
 
       const existing = candidateMap[cid];
+      const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(
+        sub.assignedQuestionSetId || existing?.assignedQuestionSetId,
+        existing?.assignedSetIndex
+      );
+
       if (!existing || existing.status === 'NOT_STARTED') {
         candidateMap[cid] = {
           candidateId: cid,
-          name: candidate.name || existing?.name,
-          email: candidate.email || existing?.email,
+          name: candidate.name || existing?.name || 'Candidate',
+          email: candidate.email || existing?.email || '—',
           roomId: sub.roomId?._id ? sub.roomId._id.toString() : (sub.roomId?.toString() || existing?.roomId),
           roomName: sub.roomId?.roomName || existing?.roomName || 'Assigned Room',
           status: candidate.isDisqualified ? 'DISQUALIFIED' : sub.status,
@@ -376,11 +454,17 @@ const getLiveCandidates = async (req, res, next) => {
           questionsCompleted: completedCounts[cid] || 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
           colorStatus,
+          assignedQuestionSetId: assignedQuestionSetId || existing?.assignedQuestionSetId || null,
+          assignedQuestionSetName: assignedQuestionSetName || existing?.assignedQuestionSetName || null,
+          assignedSetIndex: assignedSetIndex || existing?.assignedSetIndex || null,
         };
       } else {
         candidateMap[cid].questionsAttempted = attemptedCounts[cid] || 0;
         candidateMap[cid].questionsCompleted = completedCounts[cid] || 0;
         candidateMap[cid].totalQuestions = totalQuestions;
+        if (assignedQuestionSetName) candidateMap[cid].assignedQuestionSetName = assignedQuestionSetName;
+        if (assignedQuestionSetId) candidateMap[cid].assignedQuestionSetId = assignedQuestionSetId;
+        if (assignedSetIndex) candidateMap[cid].assignedSetIndex = assignedSetIndex;
         if (sub.status === 'SUBMITTED' || sub.status === 'AUTO_SUBMITTED_TIME_UP') {
           candidateMap[cid].status = sub.status;
           candidateMap[cid].colorStatus = 'GREEN';
