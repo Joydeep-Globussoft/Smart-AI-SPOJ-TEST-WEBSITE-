@@ -116,6 +116,7 @@ export default function AdminQuestionBank() {
 
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
   const [deletingFolder, setDeletingFolder] = useState(false);
+  const [deleteFolderError, setDeleteFolderError] = useState(null);
 
   // ── Question Set Modals State ──
   const [showNewSetModal, setShowNewSetModal] = useState(false);
@@ -340,22 +341,22 @@ export default function AdminQuestionBank() {
     }
   };
 
-  // ── Delete Folder Submit (Safe By Default) ──
+  // ── Delete Folder Submit (FEATURE-013 Cascading Deletion & Dependency Safeguard) ──
   const handleDeleteFolderSubmit = async () => {
     if (!selectedFolder?._id) return;
-    const setCount = selectedFolder.setCount || selectedFolder.questionSets?.length || 0;
-    if (setCount > 0) {
-      return toast.error(`Folder "${selectedFolder.name}" contains ${setCount} question set(s). You must delete or move all sets before deleting this folder.`);
-    }
+    setDeleteFolderError(null);
 
     try {
       setDeletingFolder(true);
-      await api.deleteFolder(selectedFolder._id);
-      toast.success(`Deleted Folder "${selectedFolder.name}"`);
+      const res = await api.deleteFolder(selectedFolder._id);
+      toast.success(res.data?.message || `Deleted Folder "${selectedFolder.name}"`);
       setShowDeleteFolderModal(false);
+      setDeleteFolderError(null);
       await fetchFolders();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to delete folder');
+      const errMsg = err.response?.data?.error || 'Failed to delete folder';
+      setDeleteFolderError(errMsg);
+      toast.error(errMsg);
     } finally {
       setDeletingFolder(false);
     }
@@ -956,7 +957,7 @@ export default function AdminQuestionBank() {
                           <span
                             style={{
                               fontSize: '0.65rem',
-                              padding: '1px 5px',
+                              padding: '1px 5px 2px',
                               borderRadius: 4,
                               background: f.isValidPool ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
                               color: f.isValidPool ? '#15803d' : '#b45309',
@@ -1016,7 +1017,7 @@ export default function AdminQuestionBank() {
                         <div style={{ marginTop: 10 }}>
                           {selectedFolder.isValidPool ? (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: 'rgba(34, 197, 94, 0.12)', color: '#15803d', padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600 }}>
-                              <span>🟢</span> Valid Pool: All sets contain {selectedFolder.questionCountPerSet} questions each (ready for round-robin rotation).
+                              <span>🟢</span> Valid Pool: All sets contain {selectedFolder.questionCountPerSet} questions each.
                             </div>
                           ) : (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', fontWeight: 600 }}>
@@ -1059,7 +1060,10 @@ export default function AdminQuestionBank() {
                       <button
                         type="button"
                         id="delete-folder-btn"
-                        onClick={() => setShowDeleteFolderModal(true)}
+                        onClick={() => {
+                          setDeleteFolderError(null);
+                          setShowDeleteFolderModal(true);
+                        }}
                         className="btn btn-danger"
                         style={{ fontSize: '0.82rem', padding: '6px 10px' }}
                         title="Delete Folder"
@@ -1655,7 +1659,7 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: DELETE FOLDER ════════ */}
         {showDeleteFolderModal && selectedFolder && (
           <div className="modal-backdrop" onClick={() => !deletingFolder && setShowDeleteFolderModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3 className="modal-title" style={{ color: '#dc2626' }}>🗑 Delete Folder</h3>
                 <button
@@ -1670,13 +1674,21 @@ export default function AdminQuestionBank() {
                 <p style={{ fontSize: '0.92rem', color: 'var(--color-text)', margin: 0 }}>
                   Are you sure you want to delete Folder <strong>"{selectedFolder.name}"</strong>?
                 </p>
+
+                {deleteFolderError && (
+                  <div style={{ fontSize: '0.85rem', color: '#b91c1c', background: '#fee2e2', padding: '10px 14px', borderRadius: 6, border: '1px solid #fecaca', lineHeight: 1.45 }}>
+                    ⛔ <strong>Cannot Delete Folder:</strong>
+                    <div style={{ marginTop: 4 }}>{deleteFolderError}</div>
+                  </div>
+                )}
+
                 {(selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 0 ? (
-                  <div style={{ fontSize: '0.85rem', color: '#b91c1c', background: '#fee2e2', padding: '10px 14px', borderRadius: 6, border: '1px solid #fecaca' }}>
-                    ⚠️ <strong>Safe Deletion Block:</strong> This folder contains <strong>{selectedFolder.setCount || selectedFolder.questionSets?.length}</strong> question set(s). Folders with question sets cannot be deleted. Please delete or move all question sets out of this folder first.
+                  <div style={{ fontSize: '0.85rem', color: '#92400e', background: '#fef3c7', padding: '10px 14px', borderRadius: 6, border: '1px solid #fde68a', lineHeight: 1.45 }}>
+                    ⚠️ <strong>Warning:</strong> This folder contains <strong>{selectedFolder.setCount || selectedFolder.questionSets?.length}</strong> question set(s). Deleting this folder will permanently delete all contained questions. This action cannot be undone.
                   </div>
                 ) : (
                   <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                    This empty folder will be permanently deleted.
+                    This empty folder will be permanently deleted. This action cannot be undone.
                   </p>
                 )}
               </div>
@@ -1691,9 +1703,10 @@ export default function AdminQuestionBank() {
                 </button>
                 <button
                   type="button"
+                  id="confirm-delete-folder-btn"
                   onClick={handleDeleteFolderSubmit}
                   className="btn btn-danger"
-                  disabled={deletingFolder || (selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 0}
+                  disabled={deletingFolder}
                 >
                   {deletingFolder ? 'Deleting...' : 'Confirm Delete'}
                 </button>
@@ -2264,7 +2277,7 @@ export default function AdminQuestionBank() {
                       </div>
 
                       {uploadMode === 'CREATE_NEW_FOLDER' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 12 }}>
                           <div>
                             <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
                               New Folder Name *
@@ -2500,7 +2513,7 @@ export default function AdminQuestionBank() {
                     </div>
 
                     <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
-                      ℹ️ <strong>Folder Pool Note:</strong> Question sets were created in Folder <strong>"{uploadSummary?.folder?.name || selectedFolder?.name || 'Target Folder'}"</strong>.
+                      ℹ️ <strong>Note:</strong> Question sets were created in Folder <strong>"{uploadSummary?.folder?.name || selectedFolder?.name || 'Target Folder'}"</strong>.
                     </div>
 
                     <div>

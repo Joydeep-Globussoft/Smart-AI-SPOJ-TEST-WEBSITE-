@@ -4,6 +4,7 @@ const Folder = require('../models/Folder');
 const QuestionSet = require('../models/QuestionSet');
 const Question = require('../models/Question');
 const Test = require('../models/Test');
+const pdfStorageService = require('../services/pdfStorageService');
 
 // ── GET /folders ───────────────────────────────────────────────────────────────
 const getFolders = async (req, res, next) => {
@@ -241,26 +242,81 @@ const deleteFolder = async (req, res, next) => {
       return res.status(404).json({ error: 'Folder not found' });
     }
 
-    // Safety constraint: Prevent deletion if folder contains Question Sets
-    const childSetsCount = await QuestionSet.countDocuments({ folderId: folder._id });
-    if (childSetsCount > 0) {
+    // 1. Fetch all Question Sets in this folder
+    const setsInFolder = await QuestionSet.find({ folderId: folder._id });
+    const setIds = setsInFolder.map((s) => s._id);
+
+    // 2. Query all Tests referencing this folder OR any of its contained question sets
+    // Check both folderId/questionSetPoolId and legacy questionSetId fallback paths across all test statuses
+    const queryConditions = [
+      { folderId: folder._id },
+      { questionSetPoolId: folder._id },
+      { questionSetPoolId: folder._id.toString() },
+    ];
+    if (setIds.length > 0) {
+      queryConditions.push({ questionSetId: { $in: setIds } });
+    }
+
+    const referencingTests = await Test.find(
+      { $or: queryConditions },
+      'title status testType'
+    ).lean();
+
+    // 3. If any Test references this folder or its sets, block deletion entirely
+    if (referencingTests.length > 0) {
+      const testList = referencingTests
+        .map((t) => `"${t.title}" (${t.status || 'DRAFT'})`)
+        .join(', ');
       return res.status(400).json({
-        error: `Cannot delete Folder: It contains ${childSetsCount} Question Set(s). Please delete all Question Sets in this folder first.`,
+        error: `Cannot delete Folder: Contained question set(s) or folder are currently referenced by Test(s): ${testList}. Please remove or reassign those tests' question source first.`,
+        referencingTests: referencingTests.map((t) => ({
+          _id: t._id,
+          title: t.title,
+          status: t.status,
+        })),
       });
     }
 
-    // Safety constraint: Prevent deletion if assigned as a pool to a Test
-    const assignedTest = await Test.findOne({
-      $or: [{ folderId: folder._id }, { questionSetPoolId: folder._id.toString() }],
-    });
-    if (assignedTest) {
-      return res.status(400).json({
-        error: `Cannot delete Folder: It is assigned to test "${assignedTest.title}".`,
-      });
+    // 4. If no references exist: proceed with cascading delete
+    let deletedQuestionsCount = 0;
+    if (setIds.length > 0) {
+      // Find all questions belonging to these sets to check and clean associated PDF files
+      const questions = await Question.find({ questionSetId: { $in: setIds } });
+      deletedQuestionsCount = questions.length;
+      const questionIds = questions.map((q) => q._id);
+
+      // Collect all PDF file names
+      const pdfFileNames = [
+        ...new Set(questions.map((q) => q.pdfFileName).filter(Boolean)),
+      ];
+
+      // Clean up PDF assets that are not referenced by any question outside this folder
+      for (const pdfFileName of pdfFileNames) {
+        const otherQuestionsUsingPdf = await Question.countDocuments({
+          pdfFileName,
+          _id: { $nin: questionIds },
+        });
+        if (otherQuestionsUsingPdf === 0) {
+          await pdfStorageService.deletePdfAsset(pdfFileName);
+        }
+      }
+
+      // Delete all questions associated with these sets
+      await Question.deleteMany({ questionSetId: { $in: setIds } });
+
+      // Delete all question sets in the folder
+      await QuestionSet.deleteMany({ folderId: folder._id });
     }
 
+    // Delete the Folder document itself
     await Folder.findByIdAndDelete(folder._id);
-    res.json({ success: true, message: 'Folder deleted successfully' });
+
+    res.json({
+      success: true,
+      message: `Folder "${folder.name}" and all ${setsInFolder.length} question set(s) deleted successfully`,
+      deletedSetsCount: setsInFolder.length,
+      deletedQuestionsCount,
+    });
   } catch (err) {
     next(err);
   }

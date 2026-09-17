@@ -65,7 +65,7 @@ async function runTests() {
   const folderControllerSrc = fs.readFileSync(folderControllerPath, 'utf8');
   assert(folderControllerSrc.includes('getFolders') && folderControllerSrc.includes('createFolder'), 'folderController implements getFolders and createFolder');
   assert(folderControllerSrc.includes('updateFolder') && folderControllerSrc.includes('deleteFolder'), 'folderController implements updateFolder and deleteFolder');
-  assert(folderControllerSrc.includes('Cannot delete Folder: It contains') || folderControllerSrc.includes('childSetsCount'), 'folderController enforces safe deletion blocking');
+  assert(folderControllerSrc.includes('Cannot delete Folder:') && (folderControllerSrc.includes('referencingTests') || folderControllerSrc.includes('Test.find')), 'folderController enforces safe deletion blocking when referenced by tests');
 
   const questionControllerSrc = fs.readFileSync(questionControllerPath, 'utf8');
   assert(questionControllerSrc.includes('folderId') && questionControllerSrc.includes('createQuestionSet'), 'questionController requires folderId when creating set');

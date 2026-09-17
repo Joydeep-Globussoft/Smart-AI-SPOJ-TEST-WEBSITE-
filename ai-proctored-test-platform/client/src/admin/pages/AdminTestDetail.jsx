@@ -1400,7 +1400,7 @@ export default function AdminTestDetail() {
                                 </p>
                               ) : (
                                 <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
-                                  ✓ Folder contains : {selFolder.setCount} Question Sets ({selFolder.questionCount} Qs each).
+                                  ✓ Folder contains {selFolder.setCount} Question Sets ({selFolder.questionCount} Qs each).
                                 </p>
                               )}
                             </div>

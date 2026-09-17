@@ -227,11 +227,11 @@ export default function CreateTestModal({
                   <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
                     {selectedFolder.setCount === 1 ? (
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
-                        ✓ Folder contains 1 Question Set ({selectedFolder.questionCount} Qs). All candidates in each room will receive this set.
+                        ✓ Folder contains 1 Question Set ({selectedFolder.questionCount} Qs).
                       </p>
                     ) : (
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
-                        ✓ Valid Folder Pool: {selectedFolder.setCount} Question Sets ({selectedFolder.questionCount} Qs each) rotating round-robin per room.
+                        ✓ Folder contains {selectedFolder.setCount} Question Sets ({selectedFolder.questionCount} Qs each).
                       </p>
                     )}
                   </div>

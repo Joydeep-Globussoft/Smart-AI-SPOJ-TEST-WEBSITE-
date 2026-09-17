@@ -197,9 +197,39 @@ async function syncAllPdfAssets() {
   }
 }
 
+/**
+ * Delete a PDF asset from local disk cache and MongoDB Atlas
+ * @param {string} fileName - Unique filename
+ */
+async function deletePdfAsset(fileName) {
+  if (!fileName) return;
+  ensureUploadDir();
+  const safeFilename = path.basename(fileName);
+  const filePath = path.join(uploadDir, safeFilename);
+
+  // 1. Remove from local disk cache if present
+  if (fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (e) {
+      console.warn(`[PdfStorage] Error deleting disk file ${safeFilename}:`, e.message);
+    }
+  }
+
+  // 2. Remove from MongoDB Atlas
+  try {
+    await PdfAsset.deleteMany({
+      $or: [{ fileName: safeFilename }, { originalName: safeFilename }],
+    });
+  } catch (dbErr) {
+    console.warn(`[PdfStorage] Error deleting PdfAsset record for ${safeFilename}:`, dbErr.message);
+  }
+}
+
 module.exports = {
   savePdfAsset,
   getPdfAsset,
   validateQuestionPdfExists,
   syncAllPdfAssets,
+  deletePdfAsset,
 };
