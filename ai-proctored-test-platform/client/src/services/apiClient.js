@@ -107,10 +107,17 @@ export const api = {
   disqualifyCandidate: (candidateId, data) => axios.post(`/candidates/${candidateId}/disqualify`, data),
   warnCandidate: (candidateId, data) => axios.post(`/candidates/${candidateId}/warn`, data),
 
+  // Folders (FEATURE-013)
+  getFolders: (params) => axios.get('/folders', { params }),
+  getFolder: (id) => axios.get(`/folders/${id}`),
+  createFolder: (data) => axios.post('/folders', data),
+  updateFolder: (id, data) => axios.patch(`/folders/${id}`, data),
+  deleteFolder: (id) => axios.delete(`/folders/${id}`),
+
   // Question Sets
   createQuestionSet: (data) => axios.post('/question-sets', data),
-  getQuestionSets: () => axios.get('/question-sets'),
-  getQuestionPools: (params) => axios.get('/question-sets/pools', { params }), // FEATURE-012
+  getQuestionSets: (params) => axios.get('/question-sets', { params }),
+  getQuestionPools: (params) => axios.get('/question-sets/pools', { params }), // FEATURE-012 & FEATURE-013
   updateQuestionSet: (setId, data) => axios.patch(`/question-sets/${setId}`, data),
   deleteQuestionSet: (setId) => axios.delete(`/question-sets/${setId}`),
   createQuestion: (setId, data) => axios.post(`/question-sets/${setId}/questions`, data),

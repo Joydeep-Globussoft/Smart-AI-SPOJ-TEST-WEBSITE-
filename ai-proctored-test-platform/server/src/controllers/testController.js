@@ -26,17 +26,24 @@ const createTest = async (req, res, next) => {
 
     const Question = require('../models/Question');
     const QuestionSet = require('../models/QuestionSet');
+    const Folder = require('../models/Folder');
     const pdfStorageService = require('../services/pdfStorageService');
 
     let actualQuestionCount = 0;
     let finalQuestionSetId = null;
-    let finalQuestionSetPoolId = null;
+    let finalFolderId = null;
 
-    if (questionSetPoolId) {
-      // FEATURE-012: Pool-based Test creation
-      const poolSets = await QuestionSet.find({ uploadBatchId: questionSetPoolId });
+    const targetPoolId = req.body.folderId || questionSetPoolId;
+
+    if (targetPoolId) {
+      // FEATURE-012 & FEATURE-013: Folder-based Pool Test creation
+      const folder = await Folder.findById(targetPoolId);
+      const poolSets = await QuestionSet.find({
+        $or: [{ folderId: targetPoolId }, { uploadBatchId: targetPoolId }],
+      }).sort({ createdAt: 1, _id: 1 });
+
       if (!poolSets || poolSets.length === 0) {
-        return res.status(400).json({ error: 'Selected Question Set Pool not found or contains no question sets.' });
+        return res.status(400).json({ error: 'Selected Folder/Pool not found or contains no question sets.' });
       }
 
       // Query question counts for each set in the pool
@@ -58,7 +65,7 @@ const createTest = async (req, res, next) => {
       const emptySets = countDetails.filter((d) => d.count === 0);
       if (emptySets.length > 0) {
         return res.status(400).json({
-          error: `Selected Question Set Pool contains set(s) with 0 questions: ${emptySets.map((e) => `"${e.name}"`).join(', ')}. Please add questions before creating a test.`,
+          error: `Selected Folder/Pool contains set(s) with 0 questions: ${emptySets.map((e) => `"${e.name}"`).join(', ')}. Please add questions before creating a test.`,
         });
       }
 
@@ -68,7 +75,7 @@ const createTest = async (req, res, next) => {
       if (!isIdentical) {
         const mismatchList = countDetails.map((d) => `"${d.name}" (${d.count} Qs)`).join(', ');
         return res.status(400).json({
-          error: `Question Set Pool validation failed: Question Sets in this pool have mismatched question counts: ${mismatchList}. All Question Sets in a pool must contain the exact same question count.`,
+          error: `Question Set Pool validation failed: Question Sets in this folder have mismatched question counts: ${mismatchList}. All Question Sets in a pool must contain the exact same question count.`,
         });
       }
 
@@ -86,7 +93,7 @@ const createTest = async (req, res, next) => {
       }
 
       actualQuestionCount = firstCount;
-      finalQuestionSetPoolId = questionSetPoolId;
+      finalFolderId = folder ? folder._id : targetPoolId;
     } else {
       // Single Question Set mode
       const questionSet = await QuestionSet.findById(questionSetId);
@@ -133,7 +140,8 @@ const createTest = async (req, res, next) => {
       title,
       testType,
       questionSetId: finalQuestionSetId,
-      questionSetPoolId: finalQuestionSetPoolId,
+      folderId: finalFolderId,
+      questionSetPoolId: finalFolderId ? finalFolderId.toString() : null,
       durationMinutes,
       totalQuestions: actualQuestionCount, // Strictly locked to question set's real count (BUG-60)
       passingCriteria: parsedPassingCriteria,
@@ -161,32 +169,49 @@ const getTests = async (req, res, next) => {
     const tests = await Test.find()
       .populate('createdBy', 'name email')
       .populate('questionSetId', 'name testType')
+      .populate('folderId', 'name testType')
       .sort({ createdAt: -1 })
       .lean();
 
-    // Hydrate pool information for pool-based tests (FEATURE-012)
+    // Hydrate pool information for pool-based tests (FEATURE-012 & FEATURE-013)
     const QuestionSet = require('../models/QuestionSet');
-    const poolBatchIds = tests.filter((t) => t.questionSetPoolId).map((t) => t.questionSetPoolId);
-    let poolSetsByBatch = {};
-    if (poolBatchIds.length > 0) {
-      const poolSets = await QuestionSet.find({ uploadBatchId: { $in: poolBatchIds } }, 'name uploadBatchId uploadBatchName testType').lean();
+    const Folder = require('../models/Folder');
+
+    const poolFolderIds = tests
+      .map((t) => t.folderId?._id || t.folderId || t.questionSetPoolId)
+      .filter(Boolean);
+
+    let poolSetsByFolder = {};
+    if (poolFolderIds.length > 0) {
+      const poolSets = await QuestionSet.find(
+        {
+          $or: [
+            { folderId: { $in: poolFolderIds } },
+            { uploadBatchId: { $in: poolFolderIds } },
+          ],
+        },
+        'name folderId uploadBatchId testType'
+      ).lean();
+
       for (const ps of poolSets) {
-        if (!poolSetsByBatch[ps.uploadBatchId]) {
-          poolSetsByBatch[ps.uploadBatchId] = [];
+        const key = ps.folderId ? ps.folderId.toString() : ps.uploadBatchId;
+        if (!poolSetsByFolder[key]) {
+          poolSetsByFolder[key] = [];
         }
-        poolSetsByBatch[ps.uploadBatchId].push(ps);
+        poolSetsByFolder[key].push(ps);
       }
     }
 
     const enrichedTests = tests.map((t) => {
-      if (t.questionSetPoolId) {
-        const sets = poolSetsByBatch[t.questionSetPoolId] || [];
-        const batchName = sets[0]?.uploadBatchName || `PDF Pool (${sets.length} Sets)`;
+      const pId = (t.folderId?._id || t.folderId || t.questionSetPoolId)?.toString();
+      if (pId) {
+        const sets = poolSetsByFolder[pId] || [];
+        const poolName = t.folderId?.name || `Question Set Pool (${sets.length} Sets)`;
         return {
           ...t,
           isPool: true,
           poolSetCount: sets.length,
-          questionSetPoolName: batchName,
+          questionSetPoolName: poolName,
           poolSets: sets.map((s) => ({ _id: s._id, name: s.name })),
         };
       }
@@ -209,7 +234,8 @@ const getTest = async (req, res, next) => {
 
     let test = await Test.findById(req.params.testId)
       .populate('createdBy', 'name email')
-      .populate('questionSetId', 'name testType questionIds');
+      .populate('questionSetId', 'name testType questionIds')
+      .populate('folderId', 'name testType');
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
     // Backfill lifecycle timestamps for older tests that transitioned before these fields were added
@@ -241,13 +267,22 @@ const getTest = async (req, res, next) => {
 
     const testObj = test.toObject();
 
-    // Hydrate pool information if pool-based (FEATURE-012)
-    if (test.questionSetPoolId) {
+    // Hydrate pool information if pool-based (FEATURE-012 & FEATURE-013)
+    const pId = test.folderId?._id || test.folderId || test.questionSetPoolId;
+    if (pId) {
       const QuestionSet = require('../models/QuestionSet');
-      const poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }, 'name uploadBatchId uploadBatchName testType').lean();
+      const poolSets = await QuestionSet.find(
+        {
+          $or: [
+            { folderId: pId },
+            { uploadBatchId: pId },
+          ],
+        },
+        'name folderId uploadBatchId testType'
+      ).lean();
       testObj.isPool = true;
       testObj.poolSetCount = poolSets.length;
-      testObj.questionSetPoolName = poolSets[0]?.uploadBatchName || `PDF Pool (${poolSets.length} Sets)`;
+      testObj.questionSetPoolName = test.folderId?.name || `Question Set Pool (${poolSets.length} Sets)`;
       testObj.poolSets = poolSets.map((s) => ({ _id: s._id, name: s.name }));
     }
 
@@ -301,11 +336,17 @@ const updateTest = async (req, res, next) => {
     const QuestionSet = require('../models/QuestionSet');
     const pdfStorageService = require('../services/pdfStorageService');
 
-    // If Question Set Pool is changed (FEATURE-012)
-    if (req.body.questionSetPoolId) {
-      const poolSets = await QuestionSet.find({ uploadBatchId: req.body.questionSetPoolId });
+    // If Question Set Pool is changed (FEATURE-012 & FEATURE-013)
+    const targetPoolId = req.body.folderId || req.body.questionSetPoolId;
+    if (targetPoolId) {
+      const Folder = require('../models/Folder');
+      const folder = await Folder.findById(targetPoolId);
+      const poolSets = await QuestionSet.find({
+        $or: [{ folderId: targetPoolId }, { uploadBatchId: targetPoolId }],
+      }).sort({ createdAt: 1, _id: 1 });
+
       if (!poolSets || poolSets.length === 0) {
-        return res.status(400).json({ error: 'Selected Question Set Pool not found or contains no question sets.' });
+        return res.status(400).json({ error: 'Selected Folder/Pool not found or contains no question sets.' });
       }
 
       const setIds = poolSets.map((s) => s._id);
@@ -325,7 +366,7 @@ const updateTest = async (req, res, next) => {
       const emptySets = countDetails.filter((d) => d.count === 0);
       if (emptySets.length > 0) {
         return res.status(400).json({
-          error: `Selected Question Set Pool contains set(s) with 0 questions: ${emptySets.map((e) => `"${e.name}"`).join(', ')}.`,
+          error: `Selected Folder/Pool contains set(s) with 0 questions: ${emptySets.map((e) => `"${e.name}"`).join(', ')}.`,
         });
       }
 
@@ -334,7 +375,7 @@ const updateTest = async (req, res, next) => {
       if (!isIdentical) {
         const mismatchList = countDetails.map((d) => `"${d.name}" (${d.count} Qs)`).join(', ');
         return res.status(400).json({
-          error: `Question Set Pool validation failed: Question Sets in this pool have mismatched question counts: ${mismatchList}. All Question Sets in a pool must contain the exact same question count.`,
+          error: `Question Set Pool validation failed: Question Sets in this folder have mismatched question counts: ${mismatchList}. All Question Sets in a pool must contain the exact same question count.`,
         });
       }
 
@@ -352,11 +393,15 @@ const updateTest = async (req, res, next) => {
       }
 
       req.body.questionSetId = null;
+      req.body.folderId = folder ? folder._id : targetPoolId;
+      req.body.questionSetPoolId = targetPoolId.toString();
       req.body.totalQuestions = firstCount;
       if (existing.passingCriteria > firstCount) {
         req.body.passingCriteria = firstCount;
       }
     } else if (req.body.questionSetId) {
+      req.body.folderId = null;
+      req.body.questionSetPoolId = null;
       // Single questionSetId is updated
       const questionsInSet = await Question.find({ questionSetId: req.body.questionSetId });
       const questionCount = questionsInSet.length;

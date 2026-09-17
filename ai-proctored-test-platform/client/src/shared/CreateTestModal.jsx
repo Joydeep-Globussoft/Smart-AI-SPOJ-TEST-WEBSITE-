@@ -272,7 +272,7 @@ export default function CreateTestModal({
                         color: questionMode === 'POOL' ? '#ffffff' : 'var(--color-text-muted)',
                       }}
                     >
-                      Pool (Batch)
+                      Pool (Folder)
                     </button>
                   </div>
                 </div>
@@ -335,16 +335,16 @@ export default function CreateTestModal({
                       }}
                       required
                     >
-                      <option value="">Select a Question Set Pool (Batch)...</option>
+                      <option value="">Select Folder as Question Set Pool...</option>
                       {filteredPools.map((p) => (
                         <option key={p.poolId} value={p.poolId}>
-                          {p.poolName} ({p.setCount} Sets{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
+                          📁 {p.poolName} ({p.setCount} Sets{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
                         </option>
                       ))}
                     </select>
                     {filteredPools.length === 0 ? (
                       <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
-                        No PDF upload batches found for {formData.testType}. Upload a folder of PDFs in Question Bank first.
+                        No Folders found for {formData.testType}. Create a folder in Question Bank first.
                       </p>
                     ) : selectedPool && !selectedPool.isValid ? (
                       <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
@@ -359,7 +359,7 @@ export default function CreateTestModal({
                         </p>
                         {selectedPool.setCount === 1 && (
                           <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
-                            ℹ️ Note: Pool contains only 1 set. All candidates in each room will receive the same questions.
+                            ℹ️ Note: Folder contains only 1 set. All candidates in each room will receive the same questions.
                           </p>
                         )}
                       </div>

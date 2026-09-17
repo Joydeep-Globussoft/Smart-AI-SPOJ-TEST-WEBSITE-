@@ -11,7 +11,8 @@ const testSchema = new mongoose.Schema(
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
     questionSetId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionSet', default: null }, // Single Question Set
-    questionSetPoolId: { type: String, default: null, index: true }, // FEATURE-012: Question Set Pool (batch ID)
+    folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', default: null, index: true }, // FEATURE-013: Folder as Question Set Pool
+    questionSetPoolId: { type: String, default: null, index: true }, // Backward compatibility alias to folderId
     durationMinutes: { type: Number, required: true },
     totalQuestions: { type: Number, required: true, default: 5 },
     passingCriteria: { type: Number, required: true }, // e.g., 2.5 (out of totalQuestions)

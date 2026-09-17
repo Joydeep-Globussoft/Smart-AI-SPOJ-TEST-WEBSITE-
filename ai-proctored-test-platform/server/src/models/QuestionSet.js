@@ -1,17 +1,21 @@
-// Section 8.2 — QuestionSet collection (exact field names/types as specified)
+// Section 8.2 — QuestionSet collection (FEATURE-013 Folder hierarchy)
 const mongoose = require('mongoose');
 
 const questionSetSchema = new mongoose.Schema({
+  folderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Folder',
+    required: true,
+    index: true,
+  },
   testType: {
     type: String,
     enum: ['SPOJ', 'REACT', 'JAVASCRIPT', 'AI_TEST'],
     required: true,
   },
-  name: { type: String, required: true },
+  name: { type: String, required: true, trim: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
-  questionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }], // pool this set draws from
-  uploadBatchId: { type: String, default: null, index: true }, // FEATURE-012: PDF batch pool identifier
-  uploadBatchName: { type: String, default: null }, // FEATURE-012: User-friendly batch label
+  questionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
   createdAt: { type: Date, default: Date.now },
 });
 

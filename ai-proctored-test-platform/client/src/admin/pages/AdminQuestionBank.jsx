@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
 import EmbeddedPdfViewer from '../../candidate/components/EmbeddedPdfViewer';
@@ -16,7 +16,6 @@ export const extractFilesFromDataTransfer = async (dataTransfer) => {
   const files = [];
   if (!dataTransfer) return files;
 
-  // Helper to read all entries from a FileSystemDirectoryReader (looping until empty array)
   const readAllDirectoryEntries = async (dirReader) => {
     const entries = [];
     let batch;
@@ -31,7 +30,6 @@ export const extractFilesFromDataTransfer = async (dataTransfer) => {
     return entries;
   };
 
-  // Helper to recursively traverse FileSystemEntry (file or directory)
   const traverseEntry = async (entry) => {
     if (!entry) return;
     if (entry.isFile) {
@@ -56,7 +54,6 @@ export const extractFilesFromDataTransfer = async (dataTransfer) => {
     }
   };
 
-  // Try reading via webkitGetAsEntry from dataTransfer.items
   if (dataTransfer.items && dataTransfer.items.length > 0) {
     const entryPromises = [];
     for (let i = 0; i < dataTransfer.items.length; i++) {
@@ -79,7 +76,6 @@ export const extractFilesFromDataTransfer = async (dataTransfer) => {
     }
   }
 
-  // Fallback: if no files retrieved via items or items unsupported, use dataTransfer.files
   if (files.length === 0 && dataTransfer.files && dataTransfer.files.length > 0) {
     files.push(...Array.from(dataTransfer.files));
   }
@@ -88,47 +84,58 @@ export const extractFilesFromDataTransfer = async (dataTransfer) => {
 };
 
 export default function AdminQuestionBank() {
-  const [questionSets, setQuestionSets] = useState([]);
+  // Folders State (FEATURE-013 Hierarchy)
+  const [folders, setFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [loadingFolders, setLoadingFolders] = useState(true);
+
+  // Selected Question Set (STATE 2 when set, STATE 1 when null) and Questions
   const [selectedSet, setSelectedSet] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [loadingSets, setLoadingSets] = useState(true);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
 
-  // Filter question sets by type
+  // Search and Filter State
   const [filterType, setFilterType] = useState('ALL');
+  const [folderSearch, setFolderSearch] = useState('');
 
-  // Bulk Upload PDFs State (FEATURE-009)
-  const [showUploadPdfModal, setShowUploadPdfModal] = useState(false);
-  const [uploadTestType, setUploadTestType] = useState('SPOJ');
-  const [uploadFiles, setUploadFiles] = useState([]);
-  const [isDraggingFolder, setIsDraggingFolder] = useState(false);
-  const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadSummary, setUploadSummary] = useState(null);
-  const folderInputRef = useRef(null);
-  const fileInputRef = useRef(null);
+  // ── Folder Modals State ──
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderData, setNewFolderData] = useState({
+    name: '',
+    testType: 'SPOJ',
+    description: '',
+  });
 
-  // New Question Set Modal State
+  const [showEditFolderModal, setShowEditFolderModal] = useState(false);
+  const [editingFolder, setEditingFolder] = useState(false);
+  const [editFolderData, setEditFolderData] = useState({
+    name: '',
+    description: '',
+  });
+
+  const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
+  const [deletingFolder, setDeletingFolder] = useState(false);
+
+  // ── Question Set Modals State ──
   const [showNewSetModal, setShowNewSetModal] = useState(false);
   const [creatingSet, setCreatingSet] = useState(false);
   const [newSetData, setNewSetData] = useState({
     name: '',
-    testType: 'SPOJ',
+    folderId: '',
   });
 
-  // Edit Question Set Modal State (BUG-XX)
   const [showEditSetModal, setShowEditSetModal] = useState(false);
   const [editingSet, setEditingSet] = useState(false);
   const [editSetData, setEditSetData] = useState({
     name: '',
-    testType: 'SPOJ',
+    folderId: '',
   });
 
-  // Delete Question Set Modal State
   const [showDeleteSetModal, setShowDeleteSetModal] = useState(false);
   const [deletingSet, setDeletingSet] = useState(false);
 
-  // Question Modal State (Create / Edit)
+  // ── Question Modal State (Create / Edit) ──
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [savingQuestion, setSavingQuestion] = useState(false);
@@ -147,49 +154,97 @@ export default function AdminQuestionBank() {
     pdfPageRange: { startPage: 1, endPage: 1 },
   });
 
-  // Expanded Question Details
+  // Expanded Question Details & Delete Question Target
   const [expandedQuestionId, setExpandedQuestionId] = useState(null);
-
-  // Delete Question Target
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deletingQuestion, setDeletingQuestion] = useState(false);
 
-  // Fetch all Question Sets
-  const fetchQuestionSets = useCallback(async () => {
+  // ── Bulk Upload PDFs Modal State (FEATURE-009 & FEATURE-013) ──
+  const [showUploadPdfModal, setShowUploadPdfModal] = useState(false);
+  const [uploadMode, setUploadMode] = useState('CREATE_NEW_FOLDER'); // 'CREATE_NEW_FOLDER' | 'EXISTING_FOLDER'
+  const [uploadFolderName, setUploadFolderName] = useState('');
+  const [uploadFolderId, setUploadFolderId] = useState('');
+  const [uploadTestType, setUploadTestType] = useState('SPOJ');
+  const [uploadFiles, setUploadFiles] = useState([]);
+  const [isDraggingFolder, setIsDraggingFolder] = useState(false);
+  const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSummary, setUploadSummary] = useState(null);
+  const folderInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // ── Fetch All Folders ──
+  const fetchFolders = useCallback(async (preferredFolderId = null, preferredSetId = null) => {
     try {
-      setLoadingSets(true);
-      const res = await api.getQuestionSets();
-      const sets = res.data.questionSets || [];
-      setQuestionSets(sets);
-      if (sets.length > 0 && !selectedSet) {
-        setSelectedSet(sets[0]);
+      setLoadingFolders(true);
+      const res = await api.getFolders();
+      const folderList = res.data.folders || [];
+      setFolders(folderList);
+
+      if (folderList.length > 0) {
+        let targetFolder = null;
+        if (preferredFolderId) {
+          targetFolder = folderList.find((f) => f._id === preferredFolderId);
+        } else if (selectedFolder) {
+          targetFolder = folderList.find((f) => f._id === selectedFolder._id);
+        }
+        if (!targetFolder) {
+          targetFolder = folderList[0];
+        }
+        setSelectedFolder(targetFolder);
+
+        // If preferredSetId is specified, switch to that set in STATE 2
+        const sets = targetFolder.questionSets || [];
+        if (preferredSetId && sets.some((s) => s._id === preferredSetId)) {
+          setSelectedSet(sets.find((s) => s._id === preferredSetId));
+        } else if (selectedSet && sets.some((s) => s._id === selectedSet._id)) {
+          setSelectedSet(sets.find((s) => s._id === selectedSet._id));
+        } else {
+          setSelectedSet(null);
+        }
+      } else {
+        setSelectedFolder(null);
+        setSelectedSet(null);
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to fetch question sets');
+      toast.error(err.response?.data?.error || 'Failed to fetch folders');
     } finally {
-      setLoadingSets(false);
+      setLoadingFolders(false);
     }
-  }, [selectedSet]);
+  }, [selectedFolder, selectedSet]);
 
   useEffect(() => {
-    fetchQuestionSets();
-  }, [fetchQuestionSets]);
+    fetchFolders();
+  }, []);
 
-  // Fetch Questions for the Selected Set
+  // ── Fetch Questions for Selected Set ──
   const fetchQuestions = useCallback(async (setId) => {
-    if (!setId) return;
+    if (!setId) {
+      setQuestions([]);
+      return;
+    }
     try {
       setLoadingQuestions(true);
       const res = await api.getQuestions(setId);
       const qList = res.data.questions || [];
       setQuestions(qList);
-      // Immediately sync question count for the active set in questionSets state (BUG-59)
-      setQuestionSets((prev) =>
-        prev.map((s) =>
-          s._id === setId
-            ? { ...s, questionCount: qList.length, questionIds: qList.map((q) => q._id) }
-            : s
-        )
+
+      // Dynamically sync question count in local folders state (BUG-59)
+      setFolders((prev) =>
+        prev.map((f) => {
+          if (!f.questionSets?.some((s) => s._id === setId)) return f;
+          const updatedSets = f.questionSets.map((s) =>
+            s._id === setId
+              ? { ...s, questionCount: qList.length, questionIds: qList.map((q) => q._id) }
+              : s
+          );
+          const totalQ = updatedSets.reduce((sum, s) => sum + (s.questionCount || 0), 0);
+          return {
+            ...f,
+            questionSets: updatedSets,
+            totalQuestions: totalQ,
+          };
+        })
       );
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to fetch questions');
@@ -206,26 +261,138 @@ export default function AdminQuestionBank() {
     }
   }, [selectedSet, fetchQuestions]);
 
-  // Handle Create Question Set
+  // ── Folder Selection Handler (Switches to STATE 1: Folder Sets List) ──
+  const handleSelectFolder = (folder) => {
+    setSelectedFolder(folder);
+    setSelectedSet(null); // Reset to STATE 1 (Folder Overview & Sets List)
+  };
+
+  // ── Filtered Folders ──
+  const filteredFolders = useMemo(() => {
+    return folders.filter((f) => {
+      if (filterType !== 'ALL' && f.testType !== filterType) {
+        return false;
+      }
+      if (folderSearch.trim()) {
+        const query = folderSearch.toLowerCase();
+        return f.name.toLowerCase().includes(query) || f.description?.toLowerCase().includes(query);
+      }
+      return true;
+    });
+  }, [folders, filterType, folderSearch]);
+
+  // ── Create Folder Handler ──
+  const handleCreateFolderSubmit = async (e) => {
+    e.preventDefault();
+    if (!newFolderData.name.trim()) {
+      return toast.error('Folder name is required');
+    }
+    try {
+      setCreatingFolder(true);
+      const res = await api.createFolder({
+        name: newFolderData.name.trim(),
+        testType: newFolderData.testType,
+        description: newFolderData.description?.trim(),
+      });
+      toast.success(`Created Folder "${res.data.folder?.name}"`);
+      setShowNewFolderModal(false);
+      setNewFolderData({ name: '', testType: 'SPOJ', description: '' });
+      await fetchFolders(res.data.folder?._id, null);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to create folder');
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
+
+  // ── Open Edit Folder Modal ──
+  const handleOpenEditFolder = () => {
+    if (!selectedFolder) return;
+    setEditFolderData({
+      name: selectedFolder.name || '',
+      description: selectedFolder.description || '',
+    });
+    setShowEditFolderModal(true);
+  };
+
+  // ── Edit Folder Submit ──
+  const handleEditFolderSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedFolder?._id) return;
+    const trimmedName = editFolderData.name.trim();
+    if (!trimmedName) {
+      return toast.error('Folder name is required');
+    }
+
+    try {
+      setEditingFolder(true);
+      const res = await api.updateFolder(selectedFolder._id, {
+        name: trimmedName,
+        description: editFolderData.description?.trim(),
+      });
+      toast.success(`Updated Folder "${res.data.folder?.name}"`);
+      setShowEditFolderModal(false);
+      await fetchFolders(res.data.folder?._id, selectedSet?._id);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update folder');
+    } finally {
+      setEditingFolder(false);
+    }
+  };
+
+  // ── Delete Folder Submit (Safe By Default) ──
+  const handleDeleteFolderSubmit = async () => {
+    if (!selectedFolder?._id) return;
+    const setCount = selectedFolder.setCount || selectedFolder.questionSets?.length || 0;
+    if (setCount > 0) {
+      return toast.error(`Folder "${selectedFolder.name}" contains ${setCount} question set(s). You must delete or move all sets before deleting this folder.`);
+    }
+
+    try {
+      setDeletingFolder(true);
+      await api.deleteFolder(selectedFolder._id);
+      toast.success(`Deleted Folder "${selectedFolder.name}"`);
+      setShowDeleteFolderModal(false);
+      await fetchFolders();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete folder');
+    } finally {
+      setDeletingFolder(false);
+    }
+  };
+
+  // ── Create Question Set Modal Open / Submit ──
+  const handleOpenNewSet = (targetFolderId = null) => {
+    const folderId = targetFolderId || selectedFolder?._id || (folders[0]?._id || '');
+    if (!folderId) {
+      return toast.error('Please create a Folder first');
+    }
+    setNewSetData({
+      name: '',
+      folderId,
+    });
+    setShowNewSetModal(true);
+  };
+
   const handleCreateSetSubmit = async (e) => {
     e.preventDefault();
     if (!newSetData.name.trim()) {
       return toast.error('Question Set name is required');
     }
+    if (!newSetData.folderId) {
+      return toast.error('Please select a Folder');
+    }
+
     try {
       setCreatingSet(true);
       const res = await api.createQuestionSet({
         name: newSetData.name.trim(),
-        testType: newSetData.testType,
+        folderId: newSetData.folderId,
       });
       toast.success(`Created Question Set "${res.data.questionSet?.name}"`);
       setShowNewSetModal(false);
-      setNewSetData({ name: '', testType: 'SPOJ' });
-      const updatedSetsRes = await api.getQuestionSets();
-      const sets = updatedSetsRes.data.questionSets || [];
-      setQuestionSets(sets);
-      const created = sets.find((s) => s._id === res.data.questionSet?._id) || sets[0];
-      setSelectedSet(created);
+      setNewSetData({ name: '', folderId: '' });
+      await fetchFolders(newSetData.folderId, res.data.questionSet?._id);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create question set');
     } finally {
@@ -233,20 +400,21 @@ export default function AdminQuestionBank() {
     }
   };
 
-  // Open Edit Question Set Modal (BUG-XX)
-  const handleOpenEditSet = () => {
-    if (!selectedSet) return;
+  // ── Edit Question Set Modal Open / Submit (Rename & Move) ──
+  const handleOpenEditSet = (setObj = null) => {
+    const targetSet = setObj || selectedSet;
+    if (!targetSet) return;
     setEditSetData({
-      name: selectedSet.name || '',
-      testType: selectedSet.testType || 'SPOJ',
+      name: targetSet.name || '',
+      folderId: targetSet.folderId?._id || targetSet.folderId || selectedFolder?._id || '',
     });
     setShowEditSetModal(true);
   };
 
-  // Handle Edit Question Set Submit (BUG-XX)
   const handleEditSetSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedSet?._id) return;
+    if (!selectedSet?._id && !editSetData.folderId) return;
+    const targetSetId = selectedSet?._id || editSetData._id;
     const trimmedName = editSetData.name.trim();
     if (!trimmedName) {
       return toast.error('Question Set name is required');
@@ -254,20 +422,23 @@ export default function AdminQuestionBank() {
 
     try {
       setEditingSet(true);
-      const res = await api.updateQuestionSet(selectedSet._id, {
+      const res = await api.updateQuestionSet(targetSetId || selectedSet?._id, {
         name: trimmedName,
-        testType: editSetData.testType,
+        folderId: editSetData.folderId,
       });
-
       const updatedSet = res.data.questionSet;
       toast.success(`Updated Question Set "${updatedSet.name}"`);
       setShowEditSetModal(false);
-
-      // Update state in place immediately
-      setSelectedSet(updatedSet);
-      setQuestionSets((prev) =>
-        prev.map((s) => (s._id === updatedSet._id ? updatedSet : s))
+      if (selectedSet?._id === updatedSet._id) {
+        setSelectedSet(updatedSet);
+      }
+      setFolders((prev) =>
+        prev.map((f) => ({
+          ...f,
+          questionSets: (f.questionSets || []).map((s) => (s._id === updatedSet._id ? updatedSet : s)),
+        }))
       );
+      await fetchFolders(editSetData.folderId, updatedSet._id);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update question set');
     } finally {
@@ -275,19 +446,17 @@ export default function AdminQuestionBank() {
     }
   };
 
-  // Handle Delete Question Set Submit
+  // ── Delete Question Set Submit ──
   const handleDeleteSetSubmit = async () => {
-    if (!selectedSet?._id) return;
+    const targetSet = selectedSet || editSetData?.targetDeleteSet;
+    if (!targetSet?._id) return;
     try {
       setDeletingSet(true);
-      await api.deleteQuestionSet(selectedSet._id);
-      toast.success(`Deleted Question Set "${selectedSet.name}"`);
+      await api.deleteQuestionSet(targetSet._id);
+      toast.success(`Deleted Question Set "${targetSet.name}"`);
       setShowDeleteSetModal(false);
-
-      const res = await api.getQuestionSets();
-      const sets = res.data.questionSets || [];
-      setQuestionSets(sets);
-      setSelectedSet(sets.length > 0 ? sets[0] : null);
+      setSelectedSet(null);
+      await fetchFolders(selectedFolder?._id, null);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to delete question set');
     } finally {
@@ -295,7 +464,7 @@ export default function AdminQuestionBank() {
     }
   };
 
-  // Open Create Question Modal
+  // ── Question Modal Handlers (Create / Edit) ──
   const handleOpenCreateQuestion = () => {
     if (!selectedSet) {
       return toast.error('Please select or create a Question Set first');
@@ -312,11 +481,14 @@ export default function AdminQuestionBank() {
       aiTestBriefFiles: selectedSet.testType === 'AI_TEST'
         ? [{ fileName: 'index.html' }, { fileName: 'style.css' }, { fileName: 'app.js' }]
         : [],
+      isPdfImported: false,
+      pdfFileName: '',
+      pdfOriginalName: '',
+      pdfPageRange: { startPage: 1, endPage: 1 },
     });
     setShowQuestionModal(true);
   };
 
-  // Open Edit Question Modal
   const handleOpenEditQuestion = (q) => {
     setEditingQuestionId(q._id);
     setQuestionForm({
@@ -336,10 +508,145 @@ export default function AdminQuestionBank() {
     setShowQuestionModal(true);
   };
 
-  // ── PDF Bulk Upload Handlers (FEATURE-009 & BUG-77) ─────────────────────────
+  const handleTestCaseChange = (type, index, field, value) => {
+    setQuestionForm((prev) => {
+      const list = [...prev[type]];
+      list[index] = { ...list[index], [field]: value };
+      return { ...prev, [type]: list };
+    });
+  };
+
+  const handleAddTestCase = (type) => {
+    setQuestionForm((prev) => ({
+      ...prev,
+      [type]: [...prev[type], { input: '', expectedOutput: '' }],
+    }));
+  };
+
+  const handleRemoveTestCase = (type, index) => {
+    setQuestionForm((prev) => {
+      const list = prev[type].filter((_, i) => i !== index);
+      return { ...prev, [type]: list.length > 0 ? list : [{ input: '', expectedOutput: '' }] };
+    });
+  };
+
+  const handleAddBriefFile = () => {
+    setQuestionForm((prev) => ({
+      ...prev,
+      aiTestBriefFiles: [...prev.aiTestBriefFiles, { fileName: '' }],
+    }));
+  };
+
+  const handleBriefFileChange = (index, value) => {
+    setQuestionForm((prev) => {
+      const files = [...prev.aiTestBriefFiles];
+      files[index] = { fileName: value };
+      return { ...prev, aiTestBriefFiles: files };
+    });
+  };
+
+  const handleRemoveBriefFile = (index) => {
+    setQuestionForm((prev) => ({
+      ...prev,
+      aiTestBriefFiles: prev.aiTestBriefFiles.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleQuestionSubmit = async (e) => {
+    e.preventDefault();
+    if (!questionForm.isPdfImported) {
+      if (!questionForm.title.trim() || !questionForm.description.trim()) {
+        return toast.error('Title and description are required');
+      }
+    }
+
+    const validVisible = questionForm.visibleTestCases.filter(
+      (tc) => tc.input.trim() || tc.expectedOutput.trim()
+    );
+
+    if (!questionForm.isPdfImported && validVisible.length === 0) {
+      return toast.error('At least 1 visible test case is required (FR-4.1)');
+    }
+
+    const payload = {
+      ...questionForm,
+      title: questionForm.title.trim(),
+      description: questionForm.description.trim(),
+      visibleTestCases: validVisible,
+      hiddenTestCases: [],
+      aiTestBriefFiles: selectedSet.testType === 'AI_TEST'
+        ? questionForm.aiTestBriefFiles.filter((f) => f.fileName.trim())
+        : undefined,
+    };
+
+    try {
+      setSavingQuestion(true);
+      if (editingQuestionId) {
+        await api.updateQuestion(editingQuestionId, payload);
+        toast.success('Question updated successfully');
+      } else {
+        const createRes = await api.createQuestion(selectedSet._id, payload);
+        toast.success('Question added to question set (FR-4.1 verified)');
+        if (createRes?.data?.question) {
+          const newQ = createRes.data.question;
+          setFolders((prev) =>
+            prev.map((f) => ({
+              ...f,
+              questionSets: (f.questionSets || []).map((s) =>
+                s._id === selectedSet._id
+                  ? {
+                    ...s,
+                    questionCount: (s.questionCount ?? s.questionIds?.length ?? 0) + 1,
+                    questionIds: [...(s.questionIds || []), newQ._id],
+                  }
+                  : s
+              ),
+            }))
+          );
+        }
+      }
+      setShowQuestionModal(false);
+      await fetchQuestions(selectedSet._id);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save question');
+    } finally {
+      setSavingQuestion(false);
+    }
+  };
+
+  const handleDeleteQuestionConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeletingQuestion(true);
+      await api.deleteQuestion(deleteTarget._id);
+      toast.success(`Deleted question "${deleteTarget.title || 'Question'}"`);
+      setFolders((prev) =>
+        prev.map((f) => ({
+          ...f,
+          questionSets: (f.questionSets || []).map((s) =>
+            s._id === selectedSet._id
+              ? {
+                ...s,
+                questionCount: Math.max(0, (s.questionCount ?? s.questionIds?.length ?? 0) - 1),
+                questionIds: (s.questionIds || []).filter((id) => (id?._id || id) !== deleteTarget._id),
+              }
+              : s
+          ),
+        }))
+      );
+      setDeleteTarget(null);
+      await fetchQuestions(selectedSet._id);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete question');
+    } finally {
+      setDeletingQuestion(false);
+    }
+  };
+
+  // ── PDF Bulk Upload Handlers (FEATURE-009, BUG-77, FEATURE-013) ──
   const processSelectedPdfFiles = (rawFiles, source = 'drop') => {
-    const pdfFiles = Array.from(rawFiles || []).filter((f) =>
-      f && (f.name?.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf')
+    const pdfFiles = Array.from(rawFiles || []).filter(
+      (f) => f && (f.name?.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf')
     );
     if (pdfFiles.length === 0) {
       if (source === 'folder') {
@@ -392,17 +699,44 @@ export default function AdminQuestionBank() {
     }
   };
 
+  const handleOpenUploadModal = (preferredFolder = null) => {
+    if (preferredFolder) {
+      setUploadMode('EXISTING_FOLDER');
+      setUploadFolderId(preferredFolder._id);
+      setUploadTestType(preferredFolder.testType);
+    } else if (selectedFolder) {
+      setUploadMode('EXISTING_FOLDER');
+      setUploadFolderId(selectedFolder._id);
+      setUploadTestType(selectedFolder.testType);
+    } else {
+      setUploadMode('CREATE_NEW_FOLDER');
+      setUploadFolderName('');
+      setUploadTestType('SPOJ');
+    }
+    setUploadFiles([]);
+    setUploadSummary(null);
+    setUploadProgress(0);
+    setShowUploadPdfModal(true);
+  };
+
   const handleUploadPdfSubmit = async (e) => {
     e.preventDefault();
-    if (!uploadTestType) {
-      return toast.error('Please select a Test Type first');
-    }
     if (uploadFiles.length === 0) {
       return toast.error('Please select or drop a folder containing PDF files');
     }
 
     const formData = new FormData();
-    formData.append('testType', uploadTestType);
+    if (uploadMode === 'EXISTING_FOLDER') {
+      if (!uploadFolderId) {
+        return toast.error('Please select an existing Folder');
+      }
+      formData.append('folderId', uploadFolderId);
+    } else {
+      const targetName = uploadFolderName.trim() || 'Uploaded PDF Batch';
+      formData.append('folderName', targetName);
+      formData.append('testType', uploadTestType);
+    }
+
     uploadFiles.forEach((f) => formData.append('files', f));
 
     try {
@@ -419,17 +753,8 @@ export default function AdminQuestionBank() {
       setUploadSummary(summary);
       toast.success(res.data.message || 'PDF batch processed successfully!');
 
-      // Immediately refresh question sets in sidebar (BUG-59)
-      const updatedSetsRes = await api.getQuestionSets();
-      const sets = updatedSetsRes.data.questionSets || [];
-      setQuestionSets(sets);
-
-      if (summary.createdSets?.length > 0) {
-        const firstCreated = sets.find((s) => s._id === summary.createdSets[0]._id);
-        if (firstCreated) {
-          setSelectedSet(firstCreated);
-        }
-      }
+      const targetFolderId = res.data.folder?._id || uploadFolderId;
+      await fetchFolders(targetFolderId, null);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to upload and parse PDF batch');
     } finally {
@@ -445,261 +770,203 @@ export default function AdminQuestionBank() {
     setUploadProgress(0);
   };
 
-  // Dynamic Test Case Handlers
-  const handleTestCaseChange = (type, index, field, value) => {
-    setQuestionForm((prev) => {
-      const list = [...prev[type]];
-      list[index] = { ...list[index], [field]: value };
-      return { ...prev, [type]: list };
-    });
-  };
-
-  const handleAddTestCase = (type) => {
-    setQuestionForm((prev) => ({
-      ...prev,
-      [type]: [...prev[type], { input: '', expectedOutput: '' }],
-    }));
-  };
-
-  const handleRemoveTestCase = (type, index) => {
-    setQuestionForm((prev) => {
-      const list = prev[type].filter((_, i) => i !== index);
-      return { ...prev, [type]: list.length > 0 ? list : [{ input: '', expectedOutput: '' }] };
-    });
-  };
-
-  // AI Test Brief Files Handlers
-  const handleAddBriefFile = () => {
-    setQuestionForm((prev) => ({
-      ...prev,
-      aiTestBriefFiles: [...prev.aiTestBriefFiles, { fileName: '' }],
-    }));
-  };
-
-  const handleBriefFileChange = (index, value) => {
-    setQuestionForm((prev) => {
-      const files = [...prev.aiTestBriefFiles];
-      files[index] = { fileName: value };
-      return { ...prev, aiTestBriefFiles: files };
-    });
-  };
-
-  const handleRemoveBriefFile = (index) => {
-    setQuestionForm((prev) => ({
-      ...prev,
-      aiTestBriefFiles: prev.aiTestBriefFiles.filter((_, i) => i !== index),
-    }));
-  };
-
-  // Submit Question (Create or Edit)
-  const handleQuestionSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!questionForm.isPdfImported) {
-      if (!questionForm.title.trim() || !questionForm.description.trim()) {
-        return toast.error('Title and description are required');
-      }
-    }
-
-    // Filter valid visible test cases
-    const validVisible = questionForm.visibleTestCases.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
-
-    if (!questionForm.isPdfImported) {
-      if (validVisible.length === 0) {
-        return toast.error('At least 1 visible test case is required (FR-4.1)');
-      }
-    }
-
-    const payload = {
-      ...questionForm,
-      title: questionForm.title.trim(),
-      description: questionForm.description.trim(),
-      visibleTestCases: validVisible,
-      hiddenTestCases: [],
-      aiTestBriefFiles: selectedSet.testType === 'AI_TEST' ? questionForm.aiTestBriefFiles.filter((f) => f.fileName.trim()) : undefined,
-    };
-
-    try {
-      setSavingQuestion(true);
-      if (editingQuestionId) {
-        await api.updateQuestion(editingQuestionId, payload);
-        toast.success('Question updated successfully');
-      } else {
-        const createRes = await api.createQuestion(selectedSet._id, payload);
-        toast.success('Question added to question set (FR-4.1 verified)');
-        if (createRes?.data?.question) {
-          const newQ = createRes.data.question;
-          setQuestionSets((prev) =>
-            prev.map((s) =>
-              s._id === selectedSet._id
-                ? {
-                  ...s,
-                  questionCount: (s.questionCount ?? s.questionIds?.length ?? 0) + 1,
-                  questionIds: [...(s.questionIds || []), newQ._id],
-                }
-                : s
-            )
-          );
-        }
-      }
-      setShowQuestionModal(false);
-      fetchQuestions(selectedSet._id);
-      fetchQuestionSets(); // refresh question count in sets
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save question');
-    } finally {
-      setSavingQuestion(false);
+  // Helper for testType styling
+  const getBadgeStyle = (testType) => {
+    switch (testType) {
+      case 'SPOJ':
+        return { background: 'rgba(14, 124, 134, 0.12)', color: 'var(--color-primary, #0e7c86)', border: '1px solid rgba(14, 124, 134, 0.3)' };
+      case 'JAVASCRIPT':
+        return { background: 'rgba(234, 179, 8, 0.12)', color: '#ca8a04', border: '1px solid rgba(234, 179, 8, 0.3)' };
+      case 'REACT':
+        return { background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)' };
+      case 'AI_TEST':
+        return { background: 'rgba(168, 85, 247, 0.12)', color: '#9333ea', border: '1px solid rgba(168, 85, 247, 0.3)' };
+      default:
+        return { background: 'var(--color-bg-subtle)', color: 'var(--color-text)', border: '1px solid var(--color-border)' };
     }
   };
-
-  // Delete Question
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return;
-    try {
-      setDeleting(true);
-      await api.deleteQuestion(deleteTarget._id);
-      toast.success(`Deleted question "${deleteTarget.title}"`);
-      setQuestionSets((prev) =>
-        prev.map((s) =>
-          s._id === selectedSet._id
-            ? {
-              ...s,
-              questionCount: Math.max(0, (s.questionCount ?? s.questionIds?.length ?? 0) - 1),
-              questionIds: (s.questionIds || []).filter((id) => (id?._id || id) !== deleteTarget._id),
-            }
-            : s
-        )
-      );
-      setDeleteTarget(null);
-      fetchQuestions(selectedSet._id);
-      fetchQuestionSets();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to delete question');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const filteredSets = questionSets.filter(
-    (s) => filterType === 'ALL' || s.testType === filterType
-  );
 
   return (
     <div className="app-layout">
       <AdminNavbar />
-      <main className="main-content">
+      <main className="main-content" style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 20px' }}>
         {/* Page Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ fontSize: '1.8rem', color: 'var(--color-navy)', fontWeight: 800 }}>Question Bank</h1>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
+                Question Bank
+              </h1>
+              <span className="badge badge-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                {folders.length} Folders
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button
               id="upload-pdfs-btn"
-              onClick={() => {
-                setShowUploadPdfModal(true);
-                setUploadFiles([]);
-                setUploadSummary(null);
-                setUploadProgress(0);
-              }}
+              onClick={() => handleOpenUploadModal()}
               className="btn btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
             >
               📁 Upload PDFs
             </button>
             <button
-              onClick={() => setShowNewSetModal(true)}
+              id="new-folder-btn"
+              onClick={() => setShowNewFolderModal(true)}
               className="btn btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
             >
-              + New Question Set
+              + New Folder
             </button>
             <button
-              onClick={handleOpenCreateQuestion}
+              id="add-question-top-btn"
+              onClick={() => {
+                if (selectedSet) {
+                  handleOpenCreateQuestion();
+                } else if (selectedFolder) {
+                  handleOpenNewSet(selectedFolder._id);
+                } else {
+                  setShowNewFolderModal(true);
+                }
+              }}
               className="btn btn-primary"
-              disabled={!selectedSet}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
             >
-              + Add Question
+              {selectedSet ? '+ Add Question' : '+ New Question Set'}
             </button>
           </div>
         </div>
 
-        {/* 2-Column Split: Question Sets (Sidebar) and Questions Roster */}
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, alignItems: 'start' }}>
+        {/* 2-Panel Layout: Folders Sidebar (Left) + Dynamic Content Panel (Right) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'start' }}>
 
-          {/* ── Left Column: Question Sets ── */}
+          {/* ════════ LEFT PANEL: FOLDERS SIDEBAR ════════ */}
           <div className="card" style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700 }}>Question Sets</h3>
-              <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>
-                {questionSets.length} Sets
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1.1rem' }}>📂</span>
+                <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
+                  Folders
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewFolderModal(true)}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                title="Create a new folder container"
+              >
+                + Folder
+              </button>
             </div>
 
-            {/* Filter Sets by Type */}
-            <div style={{ marginBottom: 12 }}>
+            {/* Folder Filters */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              <input
+                type="text"
+                id="search-folder-input"
+                className="form-control"
+                placeholder="🔍 Search folders..."
+                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                value={folderSearch}
+                onChange={(e) => setFolderSearch(e.target.value)}
+              />
               <select
+                id="filter-type-select"
                 className="form-select"
                 style={{ fontSize: '0.8rem', padding: '6px 10px' }}
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
               >
-                <option value="ALL">All Types</option>
+                <option value="ALL">All Test Types</option>
                 {TEST_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
             </div>
 
-            {loadingSets ? (
+            {/* Folders List Container */}
+            {loadingFolders ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
                 <div className="spinner spinner-dark" style={{ width: 28, height: 28 }} />
               </div>
-            ) : filteredSets.length === 0 ? (
+            ) : filteredFolders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                No question sets found.
+                No folders match filter.
                 <button
-                  onClick={() => setShowNewSetModal(true)}
+                  onClick={() => setShowNewFolderModal(true)}
                   className="btn btn-primary"
                   style={{ marginTop: 12, width: '100%', fontSize: '0.8rem' }}
                 >
-                  + Create First Set
+                  + Create First Folder
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
-                {filteredSets.map((qs) => {
-                  const isSelected = selectedSet?._id === qs._id;
-                  const qCount = isSelected && questions !== null && questions !== undefined
-                    ? questions.length
-                    : (qs.questionCount ?? (qs.questionIds?.length || 0));
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+                {filteredFolders.map((f) => {
+                  const isSelected = selectedFolder?._id === f._id;
+                  const setCount = f.setCount ?? (f.questionSets?.length || 0);
+                  const totalQ = f.totalQuestions ?? (f.questionSets?.reduce((acc, s) => acc + (s.questionCount || 0), 0) || 0);
 
                   return (
                     <button
-                      key={qs._id}
-                      onClick={() => setSelectedSet(qs)}
+                      key={f._id}
+                      onClick={() => handleSelectFolder(f)}
                       style={{
                         textAlign: 'left',
-                        padding: '12px 14px',
+                        padding: '12px',
                         borderRadius: 8,
-                        border: isSelected ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: isSelected ? 'rgba(14, 124, 134, 0.12)' : 'var(--color-bg-card)',
+                        border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        background: isSelected ? 'rgba(14, 124, 134, 0.08)' : 'var(--color-bg-card)',
                         cursor: 'pointer',
                         transition: 'all 150ms',
                         fontFamily: 'inherit',
+                        width: '100%',
+                        boxSizing: 'border-box',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <strong style={{ fontSize: '0.875rem', color: isSelected ? 'var(--color-primary)' : 'var(--color-navy)' }}>
-                          {qs.name}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
+                        <strong style={{ fontSize: '0.88rem', color: isSelected ? 'var(--color-primary)' : 'var(--color-navy)', wordBreak: 'break-word', flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>📁</span> {f.name}
                         </strong>
-                        <span className="badge badge-secondary" style={{ fontSize: '0.65rem' }}>
-                          {qCount} Qs
+                        <span
+                          className="badge"
+                          style={{
+                            fontSize: '0.65rem',
+                            flexShrink: 0,
+                            ...getBadgeStyle(f.testType),
+                          }}
+                        >
+                          {f.testType}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                        <span>{qs.testType}</span>
-                        <span>{new Date(qs.createdAt).toLocaleDateString()}</span>
+
+                      {f.description && (
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '0 0 6px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {f.description}
+                        </p>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                        <span style={{ fontWeight: 600 }}>
+                          {setCount} {setCount === 1 ? 'Set' : 'Sets'} · {totalQ} Qs
+                        </span>
+                        {setCount > 1 && (
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              background: f.isValidPool ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                              color: f.isValidPool ? '#15803d' : '#b45309',
+                              fontWeight: 600,
+                            }}
+                            title={f.isValidPool ? `Valid Pool (${f.questionCountPerSet} Qs/set)` : (f.poolError || 'Sets have unequal question counts')}
+                          >
+                            {f.isValidPool ? '🟢 Pool Ready' : '⚠️ Pool Alert'}
+                          </span>
+                        )}
                       </div>
                     </button>
                   );
@@ -708,32 +975,277 @@ export default function AdminQuestionBank() {
             )}
           </div>
 
-          {/* ── Right Column: Questions in Selected Set ── */}
+          {/* ════════ RIGHT PANEL: DYNAMIC CONTENT AREA (STATE 1 OR STATE 2) ════════ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {selectedSet ? (
+            {!selectedFolder ? (
+              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
+                <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No Folder Selected</h3>
+                <p style={{ fontSize: '0.85rem' }}>
+                  Please select a folder from the left sidebar to view its Question Sets.
+                </p>
+              </div>
+            ) : !selectedSet ? (
+              /* ════════ STATE 1: FOLDER OVERVIEW & QUESTION SETS LIST ════════ */
               <>
-                {/* Selected Set Header Card */}
-                <div className="card" style={{ padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                      <h2 style={{ fontSize: '1.3rem', color: 'var(--color-navy)', margin: 0 }}>{selectedSet.name}</h2>
-                      <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
-                        {selectedSet.testType}
-                      </span>
+                {/* Folder Header Card */}
+                <div className="card" style={{ padding: '18px 22px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 260 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '1.4rem' }}>📁</span>
+                        <h2 style={{ fontSize: '1.35rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
+                          {selectedFolder.name}
+                        </h2>
+                        <span className="badge" style={{ fontSize: '0.72rem', ...getBadgeStyle(selectedFolder.testType) }}>
+                          {selectedFolder.testType}
+                        </span>
+                        <span className="badge badge-secondary" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                          {selectedFolder.setCount ?? (selectedFolder.questionSets?.length || 0)} Question Sets · {selectedFolder.totalQuestions ?? 0} Total Qs
+                        </span>
+                      </div>
+
+                      {selectedFolder.description && (
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '8px 0 0 0', lineHeight: 1.4 }}>
+                          {selectedFolder.description}
+                        </p>
+                      )}
+
+                      {/* Pool Readiness Banner */}
+                      {(selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 1 && (
+                        <div style={{ marginTop: 10 }}>
+                          {selectedFolder.isValidPool ? (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: 'rgba(34, 197, 94, 0.12)', color: '#15803d', padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600 }}>
+                              <span>🟢</span> Valid Pool: All sets contain {selectedFolder.questionCountPerSet} questions each (ready for round-robin rotation).
+                            </div>
+                          ) : (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', fontWeight: 600 }}>
+                              <span>⚠️</span> Pool Alert: {selectedFolder.poolError || 'Sets have unequal question counts. Cannot be used as round-robin pool until balanced.'}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action buttons inside folder */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        id="new-set-in-folder-btn"
+                        onClick={() => handleOpenNewSet(selectedFolder._id)}
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        + New Set
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenUploadModal(selectedFolder)}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        📁 Add PDFs
+                      </button>
+                      <button
+                        type="button"
+                        id="edit-folder-btn"
+                        onClick={handleOpenEditFolder}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        title="Edit Folder Name / Description"
+                      >
+                        ✏ Edit
+                      </button>
+                      <button
+                        type="button"
+                        id="delete-folder-btn"
+                        onClick={() => setShowDeleteFolderModal(true)}
+                        className="btn btn-danger"
+                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        title="Delete Folder"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Question Sets Roster / Cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
+                      Question Sets in this Folder
+                    </h3>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      Click any Question Set to view and manage its questions
+                    </span>
+                  </div>
+
+                  {(!selectedFolder.questionSets || selectedFolder.questionSets.length === 0) ? (
+                    <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📄</div>
+                      <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>This folder is empty</h3>
+                      <p style={{ fontSize: '0.85rem', marginBottom: 20 }}>
+                        Create your first question set in this folder or upload a folder of PDFs.
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+                        <button
+                          onClick={() => handleOpenNewSet(selectedFolder._id)}
+                          className="btn btn-primary"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          + Create Question Set
+                        </button>
+                        <button
+                          onClick={() => handleOpenUploadModal(selectedFolder)}
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          📁 Upload PDFs
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {selectedFolder.questionSets.map((qs, idx) => {
+                        const qCount = qs.questionCount ?? (qs.questionIds?.length || 0);
+
+                        return (
+                          <div
+                            key={qs._id}
+                            className="card"
+                            style={{
+                              padding: '16px 20px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              border: '1px solid var(--color-border)',
+                              flexWrap: 'wrap',
+                              gap: 12,
+                            }}
+                            onClick={() => setSelectedSet(qs)}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 240 }}>
+                              <span style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>📄</span>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <h4 style={{ fontSize: '1rem', color: 'var(--color-navy)', margin: 0, fontWeight: 700 }}>
+                                    {qs.name}
+                                  </h4>
+                                  <span className="badge badge-secondary" style={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                                    {qCount} {qCount === 1 ? 'Question' : 'Questions'}
+                                  </span>
+                                  <span className="badge" style={{ fontSize: '0.65rem', ...getBadgeStyle(qs.testType || selectedFolder.testType) }}>
+                                    {qs.testType || selectedFolder.testType}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                  Created: {new Date(qs.createdAt).toLocaleDateString()}
+                                  {qs.createdBy?.name && ` · by ${qs.createdBy.name}`}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                id={`edit-set-${idx}-btn`}
+                                onClick={() => {
+                                  setSelectedSet(qs);
+                                  handleOpenEditSet(qs);
+                                }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ fontSize: '0.75rem', padding: '5px 10px' }}
+                              >
+                                ✏ Edit
+                              </button>
+                              <button
+                                type="button"
+                                id={`delete-set-${idx}-btn`}
+                                onClick={() => {
+                                  setSelectedSet(qs);
+                                  setShowDeleteSetModal(true);
+                                }}
+                                className="btn btn-danger btn-sm"
+                                style={{ fontSize: '0.75rem', padding: '5px 10px' }}
+                              >
+                                🗑 Delete
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSet(qs)}
+                                className="btn btn-primary btn-sm"
+                                style={{ fontSize: '0.78rem', padding: '5px 14px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              >
+                                View Questions →
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* ════════ STATE 2: QUESTION SET DETAIL & QUESTIONS ROSTER ════════ */
+              <>
+                {/* Back Navigation Bar & Set Header Card */}
+                <div className="card" style={{ padding: '16px 20px' }}>
+                  {/* Breadcrumb / Back Button */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSet(null)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', padding: '4px 10px', fontWeight: 600 }}
+                    >
+                      ← Back
+                    </button>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      <span>📁 {selectedFolder.name}</span>
+                      <span style={{ margin: '0 6px' }}>/</span>
+                      <strong style={{ color: 'var(--color-navy)' }}>📄 {selectedSet.name}</strong>
+                    </div>
+                  </div>
+
+                  {/* Set Header Info */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <h2 style={{ fontSize: '1.25rem', color: 'var(--color-navy)', margin: 0, fontWeight: 800 }}>
+                          {selectedSet.name}
+                        </h2>
+                        <span className="badge" style={{ fontSize: '0.72rem', ...getBadgeStyle(selectedSet.testType) }}>
+                          {selectedSet.testType}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            background: 'rgba(14, 124, 134, 0.08)',
+                            color: 'var(--color-primary)',
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontWeight: 600,
+                          }}
+                        >
+                          📁 Folder: {selectedFolder.name}
+                        </span>
+                      </div>
+                      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
+                        Contains <strong>{questions.length}</strong> question(s) · Created by {selectedSet.createdBy?.name || 'Admin'}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <button
                         type="button"
                         id="edit-question-set-btn"
-                        onClick={handleOpenEditSet}
+                        onClick={() => handleOpenEditSet(selectedSet)}
                         className="btn btn-secondary btn-sm"
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '3px 10px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          cursor: 'pointer',
-                        }}
-                        title="Edit Question Set Name and Type"
+                        style={{ fontSize: '0.78rem' }}
                       >
                         ✏ Edit Set
                       </button>
@@ -742,30 +1254,21 @@ export default function AdminQuestionBank() {
                         id="delete-question-set-btn"
                         onClick={() => setShowDeleteSetModal(true)}
                         className="btn btn-danger btn-sm"
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '3px 10px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          cursor: 'pointer',
-                        }}
-                        title="Delete Question Set"
+                        style={{ fontSize: '0.78rem' }}
                       >
                         🗑 Delete Set
                       </button>
+                      <button
+                        type="button"
+                        id="add-question-btn"
+                        onClick={handleOpenCreateQuestion}
+                        className="btn btn-primary btn-sm"
+                        style={{ fontSize: '0.78rem' }}
+                      >
+                        + Add Question
+                      </button>
                     </div>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
-                      Contains {questions.length} question(s) · Created by {selectedSet.createdBy?.name || 'Admin'}
-                    </p>
                   </div>
-                  <button
-                    onClick={handleOpenCreateQuestion}
-                    className="btn btn-primary"
-                    style={{ fontSize: '0.85rem' }}
-                  >
-                    + Add Question to Set
-                  </button>
                 </div>
 
                 {/* Questions List */}
@@ -785,7 +1288,7 @@ export default function AdminQuestionBank() {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {questions.map((q, idx) => {
                       const isExpanded = expandedQuestionId === q._id;
                       let diffBadge = 'badge-secondary';
@@ -798,17 +1301,17 @@ export default function AdminQuestionBank() {
                           key={q._id}
                           className="card"
                           style={{
-                            padding: 20,
+                            padding: 18,
                             borderLeft: isExpanded ? '4px solid var(--color-primary)' : '1px solid var(--color-border)',
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: 260 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.9rem' }}>
                                   Q{idx + 1}.
                                 </span>
-                                <h4 style={{ fontSize: '1.05rem', color: 'var(--color-navy)', margin: 0 }}>
+                                <h4 style={{ fontSize: '1.02rem', color: 'var(--color-navy)', margin: 0 }}>
                                   {q.title || (q.isPdfImported ? `${q.pdfOriginalName || q.pdfFileName} (Problem ${idx + 1})` : 'Untitled Question')}
                                 </h4>
                                 {q.difficulty && (
@@ -868,34 +1371,34 @@ export default function AdminQuestionBank() {
                               ) : null}
                             </div>
 
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                               <button
                                 onClick={() => setExpandedQuestionId(isExpanded ? null : q._id)}
-                                className="btn btn-secondary"
-                                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                               >
-                                {isExpanded ? 'Collapse Details' : 'View Details'}
+                                {isExpanded ? 'Collapse' : 'Details'}
                               </button>
                               <button
                                 onClick={() => handleOpenEditQuestion(q)}
-                                className="btn btn-secondary"
-                                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => setDeleteTarget(q)}
-                                className="btn btn-danger"
-                                style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                                className="btn btn-danger btn-sm"
+                                style={{ padding: '5px 8px', fontSize: '0.78rem' }}
                                 title="Delete Question"
                               >
-                                🗑️
+                                🗑
                               </button>
                             </div>
                           </div>
 
                           {/* Test Cases Count summary */}
-                          <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)', fontSize: '0.78rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 16, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: '0.78rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
                             <span>
                               👁️ Visible Cases: <strong>{q.visibleTestCases?.length || 0}</strong>
                             </span>
@@ -994,22 +1497,215 @@ export default function AdminQuestionBank() {
                   </div>
                 )}
               </>
-            ) : (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
-                <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No Question Set Selected</h3>
-                <p style={{ fontSize: '0.85rem' }}>
-                  Please select a question set from the left panel or create a new set.
-                </p>
-              </div>
             )}
           </div>
         </div>
 
-        {/* ── Create Question Set Modal ── */}
+        {/* ════════ MODAL: CREATE FOLDER ════════ */}
+        {showNewFolderModal && (
+          <div className="modal-backdrop" onClick={() => !creatingFolder && setShowNewFolderModal(false)}>
+            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title">Create New Folder</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowNewFolderModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleCreateFolderSubmit}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label">Folder Name *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. SDE-1 Core DSA Problem Sets"
+                      value={newFolderData.name}
+                      onChange={(e) => setNewFolderData((p) => ({ ...p, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Test Type *</label>
+                    <select
+                      className="form-select"
+                      value={newFolderData.testType}
+                      onChange={(e) => setNewFolderData((p) => ({ ...p, testType: e.target.value }))}
+                      required
+                    >
+                      {TEST_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      All Question Sets created or added inside this folder will inherit this test type.
+                    </p>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Description (Optional)</label>
+                    <textarea
+                      className="form-control"
+                      rows={2}
+                      placeholder="Brief note on intended round, difficulty, or pool usage..."
+                      value={newFolderData.description}
+                      onChange={(e) => setNewFolderData((p) => ({ ...p, description: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewFolderModal(false)}
+                    className="btn btn-secondary"
+                    disabled={creatingFolder}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={creatingFolder}
+                  >
+                    {creatingFolder ? 'Creating...' : 'Create Folder'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ════════ MODAL: EDIT FOLDER ════════ */}
+        {showEditFolderModal && selectedFolder && (
+          <div className="modal-backdrop" onClick={() => !editingFolder && setShowEditFolderModal(false)}>
+            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title">Edit Folder</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowEditFolderModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleEditFolderSubmit}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label">Folder Name *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={editFolderData.name}
+                      onChange={(e) => setEditFolderData((p) => ({ ...p, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Test Type</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={selectedFolder.testType}
+                      disabled
+                      style={{ background: 'var(--color-bg-subtle)' }}
+                    />
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      Test type is locked to maintain set consistency.
+                    </p>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      className="form-control"
+                      rows={2}
+                      value={editFolderData.description}
+                      onChange={(e) => setEditFolderData((p) => ({ ...p, description: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditFolderModal(false)}
+                    className="btn btn-secondary"
+                    disabled={editingFolder}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={editingFolder}
+                  >
+                    {editingFolder ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ════════ MODAL: DELETE FOLDER ════════ */}
+        {showDeleteFolderModal && selectedFolder && (
+          <div className="modal-backdrop" onClick={() => !deletingFolder && setShowDeleteFolderModal(false)}>
+            <div className="modal-container" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title" style={{ color: '#dc2626' }}>🗑 Delete Folder</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteFolderModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ fontSize: '0.92rem', color: 'var(--color-text)', margin: 0 }}>
+                  Are you sure you want to delete Folder <strong>"{selectedFolder.name}"</strong>?
+                </p>
+                {(selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 0 ? (
+                  <div style={{ fontSize: '0.85rem', color: '#b91c1c', background: '#fee2e2', padding: '10px 14px', borderRadius: 6, border: '1px solid #fecaca' }}>
+                    ⚠️ <strong>Safe Deletion Block:</strong> This folder contains <strong>{selectedFolder.setCount || selectedFolder.questionSets?.length}</strong> question set(s). Folders with question sets cannot be deleted. Please delete or move all question sets out of this folder first.
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                    This empty folder will be permanently deleted.
+                  </p>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteFolderModal(false)}
+                  className="btn btn-secondary"
+                  disabled={deletingFolder}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteFolderSubmit}
+                  className="btn btn-danger"
+                  disabled={deletingFolder || (selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 0}
+                >
+                  {deletingFolder ? 'Deleting...' : 'Confirm Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ════════ MODAL: CREATE QUESTION SET ════════ */}
         {showNewSetModal && (
           <div className="modal-backdrop" onClick={() => !creatingSet && setShowNewSetModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3 className="modal-title">Create Question Set</h3>
                 <button
@@ -1023,29 +1719,31 @@ export default function AdminQuestionBank() {
               <form onSubmit={handleCreateSetSubmit}>
                 <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="form-group">
+                    <label className="form-label">Destination Folder *</label>
+                    <select
+                      className="form-select"
+                      value={newSetData.folderId}
+                      onChange={(e) => setNewSetData((p) => ({ ...p, folderId: e.target.value }))}
+                      required
+                    >
+                      {folders.map((f) => (
+                        <option key={f._id} value={f._id}>
+                          📁 {f.name} ({f.testType})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
                     <label className="form-label">Question Set Name *</label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. SDE-1 Core DSA Problem Set"
+                      placeholder="e.g. Set 1 (Arrays & Strings)"
                       value={newSetData.name}
                       onChange={(e) => setNewSetData((p) => ({ ...p, name: e.target.value }))}
                       required
                     />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Test Type *</label>
-                    <select
-                      className="form-select"
-                      value={newSetData.testType}
-                      onChange={(e) => setNewSetData((p) => ({ ...p, testType: e.target.value }))}
-                      required
-                    >
-                      {TEST_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -1070,10 +1768,10 @@ export default function AdminQuestionBank() {
           </div>
         )}
 
-        {/* ── Edit Question Set Modal (BUG-XX) ── */}
+        {/* ════════ MODAL: EDIT QUESTION SET (RENAME & MOVE) ════════ */}
         {showEditSetModal && (
           <div className="modal-backdrop" onClick={() => !editingSet && setShowEditSetModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3 className="modal-title">Edit Question Set</h3>
                 <button
@@ -1093,7 +1791,6 @@ export default function AdminQuestionBank() {
                       type="text"
                       id="edit-set-name-input"
                       className="form-control"
-                      placeholder="e.g. SDE-1 Core DSA Problem Set"
                       value={editSetData.name}
                       onChange={(e) => setEditSetData((p) => ({ ...p, name: e.target.value }))}
                       required
@@ -1101,14 +1798,13 @@ export default function AdminQuestionBank() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Test Type *</label>
+                    <label className="form-label">Test Type</label>
                     <select
                       id="edit-set-type-select"
                       className="form-select"
-                      value={editSetData.testType}
-                      onChange={(e) => setEditSetData((p) => ({ ...p, testType: e.target.value }))}
+                      value={selectedSet?.testType || 'SPOJ'}
                       disabled={questions.length > 0}
-                      required
+                      readOnly
                     >
                       {TEST_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
@@ -1116,9 +1812,30 @@ export default function AdminQuestionBank() {
                     </select>
                     {questions.length > 0 && (
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                        ℹ Test Type cannot be changed while this set contains {questions.length} question(s).
+                        ℹ Test Type is locked to parent folder ({selectedSet?.testType}).
                       </p>
                     )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Parent Folder</label>
+                    <select
+                      className="form-select"
+                      value={editSetData.folderId}
+                      onChange={(e) => setEditSetData((p) => ({ ...p, folderId: e.target.value }))}
+                      required
+                    >
+                      {folders
+                        .filter((f) => !selectedSet?.testType || f.testType === selectedSet.testType)
+                        .map((f) => (
+                          <option key={f._id} value={f._id}>
+                            📁 {f.name} ({f.testType})
+                          </option>
+                        ))}
+                    </select>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      You can move this set to any other folder of the same test type ({selectedSet?.testType}).
+                    </p>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -1145,7 +1862,7 @@ export default function AdminQuestionBank() {
           </div>
         )}
 
-        {/* ── Delete Question Set Modal ── */}
+        {/* ════════ MODAL: DELETE QUESTION SET ════════ */}
         {showDeleteSetModal && selectedSet && (
           <div className="modal-backdrop" onClick={() => !deletingSet && setShowDeleteSetModal(false)}>
             <div className="modal-container" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
@@ -1159,8 +1876,8 @@ export default function AdminQuestionBank() {
                   ✕
                 </button>
               </div>
-              <div className="modal-body" style={{ gap: 12 }}>
-                <p style={{ fontSize: '0.95rem', color: 'var(--color-text)', margin: 0 }}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontSize: '0.92rem', color: 'var(--color-text)', margin: 0 }}>
                   Are you sure you want to delete Question Set <strong>"{selectedSet.name}"</strong>?
                 </p>
                 {questions.length > 0 && (
@@ -1191,7 +1908,7 @@ export default function AdminQuestionBank() {
           </div>
         )}
 
-        {/* ── Add / Edit Question Modal (FR-4.1) ── */}
+        {/* ════════ MODAL: ADD / EDIT QUESTION (FR-4.1) ════════ */}
         {showQuestionModal && (
           <div className="modal-backdrop" onClick={() => !savingQuestion && setShowQuestionModal(false)}>
             <div className="modal-container" style={{ maxWidth: 780 }} onClick={(e) => e.stopPropagation()}>
@@ -1210,8 +1927,7 @@ export default function AdminQuestionBank() {
 
               <form onSubmit={handleQuestionSubmit}>
                 <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                  {/* PDF Imported Question Informational Banner */}
+                  {/* PDF Imported Question Info Banner */}
                   {questionForm.isPdfImported && (
                     <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: 'var(--color-primary)' }}>
                       <div style={{ fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -1264,7 +1980,7 @@ export default function AdminQuestionBank() {
                     <textarea
                       className="form-control"
                       rows={questionForm.isPdfImported ? 3 : 5}
-                      placeholder={questionForm.isPdfImported ? "Write the complete problem statement..." : "Write the complete problem statement..."}
+                      placeholder="Write the complete problem statement..."
                       value={questionForm.description}
                       onChange={(e) => setQuestionForm((p) => ({ ...p, description: e.target.value }))}
                       required={!questionForm.isPdfImported}
@@ -1346,7 +2062,7 @@ export default function AdminQuestionBank() {
                     </div>
                   )}
 
-                  {/* ── Visible Test Cases (FR-4.1: At least 1 required) ── */}
+                  {/* Visible Test Cases */}
                   <div style={{ background: 'var(--color-bg-subtle)', border: '1.5px solid var(--color-border)', borderRadius: 8, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div>
@@ -1412,7 +2128,6 @@ export default function AdminQuestionBank() {
                       ))}
                     </div>
                   </div>
-
                 </div>
 
                 <div className="modal-footer">
@@ -1437,9 +2152,9 @@ export default function AdminQuestionBank() {
           </div>
         )}
 
-        {/* ── Delete Question Confirmation Modal ── */}
+        {/* ════════ MODAL: DELETE QUESTION ════════ */}
         {deleteTarget && (
-          <div className="modal-backdrop" onClick={() => !deleting && setDeleteTarget(null)}>
+          <div className="modal-backdrop" onClick={() => !deletingQuestion && setDeleteTarget(null)}>
             <div className="modal-container" style={{ maxWidth: 450 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3 className="modal-title" style={{ color: '#E74C3C' }}>Delete Question</h3>
@@ -1461,29 +2176,29 @@ export default function AdminQuestionBank() {
                   type="button"
                   onClick={() => setDeleteTarget(null)}
                   className="btn btn-secondary"
-                  disabled={deleting}
+                  disabled={deletingQuestion}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={handleDeleteConfirm}
+                  onClick={handleDeleteQuestionConfirm}
                   className="btn btn-danger"
-                  disabled={deleting}
+                  disabled={deletingQuestion}
                 >
-                  {deleting ? 'Deleting...' : 'Confirm Delete'}
+                  {deletingQuestion ? 'Deleting...' : 'Confirm Delete'}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Bulk Upload PDFs Modal (FEATURE-009) ── */}
+        {/* ════════ MODAL: BULK UPLOAD PDFS (FEATURE-009 & FEATURE-013) ════════ */}
         {showUploadPdfModal && (
           <div className="modal-backdrop" onClick={handleCloseUploadModal}>
             <div
               className="modal-container"
-              style={{ maxWidth: uploadSummary ? 820 : 640 }}
+              style={{ maxWidth: uploadSummary ? 820 : 660 }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="modal-header">
@@ -1491,10 +2206,10 @@ export default function AdminQuestionBank() {
                   <span style={{ fontSize: '1.4rem' }}>📁</span>
                   <div>
                     <h3 className="modal-title" style={{ margin: 0 }}>
-                      Bulk Upload PDFs to Question Bank
+                      Bulk Upload PDFs to Folder
                     </h3>
                     <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                      Upload a folder containing PDF files (or choose PDFs) to auto-create Question Sets & Questions
+                      Upload a folder containing PDF files to auto-create Question Sets inside a selected or new Folder.
                     </p>
                   </div>
                 </div>
@@ -1510,31 +2225,102 @@ export default function AdminQuestionBank() {
 
               {!uploadSummary ? (
                 <form onSubmit={handleUploadPdfSubmit}>
-                  <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {/* Step 1: Select Test Type */}
+                  <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                    {/* Step 1: Destination Folder Selection */}
                     <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 14 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <span style={{ background: 'var(--color-primary)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                           1
                         </span>
                         <label className="form-label" style={{ margin: 0, fontWeight: 700, color: 'var(--color-navy)' }}>
-                          Select Test Type *
+                          Destination Folder *
                         </label>
                       </div>
-                      <select
-                        className="form-select"
-                        value={uploadTestType}
-                        onChange={(e) => setUploadTestType(e.target.value)}
-                        disabled={isUploadingPdfs}
-                        required
-                      >
-                        {TEST_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '6px 0 0 0' }}>
-                        All uploaded PDFs in this batch will be assigned to this test type ({uploadTestType}).
-                      </p>
+
+                      {/* Mode Toggle: Create New vs Existing */}
+                      <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer', fontWeight: uploadMode === 'CREATE_NEW_FOLDER' ? 700 : 400 }}>
+                          <input
+                            type="radio"
+                            name="uploadMode"
+                            value="CREATE_NEW_FOLDER"
+                            checked={uploadMode === 'CREATE_NEW_FOLDER'}
+                            onChange={() => setUploadMode('CREATE_NEW_FOLDER')}
+                            disabled={isUploadingPdfs}
+                          />
+                          Create New Folder
+                        </label>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer', fontWeight: uploadMode === 'EXISTING_FOLDER' ? 700 : 400 }}>
+                          <input
+                            type="radio"
+                            name="uploadMode"
+                            value="EXISTING_FOLDER"
+                            checked={uploadMode === 'EXISTING_FOLDER'}
+                            onChange={() => setUploadMode('EXISTING_FOLDER')}
+                            disabled={isUploadingPdfs}
+                          />
+                          Add to Existing Folder
+                        </label>
+                      </div>
+
+                      {uploadMode === 'CREATE_NEW_FOLDER' ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                              New Folder Name *
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="e.g. SDE-1 Screening Batch A"
+                              value={uploadFolderName}
+                              onChange={(e) => setUploadFolderName(e.target.value)}
+                              disabled={isUploadingPdfs}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                              Test Type *
+                            </label>
+                            <select
+                              className="form-select"
+                              value={uploadTestType}
+                              onChange={(e) => setUploadTestType(e.target.value)}
+                              disabled={isUploadingPdfs}
+                              required
+                            >
+                              {TEST_TYPES.map((t) => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                            Select Existing Folder *
+                          </label>
+                          <select
+                            className="form-select"
+                            value={uploadFolderId}
+                            onChange={(e) => {
+                              setUploadFolderId(e.target.value);
+                              const f = folders.find((fol) => fol._id === e.target.value);
+                              if (f) setUploadTestType(f.testType);
+                            }}
+                            disabled={isUploadingPdfs}
+                            required
+                          >
+                            <option value="">-- Choose a Folder --</option>
+                            {folders.map((f) => (
+                              <option key={f._id} value={f._id}>
+                                📁 {f.name} ({f.testType}) — {f.setCount ?? (f.questionSets?.length || 0)} sets
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {/* Step 2: Upload Folder / PDFs */}
@@ -1557,23 +2343,22 @@ export default function AdminQuestionBank() {
                           border: isDraggingFolder ? '2px dashed var(--color-primary)' : '2px dashed var(--color-border)',
                           background: isDraggingFolder ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
                           borderRadius: 10,
-                          padding: '28px 20px',
+                          padding: '24px 20px',
                           textAlign: 'center',
                           transition: 'all 0.2s ease',
                           cursor: 'pointer',
                         }}
                       >
-                        <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>
+                        <div style={{ fontSize: '2.2rem', marginBottom: 6 }}>
                           {isDraggingFolder ? '📥' : '📂'}
                         </div>
-                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', color: 'var(--color-navy)' }}>
+                        <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', color: 'var(--color-navy)' }}>
                           {isDraggingFolder ? 'Drop folder here!' : 'Drag & drop a folder containing PDF files'}
                         </h4>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 16px 0' }}>
-                          Supports bulk folder upload (~100 PDFs) or individual PDF selection.
+                        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0 0 14px 0' }}>
+                          Each PDF will become a Question Set in this Folder.
                         </p>
 
-                        {/* Hidden Inputs */}
                         <input
                           type="file"
                           ref={folderInputRef}
@@ -1592,14 +2377,13 @@ export default function AdminQuestionBank() {
                           style={{ display: 'none' }}
                         />
 
-                        {/* Buttons */}
                         <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
                           <button
                             type="button"
                             onClick={() => folderInputRef.current?.click()}
                             className="btn btn-primary"
                             disabled={isUploadingPdfs}
-                            style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            style={{ fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                           >
                             📁 Choose Folder
                           </button>
@@ -1608,16 +2392,15 @@ export default function AdminQuestionBank() {
                             onClick={() => fileInputRef.current?.click()}
                             className="btn btn-secondary"
                             disabled={isUploadingPdfs}
-                            style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            style={{ fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                           >
                             📄 Choose PDF Files
                           </button>
                         </div>
                       </div>
 
-                      {/* Selected Files Preview */}
                       {uploadFiles.length > 0 && (
-                        <div style={{ marginTop: 14, background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ marginTop: 12, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: '1.1rem' }}>📄</span>
                             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-navy)' }}>
@@ -1639,7 +2422,6 @@ export default function AdminQuestionBank() {
                       )}
                     </div>
 
-                    {/* Upload Progress Bar */}
                     {isUploadingPdfs && (
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
@@ -1690,7 +2472,6 @@ export default function AdminQuestionBank() {
                 /* Upload Summary Report */
                 <div>
                   <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Stats Banner */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                       <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
@@ -1719,10 +2500,9 @@ export default function AdminQuestionBank() {
                     </div>
 
                     <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
-                      ℹ️ <strong>Note:</strong> All imported questions have visible test cases populated from PDF examples.
+                      ℹ️ <strong>Folder Pool Note:</strong> Question sets were created in Folder <strong>"{uploadSummary?.folder?.name || selectedFolder?.name || 'Target Folder'}"</strong>.
                     </div>
 
-                    {/* Breakdown Table */}
                     <div>
                       <h4 style={{ fontSize: '0.9rem', color: 'var(--color-navy)', marginBottom: 8 }}>File Processing Breakdown</h4>
                       <div style={{ border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
@@ -1796,12 +2576,6 @@ export default function AdminQuestionBank() {
                                             <div key={qIdx} style={{ fontSize: '0.75rem', marginBottom: 2 }}>
                                               Q{qInfo.questionNumber || qIdx + 1} (pp. {qInfo.pageRange?.startPage}–{qInfo.pageRange?.endPage}):{' '}
                                               <strong>{qInfo.visibleTestCasesCount} case(s)</strong>
-                                              {qInfo.exampleParsingStatus === 'AMBIGUOUS' && (
-                                                <span style={{ color: '#d97706', marginLeft: 4 }}>⚠️ Ambiguous Example</span>
-                                              )}
-                                              {qInfo.exampleParsingStatus === 'FAILED' && (
-                                                <span style={{ color: '#dc2626', marginLeft: 4 }}>⚠️ Example Parse Failed</span>
-                                              )}
                                             </div>
                                           ))
                                         ) : (
@@ -1819,12 +2593,13 @@ export default function AdminQuestionBank() {
                                           className="badge"
                                           style={{
                                             fontSize: '0.7rem',
-                                            background: '#fef2f2',
-                                            color: '#b91c1c',
-                                            border: '1.5px solid #f40606ff',
+                                            background: '#f0fdf4',
+                                            color: '#15803d',
+                                            border: '1.5px solid #86efac',
+                                            fontWeight: 700,
                                           }}
                                         >
-                                          Incomplete
+                                          Success
                                         </span>
                                       ) : (
                                         <span

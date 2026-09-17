@@ -2085,7 +2085,7 @@ export default function AdminLiveDashboard() {
 
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  Proctoring Decision Logs (FR-7.3, FR-7.4)
+
                 </div>
                 <button
                   type="button"

@@ -17,6 +17,7 @@ const proctoringRoutes = require('./routes/proctoringRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
 const malpracticeRoutes = require('./routes/malpracticeRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const folderRoutes = require('./routes/folderRoutes');
 
 const { registerSocketHandlers } = require('./sockets/socketHandler');
 
@@ -97,6 +98,7 @@ app.use('/api/v1/proctoring', proctoringRoutes);
 app.use('/api/v1', evaluationRoutes);
 app.use('/api/v1', malpracticeRoutes);
 app.use('/api/v1', adminRoutes);
+app.use('/api/v1', folderRoutes);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -109,6 +111,7 @@ app.use((err, req, res, next) => {
 
 // ── MongoDB connection ────────────────────────────────────────────────────────
 const { seedSuperAdmin } = require('./seed');
+const { migrateFoldersToHierarchy } = require('./scripts/migrations/migrate_folders');
 
 mongoose
   .connect(process.env.MONGODB_URI, {
@@ -118,6 +121,9 @@ mongoose
     console.log('[MongoDB] Connected successfully');
     // Ensure Super Admin exists in database
     await seedSuperAdmin();
+
+    // FEATURE-013: Automatic, idempotent migration of legacy QuestionSets into Folders
+    await migrateFoldersToHierarchy();
 
     // BUG-005: Bi-directional synchronization between local disk and persistent MongoDB PDF storage
     const { syncAllPdfAssets } = require('./services/pdfStorageService');

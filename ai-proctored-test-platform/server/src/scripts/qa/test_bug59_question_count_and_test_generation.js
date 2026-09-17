@@ -72,6 +72,7 @@ async function runTests() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai_proctored_test_platform';
   await mongoose.connect(uri);
 
+  const Folder = require('../../models/Folder');
   const QuestionSet = require('../../models/QuestionSet');
   const Question = require('../../models/Question');
   const Test = require('../../models/Test');
@@ -80,6 +81,17 @@ async function runTests() {
   const Room = require('../../models/Room');
   const { getQuestionSets } = require('../../controllers/questionController');
   const { startAttempt } = require('../../controllers/submissionController');
+
+  // Ensure test folder exists
+  let qaFolder = await Folder.findOne({ name: 'QA BUG-59 Folder' });
+  if (!qaFolder) {
+    const adminUserInit = await Admin.findOne();
+    qaFolder = await Folder.create({
+      name: 'QA BUG-59 Folder',
+      testType: 'SPOJ',
+      createdBy: adminUserInit?._id || new mongoose.Types.ObjectId(),
+    });
+  }
 
   // 1. Sync any existing sets for clean DB baseline
   const allSets = await QuestionSet.find();
@@ -91,7 +103,7 @@ async function runTests() {
 
   // 2. Test getQuestionSets controller directly
   let mockResJson = null;
-  const mockReq = { user: { id: 'admin1', type: 'admin' } };
+  const mockReq = { user: { id: 'admin1', type: 'admin' }, query: {} };
   const mockRes = {
     json: (data) => {
       mockResJson = data;
@@ -123,6 +135,7 @@ async function runTests() {
   const emptySet = await QuestionSet.create({
     name: 'QA Empty Set Test ' + Date.now(),
     testType: 'SPOJ',
+    folderId: qaFolder._id,
     createdBy: adminUser._id,
     questionIds: [],
   });
@@ -137,6 +150,7 @@ async function runTests() {
   const testSetWithQ = await QuestionSet.create({
     name: 'QA Set With Unpopulated QuestionIds ' + Date.now(),
     testType: 'SPOJ',
+    folderId: qaFolder._id,
     createdBy: adminUser._id,
     questionIds: [], // Empty array in DB
   });

@@ -91,6 +91,7 @@ async function runTests() {
   console.log('\n--- Part 2: API & Validation Integration Tests ---');
   await mongoose.connect(process.env.MONGODB_URI);
 
+  const Folder = require('../../models/Folder');
   const QuestionSet = require('../../models/QuestionSet');
   const Question = require('../../models/Question');
   const Test = require('../../models/Test');
@@ -104,6 +105,15 @@ async function runTests() {
       email: `admin_${Date.now()}@qa.com`,
       passwordHash: 'dummy',
       role: 'ADMIN',
+    });
+  }
+
+  let bug52Folder = await Folder.findOne({ name: 'QA BUG-52 Folder' });
+  if (!bug52Folder) {
+    bug52Folder = await Folder.create({
+      name: 'QA BUG-52 Folder',
+      testType: 'REACT',
+      createdBy: admin._id,
     });
   }
 
@@ -148,6 +158,7 @@ async function runTests() {
   const cleanSet = await QuestionSet.create({
     name: `Test QA Set ${Date.now()}`,
     testType: 'REACT',
+    folderId: bug52Folder._id,
     createdBy: admin._id,
     questionIds: [],
   });

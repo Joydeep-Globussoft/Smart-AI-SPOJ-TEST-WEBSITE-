@@ -1,7 +1,7 @@
-// Question Bank Controller — Module 2
-// Implements all endpoints from Section 9.4 exactly
+// Question Bank Controller — Module 2 (FEATURE-013 Folder Hierarchy)
 const path = require('path');
 const fs = require('fs');
+const Folder = require('../models/Folder');
 const QuestionSet = require('../models/QuestionSet');
 const Question = require('../models/Question');
 const Test = require('../models/Test');
@@ -10,16 +10,31 @@ const pdfStorageService = require('../services/pdfStorageService');
 // ── POST /question-sets ───────────────────────────────────────────────────────
 const createQuestionSet = async (req, res, next) => {
   try {
-    const { testType, name } = req.body;
-    if (!testType || !name) {
-      return res.status(400).json({ error: 'testType and name are required' });
+    const { folderId, name, testType } = req.body;
+    if (!folderId || !name) {
+      return res.status(400).json({ error: 'folderId and name are required' });
+    }
+
+    const folder = await Folder.findById(folderId);
+    if (!folder) {
+      return res.status(404).json({ error: 'Selected Folder not found' });
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return res.status(400).json({ error: 'Question Set name cannot be empty' });
     }
 
     const questionSet = await QuestionSet.create({
-      testType,
-      name,
+      folderId: folder._id,
+      testType: folder.testType, // Inherits testType strictly from parent folder
+      name: trimmedName,
       createdBy: req.user.id,
+      questionIds: [],
     });
+
+    await questionSet.populate('createdBy', 'name email');
+    await questionSet.populate('folderId', 'name testType');
 
     res.status(201).json({ questionSet });
   } catch (err) {
@@ -30,8 +45,18 @@ const createQuestionSet = async (req, res, next) => {
 // ── GET /question-sets ────────────────────────────────────────────────────────
 const getQuestionSets = async (req, res, next) => {
   try {
-    const questionSets = await QuestionSet.find()
+    const { folderId, testType } = req.query || {};
+    const filter = {};
+    if (folderId) {
+      filter.folderId = folderId;
+    }
+    if (testType && testType !== 'ALL') {
+      filter.testType = testType;
+    }
+
+    const questionSets = await QuestionSet.find(filter)
       .populate('createdBy', 'name email')
+      .populate('folderId', 'name testType')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -74,7 +99,7 @@ const getQuestionSets = async (req, res, next) => {
 const updateQuestionSet = async (req, res, next) => {
   try {
     const { setId } = req.params;
-    const { name, testType } = req.body;
+    const { name, testType, folderId } = req.body;
 
     const questionSet = await QuestionSet.findById(setId);
     if (!questionSet) {
@@ -89,7 +114,21 @@ const updateQuestionSet = async (req, res, next) => {
       questionSet.name = name.trim();
     }
 
-    // 2. Validate and update testType if changed
+    // 2. Validate and move to a different folder if provided
+    if (folderId !== undefined && folderId.toString() !== questionSet.folderId?.toString()) {
+      const targetFolder = await Folder.findById(folderId);
+      if (!targetFolder) {
+        return res.status(404).json({ error: 'Target folder not found' });
+      }
+      if (targetFolder.testType !== questionSet.testType) {
+        return res.status(400).json({
+          error: `Cannot move Question Set (${questionSet.testType}) into a ${targetFolder.testType} folder. Test types must match.`,
+        });
+      }
+      questionSet.folderId = targetFolder._id;
+    }
+
+    // 3. Validate and update testType if changed
     if (testType !== undefined && testType !== questionSet.testType) {
       const validTypes = ['SPOJ', 'REACT', 'JAVASCRIPT', 'AI_TEST'];
       if (!validTypes.includes(testType)) {
@@ -112,11 +151,29 @@ const updateQuestionSet = async (req, res, next) => {
         });
       }
 
+      // Check parent folder testType
+      const parentFolder = await Folder.findById(questionSet.folderId);
+      if (parentFolder && parentFolder.testType !== testType) {
+        const otherSetsInFolder = await QuestionSet.countDocuments({
+          folderId: parentFolder._id,
+          _id: { $ne: questionSet._id },
+        });
+        if (otherSetsInFolder === 0) {
+          parentFolder.testType = testType;
+          await parentFolder.save();
+        } else {
+          return res.status(400).json({
+            error: `Cannot change Question Set test type to ${testType}: Parent folder "${parentFolder.name}" contains other ${parentFolder.testType} sets. Please move this set to a ${testType} folder instead.`,
+          });
+        }
+      }
+
       questionSet.testType = testType;
     }
 
     await questionSet.save();
     await questionSet.populate('createdBy', 'name email');
+    await questionSet.populate('folderId', 'name testType');
 
     res.json({ questionSet });
   } catch (err) {
@@ -125,7 +182,7 @@ const updateQuestionSet = async (req, res, next) => {
 };
 
 // ── POST /question-sets/:setId/questions ─────────────────────────────────────
-// AC: Reject with 400 if visibleTestCases or hiddenTestCases is empty (FR-4.1)
+// AC: Reject with 400 if visibleTestCases is empty for non-PDF questions (FR-4.1)
 const createQuestion = async (req, res, next) => {
   try {
     const { setId } = req.params;
@@ -139,37 +196,50 @@ const createQuestion = async (req, res, next) => {
       visibleTestCases,
       hiddenTestCases,
       aiTestBriefFiles,
+      isPdfImported,
+      pdfFileName,
+      pdfOriginalName,
+      pdfPageRange,
     } = req.body;
 
-    if (!title || !description) {
-      return res.status(400).json({ error: 'title and description are required' });
-    }
-
-    // At least 1 visible test case is required for non-AI standard tests
-    if (!visibleTestCases || visibleTestCases.length === 0) {
-      return res.status(400).json({ error: 'At least 1 visible test case is required' });
-    }
-
     const questionSet = await QuestionSet.findById(setId);
-    if (!questionSet) return res.status(404).json({ error: 'QuestionSet not found' });
+    if (!questionSet) {
+      return res.status(404).json({ error: 'QuestionSet not found' });
+    }
+
+    // Validation
+    if (!isPdfImported) {
+      if (!title || !description) {
+        return res.status(400).json({ error: 'Title and description are required for manually authored questions' });
+      }
+      if (!visibleTestCases || visibleTestCases.length === 0) {
+        return res.status(400).json({ error: 'At least 1 visible test case is required (FR-4.1)' });
+      }
+    }
 
     const question = await Question.create({
       questionSetId: setId,
       testType: questionSet.testType,
-      title,
-      description,
-      difficulty: difficulty || undefined,
-      inputFormat: inputFormat || undefined,
-      outputFormat: outputFormat || undefined,
-      constraints: constraints || undefined,
+      title: title ? title.trim() : '',
+      description: description ? description.trim() : '',
+      difficulty: difficulty || null,
+      inputFormat: inputFormat ? inputFormat.trim() : '',
+      outputFormat: outputFormat ? outputFormat.trim() : '',
+      constraints: constraints ? constraints.trim() : '',
       visibleTestCases: visibleTestCases || [],
       hiddenTestCases: hiddenTestCases || [],
-      aiTestBriefFiles: aiTestBriefFiles || [],
+      aiTestBriefFiles: questionSet.testType === 'AI_TEST' ? aiTestBriefFiles : undefined,
+      isPdfImported: Boolean(isPdfImported),
+      pdfFileName: pdfFileName || '',
+      pdfOriginalName: pdfOriginalName || '',
+      pdfPageRange: pdfPageRange || { startPage: 1, endPage: 1 },
       isIncomplete: false,
     });
 
-    // Add question to set's questionIds array
-    await QuestionSet.findByIdAndUpdate(setId, { $addToSet: { questionIds: question._id } });
+    // Update parent QuestionSet's questionIds array
+    await QuestionSet.findByIdAndUpdate(setId, {
+      $push: { questionIds: question._id },
+    });
 
     res.status(201).json({ question });
   } catch (err) {
@@ -177,17 +247,28 @@ const createQuestion = async (req, res, next) => {
   }
 };
 
-// ── GET /question-sets/:setId/questions ───────────────────────────────────────
-// AC: hiddenTestCases excluded from response for candidate-authenticated requests (FR-4.2)
+// ── GET /question-sets/:setId/questions ──────────────────────────────────────
 const getQuestions = async (req, res, next) => {
   try {
     const { setId } = req.params;
-    const isAdmin = req.user && req.user.type === 'admin';
+    const questionSet = await QuestionSet.findById(setId);
+    if (!questionSet) {
+      return res.status(404).json({ error: 'QuestionSet not found' });
+    }
 
-    // FR-4.2: Never return hiddenTestCases to candidates
-    const projection = isAdmin ? {} : { hiddenTestCases: 0 };
-    const questions = await Question.find({ questionSetId: setId }, projection);
-    res.json({ questions });
+    // Role-based visibility: Admins get hiddenTestCases, Candidates NEVER get hiddenTestCases (Section 9.4)
+    const isAdmin = req.user && (req.user.role === 'SUPER_ADMIN' || req.user.role === 'TEST_ADMIN');
+    let questions;
+
+    if (isAdmin) {
+      questions = await Question.find({ questionSetId: setId }).sort({ createdAt: 1 });
+    } else {
+      questions = await Question.find({ questionSetId: setId })
+        .select('-hiddenTestCases')
+        .sort({ createdAt: 1 });
+    }
+
+    res.json({ questions, questionSet });
   } catch (err) {
     next(err);
   }
@@ -196,21 +277,43 @@ const getQuestions = async (req, res, next) => {
 // ── PATCH /questions/:questionId ──────────────────────────────────────────────
 const updateQuestion = async (req, res, next) => {
   try {
-    const disallowed = ['_id', 'questionSetId', 'testType', 'createdAt'];
-    disallowed.forEach((k) => delete req.body[k]);
+    const { questionId } = req.params;
+    const {
+      title,
+      description,
+      difficulty,
+      inputFormat,
+      outputFormat,
+      constraints,
+      visibleTestCases,
+      hiddenTestCases,
+      aiTestBriefFiles,
+      isPdfImported,
+      pdfFileName,
+      pdfOriginalName,
+      pdfPageRange,
+    } = req.body;
 
-    // Validate test cases if being updated
-    if (req.body.visibleTestCases !== undefined && req.body.visibleTestCases.length === 0) {
-      return res.status(400).json({ error: 'At least 1 visible test case is required' });
+    const question = await Question.findById(questionId);
+    if (!question) {
+      return res.status(404).json({ error: 'Question not found' });
     }
 
-    req.body.isIncomplete = false;
+    if (title !== undefined) question.title = title.trim();
+    if (description !== undefined) question.description = description.trim();
+    if (difficulty !== undefined) question.difficulty = difficulty;
+    if (inputFormat !== undefined) question.inputFormat = inputFormat.trim();
+    if (outputFormat !== undefined) question.outputFormat = outputFormat.trim();
+    if (constraints !== undefined) question.constraints = constraints.trim();
+    if (visibleTestCases !== undefined) question.visibleTestCases = visibleTestCases;
+    if (hiddenTestCases !== undefined) question.hiddenTestCases = hiddenTestCases;
+    if (aiTestBriefFiles !== undefined) question.aiTestBriefFiles = aiTestBriefFiles;
+    if (isPdfImported !== undefined) question.isPdfImported = isPdfImported;
+    if (pdfFileName !== undefined) question.pdfFileName = pdfFileName;
+    if (pdfOriginalName !== undefined) question.pdfOriginalName = pdfOriginalName;
+    if (pdfPageRange !== undefined) question.pdfPageRange = pdfPageRange;
 
-    const question = await Question.findByIdAndUpdate(req.params.questionId, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!question) return res.status(404).json({ error: 'Question not found' });
+    await question.save();
     res.json({ question });
   } catch (err) {
     next(err);
@@ -220,30 +323,38 @@ const updateQuestion = async (req, res, next) => {
 // ── DELETE /questions/:questionId ─────────────────────────────────────────────
 const deleteQuestion = async (req, res, next) => {
   try {
-    const question = await Question.findByIdAndDelete(req.params.questionId);
-    if (!question) return res.status(404).json({ error: 'Question not found' });
+    const { questionId } = req.params;
+    const question = await Question.findById(questionId);
+    if (!question) {
+      return res.status(404).json({ error: 'Question not found' });
+    }
+
+    const setId = question.questionSetId;
+
+    // Delete question record
+    await Question.findByIdAndDelete(questionId);
 
     // Remove from QuestionSet's questionIds array
-    await QuestionSet.findByIdAndUpdate(question.questionSetId, {
-      $pull: { questionIds: question._id },
+    await QuestionSet.findByIdAndUpdate(setId, {
+      $pull: { questionIds: questionId },
     });
 
-    res.json({ success: true });
+    res.json({ success: true, message: 'Question deleted successfully' });
   } catch (err) {
     next(err);
   }
 };
 
-// ── DELETE /question-sets/:setId ─────────────────────────────────────────────
+// ── DELETE /question-sets/:setId ──────────────────────────────────────────────
 const deleteQuestionSet = async (req, res, next) => {
   try {
     const { setId } = req.params;
     const questionSet = await QuestionSet.findById(setId);
     if (!questionSet) {
-      return res.status(404).json({ error: 'Question Set not found' });
+      return res.status(404).json({ error: 'QuestionSet not found' });
     }
 
-    // Check if this Question Set is assigned to any existing Test
+    // Safety check: Prevent deletion if this QuestionSet is assigned to an existing Test
     const assignedTest = await Test.findOne({ questionSetId: setId });
     if (assignedTest) {
       return res.status(400).json({
@@ -264,16 +375,37 @@ const deleteQuestionSet = async (req, res, next) => {
 };
 
 // ── POST /question-sets/upload-pdf-batch ──────────────────────────────────────
-// FEATURE-009: Bulk PDF upload to Question Bank
+// FEATURE-009 & FEATURE-013: Bulk PDF upload to Question Bank within a Folder
 const uploadPdfBatch = async (req, res, next) => {
   try {
-    const { testType } = req.body;
+    const { folderId, folderName, testType } = req.body;
     const validTypes = ['SPOJ', 'REACT', 'JAVASCRIPT', 'AI_TEST'];
-    if (!testType || !validTypes.includes(testType)) {
-      return res.status(400).json({
-        error: `Invalid or missing testType. Must be one of: ${validTypes.join(', ')}`,
+
+    let targetFolder = null;
+
+    if (folderId) {
+      // Option A: Upload into existing folder
+      targetFolder = await Folder.findById(folderId);
+      if (!targetFolder) {
+        return res.status(404).json({ error: 'Target folder not found' });
+      }
+    } else {
+      // Option B: Create a new folder
+      if (!testType || !validTypes.includes(testType)) {
+        return res.status(400).json({
+          error: `Invalid or missing testType. Must be one of: ${validTypes.join(', ')}`,
+        });
+      }
+      const finalFolderName = (folderName && folderName.trim()) || `PDF Upload Batch - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      targetFolder = await Folder.create({
+        name: finalFolderName,
+        testType,
+        description: 'Created via PDF bulk folder upload',
+        createdBy: req.user.id,
       });
     }
+
+    const effectiveTestType = targetFolder.testType;
 
     const files = req.files || [];
     if (files.length === 0) {
@@ -291,14 +423,10 @@ const uploadPdfBatch = async (req, res, next) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // FEATURE-012: Generate shared uploadBatchId and descriptive batch name for the pool
-    const uploadBatchId = `batch_${Date.now()}_${uuidv4().slice(0, 8)}`;
-    const batchDateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const uploadBatchName = `PDF Upload (${batchDateStr}) - ${files.length} Sets`;
-
     const summary = {
-      uploadBatchId,
-      uploadBatchName,
+      folderId: targetFolder._id,
+      folderName: targetFolder.name,
+      testType: effectiveTestType,
       totalPdfs: files.length,
       totalPdfsReceived: files.length,
       questionSetsCreated: 0,
@@ -373,14 +501,13 @@ const uploadPdfBatch = async (req, res, next) => {
         setName = `${baseSetName} (${collisionSuffix++})`;
       }
 
-      // 1. Create QuestionSet with FEATURE-012 batch pool tracking
+      // 1. Create QuestionSet assigned directly to targetFolder
       const questionSet = await QuestionSet.create({
+        folderId: targetFolder._id,
         name: setName,
-        testType,
+        testType: effectiveTestType,
         createdBy: req.user.id,
         questionIds: [],
-        uploadBatchId,
-        uploadBatchName,
       });
 
       // 2. Create Question records for each detected question
@@ -391,7 +518,7 @@ const uploadPdfBatch = async (req, res, next) => {
 
         const question = await Question.create({
           questionSetId: questionSet._id,
-          testType,
+          testType: effectiveTestType,
           title: '', // No title per Decision #2
           description: '', // PDF page is the statement per Decision #4
           difficulty: null, // No difficulty per Decision #3
@@ -429,6 +556,7 @@ const uploadPdfBatch = async (req, res, next) => {
       summary.questionSetsCreated++;
       summary.createdSets.push({
         _id: questionSet._id,
+        folderId: targetFolder._id,
         name: questionSet.name,
         testType: questionSet.testType,
         questionCount: createdQuestionIds.length,
@@ -455,7 +583,7 @@ const uploadPdfBatch = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Processed ${files.length} PDF(s): ${summary.questionSetsCreated} Question Set(s) created, ${summary.failedPdfs.length} failed.`,
+      message: `Processed ${files.length} PDF(s): ${summary.questionSetsCreated} Question Set(s) created in Folder "${targetFolder.name}", ${summary.failedPdfs.length} failed.`,
       summary,
     });
   } catch (err) {
@@ -464,21 +592,26 @@ const uploadPdfBatch = async (req, res, next) => {
 };
 
 // ── GET /question-sets/pools ──────────────────────────────────────────────────
-// FEATURE-012: List all Question Set Pools (upload batches) with question count validation
+// FEATURE-012 & FEATURE-013: List all Question Set Pools (Folders) with question count validation
 const getQuestionPools = async (req, res, next) => {
   try {
     const { testType } = req.query;
-    const filter = { uploadBatchId: { $ne: null } };
+    const filter = {};
     if (testType && testType !== 'ALL') {
       filter.testType = testType;
     }
 
-    const questionSets = await QuestionSet.find(filter)
+    const folders = await Folder.find(filter)
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
       .lean();
 
-    // Query question counts for each set
+    const folderIds = folders.map((f) => f._id);
+    const questionSets = await QuestionSet.find({ folderId: { $in: folderIds } })
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: 1, _id: 1 })
+      .lean();
+
     const setIds = questionSets.map((s) => s._id);
     const questions = await Question.find({ questionSetId: { $in: setIds } }, { _id: 1, questionSetId: 1 }).lean();
 
@@ -488,22 +621,12 @@ const getQuestionPools = async (req, res, next) => {
       countMap[sId] = (countMap[sId] || 0) + 1;
     }
 
-    // Group by uploadBatchId
-    const poolsMap = {};
+    const setsByFolder = {};
     for (const qs of questionSets) {
-      const batchId = qs.uploadBatchId;
+      const fId = qs.folderId.toString();
+      if (!setsByFolder[fId]) setsByFolder[fId] = [];
       const qCount = countMap[qs._id.toString()] || 0;
-      if (!poolsMap[batchId]) {
-        poolsMap[batchId] = {
-          poolId: batchId,
-          poolName: qs.uploadBatchName || `PDF Batch (${new Date(qs.createdAt).toLocaleDateString()})`,
-          testType: qs.testType,
-          createdAt: qs.createdAt,
-          createdBy: qs.createdBy,
-          sets: [],
-        };
-      }
-      poolsMap[batchId].sets.push({
+      setsByFolder[fId].push({
         _id: qs._id,
         name: qs.name,
         testType: qs.testType,
@@ -512,15 +635,27 @@ const getQuestionPools = async (req, res, next) => {
       });
     }
 
-    // Evaluate validity and shared question count for each pool
-    const pools = Object.values(poolsMap).map((pool) => {
-      const setCount = pool.sets.length;
+    const pools = folders.map((folder) => {
+      const fId = folder._id.toString();
+      const sets = setsByFolder[fId] || [];
+      const setCount = sets.length;
+
       if (setCount === 0) {
-        return { ...pool, setCount: 0, questionCount: 0, isValid: false, validationError: 'Pool contains 0 question sets.' };
+        return {
+          poolId: fId,
+          poolName: folder.name,
+          testType: folder.testType,
+          setCount: 0,
+          questionCount: 0,
+          isValid: false,
+          validationError: 'Folder contains 0 question sets.',
+          sets: [],
+          createdBy: folder.createdBy,
+          createdAt: folder.createdAt,
+        };
       }
 
-      // Check question counts
-      const counts = pool.sets.map((s) => s.questionCount);
+      const counts = sets.map((s) => s.questionCount);
       const firstCount = counts[0];
       const allSame = counts.every((c) => c === firstCount);
       const hasEmptySet = counts.some((c) => c === 0);
@@ -530,20 +665,25 @@ const getQuestionPools = async (req, res, next) => {
 
       if (hasEmptySet) {
         isValid = false;
-        const emptySets = pool.sets.filter((s) => s.questionCount === 0).map((s) => `"${s.name}"`).join(', ');
-        validationError = `Pool contains sets with 0 questions: ${emptySets}.`;
+        const emptySets = sets.filter((s) => s.questionCount === 0).map((s) => `"${s.name}"`).join(', ');
+        validationError = `Folder contains set(s) with 0 questions: ${emptySets}.`;
       } else if (!allSame) {
         isValid = false;
-        const mismatchDetails = pool.sets.map((s) => `"${s.name}" (${s.questionCount} Qs)`).join(', ');
-        validationError = `Question Sets in this pool have mismatched question counts: ${mismatchDetails}. All sets in a pool must have the exact same question count.`;
+        const mismatchDetails = sets.map((s) => `"${s.name}" (${s.questionCount} Qs)`).join(', ');
+        validationError = `Question Sets in this Folder have mismatched question counts: ${mismatchDetails}. All sets in a pool must have the exact same question count.`;
       }
 
       return {
-        ...pool,
+        poolId: fId,
+        poolName: folder.name,
+        testType: folder.testType,
         setCount,
         questionCount: allSame && !hasEmptySet ? firstCount : null,
         isValid,
         validationError,
+        sets,
+        createdBy: folder.createdBy,
+        createdAt: folder.createdAt,
       };
     });
 
@@ -554,7 +694,6 @@ const getQuestionPools = async (req, res, next) => {
 };
 
 // ── GET /questions/pdf-asset/:filename ────────────────────────────────────────
-// Serves stored PDF files for candidate/admin embedded PDF viewers (BUG-72 & BUG-005)
 const servePdfAsset = async (req, res, next) => {
   try {
     const asset = await pdfStorageService.getPdfAsset(req.params.filename);

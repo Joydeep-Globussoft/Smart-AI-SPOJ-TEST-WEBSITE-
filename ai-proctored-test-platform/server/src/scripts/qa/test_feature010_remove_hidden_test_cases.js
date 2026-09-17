@@ -17,6 +17,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai_pro
 
 const Admin = require('../../models/Admin');
 const Candidate = require('../../models/Candidate');
+const Folder = require('../../models/Folder');
 const Test = require('../../models/Test');
 const Room = require('../../models/Room');
 const Question = require('../../models/Question');
@@ -73,10 +74,20 @@ async function runFeature010Tests() {
     // Clean up any previous test sessions for this candidate (BUG-54 single active session guard)
     await Submission.deleteMany({ candidateId: candidate._id });
 
+    let f10Folder = await Folder.findOne({ name: 'QA Feature010 Folder' });
+    if (!f10Folder) {
+      f10Folder = await Folder.create({
+        name: 'QA Feature010 Folder',
+        testType: 'SPOJ',
+        createdBy: admin._id,
+      });
+    }
+
     // Create QuestionSet
     const qSet = await QuestionSet.create({
       name: `QA Feature010 Set ${Date.now()}`,
       testType: 'SPOJ',
+      folderId: f10Folder._id,
       createdBy: admin._id,
       description: 'Question set for FEATURE-010 QA testing',
     });

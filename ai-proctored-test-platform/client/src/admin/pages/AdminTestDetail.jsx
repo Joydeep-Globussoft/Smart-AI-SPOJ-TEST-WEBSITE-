@@ -1435,7 +1435,7 @@ export default function AdminTestDetail() {
                               color: questionMode === 'POOL' ? '#ffffff' : 'var(--color-text-muted)',
                             }}
                           >
-                            Pool (Batch)
+                            Pool (Folder)
                           </button>
                         </div>
                       </div>
@@ -1499,27 +1499,32 @@ export default function AdminTestDetail() {
                             }}
                             required
                           >
-                            <option value="">Select a Question Set Pool (Batch)...</option>
+                            <option value="">Select Folder as Question Set Pool...</option>
                             {pools.filter((p) => !editFormData.testType || p.testType === editFormData.testType).map((p) => (
                               <option key={p.poolId} value={p.poolId}>
-                                {p.poolName} ({p.setCount} Sets{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
+                                📁 {p.poolName} ({p.setCount} Sets{p.isValid ? `, ${p.questionCount} Qs each` : ' — Mismatched Counts'})
                               </option>
                             ))}
                           </select>
                           {pools.filter((p) => !editFormData.testType || p.testType === editFormData.testType).length === 0 ? (
                             <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
-                              No PDF upload batches found for {editFormData.testType}. Upload a folder of PDFs in Question Bank first.
+                              No Folders found for {editFormData.testType}. Create a folder in Question Bank first.
                             </p>
                           ) : (() => {
                             const selPool = pools.find((item) => item.poolId === editFormData.questionSetPoolId);
                             if (selPool && !selPool.isValid) {
                               return (
                                 <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
-                                  <strong style={{ fontSize: '0.75rem', color: '#dc2626', display: 'block' }}>
-                                    ⚠️ Unequal Question Counts in Batch:
-                                  </strong>
-                                  <p style={{ fontSize: '0.72rem', color: '#b91c1c', margin: '4px 0 0 0' }}>
-                                    {selPool.validationError}
+                                  <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0, lineHeight: 1.4 }}>
+                                    ⚠️ {selPool.validationError}
+                                  </p>
+                                </div>
+                              );
+                            } else if (selPool && selPool.isValid) {
+                              return (
+                                <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
+                                  <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                                    ✓ Valid Pool: {selPool.setCount} Question Sets ({selPool.questionCount} Qs each) rotating round-robin per room.
                                   </p>
                                 </div>
                               );

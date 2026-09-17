@@ -159,11 +159,16 @@ const joinRoom = async (req, res, next) => {
     if (existingJoinedEntry?.assignedQuestionSetId) {
       assignedQuestionSetId = existingJoinedEntry.assignedQuestionSetId;
       joinIndex = existingJoinedEntry.joinIndex;
-    } else {
-      if (test.questionSetPoolId) {
+      const poolContainerId = test.folderId || test.questionSetPoolId;
+      if (poolContainerId) {
         // Pool mode: deterministic round-robin per room
         const QuestionSet = require('../models/QuestionSet');
-        const poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }).sort({ createdAt: 1, _id: 1 });
+        const poolSets = await QuestionSet.find({
+          $or: [
+            { folderId: poolContainerId },
+            { uploadBatchId: poolContainerId },
+          ],
+        }).sort({ createdAt: 1, _id: 1 });
         if (!poolSets || poolSets.length === 0) {
           return res.status(500).json({ error: 'Assigned Question Set Pool is invalid or empty.' });
         }
