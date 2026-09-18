@@ -12,10 +12,14 @@ const {
   dismissLateJoin,
   getLateJoinStatus,
   getPendingLateJoinRequests,
+  resolveInviteToken,
 } = require('../controllers/roomController');
 const { verifyToken, requireAdmin } = require('../middleware/authMiddleware');
 
 const adminAuth = [verifyToken, requireAdmin];
+
+// Public invite token resolution (FEATURE-015)
+router.get('/rooms/invite/:inviteToken', resolveInviteToken);
 
 router.post('/tests/:testId/rooms', adminAuth, createRoom);
 router.get('/tests/:testId/rooms', adminAuth, getRooms);

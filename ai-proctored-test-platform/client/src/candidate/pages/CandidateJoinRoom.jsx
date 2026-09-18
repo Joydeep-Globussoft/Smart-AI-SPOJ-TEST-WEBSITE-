@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuthContext';
@@ -9,13 +9,34 @@ import { onLateJoinApproved, offLateJoinApproved, onLateJoinDismissed, offLateJo
 export default function CandidateJoinRoom() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
   const [form, setForm] = useState({ roomCode: '', roomPassword: '' });
   const [loading, setLoading] = useState(false);
   const [notifying, setNotifying] = useState(false);
-  const [error, setError] = useState('');
-  const [targetRoomId, setTargetRoomId] = useState(null);
+  const [error, setError] = useState(location.state?.error || '');
+  const [targetRoomId, setTargetRoomId] = useState(location.state?.roomId || null);
   const [isLateJoinRequested, setIsLateJoinRequested] = useState(false);
   const [manualOverrideGranted, setManualOverrideGranted] = useState(false);
+
+  // If unauthenticated candidate visits /candidate/join with an invite token, forward to /candidate/register
+  useEffect(() => {
+    if (inviteToken && !user) {
+      navigate(`/candidate/register?invite=${inviteToken}`, { replace: true });
+    }
+  }, [inviteToken, user, navigate]);
+
+  // Receive error state if forwarded from failed auto-join
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      if (location.state?.roomId) {
+        setTargetRoomId(location.state.roomId);
+      }
+    }
+  }, [location.state]);
 
   // Check persistent late-join status on mount (Requirement 2)
   useEffect(() => {
@@ -65,7 +86,11 @@ export default function CandidateJoinRoom() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.joinRoom(form);
+      const payload = (form.roomCode && form.roomPassword)
+        ? form
+        : (inviteToken ? { inviteToken } : form);
+      const { data } = await api.joinRoom(payload);
+      sessionStorage.removeItem('pendingInviteToken');
       // Store join data in sessionStorage for the instructions page
       sessionStorage.setItem('joinData', JSON.stringify(data));
       navigate('/candidate/instructions');

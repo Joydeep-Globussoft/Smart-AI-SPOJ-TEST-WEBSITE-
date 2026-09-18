@@ -85,18 +85,29 @@ const getActiveExamSessionForCandidate = async (candidateId, excludeTestId = nul
 };
 
 // ── POST /rooms/join ──────────────────────────────────────────────────────────
-// Body: { roomCode, roomPassword }
+// Body: { roomCode, roomPassword } OR { inviteToken } (FEATURE-015)
 // Response: { test, room, instructions }
 // AC: 403 if now > passwordValidUntil (FR-3.3)
 const joinRoom = async (req, res, next) => {
   try {
-    const { roomCode, roomPassword } = req.body;
-    if (!roomCode || !roomPassword) {
-      return res.status(400).json({ error: 'roomCode and roomPassword are required' });
-    }
+    const { roomCode, roomPassword, inviteToken } = req.body;
+    let room;
 
-    const room = await Room.findOne({ roomCode });
-    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (inviteToken) {
+      room = await Room.findOne({ inviteToken });
+      if (!room) return res.status(404).json({ error: 'Invite link is invalid or room not found' });
+    } else {
+      if (!roomCode || !roomPassword) {
+        return res.status(400).json({ error: 'roomCode and roomPassword are required' });
+      }
+      room = await Room.findOne({ roomCode });
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+
+      // Verify password
+      if (room.roomPassword !== roomPassword) {
+        return res.status(403).json({ error: 'Invalid room password' });
+      }
+    }
 
     // BUG-54: Prevent candidate from joining a new room/test if they already have an active session on another test
     const activeOtherSession = await getActiveExamSessionForCandidate(req.user.id, room.testId);
@@ -125,11 +136,6 @@ const joinRoom = async (req, res, next) => {
 
     if (room.status === 'CLOSED') {
       return res.status(403).json({ error: 'Room is closed' });
-    }
-
-    // Verify password
-    if (room.roomPassword !== roomPassword) {
-      return res.status(403).json({ error: 'Invalid room password' });
     }
 
     const candidate = await Candidate.findById(req.user.id);

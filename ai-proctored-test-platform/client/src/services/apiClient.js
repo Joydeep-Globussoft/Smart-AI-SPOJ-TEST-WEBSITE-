@@ -135,6 +135,7 @@ export const api = {
   },
 
   // Candidate Test-Taking
+  getInviteInfo: (inviteToken) => axios.get(`/rooms/invite/${encodeURIComponent(inviteToken)}`),
   joinRoom: (data) => axios.post('/rooms/join', data),
   startAttempt: (testId, data) => axios.post(`/tests/${testId}/start-attempt`, data),
   getQuestion: (testId, qId) => axios.get(`/tests/${testId}/questions/${qId}`),

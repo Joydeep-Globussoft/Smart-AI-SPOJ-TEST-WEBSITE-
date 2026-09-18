@@ -27,8 +27,14 @@ const generateRoomCode = () => {
  */
 const generateRoomPassword = () => crypto.randomBytes(5).toString('hex').toUpperCase(); // 10 hex chars
 
+/**
+ * Generate a cryptographically random, opaque invite token (FEATURE-015)
+ * 32 hex chars, non-reversible, zero raw credentials
+ */
+const generateInviteToken = () => crypto.randomBytes(16).toString('hex');
+
 // ── POST /tests/:testId/rooms ─────────────────────────────────────────────────
-// Auto-generates roomCode, roomPassword, passwordValidUntil (FR-3.1)
+// Auto-generates roomCode, roomPassword, passwordValidUntil (FR-3.1), inviteToken (FEATURE-015)
 const createRoom = async (req, res, next) => {
   try {
     const { testId } = req.params;
@@ -51,6 +57,7 @@ const createRoom = async (req, res, next) => {
     } while (await Room.findOne({ roomCode }));
 
     const roomPassword = generateRoomPassword();
+    const inviteToken = generateInviteToken();
     const now = new Date();
     // Only start the password countdown if test is already LIVE!
     // For DRAFT / SCHEDULED tests, leave passwordValidUntil as null until the test goes LIVE
@@ -63,6 +70,7 @@ const createRoom = async (req, res, next) => {
       roomName,
       roomCode,
       roomPassword,
+      inviteToken,
       passwordValidUntil,
       capacity: capacity || undefined,
       status: 'ACTIVE',
@@ -94,6 +102,15 @@ const getRooms = async (req, res, next) => {
     }
 
     const rooms = await Room.find({ testId: req.params.testId });
+
+    // FEATURE-015: Lazily ensure all rooms have an opaque inviteToken
+    for (const r of rooms) {
+      if (!r.inviteToken) {
+        r.inviteToken = generateInviteToken();
+        await r.save();
+      }
+    }
+
     const now = Date.now();
     const activeSubmissions = await Submission.find({
       testId: req.params.testId,
@@ -121,6 +138,45 @@ const getRooms = async (req, res, next) => {
     });
 
     res.json({ rooms: enrichedRooms });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /rooms/invite/:inviteToken ──────────────────────────────────────────
+// Public endpoint for candidates opening an invite link (safe public metadata, zero credentials)
+const resolveInviteToken = async (req, res, next) => {
+  try {
+    const { inviteToken } = req.params;
+    if (!inviteToken) {
+      return res.status(400).json({ error: 'inviteToken is required' });
+    }
+
+    const room = await Room.findOne({ inviteToken });
+    if (!room) {
+      return res.status(404).json({ error: 'Invite link is invalid or room not found' });
+    }
+
+    const test = await Test.findById(room.testId, 'title testType status durationMinutes startTestWindowMinutes');
+    if (!test) {
+      return res.status(404).json({ error: 'Associated test not found' });
+    }
+
+    const isExpired = Boolean(room.passwordValidUntil && new Date() > room.passwordValidUntil);
+    const isLive = test.status === 'LIVE';
+
+    res.json({
+      valid: true,
+      roomId: room._id,
+      roomName: room.roomName,
+      testTitle: test.title,
+      testType: test.testType,
+      testStatus: test.status,
+      durationMinutes: test.durationMinutes,
+      isLive,
+      isExpired,
+      roomStatus: room.status,
+    });
   } catch (err) {
     next(err);
   }
@@ -797,4 +853,5 @@ module.exports = {
   dismissLateJoin,
   getLateJoinStatus,
   getPendingLateJoinRequests,
+  resolveInviteToken,
 };

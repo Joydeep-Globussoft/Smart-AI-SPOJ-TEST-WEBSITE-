@@ -972,10 +972,13 @@ export default function AdminTestDetail() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                         <button
                           onClick={() => {
+                            const inviteLink = room.inviteToken
+                              ? `${window.location.origin}/candidate/register?invite=${room.inviteToken}`
+                              : `${window.location.origin}/candidate/register`;
                             const details = isLive && room.passwordValidUntil
-                              ? `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nRoom Code: ${room.roomCode}\nPassword: ${room.roomPassword}\nValid Until: ${new Date(room.passwordValidUntil).toLocaleTimeString()}`
-                              : `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nRoom Code: ${room.roomCode}\nPassword: ${room.roomPassword}\nAccess Window: Starts when test goes LIVE (${test?.startTestWindowMinutes || 10} mins validity)`;
-                            copyToClipboard(details, 'Room Invite Credentials');
+                              ? `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nValid Until: ${new Date(room.passwordValidUntil).toLocaleTimeString()}`
+                              : `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nAccess Window: Starts when test goes LIVE (${test?.startTestWindowMinutes || 10} mins validity)`;
+                            copyToClipboard(details, 'Room Invite Link');
                           }}
                           className="btn btn-secondary"
                           style={{ padding: '6px 12px', fontSize: '0.78rem' }}

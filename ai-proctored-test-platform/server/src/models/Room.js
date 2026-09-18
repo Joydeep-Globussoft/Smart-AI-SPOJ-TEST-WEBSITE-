@@ -7,6 +7,7 @@ const roomSchema = new mongoose.Schema({
   roomCode: { type: String, required: true, unique: true }, // auto-generated join ID
   roomPassword: { type: String, required: true }, // auto-generated
   passwordValidUntil: { type: Date, default: null }, // set when test goes LIVE (now + startTestWindowMinutes)
+  inviteToken: { type: String, unique: true, sparse: true }, // FEATURE-015: opaque server-side deep link token
   capacity: { type: Number },
   status: { type: String, enum: ['ACTIVE', 'CLOSED'], default: 'ACTIVE' },
   candidateJoinCounter: { type: Number, default: 0 }, // FEATURE-012: per-room atomic counter for round-robin rotation

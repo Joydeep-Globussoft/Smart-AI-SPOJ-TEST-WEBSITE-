@@ -6,6 +6,7 @@ const Room = require('../../models/Room');
 const Candidate = require('../../models/Candidate');
 const Question = require('../../models/Question');
 const QuestionSet = require('../../models/QuestionSet');
+const Folder = require('../../models/Folder');
 const Submission = require('../../models/Submission');
 const { joinRoom, startAttempt, submitAll } = require('../../controllers/submissionController');
 
@@ -48,10 +49,23 @@ async function runTests() {
     role: 'candidate',
   });
 
+  const folderA = await Folder.create({
+    name: 'Folder A',
+    testType: 'SPOJ',
+    createdBy: new mongoose.Types.ObjectId(),
+  });
+
+  const folderB = await Folder.create({
+    name: 'Folder B',
+    testType: 'AI_TEST',
+    createdBy: new mongoose.Types.ObjectId(),
+  });
+
   // 1. Create Test A (SPOJ)
   const qSetA = await QuestionSet.create({
     name: 'Question Set A',
     testType: 'SPOJ',
+    folderId: folderA._id,
     createdBy: new mongoose.Types.ObjectId(),
   });
   const qA = await Question.create({
@@ -92,6 +106,7 @@ async function runTests() {
   const qSetB = await QuestionSet.create({
     name: 'Question Set B',
     testType: 'AI_TEST',
+    folderId: folderB._id,
     createdBy: new mongoose.Types.ObjectId(),
   });
   const qB = await Question.create({
@@ -340,6 +355,7 @@ async function runTests() {
     await Test.deleteMany({ _id: { $in: [testA._id, testB._id] } });
     await QuestionSet.deleteMany({ _id: { $in: [qSetA._id, qSetB._id] } });
     await Question.deleteMany({ _id: { $in: [qA._id, qB._id] } });
+    await Folder.deleteMany({ _id: { $in: [folderA._id, folderB._id] } });
     await Candidate.findByIdAndDelete(testCandidate._id);
     await mongoose.disconnect();
   }

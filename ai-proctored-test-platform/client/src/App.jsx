@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuthContext';
 import { ThemeProvider } from './hooks/useTheme';
@@ -42,8 +42,11 @@ const RequireAdmin = ({ children }) => {
 
 const RequireCandidate = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <LoadingSpinner />;
-  if (!user || user.type !== 'candidate') return <Navigate to="/candidate/login" replace />;
+  if (!user || user.type !== 'candidate') {
+    return <Navigate to={`/candidate/login${location.search}`} replace state={{ from: location }} />;
+  }
   return children;
 };
 
