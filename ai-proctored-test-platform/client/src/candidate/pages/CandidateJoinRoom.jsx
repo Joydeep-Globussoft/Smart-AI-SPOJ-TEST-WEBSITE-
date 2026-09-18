@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
@@ -16,10 +16,12 @@ export default function CandidateJoinRoom() {
   const [form, setForm] = useState({ roomCode: '', roomPassword: '' });
   const [loading, setLoading] = useState(false);
   const [notifying, setNotifying] = useState(false);
+  const [isAutoJoining, setIsAutoJoining] = useState(false);
   const [error, setError] = useState(location.state?.error || '');
   const [targetRoomId, setTargetRoomId] = useState(location.state?.roomId || null);
   const [isLateJoinRequested, setIsLateJoinRequested] = useState(false);
   const [manualOverrideGranted, setManualOverrideGranted] = useState(false);
+  const autoJoinLockRef = useRef(false);
 
   // If unauthenticated candidate visits /candidate/join with an invite token, forward to /candidate/register
   useEffect(() => {
@@ -38,34 +40,88 @@ export default function CandidateJoinRoom() {
     }
   }, [location.state]);
 
-  // Check persistent late-join status on mount (Requirement 2)
+  // BUG-82: Auto-join helper executed upon approval event or on-mount approval detection
+  const performAutoJoin = useCallback(async (approvedData = {}) => {
+    if (autoJoinLockRef.current) return;
+    const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken') || approvedData?.inviteToken;
+    const roomIdToUse = approvedData?.roomId || targetRoomId;
+
+    let payload = null;
+    if (activeInvite) {
+      payload = { inviteToken: activeInvite };
+    } else if (roomIdToUse) {
+      payload = { roomId: roomIdToUse, roomCode: form.roomCode, roomPassword: form.roomPassword };
+    } else if (form.roomCode && form.roomPassword) {
+      payload = { roomCode: form.roomCode, roomPassword: form.roomPassword };
+    } else if (approvedData?.roomCode) {
+      payload = { roomCode: approvedData.roomCode };
+    }
+
+    if (!payload) {
+      console.warn('[CandidateJoinRoom] No payload available to auto-join');
+      return;
+    }
+
+    autoJoinLockRef.current = true;
+    setIsAutoJoining(true);
+    setError('');
+
+    try {
+      const { data } = await api.joinRoom(payload);
+      sessionStorage.removeItem('pendingInviteToken');
+      // Store join data in sessionStorage for instructions/permissions page
+      sessionStorage.setItem('joinData', JSON.stringify(data));
+      toast.success('🎉 Proctor approved your entry! Starting test setup...', { duration: 4000 });
+      navigate('/candidate/instructions', { replace: true });
+    } catch (err) {
+      console.error('[CandidateJoinRoom] Auto-join failed:', err);
+      autoJoinLockRef.current = false;
+      setIsAutoJoining(false);
+      const msg = err.response?.data?.error || 'Failed to enter test room after approval';
+      setError(msg);
+      toast.error(msg);
+    }
+  }, [inviteToken, targetRoomId, form, navigate]);
+
+  // Check persistent late-join status on mount (Requirement 2 / Reload Race Condition recovery)
   useEffect(() => {
     if (!user?.id) return;
     api.getLateJoinStatus(user.id)
       .then(({ data }) => {
-        if (data.lateJoinRequestedAt && !data.manualJoinOverride) {
+        if (data.manualJoinOverride) {
+          setError('');
+          setIsLateJoinRequested(false);
+          setManualOverrideGranted(true);
+          if (data.lateJoinRoomId) setTargetRoomId(data.lateJoinRoomId);
+          performAutoJoin({ roomId: data.lateJoinRoomId });
+        } else if (data.lateJoinRequestedAt) {
           setIsLateJoinRequested(true);
           if (data.lateJoinRoomId) setTargetRoomId(data.lateJoinRoomId);
         }
-        if (data.manualJoinOverride) {
-          setManualOverrideGranted(true);
-        }
       })
       .catch(() => {});
-  }, [user?.id]);
+  }, [user?.id, performAutoJoin]);
 
-  // Listen for admin decisions in real time (Requirement 4)
+  // Listen for admin decisions in real time (BUG-82 / Requirement 4)
   useEffect(() => {
     const handleApproved = (data) => {
-      toast.success('🎉 Proctor approved your entry! You can now join the room.', { duration: 6000 });
+      if (data?.candidateId && user?.id && String(data.candidateId) !== String(user.id)) {
+        return;
+      }
       setIsLateJoinRequested(false);
       setManualOverrideGranted(true);
       setError('');
+      performAutoJoin(data);
     };
 
     const handleDismissed = (data) => {
-      toast.error('Proctor dismissed your late-join request. You may request again if needed.');
+      if (data?.candidateId && user?.id && String(data.candidateId) !== String(user.id)) {
+        return;
+      }
+      toast.error('Proctor denied your late-entry request. You may contact your proctor if needed.', { duration: 5000 });
       setIsLateJoinRequested(false);
+      setManualOverrideGranted(false);
+      setError('Room code expired');
     };
 
     onLateJoinApproved(handleApproved);
@@ -75,7 +131,7 @@ export default function CandidateJoinRoom() {
       offLateJoinApproved(handleApproved);
       offLateJoinDismissed(handleDismissed);
     };
-  }, []);
+  }, [user?.id, performAutoJoin]);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value.toUpperCase() }));
@@ -86,14 +142,15 @@ export default function CandidateJoinRoom() {
     e.preventDefault();
     setLoading(true);
     try {
+      const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken');
       const payload = (form.roomCode && form.roomPassword)
         ? form
-        : (inviteToken ? { inviteToken } : form);
+        : (activeInvite ? { inviteToken: activeInvite } : (targetRoomId ? { roomId: targetRoomId } : form));
       const { data } = await api.joinRoom(payload);
       sessionStorage.removeItem('pendingInviteToken');
       // Store join data in sessionStorage for the instructions page
       sessionStorage.setItem('joinData', JSON.stringify(data));
-      navigate('/candidate/instructions');
+      navigate('/candidate/instructions', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.error || 'Failed to join room';
       setError(msg);
@@ -152,7 +209,20 @@ export default function CandidateJoinRoom() {
           Enter the Room ID and password provided by your proctor.
         </p>
 
-        {error && (
+        {isAutoJoining ? (
+          <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <span className="spinner spinner-dark" style={{ width: 18, height: 18, borderWidth: 2 }} />
+            <span>🎉 <strong>Approval received!</strong> Connecting you to the test room...</span>
+          </div>
+        ) : manualOverrideGranted ? (
+          <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span>✅ Proctor has granted permission! Entering test room...</span>
+          </div>
+        ) : isLateJoinRequested ? (
+          <div className="alert alert-warning" style={{ marginBottom: 16 }}>
+            ⏳ You have a pending late-entry request with the proctor. Please wait for approval.
+          </div>
+        ) : error ? (
           <div className="alert alert-danger" id="join-room-error-alert" style={{ lineHeight: 1.5 }}>
             {error.includes('active exam') || error.includes('active session')
               ? `⚠️ ${error}`
@@ -160,22 +230,10 @@ export default function CandidateJoinRoom() {
                   ? '🔒 Room access window has closed. Contact your proctor for assistance.'
                   : error)}
           </div>
-        )}
+        ) : null}
 
-        {isLateJoinRequested && !manualOverrideGranted && !error && (
-          <div className="alert alert-warning" style={{ marginBottom: 16 }}>
-            ⏳ You have a pending late-entry request with the proctor. Please wait for approval.
-          </div>
-        )}
-
-        {manualOverrideGranted && (
-          <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span>✅ Proctor has granted permission! Click <strong>Enter Test Room</strong> to join.</span>
-          </div>
-        )}
-
-        {/* Late Join Notification Button (Requirement 2 & 4) */}
-        {(error?.toLowerCase().includes('expired') || isLateJoinRequested) && !manualOverrideGranted && (
+        {/* Late Join Notification Button (Requirement 2 & 4 & BUG-82) */}
+        {!manualOverrideGranted && !isAutoJoining && (error?.toLowerCase().includes('expired') || isLateJoinRequested) && (
           <div style={{ marginBottom: 16 }}>
             {isLateJoinRequested ? (
               <button

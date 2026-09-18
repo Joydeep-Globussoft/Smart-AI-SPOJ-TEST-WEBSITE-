@@ -90,12 +90,22 @@ const getActiveExamSessionForCandidate = async (candidateId, excludeTestId = nul
 // AC: 403 if now > passwordValidUntil (FR-3.3)
 const joinRoom = async (req, res, next) => {
   try {
-    const { roomCode, roomPassword, inviteToken } = req.body;
+    const { roomCode, roomPassword, inviteToken, roomId } = req.body;
     let room;
 
     if (inviteToken) {
       room = await Room.findOne({ inviteToken });
       if (!room) return res.status(404).json({ error: 'Invite link is invalid or room not found' });
+    } else if (roomId) {
+      room = await Room.findById(roomId);
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+      const candidateCheck = await Candidate.findById(req.user.id);
+      const isCandidateOverridden = candidateCheck && candidateCheck.manualJoinOverride === true && (!candidateCheck.lateJoinRoomId || candidateCheck.lateJoinRoomId.toString() === room._id.toString());
+      if (!isCandidateOverridden) {
+        if (!roomPassword || room.roomPassword !== roomPassword) {
+          return res.status(403).json({ error: 'Invalid room password' });
+        }
+      }
     } else {
       if (!roomCode || !roomPassword) {
         return res.status(400).json({ error: 'roomCode and roomPassword are required' });
@@ -134,15 +144,18 @@ const joinRoom = async (req, res, next) => {
       return res.status(403).json({ error: 'This test has not started yet' });
     }
 
-    if (room.status === 'CLOSED') {
-      return res.status(403).json({ error: 'Room is closed' });
-    }
+    const candidateId = req.user.id;
+    const isAlreadyJoined = Boolean(
+      room.joinedCandidates?.some(
+        (j) => j.candidateId && j.candidateId.toString() === candidateId.toString()
+      )
+    );
 
-    const candidate = await Candidate.findById(req.user.id);
-    const hasManualOverride = candidate && candidate.manualJoinOverride === true;
+    const candidate = await Candidate.findById(candidateId);
+    const hasManualOverride = candidate && candidate.manualJoinOverride === true && (!candidate.lateJoinRoomId || candidate.lateJoinRoomId.toString() === room._id.toString());
 
-    // Condition (b): now <= room.passwordValidUntil (bypassed if admin granted manualJoinOverride)
-    if ((!room.passwordValidUntil || new Date() > room.passwordValidUntil) && !hasManualOverride) {
+    // Condition (b): now <= room.passwordValidUntil (bypassed if admin granted manualJoinOverride or candidate already joined)
+    if ((!room.passwordValidUntil || new Date() > room.passwordValidUntil) && !hasManualOverride && !isAlreadyJoined) {
       return res.status(403).json({
         error: 'Room code expired',
         roomId: room._id,
@@ -153,7 +166,6 @@ const joinRoom = async (req, res, next) => {
     }
 
     // Associate candidate with the room in DB and assign Question Set (FEATURE-012)
-    const candidateId = req.user.id;
     let assignedQuestionSetId = null;
     let joinIndex = null;
 

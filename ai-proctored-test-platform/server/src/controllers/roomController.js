@@ -728,6 +728,7 @@ const allowLateJoin = async (req, res, next) => {
         candidateId,
         roomId: room._id.toString(),
         roomCode: room.roomCode,
+        inviteToken: room.inviteToken,
         message: 'Admin has granted you permission to enter the test room.',
       });
       io.to(`test:${room.testId}:admin`).emit('candidate:lateJoinProcessed', {
