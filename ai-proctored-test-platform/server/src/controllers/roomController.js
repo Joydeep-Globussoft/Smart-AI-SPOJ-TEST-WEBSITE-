@@ -203,18 +203,18 @@ const getRoomCandidates = async (req, res, next) => {
       if (!candidate) continue;
       const cid = candidate._id ? candidate._id.toString() : sub.candidateId.toString();
 
+      const joinedEntry = roomJoinedMap[cid];
+      const assignedSetObj = sub.assignedQuestionSetId || joinedEntry?.assignedQuestionSetId;
+      const assignedQuestionSetName = assignedSetObj?.name || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+      const assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
+      const assignedSetIndex = joinedEntry?.joinIndex || null;
+
       if (!candidateMap[cid]) {
         const isDisqualified = candidate.isDisqualified || sub.status === 'AUTO_SUBMITTED_DISQUALIFIED';
         let status = sub.status || 'IN_PROGRESS';
         if (isDisqualified) {
           status = 'DISQUALIFIED';
         }
-
-        const joinedEntry = roomJoinedMap[cid];
-        const assignedSetObj = sub.assignedQuestionSetId || joinedEntry?.assignedQuestionSetId;
-        const assignedQuestionSetName = assignedSetObj?.name || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
-        const assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
-        const assignedSetIndex = joinedEntry?.joinIndex || null;
 
         candidateMap[cid] = {
           _id: cid,
@@ -233,6 +233,22 @@ const getRoomCandidates = async (req, res, next) => {
           assignedQuestionSetName,
           assignedSetIndex,
         };
+      } else {
+        if (sub.candidateEndTime && (!candidateMap[cid].candidateEndTime || new Date(sub.candidateEndTime) > new Date(candidateMap[cid].candidateEndTime))) {
+          candidateMap[cid].candidateEndTime = sub.candidateEndTime;
+        }
+        if (sub.candidateStartTime && (!candidateMap[cid].startedAt || new Date(sub.candidateStartTime) < new Date(candidateMap[cid].startedAt))) {
+          candidateMap[cid].startedAt = sub.candidateStartTime;
+        }
+        if (assignedQuestionSetName && !candidateMap[cid].assignedQuestionSetName) {
+          candidateMap[cid].assignedQuestionSetName = assignedQuestionSetName;
+        }
+        if (assignedQuestionSetId && !candidateMap[cid].assignedQuestionSetId) {
+          candidateMap[cid].assignedQuestionSetId = assignedQuestionSetId;
+        }
+        if (assignedSetIndex && !candidateMap[cid].assignedSetIndex) {
+          candidateMap[cid].assignedSetIndex = assignedSetIndex;
+        }
       }
     }
 
@@ -341,24 +357,58 @@ const getLiveCandidates = async (req, res, next) => {
 
     const totalQuestions = test.totalQuestions || (test.questions ? test.questions.length : 5);
 
-    // Pre-aggregate attempted and completed counts per candidate across all submissions
+    // Pre-aggregate attempted, completed counts, earliest startTime, and latest/authoritative endTime per candidate
     const attemptedCounts = {};
     const completedCounts = {};
+    const candidateTimers = {};
+    const candidateRooms = {};
+    const candidateAssignedSets = {};
+    const candidateSubmissionStatuses = {};
+
     for (const sub of submissions) {
       const cid = sub.candidateId?._id ? sub.candidateId._id.toString() : sub.candidateId?.toString();
       if (!cid) continue;
+
       if (sub.isAttempted) {
         attemptedCounts[cid] = (attemptedCounts[cid] || 0) + 1;
       }
       if (sub.visibleTestCasesTotal > 0 && sub.visibleTestCasesPassed === sub.visibleTestCasesTotal) {
         completedCounts[cid] = (completedCounts[cid] || 0) + 1;
       }
+
+      if (!candidateTimers[cid]) {
+        candidateTimers[cid] = { startTime: null, endTime: null };
+      }
+      if (sub.candidateStartTime && (!candidateTimers[cid].startTime || new Date(sub.candidateStartTime) < new Date(candidateTimers[cid].startTime))) {
+        candidateTimers[cid].startTime = sub.candidateStartTime;
+      }
+      if (sub.candidateEndTime && (!candidateTimers[cid].endTime || new Date(sub.candidateEndTime) > new Date(candidateTimers[cid].endTime))) {
+        candidateTimers[cid].endTime = sub.candidateEndTime;
+      }
+
+      if (sub.roomId && !candidateRooms[cid]) {
+        candidateRooms[cid] = sub.roomId;
+      }
+      if (sub.assignedQuestionSetId && !candidateAssignedSets[cid]) {
+        candidateAssignedSets[cid] = sub.assignedQuestionSetId;
+      }
+
+      if (!candidateSubmissionStatuses[cid]) {
+        candidateSubmissionStatuses[cid] = [];
+      }
+      candidateSubmissionStatuses[cid].push(sub.status);
     }
 
     // If test is pool-based, pre-fetch pool sets to accurately resolve set indices and names
     let poolSets = [];
-    if (test.questionSetPoolId) {
-      poolSets = await QuestionSet.find({ uploadBatchId: test.questionSetPoolId }).sort({ createdAt: 1, _id: 1 });
+    const poolContainerId = test.folderId || test.questionSetPoolId;
+    if (poolContainerId) {
+      poolSets = await QuestionSet.find({
+        $or: [
+          { folderId: poolContainerId },
+          { uploadBatchId: poolContainerId },
+        ],
+      }).sort({ createdAt: 1, _id: 1 });
     }
 
     const resolveSetDetails = (assignedSetObj, joinIndex) => {
@@ -391,7 +441,26 @@ const getLiveCandidates = async (req, res, next) => {
         const cid = candidate?._id ? candidate._id.toString() : j.candidateId?.toString();
         if (!cid) continue;
 
-        const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(j.assignedQuestionSetId, j.joinIndex);
+        const setObj = candidateAssignedSets[cid] || j.assignedQuestionSetId;
+        const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(setObj, j.joinIndex);
+
+        const timers = candidateTimers[cid] || { startTime: null, endTime: null };
+        const timeRemaining = timers.endTime ? Math.max(0, new Date(timers.endTime).getTime() - now) : 0;
+
+        const subStatuses = candidateSubmissionStatuses[cid] || [];
+        let status = 'NOT_STARTED';
+        let colorStatus = 'WHITE';
+
+        if (candidate?.isDisqualified) {
+          status = 'DISQUALIFIED';
+          colorStatus = 'RED';
+        } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
+          status = 'SUBMITTED';
+          colorStatus = 'GREEN';
+        } else if (timers.startTime || subStatuses.some((st) => st === 'IN_PROGRESS')) {
+          status = 'IN_PROGRESS';
+          colorStatus = 'YELLOW';
+        }
 
         candidateMap[cid] = {
           candidateId: cid,
@@ -399,15 +468,15 @@ const getLiveCandidates = async (req, res, next) => {
           email: candidate?.email || '—',
           roomId: r._id.toString(),
           roomName: r.roomName || 'Assigned Room',
-          status: candidate?.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
-          timeRemaining: 0,
-          candidateStartTime: null,
-          candidateEndTime: null,
+          status,
+          timeRemaining,
+          candidateStartTime: timers.startTime || null,
+          candidateEndTime: timers.endTime || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
-          colorStatus: candidate?.isDisqualified ? 'RED' : 'WHITE',
+          colorStatus,
           assignedQuestionSetId,
           assignedQuestionSetName,
           assignedSetIndex,
@@ -421,54 +490,77 @@ const getLiveCandidates = async (req, res, next) => {
       if (!candidate) continue;
       const cid = candidate._id ? candidate._id.toString() : candidate.toString();
 
-      const timeRemaining = sub.candidateEndTime
-        ? Math.max(0, new Date(sub.candidateEndTime).getTime() - now)
-        : 0;
+      const timers = candidateTimers[cid] || { startTime: sub.candidateStartTime, endTime: sub.candidateEndTime };
+      const timeRemaining = timers.endTime ? Math.max(0, new Date(timers.endTime).getTime() - now) : 0;
 
+      const subStatuses = candidateSubmissionStatuses[cid] || [sub.status];
+      let status = 'IN_PROGRESS';
       let colorStatus = 'YELLOW';
+
       if (candidate.isDisqualified) {
+        status = 'DISQUALIFIED';
         colorStatus = 'RED';
-      } else if (sub.status === 'SUBMITTED' || sub.status === 'AUTO_SUBMITTED_TIME_UP') {
+      } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
+        status = 'SUBMITTED';
         colorStatus = 'GREEN';
       }
 
       const existing = candidateMap[cid];
+      const setObj = sub.assignedQuestionSetId || candidateAssignedSets[cid] || existing?.assignedQuestionSetId;
       const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(
-        sub.assignedQuestionSetId || existing?.assignedQuestionSetId,
+        setObj,
         existing?.assignedSetIndex
       );
 
-      if (!existing || existing.status === 'NOT_STARTED') {
+      const rDoc = sub.roomId || candidateRooms[cid];
+      const rId = rDoc?._id ? rDoc._id.toString() : (rDoc?.toString() || existing?.roomId);
+      const rName = rDoc?.roomName || existing?.roomName || 'Assigned Room';
+
+      if (!existing) {
         candidateMap[cid] = {
           candidateId: cid,
-          name: candidate.name || existing?.name || 'Candidate',
-          email: candidate.email || existing?.email || '—',
-          roomId: sub.roomId?._id ? sub.roomId._id.toString() : (sub.roomId?.toString() || existing?.roomId),
-          roomName: sub.roomId?.roomName || existing?.roomName || 'Assigned Room',
-          status: candidate.isDisqualified ? 'DISQUALIFIED' : sub.status,
+          name: candidate.name || 'Candidate',
+          email: candidate.email || '—',
+          roomId: rId,
+          roomName: rName,
+          status,
           timeRemaining,
-          candidateStartTime: sub.candidateStartTime,
-          candidateEndTime: sub.candidateEndTime,
+          candidateStartTime: timers.startTime || sub.candidateStartTime || null,
+          candidateEndTime: timers.endTime || sub.candidateEndTime || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
           malpracticeCount: malpracticeCounts[cid] || 0,
           colorStatus,
-          assignedQuestionSetId: assignedQuestionSetId || existing?.assignedQuestionSetId || null,
-          assignedQuestionSetName: assignedQuestionSetName || existing?.assignedQuestionSetName || null,
-          assignedSetIndex: assignedSetIndex || existing?.assignedSetIndex || null,
+          assignedQuestionSetId: assignedQuestionSetId || null,
+          assignedQuestionSetName: assignedQuestionSetName || null,
+          assignedSetIndex: assignedSetIndex || null,
         };
       } else {
+        // Guarantee timers and status are strictly updated with authoritative submission data
+        if (timers.startTime) candidateMap[cid].candidateStartTime = timers.startTime;
+        if (timers.endTime) {
+          candidateMap[cid].candidateEndTime = timers.endTime;
+          candidateMap[cid].timeRemaining = timeRemaining;
+        }
+        if (candidate.isDisqualified) {
+          candidateMap[cid].status = 'DISQUALIFIED';
+          candidateMap[cid].colorStatus = 'RED';
+        } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
+          candidateMap[cid].status = 'SUBMITTED';
+          candidateMap[cid].colorStatus = 'GREEN';
+        } else if (timers.startTime || subStatuses.some((st) => st === 'IN_PROGRESS')) {
+          candidateMap[cid].status = 'IN_PROGRESS';
+          candidateMap[cid].colorStatus = 'YELLOW';
+        }
         candidateMap[cid].questionsAttempted = attemptedCounts[cid] || 0;
         candidateMap[cid].questionsCompleted = completedCounts[cid] || 0;
         candidateMap[cid].totalQuestions = totalQuestions;
         if (assignedQuestionSetName) candidateMap[cid].assignedQuestionSetName = assignedQuestionSetName;
         if (assignedQuestionSetId) candidateMap[cid].assignedQuestionSetId = assignedQuestionSetId;
         if (assignedSetIndex) candidateMap[cid].assignedSetIndex = assignedSetIndex;
-        if (sub.status === 'SUBMITTED' || sub.status === 'AUTO_SUBMITTED_TIME_UP') {
-          candidateMap[cid].status = sub.status;
-          candidateMap[cid].colorStatus = 'GREEN';
-        }
+        if (rId && (!candidateMap[cid].roomId || candidateMap[cid].roomId === 'UNASSIGNED')) candidateMap[cid].roomId = rId;
+        if (rName && (!candidateMap[cid].roomName || candidateMap[cid].roomName === 'Assigned Room')) candidateMap[cid].roomName = rName;
       }
     }
 

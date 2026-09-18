@@ -1494,11 +1494,11 @@ export default function CandidateTestScreen() {
             </div>
           </div>
 
-          {/* Horizontal Resizer Divider between Editor and Bottom Panel (BUG-11) */}
+          {/* Horizontal Resizer Divider between Editor and Bottom Panel (BUG-11, FEATURE-014) */}
           <div
             onMouseDown={handleHeightMouseDown}
             style={{
-              height: 6,
+              height: 8,
               cursor: 'row-resize',
               background: isDraggingHeight ? '#8b5cf6' : 'transparent',
               borderTop: isDraggingHeight ? '1px solid #8b5cf6' : 'none',
@@ -1507,15 +1507,29 @@ export default function CandidateTestScreen() {
               position: 'relative',
               flexShrink: 0,
               transition: 'background 150ms ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              userSelect: 'none',
             }}
             title="Drag to resize Editor / Output panel height"
             onMouseEnter={(e) => {
-              if (!isDraggingHeight) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)';
+              if (!isDraggingHeight) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.3)';
             }}
             onMouseLeave={(e) => {
               if (!isDraggingHeight) e.currentTarget.style.background = 'transparent';
             }}
-          />
+          >
+            {/* Visual drag handle grip bar (FEATURE-014) */}
+            <div
+              style={{
+                width: 32,
+                height: 2,
+                borderRadius: 1,
+                background: isDraggingHeight ? '#ffffff' : '#475569',
+              }}
+            />
+          </div>
 
           {/* ── Side-by-Side Testcase & Test Result Split Panel (FEATURE-006 ADDENDUM, Purple Glow) ── */}
           <div

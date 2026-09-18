@@ -81,7 +81,7 @@ async function runTests() {
 
   const adminQBankSrc = fs.readFileSync(adminQuestionBankPath, 'utf8');
   assert(adminQBankSrc.includes('deleteFolderError'), 'AdminQuestionBank defines deleteFolderError state');
-  assert(adminQBankSrc.includes('Cascading Deletion Warning'), 'AdminQuestionBank displays cascading deletion warning for non-empty folders');
+  assert(adminQBankSrc.includes('Warning:') && adminQBankSrc.includes('permanently delete all contained'), 'AdminQuestionBank displays deletion warning for non-empty folders');
   assert(!adminQBankSrc.includes('Folders with question sets cannot be deleted'), 'AdminQuestionBank removed old unconditional block message');
 
   // --- PART 2: Database Live Execution Tests ---

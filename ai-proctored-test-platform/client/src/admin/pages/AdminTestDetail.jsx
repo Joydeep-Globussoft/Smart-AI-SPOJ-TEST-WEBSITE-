@@ -180,8 +180,6 @@ export default function AdminTestDetail() {
           : ''
       );
       setRooms(roomsRes.data.rooms || []);
-      setQuestionSets(qsRes.data?.questionSets || []);
-      setPools(poolRes.data?.pools || []);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to load test details');
     } finally {

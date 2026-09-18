@@ -61,15 +61,15 @@ const getCandidateColorStatus = (candidate, isTestEnded = false) => {
 // ── Candidate Session Remaining Time Helper (Pure client-side countdown) ──────
 const getCandidateRemainingMs = (candidate, currentNow) => {
   if (!candidate) return 0;
-  // BUG-24: Only candidates genuinely IN_PROGRESS have active remaining time.
+  // BUG-24 & BUG-78: Only candidates genuinely IN_PROGRESS have active remaining time.
   // Terminal/completed states (SUBMITTED, DISQUALIFIED, etc.) or NOT_STARTED immediately yield 0.
-  if (candidate.status !== 'IN_PROGRESS' || !candidate.candidateStartTime) {
+  if (candidate.status !== 'IN_PROGRESS') {
     return 0;
   }
   if (candidate.candidateEndTime) {
     return Math.max(0, new Date(candidate.candidateEndTime).getTime() - currentNow);
   }
-  if (typeof candidate.timeRemaining === 'number') {
+  if (typeof candidate.timeRemaining === 'number' && candidate.timeRemaining > 0) {
     const elapsed = candidate.lastSyncedAt ? Math.max(0, currentNow - candidate.lastSyncedAt) : 0;
     return Math.max(0, candidate.timeRemaining - elapsed);
   }
@@ -540,11 +540,12 @@ export default function AdminLiveDashboard() {
           const initialMap = {};
           const initialNow = Date.now();
           for (const [cid, cand] of Object.entries(liveRes.data.candidates)) {
+            const endTime = cand.candidateEndTime || (cand.timeRemaining ? new Date(initialNow + cand.timeRemaining).toISOString() : null);
             initialMap[cid] = {
               ...cand,
               candidateId: cid,
-              candidateEndTime: cand.candidateEndTime || (cand.timeRemaining ? new Date(initialNow + cand.timeRemaining).toISOString() : null),
-              candidateStartTime: cand.candidateStartTime || null,
+              candidateEndTime: endTime,
+              candidateStartTime: cand.candidateStartTime || (endTime && cand.status === 'IN_PROGRESS' ? new Date(initialNow).toISOString() : null),
               lastSyncedAt: initialNow,
             };
           }
@@ -573,11 +574,18 @@ export default function AdminLiveDashboard() {
         if (res.data?.candidates) {
           setCandidatesMap((prev) => {
             const updated = { ...prev };
+            const refreshNow = Date.now();
             for (const [cid, cand] of Object.entries(res.data.candidates)) {
+              const existing = updated[cid] || {};
+              const endTime = cand.candidateEndTime || existing.candidateEndTime || (cand.timeRemaining ? new Date(refreshNow + cand.timeRemaining).toISOString() : null);
+              const startTime = cand.candidateStartTime || existing.candidateStartTime || null;
               updated[cid] = {
-                ...(updated[cid] || {}),
+                ...existing,
                 ...cand,
                 candidateId: cid,
+                candidateEndTime: endTime,
+                candidateStartTime: startTime,
+                lastSyncedAt: refreshNow,
               };
             }
             return updated;

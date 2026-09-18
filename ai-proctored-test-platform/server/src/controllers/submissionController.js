@@ -772,6 +772,9 @@ const runCode = async (req, res, next) => {
                 status: 'IN_PROGRESS',
                 questionsAttempted: questionsAttemptedCount,
                 totalQuestions: totalQCount,
+                candidateStartTime: submission.candidateStartTime,
+                candidateEndTime: submission.candidateEndTime,
+                timeRemaining: submission.candidateEndTime ? Math.max(0, new Date(submission.candidateEndTime).getTime() - Date.now()) : 0,
               });
             }
           }
@@ -824,11 +827,23 @@ const saveCode = async (req, res, next) => {
       [`savedCodeByLanguage.${lang}`]: code ?? '',
     };
 
+    const existingSub = await Submission.findOne({
+      candidateId,
+      testId: targetTestId,
+      candidateStartTime: { $exists: true, $ne: null },
+    });
+
     const submission = await Submission.findOneAndUpdate(
       { candidateId, testId: targetTestId, questionId },
       {
         $set: update,
-        $setOnInsert: { status: 'IN_PROGRESS' },
+        $setOnInsert: {
+          status: 'IN_PROGRESS',
+          candidateStartTime: existingSub?.candidateStartTime || null,
+          candidateEndTime: existingSub?.candidateEndTime || null,
+          roomId: existingSub?.roomId || null,
+          assignedQuestionSetId: existingSub?.assignedQuestionSetId || null,
+        },
       },
       { upsert: true, new: true }
     );

@@ -93,10 +93,13 @@ const registerSocketHandlers = (io) => {
 
         // Calculate time remaining from server-persisted candidateEndTime (NFR: resilience)
         const Submission = require('../models/Submission');
-        const sub = await Submission.findOne(
+        const sub = (await Submission.findOne(
+          { candidateId, testId, candidateStartTime: { $exists: true, $ne: null } },
+          { status: 1, candidateEndTime: 1, candidateStartTime: 1, roomId: 1 }
+        ).sort({ candidateStartTime: -1 })) || (await Submission.findOne(
           { candidateId, testId },
           { status: 1, candidateEndTime: 1, candidateStartTime: 1, roomId: 1 }
-        );
+        ));
         const timeRemaining = sub?.candidateEndTime
           ? Math.max(0, sub.candidateEndTime.getTime() - Date.now())
           : 0;

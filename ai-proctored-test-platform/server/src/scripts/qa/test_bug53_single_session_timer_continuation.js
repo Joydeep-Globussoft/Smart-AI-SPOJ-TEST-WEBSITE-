@@ -6,6 +6,7 @@ const Room = require('../../models/Room');
 const Candidate = require('../../models/Candidate');
 const Question = require('../../models/Question');
 const QuestionSet = require('../../models/QuestionSet');
+const Folder = require('../../models/Folder');
 const Submission = require('../../models/Submission');
 const { startAttempt } = require('../../controllers/submissionController');
 
@@ -47,6 +48,12 @@ async function runTests() {
     role: 'candidate',
   });
 
+  const testFolder = await Folder.create({
+    name: `BUG53 Folder ${Date.now()}`,
+    testType: 'JAVASCRIPT',
+    createdBy: new mongoose.Types.ObjectId(),
+  });
+
   const questionSetId = new mongoose.Types.ObjectId();
   const testQuestion = await Question.create({
     questionSetId,
@@ -61,6 +68,7 @@ async function runTests() {
   const testQuestionSet = await QuestionSet.create({
     _id: questionSetId,
     name: 'Single Session QSet',
+    folderId: testFolder._id,
     testType: 'JAVASCRIPT',
     createdBy: new mongoose.Types.ObjectId(),
     questionIds: [testQuestion._id],
@@ -240,6 +248,7 @@ async function runTests() {
     await Test.findByIdAndDelete(testTest._id);
     await QuestionSet.findByIdAndDelete(testQuestionSet._id);
     await Question.findByIdAndDelete(testQuestion._id);
+    await Folder.findByIdAndDelete(testFolder._id);
     await Candidate.findByIdAndDelete(testCandidate._id);
     await mongoose.disconnect();
   }
