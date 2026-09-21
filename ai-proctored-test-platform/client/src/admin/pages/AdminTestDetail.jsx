@@ -317,11 +317,20 @@ export default function AdminTestDetail() {
     if (!roomFormData.roomName.trim()) {
       return toast.error('Room name is required');
     }
+    let parsedCapacity = undefined;
+    if (roomFormData.capacity !== undefined && roomFormData.capacity !== null && String(roomFormData.capacity).trim() !== '') {
+      const raw = Number(roomFormData.capacity);
+      if (!Number.isInteger(raw) || raw < 1 || raw > 150) {
+        return toast.error('Room capacity must be a whole number between 1 and 150');
+      }
+      parsedCapacity = raw;
+    }
+
     try {
       setAddingRoom(true);
       const res = await api.createRoom(testId, {
         roomName: roomFormData.roomName.trim(),
-        capacity: roomFormData.capacity ? Number(roomFormData.capacity) : undefined,
+        capacity: parsedCapacity,
       });
       toast.success(`Created room "${res.data.room?.roomName}"`);
       setShowAddRoomModal(false);
@@ -1132,12 +1141,13 @@ export default function AdminTestDetail() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Room Capacity (Optional)</label>
+                    <label className="form-label">Room Capacity (Optional, max 150)</label>
                     <input
                       type="number"
                       className="form-control"
                       min="1"
-                      placeholder="e.g. 50"
+                      max="150"
+                      placeholder="e.g. 50 (Max: 150)"
                       value={roomFormData.capacity}
                       onChange={(e) => setRoomFormData((p) => ({ ...p, capacity: e.target.value }))}
                     />

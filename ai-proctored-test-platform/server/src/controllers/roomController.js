@@ -65,6 +65,15 @@ const createRoom = async (req, res, next) => {
       ? new Date(now.getTime() + (test.startTestWindowMinutes || 10) * 60 * 1000)
       : null;
 
+    let validatedCapacity = undefined;
+    if (capacity !== undefined && capacity !== null && String(capacity).trim() !== '') {
+      const parsedCapacity = Number(capacity);
+      if (!Number.isInteger(parsedCapacity) || parsedCapacity < 1 || parsedCapacity > 150) {
+        return res.status(400).json({ error: 'Room capacity must be an integer between 1 and 150' });
+      }
+      validatedCapacity = parsedCapacity;
+    }
+
     const room = await Room.create({
       testId,
       roomName,
@@ -72,7 +81,7 @@ const createRoom = async (req, res, next) => {
       roomPassword,
       inviteToken,
       passwordValidUntil,
-      capacity: capacity || undefined,
+      capacity: validatedCapacity,
       status: 'ACTIVE',
       createdAt: now,
     });
