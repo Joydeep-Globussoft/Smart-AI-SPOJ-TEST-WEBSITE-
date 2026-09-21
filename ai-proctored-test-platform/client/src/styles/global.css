@@ -64,6 +64,7 @@
   --color-yellow: #F1C40F;
   --color-red: #E74C3C;
   --color-white-seat: #e5e7eb;
+  --color-seat-not-started-border: var(--color-border);
 
   /* UI */
   --radius-sm: 6px;
@@ -94,6 +95,7 @@
   --color-border: #23314f;
   --color-border-subtle: #1c2740;
   --color-border-focus: #14b8a6;
+  --color-seat-not-started-border: #94a3b8;
 
   /* Modals & Tables */
   --color-modal-bg: #131b2e;

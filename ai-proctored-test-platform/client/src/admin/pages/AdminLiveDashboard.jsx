@@ -120,7 +120,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
       onClick={() => onClick(candidate)}
       style={{
         background: isWhite ? 'var(--color-bg-card)' : `${color}15`,
-        border: `2px solid ${isWhite ? 'var(--color-border)' : color}`,
+        border: `2px solid ${isWhite ? 'var(--color-seat-not-started-border)' : color}`,
         borderRadius: 10,
         padding: '12px 14px',
         cursor: 'pointer',
@@ -1516,7 +1516,7 @@ export default function AdminLiveDashboard() {
                 <span>Disqualified</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-border)' }} />
+                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-seat-not-started-border)' }} />
                 <span>Not Started</span>
               </div>
             </div>
