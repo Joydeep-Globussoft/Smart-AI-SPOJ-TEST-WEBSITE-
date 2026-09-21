@@ -1958,15 +1958,70 @@ export default function AdminLiveDashboard() {
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                       <span>📸</span> Malpractice Violation History &amp; Proof Screenshots
                     </h4>
-                    <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
-                      {candidateLogs.length} {candidateLogs.length === 1 ? 'Incident' : 'Incidents'}
-                    </span>
+                    {(() => {
+                      const totalIncidents = Math.max(activeInspectCandidate.malpracticeCount || 0, candidateLogs.length);
+                      return (
+                        <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
+                          {totalIncidents} {totalIncidents === 1 ? 'Incident' : 'Incidents'}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {loadingLogs ? (
-                    <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                      <div className="spinner spinner-dark" style={{ width: 24, height: 24, margin: '0 auto 8px auto' }} />
-                      Loading violation proof history...
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          padding: '12px 0',
+                          color: 'var(--color-text-muted)',
+                          fontSize: '0.85rem',
+                        }}
+                      >
+                        <div
+                          className="spinner spinner-dark"
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderWidth: 2,
+                            margin: 0,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span>Loading violation proof history...</span>
+                      </div>
+
+                      {/* Skeleton loader cards simulating the incident rows */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {[1, 2].map((i) => (
+                          <div
+                            key={i}
+                            style={{
+                              background: 'var(--color-bg-subtle)',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: 8,
+                              padding: 14,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 12,
+                              animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                              opacity: i === 1 ? 0.8 : 0.45,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ width: 110, height: 20, background: 'var(--color-border)', borderRadius: 4 }} />
+                                <div style={{ width: 130, height: 16, background: 'var(--color-border)', borderRadius: 4 }} />
+                              </div>
+                              <div style={{ width: 80, height: 20, background: 'var(--color-border)', borderRadius: 4 }} />
+                            </div>
+                            <div style={{ width: '100%', height: 44, background: 'var(--color-border)', borderRadius: 6, opacity: 0.6 }} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : candidateLogs.length === 0 ? (
                     (activeInspectCandidate.malpracticeCount || 0) > 0 ? (
