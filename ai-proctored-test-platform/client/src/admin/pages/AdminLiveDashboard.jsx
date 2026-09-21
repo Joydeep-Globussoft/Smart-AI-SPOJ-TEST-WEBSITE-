@@ -218,10 +218,10 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
           )}
         </div>
         <div style={{ fontWeight: 600, color: 'var(--color-text)', marginTop: 2 }}>
-          {candidate.status === 'NOT_STARTED' || !candidate.candidateStartTime || (!isCandidateInProgress && !candidate.questionsCompleted && !candidate.questionsAttempted)
-            ? 'Not started'
-            : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-              ? `${candidate.questionsCompleted ?? 0} Qs Solved`
+          {candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP' || (isTestEnded && candidate.candidateStartTime)
+            ? `${candidate.questionsCompleted ?? 0} Qs Solved`
+            : candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress)
+              ? 'Not started'
               : isCandidateInProgress
                 ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
                 : `${candidate.questionsCompleted ?? 0} Qs Solved`}
@@ -1340,10 +1340,10 @@ export default function AdminLiveDashboard() {
   }, []);
 
   const tentativeTimer = useMemo(() => {
-    // ASSUMPTION: If test is not loaded or status is not live, show appropriate fallback
+    // If test is not loaded or status is not live, show appropriate fallback
     if (!test) return { formatted: '—', rawMs: 0, hasActive: false };
-    if (test.status === 'ENDED') {
-      return { formatted: 'Concluded', rawMs: 0, hasActive: false };
+    if (test.status === 'ENDED' || isTestEnded) {
+      return { formatted: 'Test Concluded', rawMs: 0, hasActive: false };
     }
 
     // Filter in-progress candidates in current view (matching selectedRoomId or ALL rooms combined)
@@ -1361,50 +1361,6 @@ export default function AdminLiveDashboard() {
       return remaining > 0;
     });
 
-    // BUG-30 Part B: Distinguish between "no candidate has ever joined/started yet" vs "all candidates finished/reached terminal state"
-    if (inProgressCandidates.length === 0) {
-      const candidatesInScope = Object.values(candidatesMap).filter((c) => {
-        const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
-        return selectedRoomId === 'ALL' || String(cRoomId) === String(selectedRoomId);
-      });
-
-      // Scenario 1: Zero candidates have ever joined this test / room
-      if (candidatesInScope.length === 0) {
-        return {
-          formatted: 'Not started',
-          rawMs: 0,
-          hasActive: false,
-        };
-      }
-
-      // Check if any candidate has started at all (or is in an active/finished state)
-      const anyCandidateStarted = candidatesInScope.some(
-        (c) => c.candidateStartTime || c.status === 'IN_PROGRESS' || c.status === 'SUBMITTED' || c.status === 'AUTO_SUBMITTED_TIME_UP'
-      );
-
-      // Scenario 1b: Candidates joined a room, but none have clicked "Start Test" yet
-      if (!anyCandidateStarted) {
-        return {
-          formatted: 'Not started',
-          rawMs: 0,
-          hasActive: false,
-        };
-      }
-
-      // Scenario 2: Candidates DID join and have all reached a terminal state
-      // (all SUBMITTED, AUTO_SUBMITTED_TIME_UP, DISQUALIFIED, or timer expired)
-      // ASSUMPTION (BUG-30 Part B): Show "Session concluded" to clearly indicate session completion.
-      return {
-        formatted: 'Session concluded',
-        rawMs: 0,
-        hasActive: false,
-      };
-    }
-
-    // BUG-21: Tentative Time = MAX remaining time (candidateEndTime - now) among candidates currently IN_PROGRESS
-    const remainingTimes = inProgressCandidates.map((c) => getCandidateRemainingMs(c, now));
-    const maxRemainingMs = Math.max(...remainingTimes);
-
     const formatMs = (ms) => {
       const totalSec = Math.max(0, Math.floor(ms / 1000));
       const hours = Math.floor(totalSec / 3600);
@@ -1417,12 +1373,59 @@ export default function AdminLiveDashboard() {
       return `${mins}m ${secStr}s`;
     };
 
+    // Calculate overall test session remaining time based on test live start & duration
+    const testDurationMs = (test.durationMinutes || 60) * 60 * 1000;
+    const testStartTime = test.liveStartedAt
+      ? new Date(test.liveStartedAt).getTime()
+      : (test.createdAt ? new Date(test.createdAt).getTime() : now);
+    const testEndMs = testStartTime + testDurationMs;
+    const overallTestRemainingMs = Math.max(0, testEndMs - now);
+
+    // If there are candidates actively IN_PROGRESS, tentative time is MAX remaining time among them
+    if (inProgressCandidates.length > 0) {
+      const remainingTimes = inProgressCandidates.map((c) => getCandidateRemainingMs(c, now));
+      const maxRemainingMs = Math.max(...remainingTimes);
+      return {
+        formatted: formatMs(maxRemainingMs),
+        rawMs: maxRemainingMs,
+        hasActive: true,
+      };
+    }
+
+    // If no candidate is currently IN_PROGRESS (e.g. all submitted or none started yet):
+    // If the test itself is LIVE and has remaining duration in its window, show the test countdown!
+    if (overallTestRemainingMs > 0) {
+      return {
+        formatted: formatMs(overallTestRemainingMs),
+        rawMs: overallTestRemainingMs,
+        hasActive: true,
+      };
+    }
+
+    // If overall test session duration has fully expired:
+    const candidatesInScope = Object.values(candidatesMap).filter((c) => {
+      const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
+      return selectedRoomId === 'ALL' || String(cRoomId) === String(selectedRoomId);
+    });
+
+    const anyCandidateStarted = candidatesInScope.some(
+      (c) => c.candidateStartTime || c.status === 'IN_PROGRESS' || c.status === 'SUBMITTED' || c.status === 'AUTO_SUBMITTED_TIME_UP'
+    );
+
+    if (anyCandidateStarted || candidatesInScope.length > 0) {
+      return {
+        formatted: 'Session concluded',
+        rawMs: 0,
+        hasActive: false,
+      };
+    }
+
     return {
-      formatted: formatMs(maxRemainingMs),
-      rawMs: maxRemainingMs,
-      hasActive: true,
+      formatted: 'Not started',
+      rawMs: 0,
+      hasActive: false,
     };
-  }, [candidatesMap, selectedRoomId, test, now]);
+  }, [candidatesMap, selectedRoomId, test, now, isTestEnded]);
 
   // Section 13 NFR Virtualized Row Renderer for >50 items
   const VirtualizedRow = useCallback(({ index, style }) => {
@@ -1556,9 +1559,9 @@ export default function AdminLiveDashboard() {
                     isTestEnded
                       ? 'Test Concluded: Operational summary and malpractice review'
                       : tentativeTimer.hasActive
-                        ? `Tentative Time: Session concludes when the last candidate finishes in ${tentativeTimer.formatted}`
+                        ? `Tentative Time: ${tentativeTimer.formatted} remaining in test session`
                         : tentativeTimer.formatted === 'Session concluded'
-                          ? 'Tentative Time: All candidates have finished or reached terminal states'
+                          ? 'Tentative Time: Test session duration has completed'
                           : 'Tentative Time: No candidates have started yet'
                   }
                 >
