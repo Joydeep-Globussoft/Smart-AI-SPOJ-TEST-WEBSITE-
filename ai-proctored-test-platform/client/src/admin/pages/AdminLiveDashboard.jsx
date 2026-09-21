@@ -1712,8 +1712,8 @@ export default function AdminLiveDashboard() {
 
         {/* ── Real-Time Metrics Bar (FEATURE-008: Clear post-test summary metrics) ── */}
         <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-          <div className="stat-card" style={{ borderLeft: '4px solid var(--color-primary, #00C9A7)' }}>
-            <div className="stat-value" style={{ color: 'var(--color-primary, #00C9A7)' }}>{stats.total}</div>
+          <div className="stat-card" style={{ borderLeft: '4px solid #3B82F6' }}>
+            <div className="stat-value" style={{ color: '#3B82F6' }}>{stats.total}</div>
             <div className="stat-label">{isTestEnded ? 'Total Candidates' : 'Active Candidates'}</div>
           </div>
           <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.GREEN}` }}>
