@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
 import EmbeddedPdfViewer from '../../candidate/components/EmbeddedPdfViewer';
+import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 
 const TEST_TYPES = [
@@ -890,7 +891,7 @@ export default function AdminQuestionBank() {
             {/* Folders List Container */}
             {loadingFolders ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                <div className="spinner spinner-dark" style={{ width: 28, height: 28 }} />
+                <LoadingDots size="md" />
               </div>
             ) : filteredFolders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
@@ -1278,7 +1279,7 @@ export default function AdminQuestionBank() {
                 {/* Questions List */}
                 {loadingQuestions ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-                    <div className="spinner spinner-dark" style={{ width: 36, height: 36 }} />
+                    <LoadingDots size="md" />
                   </div>
                 ) : questions.length === 0 ? (
                   <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -2472,7 +2473,7 @@ export default function AdminQuestionBank() {
                     >
                       {isUploadingPdfs ? (
                         <>
-                          <div className="spinner spinner-dark" style={{ width: 16, height: 16, borderTopColor: '#ffffff' }} />
+                          <LoadingDots size="sm" color="white" />
                           Processing {uploadFiles.length} PDFs...
                         </>
                       ) : (

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
+import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
 
@@ -149,7 +150,9 @@ export default function AdminProfile() {
         <div className="card" style={{ maxWidth: 720, margin: '0 auto', padding: '32px 36px' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-muted)' }}>
-              <div className="spinner spinner-dark" style={{ width: 32, height: 32, borderWidth: 3, margin: '0 auto 12px' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                <LoadingDots size="md" />
+              </div>
               <p style={{ fontSize: '0.85rem' }}>Loading profile information...</p>
             </div>
           ) : !editing ? (

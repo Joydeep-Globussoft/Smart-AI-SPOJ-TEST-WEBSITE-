@@ -6,6 +6,7 @@ import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 import PasswordInput from '../../shared/PasswordInput';
+import LoadingDots from '../../shared/LoadingDots';
 
 export default function CandidateLogin() {
   const { user, login, logout } = useAuth();
@@ -151,7 +152,7 @@ export default function CandidateLogin() {
             style={{ width: '100%', marginTop: 8 }}
             disabled={loading}
           >
-            {loading ? <><span className="spinner" /> Signing in...</> : 'Sign In'}
+            {loading ? <><LoadingDots size="sm" color="white" /> Signing in...</> : 'Sign In'}
           </button>
         </form>
 

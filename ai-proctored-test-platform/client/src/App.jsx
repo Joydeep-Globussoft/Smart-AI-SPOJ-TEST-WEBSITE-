@@ -6,6 +6,7 @@ import { ThemeProvider } from './hooks/useTheme';
 import './styles/global.css';
 import ErrorBoundary from './shared/ErrorBoundary';
 import { lazyWithRetry } from './shared/lazyWithRetry';
+import LoadingDots from './shared/LoadingDots';
 
 // ── Critical candidate confirmation page (statically bundled for zero-latency, 100% reliable submission confirmation) ──
 import CandidateTestComplete from './candidate/pages/CandidateTestComplete';
@@ -59,7 +60,7 @@ const RequireSuperAdmin = ({ children }) => {
 
 const LoadingSpinner = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-    <div className="spinner spinner-dark" style={{ width: 40, height: 40, borderWidth: 3 }} />
+    <LoadingDots size="lg" />
   </div>
 );
 

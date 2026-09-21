@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
+import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import PasswordInput from '../../shared/PasswordInput';
@@ -562,7 +563,9 @@ export default function AdminCreateAdmin() {
 
           {loadingList && admins.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
-              <div className="spinner spinner-dark" style={{ width: 28, height: 28, borderWidth: 3, margin: '0 auto 12px' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                <LoadingDots size="md" />
+              </div>
               <p style={{ fontSize: '0.85rem' }}>Loading admin accounts...</p>
             </div>
           ) : displayedAdmins.length === 0 ? (

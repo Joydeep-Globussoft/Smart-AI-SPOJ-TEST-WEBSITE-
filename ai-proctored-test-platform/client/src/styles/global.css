@@ -849,7 +849,169 @@ tbody td {
   margin-bottom: 28px;
 }
 
-/* ── Spinner ─────────────────────────────────────────────────────────────────── */
+/* ── FEATURE-016: Pseudo-3D Tumbling Loading Dots Animation ───────────────────── */
+
+/* Dot 1: Upper anchor tumbling forward-down towards viewer and looping back */
+@keyframes dotTumble1 {
+  0% {
+    transform: translate(calc(0 * var(--orbit-radius, 5.5px)), calc(-0.25 * var(--orbit-radius, 5.5px))) scale(1.25);
+    opacity: 1;
+    z-index: 3;
+  }
+  20% {
+    transform: translate(calc(0.40 * var(--orbit-radius, 5.5px)), calc(-0.55 * var(--orbit-radius, 5.5px))) scale(1.05);
+    opacity: 0.90;
+    z-index: 3;
+  }
+  40% {
+    transform: translate(calc(0.26 * var(--orbit-radius, 5.5px)), calc(-0.85 * var(--orbit-radius, 5.5px))) scale(0.82);
+    opacity: 0.68;
+    z-index: 2;
+  }
+  60% {
+    transform: translate(calc(-0.16 * var(--orbit-radius, 5.5px)), calc(-0.95 * var(--orbit-radius, 5.5px))) scale(0.65);
+    opacity: 0.42;
+    z-index: 1;
+  }
+  80% {
+    transform: translate(calc(-0.36 * var(--orbit-radius, 5.5px)), calc(-0.60 * var(--orbit-radius, 5.5px))) scale(0.88);
+    opacity: 0.72;
+    z-index: 2;
+  }
+  100% {
+    transform: translate(calc(0 * var(--orbit-radius, 5.5px)), calc(-0.25 * var(--orbit-radius, 5.5px))) scale(1.25);
+    opacity: 1;
+    z-index: 3;
+  }
+}
+
+/* Dot 2: Lower-right anchor tumbling forward-inward towards viewer and looping back */
+@keyframes dotTumble2 {
+  0% {
+    transform: translate(calc(0.70 * var(--orbit-radius, 5.5px)), calc(0.18 * var(--orbit-radius, 5.5px))) scale(0.85);
+    opacity: 0.70;
+    z-index: 2;
+  }
+  18% {
+    transform: translate(calc(0.52 * var(--orbit-radius, 5.5px)), calc(0.50 * var(--orbit-radius, 5.5px))) scale(1.06);
+    opacity: 0.92;
+    z-index: 3;
+  }
+  33.33% {
+    transform: translate(calc(0.22 * var(--orbit-radius, 5.5px)), calc(0.35 * var(--orbit-radius, 5.5px))) scale(1.25);
+    opacity: 1;
+    z-index: 3;
+  }
+  52% {
+    transform: translate(calc(0.36 * var(--orbit-radius, 5.5px)), calc(0.72 * var(--orbit-radius, 5.5px))) scale(1.02);
+    opacity: 0.88;
+    z-index: 2;
+  }
+  72% {
+    transform: translate(calc(0.75 * var(--orbit-radius, 5.5px)), calc(0.65 * var(--orbit-radius, 5.5px))) scale(0.78);
+    opacity: 0.62;
+    z-index: 1;
+  }
+  88% {
+    transform: translate(calc(0.85 * var(--orbit-radius, 5.5px)), calc(0.35 * var(--orbit-radius, 5.5px))) scale(0.65);
+    opacity: 0.42;
+    z-index: 1;
+  }
+  100% {
+    transform: translate(calc(0.70 * var(--orbit-radius, 5.5px)), calc(0.18 * var(--orbit-radius, 5.5px))) scale(0.85);
+    opacity: 0.70;
+    z-index: 2;
+  }
+}
+
+/* Dot 3: Lower-left anchor tumbling forward-inward towards viewer and looping back */
+@keyframes dotTumble3 {
+  0% {
+    transform: translate(calc(-0.46 * var(--orbit-radius, 5.5px)), calc(0.65 * var(--orbit-radius, 5.5px))) scale(0.88);
+    opacity: 0.72;
+    z-index: 2;
+  }
+  14% {
+    transform: translate(calc(-0.72 * var(--orbit-radius, 5.5px)), calc(0.52 * var(--orbit-radius, 5.5px))) scale(0.76);
+    opacity: 0.58;
+    z-index: 1;
+  }
+  28% {
+    transform: translate(calc(-0.82 * var(--orbit-radius, 5.5px)), calc(0.26 * var(--orbit-radius, 5.5px))) scale(0.65);
+    opacity: 0.42;
+    z-index: 1;
+  }
+  48% {
+    transform: translate(calc(-0.68 * var(--orbit-radius, 5.5px)), calc(0.10 * var(--orbit-radius, 5.5px))) scale(0.85);
+    opacity: 0.72;
+    z-index: 2;
+  }
+  66.67% {
+    transform: translate(calc(-0.22 * var(--orbit-radius, 5.5px)), calc(0.35 * var(--orbit-radius, 5.5px))) scale(1.25);
+    opacity: 1;
+    z-index: 3;
+  }
+  85% {
+    transform: translate(calc(-0.34 * var(--orbit-radius, 5.5px)), calc(0.72 * var(--orbit-radius, 5.5px))) scale(1.06);
+    opacity: 0.90;
+    z-index: 3;
+  }
+  100% {
+    transform: translate(calc(-0.46 * var(--orbit-radius, 5.5px)), calc(0.65 * var(--orbit-radius, 5.5px))) scale(0.88);
+    opacity: 0.72;
+    z-index: 2;
+  }
+}
+
+/* Backward compatibility alias */
+@keyframes triangularOrbit {
+  0%, 100% {
+    transform: translate(calc(0 * var(--orbit-radius, 5.5px)), calc(-0.25 * var(--orbit-radius, 5.5px))) scale(1.25);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(calc(0 * var(--orbit-radius, 5.5px)), calc(-0.95 * var(--orbit-radius, 5.5px))) scale(0.65);
+    opacity: 0.42;
+  }
+}
+
+.orbiting-dots-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  vertical-align: middle;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.orbiting-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--dot-size, 4px);
+  height: var(--dot-size, 4px);
+  margin-top: calc(-0.5 * var(--dot-size, 4px));
+  margin-left: calc(-0.5 * var(--dot-size, 4px));
+  border-radius: 50%;
+  background-color: var(--dot-color, var(--color-primary));
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.orbiting-dot:nth-child(1) {
+  animation: dotTumble1 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.orbiting-dot:nth-child(2) {
+  animation: dotTumble2 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.orbiting-dot:nth-child(3) {
+  animation: dotTumble3 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+/* ── Legacy Spinner Fallback ─────────────────────────────────────────────────── */
 .spinner {
   width: 20px;
   height: 20px;

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/apiClient';
 import globussoftLogo from '../../assets/globussoft-logo.png';
+import LoadingDots from '../../shared/LoadingDots';
 import { setScreenStream, setActiveMediaStream, stopActiveMediaStream } from '../../services/mediaStreamManager';
 import { verifyActiveVideoStream, checkHardwareDevices } from '../../services/mediaStreamVerifier';
 
@@ -538,7 +539,7 @@ export default function CandidateInstructions() {
                 >
                   {requestingPermissions ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <span className="spinner spinner-dark" style={{ width: 14, height: 14 }} />
+                      <LoadingDots size="xs" />
                       <span>Requesting Permissions...</span>
                     </span>
                   ) : (
@@ -588,7 +589,7 @@ export default function CandidateInstructions() {
               >
                 {loading ? (
                   <>
-                    <span className="spinner" /> Starting test...
+                    <LoadingDots size="sm" color="white" /> Starting test...
                   </>
                 ) : (
                   '🚀 Start Test — Enter Fullscreen'

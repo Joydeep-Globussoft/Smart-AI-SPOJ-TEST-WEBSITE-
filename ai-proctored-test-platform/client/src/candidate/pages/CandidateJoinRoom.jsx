@@ -4,6 +4,7 @@ import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuthContext';
 import globussoftLogo from '../../assets/globussoft-logo.png';
+import LoadingDots from '../../shared/LoadingDots';
 import { onLateJoinApproved, offLateJoinApproved, onLateJoinDismissed, offLateJoinDismissed } from '../../services/socketClient';
 
 export default function CandidateJoinRoom() {
@@ -211,7 +212,7 @@ export default function CandidateJoinRoom() {
 
         {isAutoJoining ? (
           <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <span className="spinner spinner-dark" style={{ width: 18, height: 18, borderWidth: 2 }} />
+            <LoadingDots size="sm" />
             <span>🎉 <strong>Approval received!</strong> Connecting you to the test room...</span>
           </div>
         ) : manualOverrideGranted ? (
@@ -277,7 +278,7 @@ export default function CandidateJoinRoom() {
               >
                 {notifying ? (
                   <>
-                    <span className="spinner" /> Notifying Admin...
+                    <LoadingDots size="sm" color="white" /> Notifying Admin...
                   </>
                 ) : (
                   "📢 Notify Admin I'm Trying to Join"
@@ -328,7 +329,7 @@ export default function CandidateJoinRoom() {
             style={{ width: '100%', marginTop: 8 }}
             disabled={loading}
           >
-            {loading ? <><span className="spinner" /> Joining...</> : '→ Enter Test Room'}
+            {loading ? <><LoadingDots size="sm" color="white" /> Joining...</> : '→ Enter Test Room'}
           </button>
         </form>
 

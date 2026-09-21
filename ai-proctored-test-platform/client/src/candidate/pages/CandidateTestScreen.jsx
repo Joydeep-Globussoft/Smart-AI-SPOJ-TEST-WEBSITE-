@@ -21,6 +21,7 @@ import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
 import { stopAllCandidateMediaStreams } from '../../services/mediaStreamManager';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
+import LoadingDots from '../../shared/LoadingDots';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
 import ProctorWarningModal from '../components/ProctorWarningModal';
@@ -1022,7 +1023,7 @@ export default function CandidateTestScreen() {
   if (!session) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 12 }}>
-        <div className="spinner spinner-dark" style={{ width: 40, height: 40, borderWidth: 3 }} />
+        <LoadingDots size="lg" />
         <p style={{ color: '#64748B', fontSize: '0.85rem' }}>Loading test environment...</p>
       </div>
     );
@@ -1429,7 +1430,7 @@ export default function CandidateTestScreen() {
                 {/* Visual Autosave Status Indicator (Requirement 6) */}
                 {saveStatus === 'saving' && (
                   <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span className="spinner" style={{ width: 10, height: 10, borderTopColor: '#94a3b8', display: 'inline-block' }} />
+                    <LoadingDots size="xs" color="#94a3b8" />
                     Saving...
                   </span>
                 )}
@@ -1452,7 +1453,7 @@ export default function CandidateTestScreen() {
                   disabled={isRunning || !code || disqualified || proctoring?.isCameraDisconnected}
                   style={{ background: '#2d2d44', color: '#cdd6f4', border: '1px solid #444' }}
                 >
-                  {isRunning ? <><span className="spinner" style={{ borderTopColor: '#cdd6f4', width: 14, height: 14 }} /> Running...</> : '▶ Run'}
+                  {isRunning ? <><LoadingDots size="sm" color="white" /> Running...</> : '▶ Run'}
                 </button>
               </div>
             </div>

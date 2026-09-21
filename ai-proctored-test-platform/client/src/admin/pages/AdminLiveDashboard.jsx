@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { List } from 'react-window';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
+import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import {
@@ -1396,7 +1397,7 @@ export default function AdminLiveDashboard() {
       <div className="app-layout">
         <AdminNavbar />
         <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-          <div className="spinner spinner-dark" style={{ width: 40, height: 40, borderWidth: 3 }} />
+          <LoadingDots size="lg" />
         </main>
       </div>
     );
@@ -1981,16 +1982,7 @@ export default function AdminLiveDashboard() {
                           fontSize: '0.85rem',
                         }}
                       >
-                        <div
-                          className="spinner spinner-dark"
-                          style={{
-                            width: 16,
-                            height: 16,
-                            borderWidth: 2,
-                            margin: 0,
-                            flexShrink: 0,
-                          }}
-                        />
+                        <LoadingDots size="sm" />
                         <span>Loading violation proof history...</span>
                       </div>
 
@@ -2441,7 +2433,7 @@ export default function AdminLiveDashboard() {
                   >
                     {activeAlert.hasPendingProof ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#d97706', fontWeight: 600 }}>
-                        <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                        <LoadingDots size="xs" color="#d97706" />
                         Capturing proof evidence screenshot...
                       </span>
                     ) : (

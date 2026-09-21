@@ -5,6 +5,7 @@ import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
+import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 
 export default function AdminResults() {
@@ -201,7 +202,7 @@ export default function AdminResults() {
       <div className="app-layout">
         <AdminNavbar />
         <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-          <div className="spinner spinner-dark" style={{ width: 40, height: 40, borderWidth: 3 }} />
+          <LoadingDots size="lg" />
         </main>
       </div>
     );
@@ -719,7 +720,7 @@ export default function AdminResults() {
               <div className="modal-body" style={{ maxHeight: 350, overflowY: 'auto' }}>
                 {loadingAudit ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                    <div className="spinner spinner-dark" style={{ width: 28, height: 28 }} />
+                    <LoadingDots size="md" />
                   </div>
                 ) : auditEvents.length === 0 ? (
                   <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 24 }}>

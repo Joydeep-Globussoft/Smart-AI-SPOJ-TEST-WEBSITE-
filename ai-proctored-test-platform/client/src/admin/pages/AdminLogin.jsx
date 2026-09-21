@@ -6,6 +6,7 @@ import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 import PasswordInput from '../../shared/PasswordInput';
+import LoadingDots from '../../shared/LoadingDots';
 
 export default function AdminLogin() {
   const { user, login } = useAuth();
@@ -70,7 +71,7 @@ export default function AdminLogin() {
           </div>
           <button type="submit" id="admin-login-btn" className="btn btn-primary btn-lg"
             style={{ width: '100%', marginTop: 8 }} disabled={loading}>
-            {loading ? <><span className="spinner" /> Signing in...</> : 'Sign In'}
+            {loading ? <><LoadingDots size="sm" color="white" /> Signing in...</> : 'Sign In'}
           </button>
         </form>
       </div>

@@ -6,6 +6,7 @@ import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import globussoftLogo from '../../assets/globussoft-logo.png';
 import PasswordInput from '../../shared/PasswordInput';
+import LoadingDots from '../../shared/LoadingDots';
 
 export default function CandidateRegister() {
   const { user, login, logout } = useAuth();
@@ -189,7 +190,7 @@ export default function CandidateRegister() {
           </div>
 
           <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 8 }} disabled={loading}>
-            {loading ? <><span className="spinner" /> Creating account...</> : 'Create Account'}
+            {loading ? <><LoadingDots size="sm" color="white" /> Creating account...</> : 'Create Account'}
           </button>
         </form>
 

@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
 import CreateTestModal from '../../shared/CreateTestModal';
+import LoadingDots from '../../shared/LoadingDots';
 import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
 
@@ -116,7 +117,7 @@ export default function AdminDashboard() {
 
             {loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
-                <div className="spinner spinner-dark" style={{ width: 32, height: 32 }} />
+                <LoadingDots size="md" />
               </div>
             ) : tests.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--color-text-muted)' }}>

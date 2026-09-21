@@ -21,6 +21,7 @@ import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
 import { stopAllCandidateMediaStreams } from '../../services/mediaStreamManager';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
+import LoadingDots from '../../shared/LoadingDots';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
 import ProctorWarningModal from '../components/ProctorWarningModal';
@@ -917,7 +918,7 @@ export default function CandidateAITestScreen() {
   if (!session) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <div className="spinner spinner-dark" style={{ width: 40, height: 40 }} />
+        <LoadingDots size="lg" />
       </div>
     );
   }
@@ -2116,7 +2117,7 @@ export default function CandidateAITestScreen() {
                   alignSelf: 'flex-start',
                   background: '#1e293b',
                   borderRadius: 8,
-                  padding: '6px 10px',
+                  padding: '4px 12px',
                   color: '#94a3b8',
                   fontSize: '0.78rem',
                   display: 'flex',
@@ -2124,7 +2125,7 @@ export default function CandidateAITestScreen() {
                   gap: 6,
                 }}
               >
-                <span className="spinner spinner-dark" style={{ width: 12, height: 12 }} />
+                <LoadingDots size="xs" />
                 Kimi is writing...
               </div>
             )}

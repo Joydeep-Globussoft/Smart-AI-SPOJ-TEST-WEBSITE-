@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
 import CreateTestModal from '../../shared/CreateTestModal';
+import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 
 const TEST_TYPES = [
@@ -94,7 +95,6 @@ export default function AdminTests() {
           display: 'flex',
           flexDirection: 'column',
           height: 'calc(100vh - 64px)',
-          height: 'calc(100dvh - 64px)',
           boxSizing: 'border-box',
           overflow: 'hidden',
           padding: '16px 24px 20px 24px',
@@ -162,7 +162,7 @@ export default function AdminTests() {
         {/* Tests Table */}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 250 }}>
-            <div className="spinner spinner-dark" style={{ width: 36, height: 36, borderWidth: 3 }} />
+            <LoadingDots size="md" />
           </div>
         ) : filteredTests.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flexShrink: 0 }}>
