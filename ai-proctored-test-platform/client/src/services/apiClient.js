@@ -160,8 +160,8 @@ export const api = {
   reportCameraReconnected: (data) => axios.post('/proctoring/camera-reconnected', data),
   getViolationCount: (testId) => axios.get(`/proctoring/${testId}/violation-count`),
   reviewMalpractice: (logId, data) => axios.patch(`/malpractice-logs/${logId}/review`, data),
-  getCandidateMalpracticeLogs: (testId, candidateId) =>
-    axios.get(`/tests/${testId}/candidates/${candidateId}/malpractice-logs`),
+  getCandidateMalpracticeLogs: (testId, candidateId, params) =>
+    axios.get(`/tests/${testId}/candidates/${candidateId}/malpractice-logs`, { params }),
   getTestMalpracticeLogs: (testId, params) =>
     axios.get(`/tests/${testId}/malpractice-logs`, { params }),
 

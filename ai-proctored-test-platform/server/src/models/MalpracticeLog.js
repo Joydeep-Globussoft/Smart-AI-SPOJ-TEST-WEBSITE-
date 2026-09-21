@@ -25,5 +25,7 @@ const malpracticeLogSchema = new mongoose.Schema({
 
 // Section 8.3 — required compound index
 malpracticeLogSchema.index({ testId: 1, roomId: 1, candidateId: 1 });
+// BUG-91 — compound index for fast candidate malpractice log retrieval and sorted timeline
+malpracticeLogSchema.index({ testId: 1, candidateId: 1, detectedAt: -1 });
 
 module.exports = mongoose.model('MalpracticeLog', malpracticeLogSchema);

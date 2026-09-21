@@ -512,6 +512,10 @@ export default function AdminLiveDashboard() {
   const [inspectCandidate, setInspectCandidate] = useState(null);
   const [candidateLogs, setCandidateLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+  const [hasMoreLogs, setHasMoreLogs] = useState(false);
+  const [loadingMoreLogs, setLoadingMoreLogs] = useState(false);
+  const [totalLogsCount, setTotalLogsCount] = useState(0);
   const inspectCandidateRef = useRef(inspectCandidate);
 
   useEffect(() => {
@@ -526,24 +530,60 @@ export default function AdminLiveDashboard() {
     return fromMap ? { ...inspectCandidate, ...fromMap } : inspectCandidate;
   }, [inspectCandidate, candidatesMap]);
 
-  // Fetch candidate malpractice logs whenever inspect modal opens
+  // BUG-91: Target candidate ID stabilized to avoid re-fetch loops on live status updates
+  const targetInspectCandidateId = inspectCandidate?.candidateId || inspectCandidate?.id || inspectCandidate?._id;
+
+  // BUG-91: Fetch candidate malpractice logs whenever inspect modal opens with pagination support
   useEffect(() => {
-    const targetCid = inspectCandidate?.candidateId || inspectCandidate?.id || inspectCandidate?._id;
-    if (!targetCid) {
+    if (!targetInspectCandidateId) {
       setCandidateLogs([]);
+      setLogsPage(1);
+      setHasMoreLogs(false);
+      setTotalLogsCount(0);
+      setLoadingLogs(false);
       return;
     }
+    setLogsPage(1);
     setLoadingLogs(true);
-    api.getCandidateMalpracticeLogs(testId, targetCid)
+    api.getCandidateMalpracticeLogs(testId, targetInspectCandidateId, { page: 1, limit: 6 })
       .then((res) => {
         setCandidateLogs(res.data.malpracticeLogs || []);
+        setHasMoreLogs(Boolean(res.data.hasMore));
+        setTotalLogsCount(res.data.totalCount || res.data.malpracticeLogs?.length || 0);
       })
       .catch((err) => {
         console.error('Failed to fetch candidate malpractice logs:', err);
         setCandidateLogs([]);
+        setHasMoreLogs(false);
+        setTotalLogsCount(0);
       })
       .finally(() => setLoadingLogs(false));
-  }, [inspectCandidate, testId]);
+  }, [targetInspectCandidateId, testId]);
+
+  // BUG-91: Load more violation proof records on demand without multi-second freezes
+  const handleLoadMoreLogs = useCallback(async () => {
+    if (loadingMoreLogs || !hasMoreLogs || !targetInspectCandidateId) return;
+    setLoadingMoreLogs(true);
+    try {
+      const nextPage = logsPage + 1;
+      const res = await api.getCandidateMalpracticeLogs(testId, targetInspectCandidateId, { page: nextPage, limit: 6 });
+      const newLogs = res.data.malpracticeLogs || [];
+      setCandidateLogs((prev) => {
+        const existingIds = new Set(prev.map((l) => String(l._id)));
+        const filtered = newLogs.filter((l) => !existingIds.has(String(l._id)));
+        return [...prev, ...filtered];
+      });
+      setLogsPage(nextPage);
+      setHasMoreLogs(Boolean(res.data.hasMore));
+      if (res.data.totalCount) {
+        setTotalLogsCount(res.data.totalCount);
+      }
+    } catch (err) {
+      console.error('Failed to load more malpractice logs:', err);
+    } finally {
+      setLoadingMoreLogs(false);
+    }
+  }, [loadingMoreLogs, hasMoreLogs, targetInspectCandidateId, logsPage, testId]);
 
   // Zoom proof screenshot modal
   const [zoomScreenshotUrl, setZoomScreenshotUrl] = useState(null);
@@ -824,11 +864,21 @@ export default function AdminLiveDashboard() {
             return [newLog, ...prev];
           });
 
-          // Background sync to ensure all latest logs with proof images from DB
-          api.getCandidateMalpracticeLogs(testId, cid)
+          // Background sync to ensure latest logs with proof images from DB
+          api.getCandidateMalpracticeLogs(testId, cid, { page: 1, limit: 6 })
             .then((res) => {
               if (res.data?.malpracticeLogs) {
-                setCandidateLogs(res.data.malpracticeLogs);
+                setCandidateLogs((prev) => {
+                  const incoming = res.data.malpracticeLogs;
+                  const incomingMap = new Map(incoming.map((l) => [String(l._id), l]));
+                  const updatedPrev = prev.map((l) => incomingMap.get(String(l._id)) || l);
+                  const existingIds = new Set(prev.map((l) => String(l._id)));
+                  const newlyAdded = incoming.filter((l) => !existingIds.has(String(l._id)));
+                  return [...newlyAdded, ...updatedPrev];
+                });
+                if (res.data.totalCount) {
+                  setTotalLogsCount(res.data.totalCount);
+                }
               }
             })
             .catch(() => {});
@@ -1918,8 +1968,8 @@ export default function AdminLiveDashboard() {
                   </div>
                   <div>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Total Violations:</span>
-                    <strong style={{ display: 'block', color: (activeInspectCandidate.malpracticeCount || candidateLogs.length) > 0 ? '#E74C3C' : '#2ECC71', fontSize: '1.1rem', marginTop: 2 }}>
-                      {Math.max(activeInspectCandidate.malpracticeCount || 0, candidateLogs.length)}
+                    <strong style={{ display: 'block', color: (activeInspectCandidate.malpracticeCount || totalLogsCount || candidateLogs.length) > 0 ? '#E74C3C' : '#2ECC71', fontSize: '1.1rem', marginTop: 2 }}>
+                      {Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length)}
                     </strong>
                   </div>
                   <div>
@@ -1960,7 +2010,7 @@ export default function AdminLiveDashboard() {
                       <span>📸</span> Malpractice Violation History &amp; Proof Screenshots
                     </h4>
                     {(() => {
-                      const totalIncidents = Math.max(activeInspectCandidate.malpracticeCount || 0, candidateLogs.length);
+                      const totalIncidents = Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length);
                       return (
                         <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
                           {totalIncidents} {totalIncidents === 1 ? 'Incident' : 'Incidents'}
@@ -2149,6 +2199,8 @@ export default function AdminLiveDashboard() {
                                   <img
                                     src={log.proofScreenshotUrl}
                                     alt="Violation Proof"
+                                    loading="lazy"
+                                    decoding="async"
                                     style={{ maxWidth: '100%', maxHeight: 180, objectFit: 'contain' }}
                                   />
                                   <div style={{
@@ -2205,6 +2257,35 @@ export default function AdminLiveDashboard() {
                           </div>
                         );
                       })}
+
+                      {/* BUG-91: Load more violation proof records pagination button */}
+                      {hasMoreLogs && (
+                        <div style={{ textAlign: 'center', padding: '10px 0 4px 0' }}>
+                          <button
+                            type="button"
+                            onClick={handleLoadMoreLogs}
+                            disabled={loadingMoreLogs}
+                            className="btn btn-secondary"
+                            style={{
+                              fontSize: '0.8rem',
+                              padding: '6px 16px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              cursor: loadingMoreLogs ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {loadingMoreLogs ? (
+                              <>
+                                <LoadingDots size="sm" />
+                                <span>Loading more incidents...</span>
+                              </>
+                            ) : (
+                              <span>⬇ Load More Incidents ({candidateLogs.length} of {Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length)} shown)</span>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

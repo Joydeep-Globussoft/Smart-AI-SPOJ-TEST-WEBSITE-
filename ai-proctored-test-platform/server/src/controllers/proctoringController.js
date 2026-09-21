@@ -374,13 +374,42 @@ const reviewMalpractice = async (req, res, next) => {
 };
 
 // ── GET /tests/:testId/candidates/:candidateId/malpractice-logs ───────────────
+// BUG-91: Paginated & lean query optimization to reduce 3MB+ multi-second payload transfers down to fast sub-second loads
 const getCandidateMalpracticeLogs = async (req, res, next) => {
   try {
     const { testId, candidateId } = req.params;
-    const logs = await MalpracticeLog.find({ testId, candidateId })
+    const filter = { testId, candidateId };
+
+    // Support pagination: page (default 1), limit (default 10, or 'all' to fetch all)
+    const isAll = req.query.limit === 'all';
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = isAll ? 0 : Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const skip = isAll ? 0 : (page - 1) * limit;
+
+    let query = MalpracticeLog.find(filter)
       .populate('reviewedBy', 'name email')
-      .sort({ detectedAt: -1 });
-    res.json({ malpracticeLogs: logs });
+      .sort({ detectedAt: -1 })
+      .lean();
+
+    if (!isAll) {
+      query = query.skip(skip).limit(limit);
+    }
+
+    const [totalCount, logs] = await Promise.all([
+      MalpracticeLog.countDocuments(filter),
+      query
+    ]);
+
+    const hasMore = !isAll && (skip + logs.length < totalCount);
+
+    res.json({
+      malpracticeLogs: logs,
+      totalCount,
+      page: isAll ? 1 : page,
+      limit: isAll ? totalCount : limit,
+      totalPages: isAll ? 1 : (limit > 0 ? Math.ceil(totalCount / limit) : 1),
+      hasMore,
+    });
   } catch (err) {
     next(err);
   }
