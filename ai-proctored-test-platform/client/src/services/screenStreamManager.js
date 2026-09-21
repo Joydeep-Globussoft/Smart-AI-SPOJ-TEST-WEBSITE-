@@ -1,35 +1,13 @@
-// screenStreamManager.js — Singleton manager for candidate screen capture MediaStream (BUG-13)
+// screenStreamManager.js — Singleton manager for candidate screen capture MediaStream (BUG-13, BUG-88)
 // PRD FR-5.2, FR-5.3, Section 8.2: Screen capture MediaStream for TAB_SWITCH and FULLSCREEN_EXIT evidence.
-// Manages the active screen-sharing stream across instructions and test screens without mid-test reprompting.
+// Re-exports from unified mediaStreamManager.js for backward compatibility.
 
-let activeScreenStream = null;
-
-export const setScreenStream = (stream) => {
-  activeScreenStream = stream;
-  if (typeof window !== 'undefined') {
-    window.__candidateScreenStream = stream;
-  }
-};
-
-export const getScreenStream = () => {
-  if (activeScreenStream && activeScreenStream.active) {
-    return activeScreenStream;
-  }
-  if (typeof window !== 'undefined' && window.__candidateScreenStream && window.__candidateScreenStream.active) {
-    activeScreenStream = window.__candidateScreenStream;
-    return activeScreenStream;
-  }
-  return null;
-};
-
-export const stopScreenStream = () => {
-  if (activeScreenStream) {
-    try {
-      activeScreenStream.getTracks().forEach((track) => track.stop());
-    } catch (_) {}
-    activeScreenStream = null;
-  }
-  if (typeof window !== 'undefined') {
-    window.__candidateScreenStream = null;
-  }
-};
+export {
+  setScreenStream,
+  getScreenStream,
+  stopScreenStream,
+  setActiveMediaStream,
+  getActiveMediaStream,
+  stopActiveMediaStream,
+  stopAllCandidateMediaStreams,
+} from './mediaStreamManager';

@@ -19,6 +19,7 @@ import {
 } from '../../services/socketClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
+import { stopAllCandidateMediaStreams } from '../../services/mediaStreamManager';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
@@ -174,7 +175,7 @@ export default function CandidateTestScreen() {
   const [isSuperseded, setIsSuperseded] = useState(false);
   const [supersededMessage, setSupersededMessage] = useState('');
   const [proctorWarningsQueue, setProctorWarningsQueue] = useState([]);
-  const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
+  const { warningMessage, showWarning, dismissWarning } = useViolationNotification(3000);
   const [loadError, setLoadError] = useState('');
   const heartbeatRef = useRef(null);
   const isSubmittingAll = useRef(false);
@@ -450,11 +451,29 @@ export default function CandidateTestScreen() {
     return Math.max(1, firstInput.split('\n').length);
   }, [visibleCases]);
 
+  // ── Client-Side AI Proctoring (FR-5.2, FR-5.3, FR-5.4, FR-7.1, FR-7.2) ────────
+  const handleProctorWarning = useCallback((msg) => {
+    showWarning(msg);
+  }, [showWarning]);
+
+  const proctoring = useProctoring({
+    testId: session?.test?._id,
+    roomId: session?.room?._id,
+    candidateId: user?.id || user?._id,
+    enabled: Boolean(session && user && !disqualified),
+    allowInternalCopyPaste: false,
+    isSubmitting: isSubmittingAllState,
+    onWarning: handleProctorWarning,
+  });
+
+  const proctoringRef = useRef(proctoring);
+  proctoringRef.current = proctoring;
+
   // ── FR-5.6: Server-side auto-submit is already handled by server timer.
   // Client-side timer expiry triggers submit-all as backup.
   const handleTimerExpire = useCallback(async () => {
     if (isSubmittingAll.current) return;
-    proctoring?.suppressViolations?.();
+    proctoringRef.current?.suppressViolations?.();
     isSubmittingAll.current = true;
     setIsSubmittingAllState(true);
     toast('⏰ Time is up! Submitting your test...', { icon: '⏰' });
@@ -471,6 +490,8 @@ export default function CandidateTestScreen() {
         }
       } catch (_) {}
     } catch (_) {}
+    proctoringRef.current?.stopMediaStream?.();
+    stopAllCandidateMediaStreams();
     toast.dismiss();
     navigate('/candidate/complete', { replace: true });
   }, [session, navigate]);
@@ -509,21 +530,6 @@ export default function CandidateTestScreen() {
 
     return () => clearInterval(heartbeatRef.current);
   }, [session, user, activeQuestion, questionProgress]);
-
-  // ── Client-Side AI Proctoring (FR-5.2, FR-5.3, FR-5.4, FR-7.1, FR-7.2) ────────
-  const handleProctorWarning = useCallback((msg) => {
-    showWarning(msg);
-  }, [showWarning]);
-
-  const proctoring = useProctoring({
-    testId: session?.test?._id,
-    roomId: session?.room?._id,
-    candidateId: user?.id || user?._id,
-    enabled: Boolean(session && user && !disqualified),
-    allowInternalCopyPaste: false,
-    isSubmitting: isSubmittingAllState,
-    onWarning: handleProctorWarning,
-  });
 
   // Fetch initial violation count on test load / session ready (FEATURE-004)
   useEffect(() => {
@@ -569,6 +575,8 @@ export default function CandidateTestScreen() {
 
     const onDisqualified = ({ reason }) => {
       setDisqualified(true);
+      proctoring?.stopMediaStream?.();
+      stopAllCandidateMediaStreams();
       toast.error('🚫 You have been disqualified from this test.', { duration: 0 });
     };
 
@@ -604,7 +612,6 @@ export default function CandidateTestScreen() {
     onSessionSuperseded(onSuperseded);
 
     return () => {
-      toast.dismiss();
       offCandidateWarning(onWarning);
       offCandidateWarningIssued(onWarningIssued);
       offCandidateViolationUpdated(onViolationUpdated);
@@ -894,6 +901,8 @@ export default function CandidateTestScreen() {
       } catch (_) {}
 
       // 4. Success feedback & redirect to completion page
+      proctoring?.stopMediaStream?.();
+      stopAllCandidateMediaStreams();
       toast.dismiss();
       toast.success('Test submitted successfully!');
       navigate('/candidate/complete', { replace: true });
@@ -1099,11 +1108,11 @@ export default function CandidateTestScreen() {
         </div>
       </div>
 
-      {/* Warning banner with 6s auto-dismiss and interactive ✕ (BUG-49) */}
+      {/* Warning banner with 3s auto-dismiss and interactive ✕ (BUG-49) */}
       <ViolationNotificationBanner
         message={warningMessage}
         onDismiss={dismissWarning}
-        autoDismissMs={6000}
+        autoDismissMs={3000}
       />
 
       {/* ── Main Layout with Glowing Panels and Resizers (BUG-10, BUG-11, FEATURE-005) ── */}
@@ -2008,9 +2017,29 @@ export default function CandidateTestScreen() {
           <h2 style={{ color: '#fff', fontSize: '1.6rem', marginBottom: 8, fontWeight: 800 }}>
             Fullscreen Mode Required
           </h2>
-          <p style={{ color: '#94a3b8', maxWidth: 480, textAlign: 'center', marginBottom: 24, lineHeight: 1.6, fontSize: '0.9rem' }}>
+          <p style={{ color: '#94a3b8', maxWidth: 480, textAlign: 'center', marginBottom: 16, lineHeight: 1.6, fontSize: '0.9rem' }}>
             You are currently outside full-screen mode. This proctored assessment strictly requires fullscreen operation throughout the entire session (FR-5.2). Exiting has been logged.
           </p>
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid #ef4444',
+              borderRadius: 8,
+              padding: '10px 18px',
+              color: '#fca5a5',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              maxWidth: 480,
+              textAlign: 'center',
+            }}
+          >
+            <span>⚠️</span>
+            <span>Violation detected: FULLSCREEN EXIT. This incident has been flagged and reported to proctors.</span>
+          </div>
           <button
             id="re-enter-fullscreen-btn"
             onClick={proctoring.requestFullscreen}

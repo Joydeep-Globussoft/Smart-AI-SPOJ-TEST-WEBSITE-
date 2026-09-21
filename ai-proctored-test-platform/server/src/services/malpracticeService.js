@@ -20,8 +20,10 @@ const startLocalYoloService = () => {
 
   console.log(`[YOLO] Attempting to auto-start YOLO microservice daemon using: ${pythonCmd}`);
   try {
+    const yoloEnv = { ...process.env, PORT: '8001', YOLO_PORT: '8001' };
     yoloProcess = spawn(pythonCmd, ['app.py'], {
       cwd: yoloDir,
+      env: yoloEnv,
       stdio: 'pipe',
       detached: false,
     });
@@ -128,4 +130,4 @@ const detectPhone = async (imageBuffer) => {
   }
 };
 
-module.exports = { detectPhone };
+module.exports = { detectPhone, startLocalYoloService };

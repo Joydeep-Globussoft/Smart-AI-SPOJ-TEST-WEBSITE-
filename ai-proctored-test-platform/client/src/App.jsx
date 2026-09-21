@@ -115,6 +115,7 @@ export default function App() {
           {/* React Hot Toast for notifications */}
           <Toaster
             position="top-right"
+            containerStyle={{ zIndex: 10000001 }}
             toastOptions={{
               duration: 4000,
               style: {

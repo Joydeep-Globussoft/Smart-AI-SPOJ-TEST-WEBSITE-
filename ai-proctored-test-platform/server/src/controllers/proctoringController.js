@@ -3,6 +3,8 @@
 // Implements malpractice review endpoint
 const MalpracticeLog = require('../models/MalpracticeLog');
 const Candidate = require('../models/Candidate');
+const Room = require('../models/Room');
+const Submission = require('../models/Submission');
 const cloudinaryService = require('../services/cloudinaryService');
 const malpracticeService = require('../services/malpracticeService');
 const multer = require('multer');
@@ -30,59 +32,82 @@ const submitFrame = [
 
       if (phoneDetected) {
         // FR-7.2: Server auto-creates MalpracticeLog — client does NOT need to call /violation separately
-        // Upload frame to Cloudinary as proof
-        const candidate = await Candidate.findById(candidateId, 'name');
+        // Get roomId from active submission or joined room
+        const activeSub = await Submission.findOne({ candidateId, testId, status: 'IN_PROGRESS' });
+        let resolvedRoomId = activeSub?.roomId;
+        if (!resolvedRoomId) {
+          const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
+          resolvedRoomId = candidateRoom?._id;
+        }
+
+        const candidate = await Candidate.findById(candidateId, 'name email');
+        const roomDoc = resolvedRoomId ? await Room.findById(resolvedRoomId, 'roomName') : null;
         const screenshotUrl = await cloudinaryService.uploadScreenshot(
           req.file.buffer,
           testId,
           candidateId
         );
 
-        // Get roomId from active submission or joined room
-        const Submission = require('../models/Submission');
-        const Room = require('../models/Room');
-        const activeSub = await Submission.findOne({ candidateId, testId, status: 'IN_PROGRESS' });
-        let roomId = activeSub?.roomId;
-        if (!roomId) {
-          const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
-          roomId = candidateRoom?._id;
-        }
-
         const log = await MalpracticeLog.create({
           candidateId,
           testId,
-          roomId,
+          roomId: resolvedRoomId,
           violationType: 'PHONE_DETECTED',
           proofScreenshotUrl: screenshotUrl,
+          detectedAt: new Date(),
         });
 
         // Emit malpractice:alert to admins + candidate:warning to candidate (FR-7.3)
         const io = req.app.get('io');
         const malpracticeCount = await MalpracticeLog.countDocuments({ candidateId, testId });
 
-        io.to(`test:${testId}:admin`).emit('malpractice:alert', {
-          malpracticeLogId: log._id,
-          candidateId,
-          candidateName: candidate?.name || 'Unknown',
-          roomId,
-          violationType: 'PHONE_DETECTED',
-          proofScreenshotUrl: screenshotUrl,
-          currentCount: malpracticeCount,
-        });
+        // Update active submission malpracticeCount
+        await Submission.updateMany(
+          { candidateId, testId, status: 'IN_PROGRESS' },
+          { $set: { malpracticeCount } }
+        ).catch(() => {});
 
-        // Emit to candidate's socket (they are in room test:{testId}:candidate:{candidateId})
-        io.to(`candidate:${candidateId}`).emit('candidate:warning', {
-          violationType: 'PHONE_DETECTED',
-          message: 'Phone detected in your camera view. This has been flagged.',
-          violationCount: malpracticeCount,
-        });
+        if (io) {
+          io.to(`test:${testId}:admin`).emit('malpractice:alert', {
+            malpracticeLogId: log._id,
+            candidateId: candidateId.toString(),
+            candidateName: candidate?.name || 'Candidate',
+            candidateEmail: candidate?.email || '',
+            roomId: resolvedRoomId ? resolvedRoomId.toString() : null,
+            roomName: roomDoc?.roomName || 'Assigned Room',
+            violationType: 'PHONE_DETECTED',
+            proofScreenshotUrl: screenshotUrl,
+            currentCount: malpracticeCount,
+            detectedAt: log.detectedAt,
+          });
 
-        io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
-          candidateId: candidateId.toString(),
-          testId: testId.toString(),
-          violationCount: malpracticeCount,
-          violationType: 'PHONE_DETECTED',
-        });
+          // Update seat map and dashboard counters in real time
+          io.to(`test:${testId}:admin`).emit('dashboard:update', {
+            candidateId: candidateId.toString(),
+            roomId: resolvedRoomId ? resolvedRoomId.toString() : null,
+            malpracticeCount,
+          });
+
+          io.to(`test:${testId}:admin`).emit('seatmap:status', {
+            candidateId: candidateId.toString(),
+            roomId: resolvedRoomId ? resolvedRoomId.toString() : null,
+            colorStatus: 'YELLOW',
+          });
+
+          // Emit to candidate's socket
+          io.to(`candidate:${candidateId}`).emit('candidate:warning', {
+            violationType: 'PHONE_DETECTED',
+            message: 'Phone detected in your camera view. This has been flagged.',
+            violationCount: malpracticeCount,
+          });
+
+          io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
+            candidateId: candidateId.toString(),
+            testId: testId.toString(),
+            violationCount: malpracticeCount,
+            violationType: 'PHONE_DETECTED',
+          });
+        }
       }
 
       res.json({ phoneDetected });
@@ -139,35 +164,59 @@ const reportViolation = async (req, res, next) => {
 
     // Upload screenshot to Cloudinary (with automatic base64 fallback)
     let proofScreenshotUrl = null;
-    if (screenshotBase64) {
+    if (screenshotBase64 && typeof screenshotBase64 === 'string') {
       try {
-        const buffer = Buffer.from(
-          screenshotBase64.replace(/^data:image\/\w+;base64,/, ''),
-          'base64'
-        );
-        proofScreenshotUrl = await cloudinaryService.uploadScreenshot(buffer, testId, candidateId);
+        if (screenshotBase64.startsWith('data:image')) {
+          const buffer = Buffer.from(
+            screenshotBase64.replace(/^data:image\/\w+;base64,/, ''),
+            'base64'
+          );
+          proofScreenshotUrl = await cloudinaryService.uploadScreenshot(buffer, testId, candidateId);
+        } else if (screenshotBase64.startsWith('http://') || screenshotBase64.startsWith('https://')) {
+          proofScreenshotUrl = screenshotBase64;
+        }
       } catch (uploadErr) {
         console.warn('[Proctoring] Proof upload error, fallback to data URL:', uploadErr.message);
         proofScreenshotUrl = screenshotBase64;
       }
     }
 
-    const logData = {
+    // Check if an existing recent log (last 4.5s) was created via socket without proofScreenshotUrl
+    const recentCutoff = new Date(Date.now() - 4500);
+    let log = await MalpracticeLog.findOne({
       candidateId,
       testId,
-      roomId: roomId || undefined,
       violationType,
-      proofScreenshotUrl,
-    };
-    if (detectedAt) {
-      logData.detectedAt = new Date(detectedAt);
-    }
+      detectedAt: { $gte: recentCutoff },
+      $or: [{ proofScreenshotUrl: null }, { proofScreenshotUrl: { $exists: false } }],
+    }).sort({ detectedAt: -1 });
 
-    const log = await MalpracticeLog.create(logData);
+    if (log && proofScreenshotUrl) {
+      log.proofScreenshotUrl = proofScreenshotUrl;
+      await log.save();
+    } else if (!log) {
+      const logData = {
+        candidateId,
+        testId,
+        roomId: roomId || undefined,
+        violationType,
+        proofScreenshotUrl,
+      };
+      if (detectedAt) {
+        logData.detectedAt = new Date(detectedAt);
+      }
+      log = await MalpracticeLog.create(logData);
+    }
 
     const candidate = await Candidate.findById(candidateId, 'name email');
     const roomDoc = roomId ? await Room.findById(roomId, 'roomName') : null;
     const malpracticeCount = await MalpracticeLog.countDocuments({ candidateId, testId });
+
+    // Update active submission malpracticeCount if present
+    await Submission.updateMany(
+      { candidateId, testId, status: 'IN_PROGRESS' },
+      { $set: { malpracticeCount } }
+    ).catch(() => {});
 
     // FR-7.3: (a) candidate:warning, (b) malpractice:alert to admin — within 2 seconds
     const io = req.app.get('io');
@@ -180,7 +229,7 @@ const reportViolation = async (req, res, next) => {
         roomId: roomId ? roomId.toString() : null,
         roomName: roomDoc?.roomName || 'Assigned Room',
         violationType,
-        proofScreenshotUrl,
+        proofScreenshotUrl: log.proofScreenshotUrl || proofScreenshotUrl,
         currentCount: malpracticeCount,
         detectedAt: log.detectedAt,
       });

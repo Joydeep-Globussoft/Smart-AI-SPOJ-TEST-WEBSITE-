@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuthContext';
 import globussoftLogo from '../../assets/globussoft-logo.png';
-import { stopScreenStream } from '../../services/screenStreamManager';
+import { stopScreenStream, stopAllCandidateMediaStreams } from '../../services/mediaStreamManager';
 import { disconnectSocket } from '../../services/socketClient';
 
 export default function CandidateTestComplete() {
@@ -30,7 +30,8 @@ export default function CandidateTestComplete() {
   useEffect(() => {
     // 1. Immediately dismiss all leftover proctoring violation warnings and toasts
     toast.dismiss();
-    // 2. Release active screen sharing stream when test concludes (BUG-13)
+    // 2. Release all active camera, mic, and screen sharing streams when test concludes (BUG-13, BUG-88)
+    stopAllCandidateMediaStreams();
     stopScreenStream();
     // 3. Disconnect candidate socket to close any in-flight proctoring streams
     disconnectSocket();
@@ -39,8 +40,9 @@ export default function CandidateTestComplete() {
   }, []);
 
   const handleDone = () => {
-    // Clear session data
+    // Clear session data and ensure all media streams are stopped
     toast.dismiss();
+    stopAllCandidateMediaStreams();
     stopScreenStream();
     disconnectSocket();
     purgeCandidateStorage();

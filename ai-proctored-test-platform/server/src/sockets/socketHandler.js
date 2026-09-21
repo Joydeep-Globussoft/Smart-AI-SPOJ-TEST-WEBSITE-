@@ -160,10 +160,116 @@ const registerSocketHandlers = (io) => {
       }
     });
 
+    // ── Helper: Process and broadcast candidate-side malpractice violations ────
+    const handleCandidateViolation = async ({ candidateId, testId, roomId, violationType }) => {
+      if (!testId || !candidateId) return;
+      try {
+        const Candidate = require('../models/Candidate');
+        const Submission = require('../models/Submission');
+        const Room = require('../models/Room');
+        const MalpracticeLog = require('../models/MalpracticeLog');
+
+        // Resolve roomId if missing
+        let resolvedRoomId = roomId;
+        if (!resolvedRoomId) {
+          const activeSub = await Submission.findOne({ candidateId, testId });
+          resolvedRoomId = activeSub?.roomId;
+          if (!resolvedRoomId) {
+            const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
+            resolvedRoomId = candidateRoom?._id;
+          }
+        }
+
+        // Suppress if test already concluded (BUG-65 Part B guard)
+        const isConcluded = await Submission.exists({
+          candidateId,
+          testId,
+          status: { $in: ['SUBMITTED', 'AUTO_SUBMITTED_TIME_UP', 'AUTO_SUBMITTED_DISQUALIFIED'] },
+        });
+        if (isConcluded) {
+          console.log(`[Socket Proctoring] Suppressing ${violationType} for candidate ${candidateId} (test already concluded)`);
+          return;
+        }
+
+        // Check if recent log exists in last 3.5s to prevent redundant duplicate inserts
+        const recentCutoff = new Date(Date.now() - 3500);
+        let log = await MalpracticeLog.findOne({
+          candidateId,
+          testId,
+          violationType,
+          detectedAt: { $gte: recentCutoff },
+        }).sort({ detectedAt: -1 });
+
+        if (!log) {
+          log = await MalpracticeLog.create({
+            candidateId,
+            testId,
+            roomId: resolvedRoomId || undefined,
+            violationType,
+            detectedAt: new Date(),
+          });
+        }
+
+        const candidate = await Candidate.findById(candidateId, 'name email');
+        const roomDoc = resolvedRoomId ? await Room.findById(resolvedRoomId, 'roomName') : null;
+        const malpracticeCount = await MalpracticeLog.countDocuments({ candidateId, testId });
+
+        // Update active submission malpracticeCount if present
+        await Submission.updateMany(
+          { candidateId, testId, status: 'IN_PROGRESS' },
+          { $set: { malpracticeCount } }
+        ).catch(() => {});
+
+        // Emit malpractice:alert to admin channel (FR-7.3)
+        io.to(`test:${testId}:admin`).emit('malpractice:alert', {
+          malpracticeLogId: log._id,
+          candidateId: candidateId.toString(),
+          candidateName: candidate?.name || 'Candidate',
+          candidateEmail: candidate?.email || '',
+          roomId: resolvedRoomId ? resolvedRoomId.toString() : null,
+          roomName: roomDoc?.roomName || 'Assigned Room',
+          violationType,
+          proofScreenshotUrl: log.proofScreenshotUrl || null,
+          currentCount: malpracticeCount,
+          detectedAt: log.detectedAt,
+        });
+
+        // Update admin seat map and dashboard counters in real time
+        io.to(`test:${testId}:admin`).emit('dashboard:update', {
+          candidateId: candidateId.toString(),
+          roomId: resolvedRoomId ? resolvedRoomId.toString() : null,
+          malpracticeCount,
+          colorStatus: 'YELLOW',
+        });
+
+        io.to(`test:${testId}:admin`).emit('seatmap:status', {
+          candidateId: candidateId.toString(),
+          roomId: resolvedRoomId ? resolvedRoomId.toString() : null,
+          colorStatus: 'YELLOW',
+        });
+
+        // Emit warning to candidate personal channel
+        io.to(`candidate:${candidateId}`).emit('candidate:warning', {
+          violationType,
+          message: `Violation detected: ${violationType.replace(/_/g, ' ')}. This has been flagged.`,
+          violationCount: malpracticeCount,
+        });
+
+        io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
+          candidateId: candidateId.toString(),
+          testId: testId.toString(),
+          violationCount: malpracticeCount,
+          violationType,
+        });
+      } catch (err) {
+        console.error(`[Socket Proctoring] Error handling ${violationType}:`, err);
+      }
+    };
+
     // ── Client → Server: candidate:tabswitch ─────────────────────────────────
     // Payload: { candidateId, testId, roomId }
     // Fired on visibilitychange/blur (FR-5.3, Section 10.1)
-    socket.on('candidate:tabswitch', ({ candidateId, testId, roomId }) => {
+    socket.on('candidate:tabswitch', async ({ candidateId, testId, roomId }) => {
       const isSelfCandidate =
         socket.user?.type === 'candidate' &&
         (String(socket.user?.id) === String(candidateId) || String(socket.user?._id) === String(candidateId));
@@ -171,24 +277,13 @@ const registerSocketHandlers = (io) => {
         return;
       }
       console.log(`[Proctoring] Tab switch: candidate=${candidateId} test=${testId}`);
-      if (testId) {
-        io.to(`test:${testId}:admin`).emit('seatmap:status', {
-          candidateId: candidateId.toString(),
-          roomId: roomId ? roomId.toString() : null,
-          colorStatus: 'YELLOW',
-        });
-        io.to(`test:${testId}:admin`).emit('dashboard:update', {
-          candidateId: candidateId.toString(),
-          roomId: roomId ? roomId.toString() : null,
-          colorStatus: 'YELLOW',
-        });
-      }
+      await handleCandidateViolation({ candidateId, testId, roomId, violationType: 'TAB_SWITCH' });
     });
 
     // ── Client → Server: candidate:fullscreenexit ─────────────────────────────
     // Payload: { candidateId, testId, roomId }
     // Fired on fullscreen API exit event (FR-5.2, Section 10.1)
-    socket.on('candidate:fullscreenexit', ({ candidateId, testId, roomId }) => {
+    socket.on('candidate:fullscreenexit', async ({ candidateId, testId, roomId }) => {
       const isSelfCandidate =
         socket.user?.type === 'candidate' &&
         (String(socket.user?.id) === String(candidateId) || String(socket.user?._id) === String(candidateId));
@@ -196,18 +291,7 @@ const registerSocketHandlers = (io) => {
         return;
       }
       console.log(`[Proctoring] Fullscreen exit: candidate=${candidateId} test=${testId}`);
-      if (testId) {
-        io.to(`test:${testId}:admin`).emit('seatmap:status', {
-          candidateId: candidateId.toString(),
-          roomId: roomId ? roomId.toString() : null,
-          colorStatus: 'YELLOW',
-        });
-        io.to(`test:${testId}:admin`).emit('dashboard:update', {
-          candidateId: candidateId.toString(),
-          roomId: roomId ? roomId.toString() : null,
-          colorStatus: 'YELLOW',
-        });
-      }
+      await handleCandidateViolation({ candidateId, testId, roomId, violationType: 'FULLSCREEN_EXIT' });
     });
 
     socket.on('disconnect', () => {

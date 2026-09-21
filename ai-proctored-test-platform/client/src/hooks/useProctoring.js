@@ -6,7 +6,11 @@ import { FilesetResolver, FaceDetector } from '@mediapipe/tasks-vision';
 import html2canvas from 'html2canvas';
 import api from '../services/apiClient';
 import { emitTabSwitch, emitFullscreenExit } from '../services/socketClient';
-import { getScreenStream } from '../services/screenStreamManager';
+import {
+  getScreenStream,
+  setActiveMediaStream,
+  stopActiveMediaStream,
+} from '../services/mediaStreamManager';
 
 /**
  * Custom hook for full client-side proctoring:
@@ -100,7 +104,10 @@ export function useProctoring({
     roomIdRef.current = roomId;
     onWarningRef.current = onWarning;
     isSubmittingRef.current = isSubmitting;
-  }, [candidateId, testId, roomId, onWarning, isSubmitting]);
+    if (enabled && !isSubmitting) {
+      isIntentionalTeardownRef.current = false;
+    }
+  }, [candidateId, testId, roomId, onWarning, isSubmitting, enabled]);
 
   // BUG-65 Part B: Helper to explicitly suppress/resume violations during submit lifecycle
   const suppressViolations = useCallback(() => {
@@ -675,6 +682,7 @@ export function useProctoring({
       streamRef.current = stream;
       activeTrackRef.current = track;
       activeDeviceIdRef.current = track.getSettings()?.deviceId || null;
+      setActiveMediaStream(stream);
       attachTrackListeners(stream);
 
       if (videoRef.current) {
@@ -721,6 +729,7 @@ export function useProctoring({
 
   // ── 1. Mandatory Media Stream Initialization (FR-5.2) ───────────────────────
   const initMediaStream = useCallback(async () => {
+    isIntentionalTeardownRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 } },
@@ -728,6 +737,7 @@ export function useProctoring({
       });
 
       streamRef.current = stream;
+      setActiveMediaStream(stream);
       attachTrackListeners(stream);
 
       const videoTracks = stream.getVideoTracks();
@@ -938,9 +948,12 @@ export function useProctoring({
         if (detectedFaces > 1) {
           multiFaceCountRef.current = (multiFaceCountRef.current || 0) + 1;
           if (multiFaceCountRef.current >= 2) {
-            const proof = captureWebcamScreenshot();
-            reportViolation('MULTIPLE_FACES', proof);
-            toast.error('⚠️ Multiple faces detected! Only the candidate is permitted in frame.');
+            captureWebcamScreenshot('MULTIPLE_FACES').then((proof) => {
+              reportViolation('MULTIPLE_FACES', proof);
+            }).catch(() => {
+              reportViolation('MULTIPLE_FACES', null);
+            });
+            toast.error('⚠️ Multiple faces detected! Only the candidate is permitted in frame.', { id: 'proctor-violation-toast', duration: 3000 });
           }
         } else {
           multiFaceCountRef.current = 0;
@@ -955,9 +968,12 @@ export function useProctoring({
             // 15 minutes = 15 * 60 * 1000 = 900,000 ms
             if (absenceDuration >= 15 * 60 * 1000 && !noFaceReportedRef.current) {
               noFaceReportedRef.current = true;
-              const proof = captureWebcamScreenshot();
-              reportViolation('NO_FACE_15MIN', proof);
-              toast.error('⚠️ Absence violation: No face detected for over 15 minutes.');
+              captureWebcamScreenshot('NO_FACE_15MIN').then((proof) => {
+                reportViolation('NO_FACE_15MIN', proof);
+              }).catch(() => {
+                reportViolation('NO_FACE_15MIN', null);
+              });
+              toast.error('⚠️ Absence violation: No face detected for over 15 minutes.', { id: 'proctor-violation-toast', duration: 3000 });
             }
           }
         } else {
@@ -1062,7 +1078,7 @@ export function useProctoring({
           api.submitFrame(testId, formData).then((res) => {
             if (res.data?.phoneDetected) {
               console.warn('[Proctoring] 📱 YOLOv8 detected phone in frame!', res.data);
-              toast.error('⚠️ Mobile phone detected in camera view! Mobile devices are strictly prohibited.', { duration: 6000 });
+              toast.error('⚠️ Mobile phone detected in camera view! Mobile devices are strictly prohibited.', { id: 'proctor-violation-toast', duration: 3000 });
             } else {
               console.log('[Proctoring] YOLOv8 frame checked: no phone detected');
             }
@@ -1187,7 +1203,7 @@ export function useProctoring({
             if (typeof onWarningRef.current === 'function') {
               onWarningRef.current('Violation detected: FULLSCREEN EXIT. This has been flagged.');
             }
-            toast.error('⚠️ Fullscreen exited! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 6000 });
+            toast.error('⚠️ Fullscreen exited! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 3000 });
           });
         }
       }
@@ -1213,7 +1229,7 @@ export function useProctoring({
           if (typeof onWarningRef.current === 'function') {
             onWarningRef.current('Violation detected: FULLSCREEN EXIT. You must return to fullscreen mode to continue.');
           }
-          toast.error('⚠️ Fullscreen required! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 6000 });
+          toast.error('⚠️ Fullscreen required! You must remain in full-screen mode.', { id: 'proctor-violation-toast', duration: 3000 });
         });
       }
     }
@@ -1265,7 +1281,7 @@ export function useProctoring({
           if (typeof onWarningRef.current === 'function') {
             onWarningRef.current('Violation detected: TAB SWITCH. This has been flagged.');
           }
-          toast.error('⚠️ Tab switch detected! Switching tabs is strictly prohibited.', { id: 'proctor-violation-toast', duration: 6000 });
+          toast.error('⚠️ Tab switch detected! Switching tabs is strictly prohibited.', { id: 'proctor-violation-toast', duration: 3000 });
         });
       }
     };
@@ -1432,25 +1448,68 @@ export function useProctoring({
     }
   };
 
-  // Auto-init media stream on mount
+  // Explicit teardown helper to stop all local tracks and release camera/mic immediately (BUG-88)
+  const stopMediaStream = useCallback(() => {
+    // Only flag intentional teardown if test submission is actively underway (BUG-65 Part B & BUG-88)
+    if (isSubmittingRef.current) {
+      isIntentionalTeardownRef.current = true;
+    }
+    if (streamRef.current) {
+      try {
+        streamRef.current.getTracks().forEach((t) => {
+          t.onended = null;
+          t.onmute = null;
+          t.stop();
+        });
+      } catch (_) {}
+      streamRef.current = null;
+    }
+    if (activeTrackRef.current) {
+      try {
+        activeTrackRef.current.onended = null;
+        activeTrackRef.current.onmute = null;
+        activeTrackRef.current.stop();
+      } catch (_) {}
+      activeTrackRef.current = null;
+    }
+    if (videoRef.current) {
+      try {
+        videoRef.current.srcObject = null;
+      } catch (_) {}
+    }
+    stopActiveMediaStream();
+  }, []);
+
+  // Auto-init media stream on mount and clean up on teardown/disable (BUG-88)
   useEffect(() => {
-    initMediaStream().then(() => {
+    if (!enabled) {
+      stopMediaStream();
+      return;
+    }
+
+    isIntentionalTeardownRef.current = false;
+    let isMounted = true;
+    initMediaStream().then((stream) => {
+      if (!isMounted) {
+        if (stream) {
+          try {
+            stream.getTracks().forEach((t) => {
+              t.onended = null;
+              t.onmute = null;
+              t.stop();
+            });
+          } catch (_) {}
+        }
+        return;
+      }
       setProctoringActive(true);
     });
 
     return () => {
-      isIntentionalTeardownRef.current = true;
-      if (streamRef.current) {
-        try {
-          streamRef.current.getTracks().forEach((t) => {
-            t.onended = null;
-            t.onmute = null;
-            t.stop();
-          });
-        } catch {}
-      }
+      isMounted = false;
+      stopMediaStream();
     };
-  }, [initMediaStream]);
+  }, [enabled, initMediaStream, stopMediaStream]);
 
   return {
     videoRef,
@@ -1464,6 +1523,7 @@ export function useProctoring({
     proctoringActive,
     requestFullscreen,
     initMediaStream,
+    stopMediaStream,
     captureWebcamScreenshot,
     captureScreenSnapshot,
     isCameraDisconnected,

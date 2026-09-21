@@ -257,9 +257,7 @@ export default function CreateTestModal({
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label className="form-label" style={{ marginBottom: 0 }}>Total Questions</label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-                    (Auto-derived)
-                  </span>
+
                 </div>
                 <input
                   type="number"
@@ -275,9 +273,7 @@ export default function CreateTestModal({
                     fontWeight: 600,
                   }}
                 />
-                <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
-                  Locked to Folder's question count ({formData.totalQuestions} Qs).
-                </small>
+
               </div>
 
               <div className="form-group">
@@ -312,7 +308,7 @@ export default function CreateTestModal({
                 onChange={handleInputChange}
               />
               <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                Room passwords expire after this window from room creation (FR-3.3).
+                Room passwords expire after this window from room creation.
               </small>
             </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 const VIOLATION_TOAST_ID = 'proctor-violation-toast';
-const DEFAULT_AUTO_DISMISS_MS = 6000;
+const DEFAULT_AUTO_DISMISS_MS = 3000;
 
 /**
  * Display or update the candidate-facing violation toast in the top-right corner.

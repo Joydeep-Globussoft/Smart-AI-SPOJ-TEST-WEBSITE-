@@ -486,6 +486,11 @@ export default function AdminLiveDashboard() {
   const [inspectCandidate, setInspectCandidate] = useState(null);
   const [candidateLogs, setCandidateLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const inspectCandidateRef = useRef(inspectCandidate);
+
+  useEffect(() => {
+    inspectCandidateRef.current = inspectCandidate;
+  }, [inspectCandidate]);
 
   // BUG-24: Derive fresh candidate state from candidatesMap to guarantee real-time updates while modal is open
   const activeInspectCandidate = useMemo(() => {
@@ -745,7 +750,7 @@ export default function AdminLiveDashboard() {
         setInspectCandidate((prev) => {
           if (!prev) return prev;
           const prevId = prev.candidateId || prev.id || prev._id;
-          if (prevId === cid) {
+          if (String(prevId) === String(cid)) {
             return {
               ...prev,
               malpracticeCount: alertData.currentCount || (prev.malpracticeCount || 0) + 1,
@@ -753,6 +758,42 @@ export default function AdminLiveDashboard() {
           }
           return prev;
         });
+
+        // Live update candidateLogs in open modal
+        const currentInspectId = inspectCandidateRef.current?.candidateId || inspectCandidateRef.current?.id || inspectCandidateRef.current?._id;
+        if (currentInspectId && String(currentInspectId) === String(cid)) {
+          setCandidateLogs((prev) => {
+            const exists = prev.some((l) => String(l._id) === String(alertData.malpracticeLogId));
+            if (exists) {
+              return prev.map((l) =>
+                String(l._id) === String(alertData.malpracticeLogId)
+                  ? { ...l, proofScreenshotUrl: alertData.proofScreenshotUrl || l.proofScreenshotUrl }
+                  : l
+              );
+            }
+            const newLog = {
+              _id: alertData.malpracticeLogId || `temp_${Date.now()}`,
+              candidateId: cid,
+              testId,
+              roomId: alertData.roomId,
+              violationType: alertData.violationType,
+              proofScreenshotUrl: alertData.proofScreenshotUrl || null,
+              detectedAt: alertData.detectedAt || new Date().toISOString(),
+              adminReviewed: false,
+              adminAction: 'NONE',
+            };
+            return [newLog, ...prev];
+          });
+
+          // Background sync to ensure all latest logs with proof images from DB
+          api.getCandidateMalpracticeLogs(testId, cid)
+            .then((res) => {
+              if (res.data?.malpracticeLogs) {
+                setCandidateLogs(res.data.malpracticeLogs);
+              }
+            })
+            .catch(() => {});
+        }
 
         // Background sync to ensure all candidate details from server DB
         api.getLiveCandidates(testId).then((res) => {

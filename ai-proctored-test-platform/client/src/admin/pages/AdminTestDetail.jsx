@@ -1154,7 +1154,7 @@ export default function AdminTestDetail() {
                   </div>
 
                   <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                    💡 A cryptographic 6-character Room Code and Password will be automatically generated.
+                    💡 A 6-character Room Code and Password will be automatically generated.
                   </p>
                 </div>
 
@@ -1479,7 +1479,7 @@ export default function AdminTestDetail() {
                       required
                     />
                     <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
-                      Room passwords expire after this window from room creation (FR-3.3).
+                      Room passwords expire after this window from room creation.
                     </small>
                   </div>
 

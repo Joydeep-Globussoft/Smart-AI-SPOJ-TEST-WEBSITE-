@@ -132,6 +132,10 @@ mongoose
     // Register Socket.io handlers after DB is ready
     registerSocketHandlers(io);
 
+    // Eagerly auto-start YOLO phone-detection microservice daemon on port 8001
+    const { startLocalYoloService } = require('./services/malpracticeService');
+    startLocalYoloService();
+
     // BUG-30 Part A: Start background lifecycle scheduler for auto-ending completed tests
     const { startLifecycleScheduler } = require('./services/testLifecycleService');
     startLifecycleScheduler(io);

@@ -19,6 +19,7 @@ import {
 } from '../../services/socketClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import { useProctoring } from '../../hooks/useProctoring';
+import { stopAllCandidateMediaStreams } from '../../services/mediaStreamManager';
 import DraggableWebcamPip from '../../shared/DraggableWebcamPip';
 import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
@@ -366,7 +367,7 @@ export default function CandidateAITestScreen() {
   const [isSuperseded, setIsSuperseded] = useState(false);
   const [supersededMessage, setSupersededMessage] = useState('');
   const [proctorWarningsQueue, setProctorWarningsQueue] = useState([]);
-  const { warningMessage, showWarning, dismissWarning } = useViolationNotification(6000);
+  const { warningMessage, showWarning, dismissWarning } = useViolationNotification(3000);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   // Close in-page preview modal on Escape key press
@@ -460,6 +461,9 @@ export default function CandidateAITestScreen() {
     onWarning: handleProctorWarning,
   });
 
+  const proctoringRef = useRef(proctoring);
+  proctoringRef.current = proctoring;
+
   // ── Question Switch Handler (Preserve code/preview per question & autosave) ──
   const handleSelectQuestion = useCallback((newIdx) => {
     if (!session?.questions || newIdx < 0 || newIdx >= session.questions.length) return;
@@ -531,6 +535,8 @@ export default function CandidateAITestScreen() {
         }
       } catch (_) {}
     } catch (_) {}
+    proctoringRef.current?.stopMediaStream?.();
+    stopAllCandidateMediaStreams();
     toast.dismiss();
     navigate('/candidate/complete', { replace: true });
   }, [session, activeQuestion, navigate, chatMessages]);
@@ -606,6 +612,8 @@ export default function CandidateAITestScreen() {
     };
     const onDisqualify = () => {
       setDisqualified(true);
+      proctoring?.stopMediaStream?.();
+      stopAllCandidateMediaStreams();
       toast.error('🚫 You have been disqualified by the proctor.', { duration: 0 });
     };
     const onEnded = () => {
@@ -640,7 +648,6 @@ export default function CandidateAITestScreen() {
     onSessionSuperseded(onSuperseded);
 
     return () => {
-      toast.dismiss();
       offCandidateWarning(onWarning);
       offCandidateWarningIssued(onWarningIssued);
       offCandidateViolationUpdated(onViolationUpdated);
@@ -855,6 +862,8 @@ export default function CandidateAITestScreen() {
       } catch (_) {}
 
       // 5. Success toast and navigate to completion page
+      proctoring?.stopMediaStream?.();
+      stopAllCandidateMediaStreams();
       toast.dismiss();
       toast.success('AI Test submitted successfully!');
       navigate('/candidate/complete', { replace: true });
@@ -1015,11 +1024,11 @@ export default function CandidateAITestScreen() {
         </div>
       </div>
 
-      {/* Warning banner with 6s auto-dismiss and interactive ✕ (BUG-49) */}
+      {/* Warning banner with 3s auto-dismiss and interactive ✕ (BUG-49) */}
       <ViolationNotificationBanner
         message={warningMessage}
         onDismiss={dismissWarning}
-        autoDismissMs={6000}
+        autoDismissMs={3000}
       />
 
       {/* ── Main Workspace: 4-Panel Single Row Resizable Layout ─────────────── */}
@@ -2192,9 +2201,29 @@ export default function CandidateAITestScreen() {
           <h2 style={{ color: '#fff', fontSize: '1.6rem', marginBottom: 8, fontWeight: 800 }}>
             Fullscreen Mode Required
           </h2>
-          <p style={{ color: '#94a3b8', maxWidth: 480, textAlign: 'center', marginBottom: 24, lineHeight: 1.6, fontSize: '0.9rem' }}>
+          <p style={{ color: '#94a3b8', maxWidth: 480, textAlign: 'center', marginBottom: 16, lineHeight: 1.6, fontSize: '0.9rem' }}>
             You are currently outside full-screen mode. This proctored assessment strictly requires fullscreen operation throughout the entire session (FR-5.2). Exiting has been logged.
           </p>
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid #ef4444',
+              borderRadius: 8,
+              padding: '10px 18px',
+              color: '#fca5a5',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              maxWidth: 480,
+              textAlign: 'center',
+            }}
+          >
+            <span>⚠️</span>
+            <span>Violation detected: FULLSCREEN EXIT. This incident has been flagged and reported to proctors.</span>
+          </div>
           <button
             id="ai-re-enter-fullscreen-btn"
             onClick={proctoring.requestFullscreen}

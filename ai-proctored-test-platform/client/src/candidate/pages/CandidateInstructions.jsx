@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/apiClient';
 import globussoftLogo from '../../assets/globussoft-logo.png';
-import { setScreenStream } from '../../services/screenStreamManager';
+import { setScreenStream, setActiveMediaStream, stopActiveMediaStream } from '../../services/mediaStreamManager';
 import { verifyActiveVideoStream, checkHardwareDevices } from '../../services/mediaStreamVerifier';
 
 export default function CandidateInstructions() {
@@ -42,6 +42,7 @@ export default function CandidateInstructions() {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
+      stopActiveMediaStream();
     };
   }, []);
 
@@ -131,6 +132,7 @@ export default function CandidateInstructions() {
           }
 
           streamRef.current = videoStream;
+          setActiveMediaStream(videoStream);
           setWebcamStatus('GRANTED');
           currentWebcamGranted = true;
 
@@ -322,6 +324,7 @@ export default function CandidateInstructions() {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
+      stopActiveMediaStream();
 
       // Store session data for the test screen
       sessionStorage.setItem(
