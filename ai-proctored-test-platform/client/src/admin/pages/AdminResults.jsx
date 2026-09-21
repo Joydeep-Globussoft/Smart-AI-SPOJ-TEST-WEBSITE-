@@ -282,8 +282,8 @@ export default function AdminResults() {
             <div className="stat-value" style={{ color: '#3498db' }}>{averageScore}</div>
             <div className="stat-label">Average Score</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ fontSize: '1.4rem' }}>
+          <div className="stat-card" style={{ borderLeft: '4px solid #8e44ad' }}>
+            <div className="stat-value" style={{ fontSize: '1.4rem', color: '#8e44ad' }}>
               ≥ {shortlist?.passingCriteriaUsed ?? test?.passingCriteria} Qs
             </div>
             <div className="stat-label">Passing Criteria Used</div>
