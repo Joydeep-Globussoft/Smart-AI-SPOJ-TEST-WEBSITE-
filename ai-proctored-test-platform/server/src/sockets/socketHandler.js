@@ -104,14 +104,19 @@ const registerSocketHandlers = (io) => {
           ? Math.max(0, sub.candidateEndTime.getTime() - Date.now())
           : 0;
 
-        // Determine seat map color (FR-8.1, BUG-44: GREEN = SUBMITTED)
-        let colorStatus = 'YELLOW'; // in progress
+        // Determine seat map color (FR-8.1, BUG-44: GREEN = SUBMITTED, BUG-83: WHITE = NOT_STARTED)
+        let colorStatus = 'WHITE';
+        let candidateStatus = 'NOT_STARTED';
+
         if (candidate?.isDisqualified) {
           colorStatus = 'RED';
+          candidateStatus = 'DISQUALIFIED';
         } else if (sub?.status === 'SUBMITTED' || sub?.status === 'AUTO_SUBMITTED_TIME_UP') {
           colorStatus = 'GREEN';
-        } else if (!sub || sub?.status === 'NOT_STARTED') {
-          colorStatus = 'WHITE'; // only white if test attempt has not started
+          candidateStatus = 'SUBMITTED';
+        } else if (sub?.candidateStartTime) {
+          colorStatus = 'YELLOW';
+          candidateStatus = 'IN_PROGRESS';
         }
 
         const Room = require('../models/Room');
@@ -134,7 +139,7 @@ const registerSocketHandlers = (io) => {
           email: candidate?.email,
           roomId: sub?.roomId ? sub.roomId.toString() : null,
           roomName: roomDoc?.roomName || 'Assigned Room',
-          status: candidate?.isDisqualified ? 'DISQUALIFIED' : (sub ? 'IN_PROGRESS' : 'NOT_STARTED'),
+          status: candidateStatus,
           questionsCompleted: questionsCompleted || 0,
           questionsAttempted: attemptedCount,
           totalQuestions: totalQCount,

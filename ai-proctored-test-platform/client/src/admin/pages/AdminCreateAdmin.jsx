@@ -265,10 +265,10 @@ export default function AdminCreateAdmin() {
         <td style={{ padding: '14px 20px', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>
           {adm.createdAt
             ? new Date(adm.createdAt).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
             : '—'}
         </td>
 
@@ -372,7 +372,7 @@ export default function AdminCreateAdmin() {
                   Admin Account Management
                 </h1>
                 <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
-                  Super Admin Only (FR-1.1)
+                  Super Admin Only
                 </span>
               </div>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
@@ -387,7 +387,7 @@ export default function AdminCreateAdmin() {
 
         {/* 2-Column Grid: Form & Permissions Matrix */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.2fr) minmax(300px, 1fr)', gap: 24, marginBottom: 24 }}>
-          
+
           {/* Create Admin Form */}
           <div className="card">
             <div className="card-header">
@@ -470,7 +470,7 @@ export default function AdminCreateAdmin() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Role Permissions Matrix (Section 3)</h3>
+                <h3 className="card-title">Role Based Permissions</h3>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.85rem' }}>
@@ -480,7 +480,7 @@ export default function AdminCreateAdmin() {
                     <strong style={{ color: 'var(--color-navy)' }}>Full Platform Control</strong>
                   </div>
                   <ul style={{ paddingLeft: 18, color: 'var(--color-text)', lineHeight: 1.6, fontSize: '0.8rem' }}>
-                    <li>Create &amp; manage other Admin accounts (FR-1.1)</li>
+                    <li>Create &amp; manage other Admin accounts</li>
                     <li>Create, configure, start, and end tests</li>
                     <li>Manage Question Sets &amp; Question Bank</li>
                     <li>Live proctoring monitoring, warnings, &amp; disqualifications</li>

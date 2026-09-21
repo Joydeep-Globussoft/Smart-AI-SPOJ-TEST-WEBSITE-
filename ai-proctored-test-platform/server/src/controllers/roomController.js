@@ -329,10 +329,10 @@ const getRoomCandidates = async (req, res, next) => {
             email: candidate.email || '—',
             phone: candidate.phone || '—',
             isDisqualified,
-            status: isDisqualified ? 'DISQUALIFIED' : 'IN_PROGRESS',
+            status: isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
             questionsCompleted: 0,
             submittedAt: null,
-            startedAt: entry.joinedAt || room.createdAt,
+            startedAt: null,
             candidateEndTime: null,
             malpracticeCount: malpracticeCounts[cid] || 0,
             assignedQuestionSetId,
@@ -356,10 +356,10 @@ const getRoomCandidates = async (req, res, next) => {
           email: candidate.email || '—',
           phone: candidate.phone || '—',
           isDisqualified,
-          status: isDisqualified ? 'DISQUALIFIED' : 'IN_PROGRESS',
+          status: isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
           questionsCompleted: 0,
           submittedAt: null,
-          startedAt: item.detectedAt || room.createdAt,
+          startedAt: null,
           candidateEndTime: null,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId: null,
@@ -513,7 +513,7 @@ const getLiveCandidates = async (req, res, next) => {
         } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
           status = 'SUBMITTED';
           colorStatus = 'GREEN';
-        } else if (timers.startTime || subStatuses.some((st) => st === 'IN_PROGRESS')) {
+        } else if (timers.startTime) {
           status = 'IN_PROGRESS';
           colorStatus = 'YELLOW';
         }
@@ -550,8 +550,8 @@ const getLiveCandidates = async (req, res, next) => {
       const timeRemaining = timers.endTime ? Math.max(0, new Date(timers.endTime).getTime() - now) : 0;
 
       const subStatuses = candidateSubmissionStatuses[cid] || [sub.status];
-      let status = 'IN_PROGRESS';
-      let colorStatus = 'YELLOW';
+      let status = 'NOT_STARTED';
+      let colorStatus = 'WHITE';
 
       if (candidate.isDisqualified) {
         status = 'DISQUALIFIED';
@@ -559,6 +559,9 @@ const getLiveCandidates = async (req, res, next) => {
       } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
         status = 'SUBMITTED';
         colorStatus = 'GREEN';
+      } else if (timers.startTime) {
+        status = 'IN_PROGRESS';
+        colorStatus = 'YELLOW';
       }
 
       const existing = candidateMap[cid];
@@ -605,9 +608,12 @@ const getLiveCandidates = async (req, res, next) => {
         } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
           candidateMap[cid].status = 'SUBMITTED';
           candidateMap[cid].colorStatus = 'GREEN';
-        } else if (timers.startTime || subStatuses.some((st) => st === 'IN_PROGRESS')) {
+        } else if (timers.startTime) {
           candidateMap[cid].status = 'IN_PROGRESS';
           candidateMap[cid].colorStatus = 'YELLOW';
+        } else {
+          candidateMap[cid].status = 'NOT_STARTED';
+          candidateMap[cid].colorStatus = 'WHITE';
         }
         candidateMap[cid].questionsAttempted = attemptedCounts[cid] || 0;
         candidateMap[cid].questionsCompleted = completedCounts[cid] || 0;

@@ -52,7 +52,8 @@ const getCandidateColorStatus = (candidate, isTestEnded = false) => {
   if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP' || candidate.colorStatus === 'GREEN') {
     return 'GREEN';
   }
-  if (candidate.status === 'IN_PROGRESS' || candidate.candidateStartTime) {
+  // BUG-83: A candidate is ONLY YELLOW/In Progress if they are actively IN_PROGRESS with a valid candidateStartTime
+  if ((candidate.status === 'IN_PROGRESS' || candidate.colorStatus === 'YELLOW') && candidate.candidateStartTime) {
     return 'YELLOW';
   }
   return 'WHITE';
@@ -61,9 +62,9 @@ const getCandidateColorStatus = (candidate, isTestEnded = false) => {
 // ── Candidate Session Remaining Time Helper (Pure client-side countdown) ──────
 const getCandidateRemainingMs = (candidate, currentNow) => {
   if (!candidate) return 0;
-  // BUG-24 & BUG-78: Only candidates genuinely IN_PROGRESS have active remaining time.
+  // BUG-24, BUG-78, BUG-83: Only candidates genuinely IN_PROGRESS with active candidateStartTime have active remaining time.
   // Terminal/completed states (SUBMITTED, DISQUALIFIED, etc.) or NOT_STARTED immediately yield 0.
-  if (candidate.status !== 'IN_PROGRESS') {
+  if (candidate.status !== 'IN_PROGRESS' || !candidate.candidateStartTime) {
     return 0;
   }
   if (candidate.candidateEndTime) {
@@ -78,7 +79,7 @@ const getCandidateRemainingMs = (candidate, currentNow) => {
 
 // ── Memoized Seat Tile (FR-7.3: Persistent Malpractice counter beside name) ────
 const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
-  const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS';
+  const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
   const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
   const isWhite = colorStatus === 'WHITE';
@@ -99,7 +100,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
     if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP') {
       return 'Submitted';
     }
-    if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
+    if (!candidate.candidateStartTime || candidate.status === 'NOT_STARTED' || (!isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
       return 'Not started';
     }
     if (remainingMs <= 0 && candidate.candidateEndTime) {
@@ -215,11 +216,11 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
           )}
         </div>
         <div style={{ fontWeight: 600, color: 'var(--color-text)', marginTop: 2 }}>
-          {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
+          {candidate.status === 'NOT_STARTED' || !candidate.candidateStartTime || (!isCandidateInProgress && !candidate.questionsCompleted && !candidate.questionsAttempted)
             ? 'Not started'
             : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
               ? `${candidate.questionsCompleted ?? 0} Qs Solved`
-              : candidate.status === 'IN_PROGRESS' || isCandidateInProgress
+              : isCandidateInProgress
                 ? `Attempted ${candidate.questionsAttempted ?? 0}/${candidate.totalQuestions || 5}`
                 : `${candidate.questionsCompleted ?? 0} Qs Solved`}
         </div>
@@ -237,7 +238,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
 
 // ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name) ──
 const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now, isTestEnded }) => {
-  const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS';
+  const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
   const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
   const isWhite = colorStatus === 'WHITE';
@@ -258,7 +259,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
     if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP') {
       return 'Submitted';
     }
-    if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
+    if (!candidate.candidateStartTime || candidate.status === 'NOT_STARTED' || (!isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
       return 'Not started';
     }
     if (remainingMs <= 0 && candidate.candidateEndTime) {
@@ -540,12 +541,13 @@ export default function AdminLiveDashboard() {
           const initialMap = {};
           const initialNow = Date.now();
           for (const [cid, cand] of Object.entries(liveRes.data.candidates)) {
-            const endTime = cand.candidateEndTime || (cand.timeRemaining ? new Date(initialNow + cand.timeRemaining).toISOString() : null);
+            const hasStarted = Boolean(cand.candidateStartTime);
+            const endTime = hasStarted ? (cand.candidateEndTime || (cand.timeRemaining ? new Date(initialNow + cand.timeRemaining).toISOString() : null)) : null;
             initialMap[cid] = {
               ...cand,
               candidateId: cid,
               candidateEndTime: endTime,
-              candidateStartTime: cand.candidateStartTime || (endTime && cand.status === 'IN_PROGRESS' ? new Date(initialNow).toISOString() : null),
+              candidateStartTime: cand.candidateStartTime || null,
               lastSyncedAt: initialNow,
             };
           }
@@ -577,8 +579,9 @@ export default function AdminLiveDashboard() {
             const refreshNow = Date.now();
             for (const [cid, cand] of Object.entries(res.data.candidates)) {
               const existing = updated[cid] || {};
-              const endTime = cand.candidateEndTime || existing.candidateEndTime || (cand.timeRemaining ? new Date(refreshNow + cand.timeRemaining).toISOString() : null);
               const startTime = cand.candidateStartTime || existing.candidateStartTime || null;
+              const hasStarted = Boolean(startTime);
+              const endTime = hasStarted ? (cand.candidateEndTime || existing.candidateEndTime || (cand.timeRemaining ? new Date(refreshNow + cand.timeRemaining).toISOString() : null)) : null;
               updated[cid] = {
                 ...existing,
                 ...cand,
@@ -611,13 +614,15 @@ export default function AdminLiveDashboard() {
             cleanedData[k] = v;
           }
         }
-        const endTime = cleanedData.candidateEndTime || existing.candidateEndTime || (cleanedData.timeRemaining ? new Date(currentNow + cleanedData.timeRemaining).toISOString() : null);
+        const startTime = cleanedData.candidateStartTime || existing.candidateStartTime || null;
+        const hasStarted = Boolean(startTime);
+        const endTime = hasStarted ? (cleanedData.candidateEndTime || existing.candidateEndTime || (cleanedData.timeRemaining ? new Date(currentNow + cleanedData.timeRemaining).toISOString() : null)) : null;
         updated[cid] = {
           ...existing,
           ...cleanedData,
           candidateId: cid,
           candidateEndTime: endTime,
-          candidateStartTime: cleanedData.candidateStartTime || existing.candidateStartTime || null,
+          candidateStartTime: startTime,
           lastSyncedAt: currentNow,
         };
       }
