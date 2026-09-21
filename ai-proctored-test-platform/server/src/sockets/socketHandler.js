@@ -230,6 +230,7 @@ const registerSocketHandlers = (io) => {
           roomName: roomDoc?.roomName || 'Assigned Room',
           violationType,
           proofScreenshotUrl: log.proofScreenshotUrl || null,
+          hasPendingProof: violationType === 'FULLSCREEN_EXIT' || violationType === 'TAB_SWITCH',
           currentCount: malpracticeCount,
           detectedAt: log.detectedAt,
         });

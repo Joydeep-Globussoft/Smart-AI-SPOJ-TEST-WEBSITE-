@@ -97,6 +97,9 @@ export const offSeatmapStatus = (cb) => { socket?.off('seatmap:status', cb); };
 export const onMalpracticeAlert = (cb) => { socket?.on('malpractice:alert', cb); };
 export const offMalpracticeAlert = (cb) => { socket?.off('malpractice:alert', cb); };
 
+export const onMalpracticeEvidenceUpdated = (cb) => { socket?.on('malpractice:evidence-updated', cb); };
+export const offMalpracticeEvidenceUpdated = (cb) => { socket?.off('malpractice:evidence-updated', cb); };
+
 export const onCandidateWarning = (cb) => { socket?.on('candidate:warning', cb); };
 export const offCandidateWarning = (cb) => { socket?.off('candidate:warning', cb); };
 

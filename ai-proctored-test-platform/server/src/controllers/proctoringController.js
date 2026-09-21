@@ -191,6 +191,8 @@ const reportViolation = async (req, res, next) => {
       $or: [{ proofScreenshotUrl: null }, { proofScreenshotUrl: { $exists: false } }],
     }).sort({ detectedAt: -1 });
 
+    const isExistingLogUpdate = Boolean(log);
+
     if (log && proofScreenshotUrl) {
       log.proofScreenshotUrl = proofScreenshotUrl;
       await log.save();
@@ -232,7 +234,19 @@ const reportViolation = async (req, res, next) => {
         proofScreenshotUrl: log.proofScreenshotUrl || proofScreenshotUrl,
         currentCount: malpracticeCount,
         detectedAt: log.detectedAt,
+        isEvidenceUpdate: isExistingLogUpdate,
       });
+
+      if (isExistingLogUpdate) {
+        io.to(`test:${testId}:admin`).emit('malpractice:evidence-updated', {
+          malpracticeLogId: log._id.toString(),
+          candidateId: candidateId.toString(),
+          testId: testId.toString(),
+          violationType,
+          proofScreenshotUrl: log.proofScreenshotUrl || proofScreenshotUrl,
+          detectedAt: log.detectedAt,
+        });
+      }
 
       // Update seat map and dashboard counters in real time
       io.to(`test:${testId}:admin`).emit('dashboard:update', {
@@ -247,11 +261,13 @@ const reportViolation = async (req, res, next) => {
         colorStatus: 'YELLOW', // warning state; disqualified = RED handled below
       });
 
-      io.to(`candidate:${candidateId}`).emit('candidate:warning', {
-        violationType,
-        message: `Violation detected: ${violationType.replace(/_/g, ' ')}. This has been flagged.`,
-        violationCount: malpracticeCount,
-      });
+      if (!isExistingLogUpdate) {
+        io.to(`candidate:${candidateId}`).emit('candidate:warning', {
+          violationType,
+          message: `Violation detected: ${violationType.replace(/_/g, ' ')}. This has been flagged.`,
+          violationCount: malpracticeCount,
+        });
+      }
 
       io.to(`candidate:${candidateId}`).emit('candidate:violation-updated', {
         candidateId: candidateId.toString(),

@@ -13,6 +13,7 @@ import {
   onDashboardUpdate, offDashboardUpdate,
   onSeatmapStatus, offSeatmapStatus,
   onMalpracticeAlert, offMalpracticeAlert,
+  onMalpracticeEvidenceUpdated, offMalpracticeEvidenceUpdated,
   onCandidateSubmitted, offCandidateSubmitted,
   onRoomUpdated, offRoomUpdated,
   onTestEnded, offTestEnded,
@@ -481,6 +482,30 @@ export default function AdminLiveDashboard() {
   // Live Alerts Queue (FR-7.3)
   const [activeAlert, setActiveAlert] = useState(null);
   const [alertQueue, setAlertQueue] = useState([]);
+  const activeAlertRef = useRef(activeAlert);
+
+  useEffect(() => {
+    activeAlertRef.current = activeAlert;
+  }, [activeAlert]);
+
+  // Track recent alerts and dismissed alerts to prevent duplicate modals and spam toasts
+  const recentAlertsRef = useRef(new Map()); // key -> { timestamp, alertData }
+  const recentDismissedAlertsRef = useRef(new Map()); // key -> timestamp
+  const pendingDelayedEvidenceRef = useRef(new Map()); // key -> { timeoutId, alertData }
+
+  const closeActiveAlert = useCallback(() => {
+    if (activeAlertRef.current) {
+      const current = activeAlertRef.current;
+      const key = current.malpracticeLogId
+        ? String(current.malpracticeLogId)
+        : `${current.candidateId}_${current.violationType}`;
+      recentDismissedAlertsRef.current.set(key, Date.now());
+      if (current.candidateId) {
+        recentDismissedAlertsRef.current.set(`${current.candidateId}_${current.violationType}`, Date.now());
+      }
+    }
+    setActiveAlert(null);
+  }, []);
 
   // Selected candidate for inspect drawer
   const [inspectCandidate, setInspectCandidate] = useState(null);
@@ -721,13 +746,26 @@ export default function AdminLiveDashboard() {
       }
     };
 
-    // Section 10.2: malpractice:alert (FR-7.3)
+    // Section 10.2: malpractice:alert & malpractice:evidence-updated (FR-7.3)
     const handleMalpracticeAlert = (alertData) => {
       console.log('[Socket] Malpractice Alert received:', alertData);
+      if (!alertData) return;
 
-      // Update candidate's persistent malpractice counter in map (FR-7.3)
-      if (alertData.candidateId) {
-        const cid = alertData.candidateId;
+      const cid = alertData.candidateId;
+      const logId = alertData.malpracticeLogId ? String(alertData.malpracticeLogId) : null;
+      const violationKey = `${cid}_${alertData.violationType}`;
+      const now = Date.now();
+
+      // Clean up stale cache entries (> 30s)
+      for (const [k, time] of recentDismissedAlertsRef.current.entries()) {
+        if (now - time > 30000) recentDismissedAlertsRef.current.delete(k);
+      }
+      for (const [k, entry] of recentAlertsRef.current.entries()) {
+        if (now - entry.timestamp > 30000) recentAlertsRef.current.delete(k);
+      }
+
+      // 1. Update candidate's persistent malpractice counter in map (FR-7.3)
+      if (cid) {
         setCandidatesMap((prev) => {
           const current = prev[cid] || {};
           return {
@@ -813,8 +851,116 @@ export default function AdminLiveDashboard() {
         }).catch(() => { });
       }
 
+      // Check if this alert was already dismissed by admin within last 15s
+      const wasDismissed = (logId && recentDismissedAlertsRef.current.has(logId)) ||
+        recentDismissedAlertsRef.current.has(violationKey);
+      if (wasDismissed) {
+        return; // Do not re-open dismissed popup
+      }
+
+      // 2. Check if this alert matches the currently active alert on screen
+      const currentActive = activeAlertRef.current;
+      const isCurrentlyActive = currentActive && (
+        (logId && String(currentActive.malpracticeLogId) === logId) ||
+        (String(currentActive.candidateId) === String(cid) && currentActive.violationType === alertData.violationType)
+      );
+
+      if (isCurrentlyActive) {
+        // Update active alert with proofScreenshotUrl live if newly arrived
+        if (alertData.proofScreenshotUrl && !currentActive.proofScreenshotUrl) {
+          setActiveAlert((prev) => (prev ? {
+            ...prev,
+            proofScreenshotUrl: alertData.proofScreenshotUrl,
+            malpracticeLogId: logId || prev.malpracticeLogId,
+            hasPendingProof: false,
+          } : null));
+        }
+        return; // Suppress duplicate modal & toast
+      }
+
+      // 3. Check if this alert matches an item already in alertQueue
+      let alreadyInQueue = false;
+      setAlertQueue((prevQueue) => {
+        const idx = prevQueue.findIndex((item) =>
+          (logId && String(item.malpracticeLogId) === logId) ||
+          (String(item.candidateId) === String(cid) && item.violationType === alertData.violationType)
+        );
+        if (idx !== -1) {
+          alreadyInQueue = true;
+          const copy = [...prevQueue];
+          copy[idx] = {
+            ...copy[idx],
+            ...alertData,
+            proofScreenshotUrl: alertData.proofScreenshotUrl || copy[idx].proofScreenshotUrl,
+            hasPendingProof: false,
+          };
+          return copy;
+        }
+        return prevQueue;
+      });
+
+      if (alreadyInQueue) {
+        return;
+      }
+
+      // 4. Handle Pending Evidence for Delayed-Capture Violations (FULLSCREEN_EXIT & TAB_SWITCH)
+      const isDelayedCaptureType = alertData.violationType === 'FULLSCREEN_EXIT' || alertData.violationType === 'TAB_SWITCH';
+      const hasProof = Boolean(alertData.proofScreenshotUrl);
+      const pendingKey = logId || violationKey;
+
+      // Check if this incoming alert fulfills an existing pending capture buffer
+      if (pendingDelayedEvidenceRef.current.has(pendingKey) || pendingDelayedEvidenceRef.current.has(violationKey)) {
+        const lookupKey = pendingDelayedEvidenceRef.current.has(pendingKey) ? pendingKey : violationKey;
+        const pending = pendingDelayedEvidenceRef.current.get(lookupKey);
+        clearTimeout(pending.timeoutId);
+        pendingDelayedEvidenceRef.current.delete(lookupKey);
+
+        const mergedAlert = {
+          ...pending.alertData,
+          ...alertData,
+          proofScreenshotUrl: alertData.proofScreenshotUrl || pending.alertData.proofScreenshotUrl,
+          hasPendingProof: false,
+        };
+
+        recentAlertsRef.current.set(pendingKey, { timestamp: now, alertData: mergedAlert });
+        recentAlertsRef.current.set(violationKey, { timestamp: now, alertData: mergedAlert });
+        setAlertQueue((q) => [...q, mergedAlert]);
+        return;
+      }
+
+      // If it's a delayed-capture violation without proof yet, buffer it for 1200ms to allow screenshot to arrive
+      if (isDelayedCaptureType && !hasProof) {
+        toast.error(`⚠️ Malpractice: ${alertData.candidateName || 'Candidate'} (${alertData.violationType})`, {
+          duration: 5000,
+          id: `malpractice-${violationKey}`,
+        });
+
+        const timeoutId = setTimeout(() => {
+          if (pendingDelayedEvidenceRef.current.has(pendingKey)) {
+            const entry = pendingDelayedEvidenceRef.current.get(pendingKey);
+            pendingDelayedEvidenceRef.current.delete(pendingKey);
+            recentAlertsRef.current.set(pendingKey, { timestamp: Date.now(), alertData: entry.alertData });
+            recentAlertsRef.current.set(violationKey, { timestamp: Date.now(), alertData: entry.alertData });
+            setAlertQueue((q) => [...q, entry.alertData]);
+          }
+        }, 1200);
+
+        pendingDelayedEvidenceRef.current.set(pendingKey, { timeoutId, alertData });
+        return;
+      }
+
+      // 5. Suppress duplicate within 5 seconds
+      const recent = recentAlertsRef.current.get(pendingKey) || recentAlertsRef.current.get(violationKey);
+      if (recent && now - recent.timestamp < 5000) {
+        return;
+      }
+
+      recentAlertsRef.current.set(pendingKey, { timestamp: now, alertData });
+      recentAlertsRef.current.set(violationKey, { timestamp: now, alertData });
+
       toast.error(`⚠️ Malpractice: ${alertData.candidateName || 'Candidate'} (${alertData.violationType})`, {
         duration: 5000,
+        id: `malpractice-${violationKey}`,
       });
 
       setAlertQueue((q) => [...q, alertData]);
@@ -958,6 +1104,7 @@ export default function AdminLiveDashboard() {
     onDashboardUpdate(handleDashboardUpdate);
     onSeatmapStatus(handleSeatmapStatus);
     onMalpracticeAlert(handleMalpracticeAlert);
+    onMalpracticeEvidenceUpdated(handleMalpracticeAlert);
     onCandidateSubmitted(handleCandidateSubmitted);
     onRoomUpdated(handleRoomUpdated);
     onTestEnded(handleTestEnded);
@@ -967,9 +1114,15 @@ export default function AdminLiveDashboard() {
 
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      for (const entry of pendingDelayedEvidenceRef.current.values()) {
+        if (entry.timeoutId) clearTimeout(entry.timeoutId);
+      }
+      pendingDelayedEvidenceRef.current.clear();
+
       offDashboardUpdate(handleDashboardUpdate);
       offSeatmapStatus(handleSeatmapStatus);
       offMalpracticeAlert(handleMalpracticeAlert);
+      offMalpracticeEvidenceUpdated(handleMalpracticeAlert);
       offCandidateSubmitted(handleCandidateSubmitted);
       offRoomUpdated(handleRoomUpdated);
       offTestEnded(handleTestEnded);
@@ -1018,7 +1171,7 @@ export default function AdminLiveDashboard() {
         }
       }
       if (activeAlert?.malpracticeLogId === logId) {
-        setActiveAlert(null);
+        closeActiveAlert();
       }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to review violation');
@@ -1691,134 +1844,7 @@ export default function AdminLiveDashboard() {
           )}
         </div>
 
-        {/* ── Live Malpractice Alert Modal (FR-7.3, FR-7.4) ── */}
-        {activeAlert && (
-          <div className="modal-backdrop" style={{ zIndex: 1100 }}>
-            <div className="modal-container" style={{ maxWidth: 560, border: '2px solid #E74C3C' }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header" style={{ background: 'var(--color-modal-header-bg)', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: '1.4rem' }}>🚨</span>
-                  <h3 className="modal-title" style={{ color: '#E74C3C' }}>
-                    Malpractice Alert (FR-7.3)
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveAlert(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
-                >
-                  ✕
-                </button>
-              </div>
 
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem' }}>
-                  <div>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Candidate:</span>
-                    <strong style={{ display: 'block', color: 'var(--color-navy)' }}>{activeAlert.candidateName}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Violation Type:</span>
-                    <span className="badge badge-danger" style={{ display: 'inline-block', marginTop: 2 }}>
-                      {activeAlert.violationType}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Violation Count:</span>
-                    <strong style={{ display: 'block', color: '#E74C3C' }}>
-                      Incident #{activeAlert.currentCount || 1}
-                    </strong>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Timestamp:</span>
-                    <span style={{ display: 'block', color: 'var(--color-text)' }}>
-                      {new Date().toLocaleTimeString()}
-                    </span>
-                  </div>
-                  {activeAlert.violationType === 'CAMERA_DISCONNECTED' && (
-                    <div style={{ gridColumn: 'span 2', background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '8px 12px' }}>
-                      <span style={{ fontWeight: 700, color: '#dc2626', display: 'block', fontSize: '0.85rem' }}>
-                        📷 Camera Disconnected Security Alert
-                      </span>
-                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
-                        Candidate camera was disconnected. Fullscreen opaque blackout overlay and editor lock are active.
-                      </span>
-                      {activeAlert.durationSeconds !== null && activeAlert.durationSeconds !== undefined && (
-                        <div style={{ marginTop: 4, fontWeight: 700, color: '#15803d', fontSize: '0.82rem' }}>
-                          Total Disconnect Duration: {activeAlert.durationSeconds}s
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Proof Screenshot Image */}
-                {activeAlert.proofScreenshotUrl ? (
-                  <div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>
-                      📸 Captured Proof Frame:
-                    </span>
-                    <div
-                      style={{
-                        position: 'relative',
-                        border: '1.5px solid var(--color-border)',
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        cursor: 'zoom-in',
-                      }}
-                      onClick={() => setZoomScreenshotUrl(activeAlert.proofScreenshotUrl)}
-                    >
-                      <img
-                        src={activeAlert.proofScreenshotUrl}
-                        alt="Violation Proof"
-                        style={{ width: '100%', maxHeight: 240, objectFit: 'contain', background: '#000' }}
-                      />
-                      <div style={{ position: 'absolute', bottom: 6, right: 8, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4 }}>
-                        🔍 Click to Enlarge
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ background: 'var(--color-bg-subtle)', padding: 16, borderRadius: 6, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
-                    No frame capture available.
-                  </div>
-                )}
-
-                <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: 10, fontSize: '0.78rem', color: '#d97706' }}>
-                  ℹ️ <strong>FR-7.4:</strong> Malpractice does not auto-disqualify during live test. Review proof above and select an admin action.
-                </div>
-              </div>
-
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveAlert(null)}
-                  className="btn btn-secondary"
-                >
-                  Dismiss
-                </button>
-
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => handleReviewMalpractice(activeAlert.malpracticeLogId, 'WARNED')}
-                    className="btn btn-secondary"
-                    style={{ color: '#d97706', border: '1.5px solid #d97706' }}
-                  >
-                    ⚠️ Issue Warning
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleReviewMalpractice(activeAlert.malpracticeLogId, 'DISQUALIFIED')}
-                    className="btn btn-danger"
-                  >
-                    🚫 Disqualify Candidate
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ── Candidate Inspect Modal with Malpractice Proof & Evidence History (FR-7.3, FR-7.4) ── */}
         {activeInspectCandidate && (
@@ -2204,7 +2230,7 @@ export default function AdminLiveDashboard() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setActiveAlert(null)}
+                  onClick={closeActiveAlert}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -2281,6 +2307,23 @@ export default function AdminLiveDashboard() {
                   </div>
                 </div>
 
+                {/* Camera Disconnected Security Notification */}
+                {activeAlert.violationType === 'CAMERA_DISCONNECTED' && (
+                  <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '10px 14px' }}>
+                    <span style={{ fontWeight: 700, color: '#dc2626', display: 'block', fontSize: '0.85rem' }}>
+                      📷 Camera Disconnected Security Alert
+                    </span>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                      Candidate camera was disconnected. Fullscreen opaque blackout overlay and editor lock are active.
+                    </span>
+                    {activeAlert.durationSeconds !== null && activeAlert.durationSeconds !== undefined && (
+                      <div style={{ marginTop: 4, fontWeight: 700, color: '#15803d', fontSize: '0.82rem' }}>
+                        Total Disconnect Duration: {activeAlert.durationSeconds}s
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Evidence Proof Frame */}
                 {activeAlert.proofScreenshotUrl ? (
                   <div>
@@ -2334,14 +2377,21 @@ export default function AdminLiveDashboard() {
                   <div
                     style={{
                       background: 'var(--color-bg-card)',
-                      padding: '12px 14px',
+                      padding: '16px 14px',
                       borderRadius: 6,
                       color: 'var(--color-text-muted)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.82rem',
                       textAlign: 'center',
                     }}
                   >
-                    📷 No image frame captured for this event.
+                    {activeAlert.hasPendingProof ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#d97706', fontWeight: 600 }}>
+                        <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                        Capturing proof evidence screenshot...
+                      </span>
+                    ) : (
+                      '📷 No image frame captured for this event.'
+                    )}
                   </div>
                 )}
               </div>
@@ -2371,7 +2421,7 @@ export default function AdminLiveDashboard() {
                       malpracticeCount: activeAlert.currentCount,
                     };
                     setInspectCandidate(cand);
-                    setActiveAlert(null);
+                    closeActiveAlert();
                   }}
                   className="btn btn-secondary"
                   style={{ padding: '6px 14px', fontSize: '0.82rem' }}
@@ -2394,7 +2444,7 @@ export default function AdminLiveDashboard() {
                           };
                           await handleManualWarn(cand);
                         }
-                        setActiveAlert(null);
+                        closeActiveAlert();
                       }}
                       className="btn btn-secondary"
                       style={{
@@ -2421,7 +2471,7 @@ export default function AdminLiveDashboard() {
                         };
                         await handleManualDisqualify(cand);
                       }
-                      setActiveAlert(null);
+                      closeActiveAlert();
                     }}
                     className="btn btn-danger"
                     style={{ padding: '6px 14px', fontSize: '0.82rem' }}
@@ -2431,7 +2481,7 @@ export default function AdminLiveDashboard() {
 
                   <button
                     type="button"
-                    onClick={() => setActiveAlert(null)}
+                    onClick={closeActiveAlert}
                     className="btn btn-secondary"
                     style={{ padding: '6px 12px', fontSize: '0.82rem' }}
                   >
