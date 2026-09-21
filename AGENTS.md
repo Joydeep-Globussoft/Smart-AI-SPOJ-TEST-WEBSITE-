@@ -8,3 +8,11 @@ Whenever editing any file in this repository:
 3. **Single Source of Truth**: Edit shared components in their original shared file; never fork or duplicate them across pages.
 4. **Regression Triage**: If an issue touches previously fixed behavior, inspect git history first to identify the exact change that caused the regression before modifying code.
 5. **Confirmation**: Include an explicit note in every response detailing what previously fixed behavior was preserved.
+
+## Live Hosted Production Testing & Deployment Protocol
+Always implement, verify, and test against the live hosted production environments:
+- **Admin Panel**: `https://smart-ai-spoj-test-website.vercel.app/admin/login`
+- **Candidate Portal**: `https://smart-ai-spoj-test-website.vercel.app/candidate/register`
+- **Backend API**: `https://smart-ai-spoj-test-website.onrender.com/api/v1`
+- **Admin Credentials**: `superadmin@globussoft.in` / `GlobusAdmin2026!`
+- **Deployment Requirement**: Every fix and feature change must be pushed to GitHub (`origin/master`) and verified live against the actual deployed Vercel frontend and Render backend.
