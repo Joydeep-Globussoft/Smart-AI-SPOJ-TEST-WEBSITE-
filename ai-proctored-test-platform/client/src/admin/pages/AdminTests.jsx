@@ -88,12 +88,23 @@ export default function AdminTests() {
   return (
     <div className="app-layout">
       <AdminNavbar />
-      <main className="main-content">
+      <main
+        className="main-content"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 64px)',
+          height: 'calc(100dvh - 64px)',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          padding: '16px 24px 20px 24px',
+        }}
+      >
         {/* Page Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12, flexShrink: 0 }}>
           <div>
-            <h1 style={{ fontSize: '1.8rem', color: 'var(--color-navy)', fontWeight: 800 }}>Test Management</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: 4 }}>
+            <h1 style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>Test Management</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 3, marginBottom: 0 }}>
               Create, configure, and manage proctored coding assessments and rooms.
             </p>
           </div>
@@ -107,7 +118,7 @@ export default function AdminTests() {
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="card" style={{ padding: '16px 20px', marginBottom: 24 }}>
+        <div className="card" style={{ padding: '12px 18px', marginBottom: 14, flexShrink: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'center' }}>
             <div>
               <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Search Tests</label>
@@ -154,7 +165,7 @@ export default function AdminTests() {
             <div className="spinner spinner-dark" style={{ width: 36, height: 36, borderWidth: 3 }} />
           </div>
         ) : filteredTests.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flexShrink: 0 }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>📋</div>
             <h3 style={{ color: 'var(--color-navy)', marginBottom: 8 }}>No tests found</h3>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>
@@ -167,18 +178,18 @@ export default function AdminTests() {
             </button>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
+          <div className="table-container test-table-scroll-container" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <table className="table" style={{ minWidth: 1250 }}>
               <thead>
                 <tr>
-                  <th>Test Title</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Duration</th>
-                  <th>Passing Criteria</th>
-                  <th>Question Set</th>
-                  <th>Created</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ minWidth: 220 }}>Test Title</th>
+                  <th style={{ minWidth: 110 }}>Type</th>
+                  <th style={{ minWidth: 110 }}>Status</th>
+                  <th style={{ minWidth: 100 }}>Duration</th>
+                  <th style={{ minWidth: 120 }}>Passing Criteria</th>
+                  <th style={{ minWidth: 260 }}>Question Set</th>
+                  <th style={{ minWidth: 110 }}>Created</th>
+                  <th style={{ minWidth: 220, textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,24 +235,9 @@ export default function AdminTests() {
                       <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                         ≥ {test.passingCriteria} Qs
                       </td>
+                      {/* BUG-87: Render folder-linked and manual question sets as plain text without badges or icons */}
                       <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                        {test.questionSetPoolId || test.folderId ? (
-                          <span
-                            className="badge"
-                            style={{
-                              background: 'rgba(14, 124, 134, 0.15)',
-                              color: 'var(--color-primary)',
-                              border: '1px solid var(--color-primary)',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                            }}
-                            title={test.questionSetPoolName || test.folderId?.name || test.questionSetPoolId}
-                          >
-                            📁 {test.questionSetPoolName || test.folderId?.name || 'Folder'} ({test.poolSetCount || 1} {test.poolSetCount === 1 ? 'Set' : 'Sets'})
-                          </span>
-                        ) : (
-                          test.questionSetId?.name || '—'
-                        )}
+                        {test.questionSetPoolName || test.folderId?.name || test.questionSetId?.name || '—'}
                       </td>
                       <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
                         {new Date(test.createdAt).toLocaleDateString()}
