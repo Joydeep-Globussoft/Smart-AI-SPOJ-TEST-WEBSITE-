@@ -129,6 +129,14 @@ mongoose
     const { syncAllPdfAssets } = require('./services/pdfStorageService');
     await syncAllPdfAssets();
 
+    // BUG-93: Ensure candidate accounts are not permanently pruned by MongoDB background TTL worker
+    try {
+      await mongoose.connection.collection('candidates').dropIndex('expiresAt_1');
+      console.log('[MongoDB] Dropped legacy TTL index expiresAt_1 from candidates collection');
+    } catch (_) {
+      // Ignore if index already dropped or does not exist
+    }
+
     // Register Socket.io handlers after DB is ready
     registerSocketHandlers(io);
 

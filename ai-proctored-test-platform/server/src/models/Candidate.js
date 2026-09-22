@@ -12,8 +12,8 @@ const candidateSchema = new mongoose.Schema({
   address: { type: String, trim: true, default: '' },
   passwordHash: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  // TTL index: index: { expires: 0 } means expire exactly AT expiresAt timestamp (Section 8.2 note)
-  expiresAt: { type: Date, index: { expires: 0 } },
+  // Account expiration timestamp — login check enforces 401 after this time (FR-1.2)
+  expiresAt: { type: Date },
   isDisqualified: { type: Boolean, default: false },
   lateJoinRequestedAt: { type: Date, default: null },
   lateJoinRoomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', default: null },
@@ -21,6 +21,6 @@ const candidateSchema = new mongoose.Schema({
 });
 
 // Section 8.3 — required indexes
-// email unique index and expiresAt TTL index are defined inline above per Mongoose convention
+// email unique index defined inline above per Mongoose convention
 
 module.exports = mongoose.model('Candidate', candidateSchema);

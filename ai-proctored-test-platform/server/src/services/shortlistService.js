@@ -20,23 +20,49 @@ const regenerate = async (testId) => {
   const test = await Test.findById(testId);
   if (!test) throw new Error(`Test not found: ${testId}`);
 
-  // Get all evaluation results for this test, grouped by candidate
-  const allResults = await EvaluationResult.find({ testId }).populate(
-    'candidateId',
-    'name email isDisqualified'
-  );
+  // 1. Fetch raw evaluation results (lean) so candidateId is NEVER lost even if populate returns null
+  const allResults = await EvaluationResult.find({ testId }).lean();
+
+  // 2. Fetch existing shortlist so we have cached candidate names/emails as a resilient fallback
+  const existingShortlist = await Shortlist.findOne({ testId }).lean();
+  const existingCandidateMap = {};
+  if (existingShortlist?.candidates) {
+    for (const c of existingShortlist.candidates) {
+      if (c.candidateId) {
+        existingCandidateMap[c.candidateId.toString()] = c;
+      }
+    }
+  }
+
+  // 3. Extract unique candidate IDs and query Candidate collection for fresh metadata
+  const candidateIds = [
+    ...new Set(
+      allResults
+        .map((r) => (r.candidateId?._id || r.candidateId)?.toString())
+        .filter(Boolean)
+    ),
+  ];
+  const candidateDocs = await Candidate.find({ _id: { $in: candidateIds } }).lean();
+  const candidateDocMap = {};
+  for (const doc of candidateDocs) {
+    candidateDocMap[doc._id.toString()] = doc;
+  }
 
   // Group by candidateId — sum questionsCompletedCount and average scores
   const byCandidate = {};
   for (const r of allResults) {
-    const cid = r.candidateId?._id?.toString();
+    const cid = (r.candidateId?._id || r.candidateId)?.toString();
     if (!cid) continue;
+
+    const candDoc = candidateDocMap[cid];
+    const prevCand = existingCandidateMap[cid];
+
     if (!byCandidate[cid]) {
       byCandidate[cid] = {
-        candidateId: r.candidateId._id,
-        name: r.candidateId.name,
-        email: r.candidateId.email,
-        isDisqualified: r.candidateId.isDisqualified,
+        candidateId: r.candidateId?._id || r.candidateId,
+        name: candDoc?.name || prevCand?.name || 'Candidate',
+        email: candDoc?.email || prevCand?.email || '—',
+        isDisqualified: Boolean(candDoc?.isDisqualified ?? prevCand?.isDisqualified ?? false),
         totalScore: 0,
         questionsCompleted: 0,
         resultCount: 0,
@@ -59,8 +85,15 @@ const regenerate = async (testId) => {
   });
 
   // Filter candidates by passingCriteria and malpracticeDisqualifyThreshold
-  const passingCriteria = test.passingCriteria;
-  const malpracticeThreshold = test.malpracticeDisqualifyThreshold;
+  const passingCriteria = Number(test.passingCriteria ?? 0);
+  const rawThreshold = test.malpracticeDisqualifyThreshold;
+  const malpracticeThreshold =
+    rawThreshold !== null &&
+    rawThreshold !== undefined &&
+    rawThreshold !== '' &&
+    !isNaN(Number(rawThreshold))
+      ? Number(rawThreshold)
+      : null;
 
   const shortlistCandidates = [];
   for (const [cid, data] of Object.entries(byCandidate)) {
@@ -70,9 +103,11 @@ const regenerate = async (testId) => {
     if (data.isDisqualified) continue;
 
     // FR-7.5: Exclude candidates exceeding malpractice threshold (if set)
+    // When malpracticeThreshold is null ("None"), no limit is applied
     if (malpracticeThreshold !== null && malpracticeCount > malpracticeThreshold) continue;
 
     // Exclude candidates who didn't meet passing criteria
+    // If passingCriteria is 0, (0 < 0) is false so 0 questions completed meets the criteria
     if (data.questionsCompleted < passingCriteria) continue;
 
     // Normalized overall candidate score on 0-10 scale

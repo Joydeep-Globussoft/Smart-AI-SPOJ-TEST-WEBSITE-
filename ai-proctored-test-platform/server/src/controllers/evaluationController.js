@@ -15,9 +15,42 @@ const fs = require('fs');
 const getResults = async (req, res, next) => {
   try {
     const { testId } = req.params;
-    const results = await EvaluationResult.find({ testId })
+    const rawResults = await EvaluationResult.find({ testId })
       .populate('candidateId', 'name email phone isDisqualified')
-      .sort({ finalScorePerQuestion: -1 });
+      .sort({ finalScorePerQuestion: -1 })
+      .lean();
+
+    // Resilient fallback for candidate name/email if candidate document was purged or failed to populate
+    const shortlist = await Shortlist.findOne({ testId }).lean();
+    const shortlistCandidateMap = {};
+    if (shortlist?.candidates) {
+      for (const c of shortlist.candidates) {
+        if (c.candidateId) {
+          shortlistCandidateMap[c.candidateId.toString()] = c;
+        }
+      }
+    }
+
+    const results = rawResults.map((r) => {
+      if (!r.candidateId || !r.candidateId.name) {
+        const rawCid = (r.candidateId?._id || r.candidateId)?.toString();
+        const slCand = shortlistCandidateMap[rawCid];
+        if (slCand) {
+          return {
+            ...r,
+            candidateId: {
+              _id: rawCid,
+              name: slCand.name,
+              email: slCand.email,
+              phone: slCand.phone || '',
+              isDisqualified: Boolean(slCand.isDisqualified),
+            },
+          };
+        }
+      }
+      return r;
+    });
+
     res.json({ results });
   } catch (err) {
     next(err);
