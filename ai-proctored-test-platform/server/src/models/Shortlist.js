@@ -16,6 +16,7 @@ const shortlistSchema = new mongoose.Schema({
       rank: { type: Number }, // rank 1 = highest score (FR-10.1: ascending rank = descending score)
     },
   ],
+  totalCandidates: { type: Number, default: 0 },
   generatedAt: { type: Date },
 });
 

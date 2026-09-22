@@ -503,8 +503,8 @@ const getLiveCandidates = async (req, res, next) => {
     for (const r of rooms) {
       for (const j of r.joinedCandidates || []) {
         const candidate = j.candidateId;
-        const cid = candidate?._id ? candidate._id.toString() : j.candidateId?.toString();
-        if (!cid) continue;
+        if (!candidate || !candidate._id) continue;
+        const cid = candidate._id.toString();
 
         const setObj = candidateAssignedSets[cid] || j.assignedQuestionSetId;
         const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(setObj, j.joinIndex);
@@ -552,8 +552,8 @@ const getLiveCandidates = async (req, res, next) => {
     // 2. Overlay / update with active or finished submissions
     for (const sub of submissions) {
       const candidate = sub.candidateId;
-      if (!candidate) continue;
-      const cid = candidate._id ? candidate._id.toString() : candidate.toString();
+      if (!candidate || !candidate._id) continue;
+      const cid = candidate._id.toString();
 
       const timers = candidateTimers[cid] || { startTime: sub.candidateStartTime, endTime: sub.candidateEndTime };
       const timeRemaining = timers.endTime ? Math.max(0, new Date(timers.endTime).getTime() - now) : 0;

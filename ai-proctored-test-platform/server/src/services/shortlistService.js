@@ -1,17 +1,72 @@
-// Shortlist Service — Module 8
-// Generates and regenerates the Shortlist document (FR-10.1)
-// Triggered by: test end, passingCriteria change, malpracticeDisqualifyThreshold change
+const mongoose = require('mongoose');
 const Shortlist = require('../models/Shortlist');
 const EvaluationResult = require('../models/EvaluationResult');
 const MalpracticeLog = require('../models/MalpracticeLog');
 const Candidate = require('../models/Candidate');
 const Test = require('../models/Test');
+const Room = require('../models/Room');
+const Submission = require('../models/Submission');
+
+/**
+ * Fetch all valid, enrolled candidates belonging strictly to this test.
+ * Reads from Room.joinedCandidates and Submissions, then queries Candidate collection.
+ * Pruned or non-existent candidate accounts are strictly rejected.
+ *
+ * @param {string} testId
+ * @returns {Promise<{ validCandidateIds: string[], validCandidateMap: Map<string, object>, totalCandidates: number }>}
+ */
+const getEnrolledTestCandidates = async (testId) => {
+  const [rooms, submissions] = await Promise.all([
+    Room.find({ testId }).lean(),
+    Submission.find({ testId }).lean(),
+  ]);
+
+  const candidateIdSet = new Set();
+  for (const r of rooms) {
+    for (const j of r.joinedCandidates || []) {
+      const cid = (j.candidateId?._id || j.candidateId)?.toString();
+      if (cid) candidateIdSet.add(cid);
+    }
+  }
+  for (const s of submissions) {
+    const cid = (s.candidateId?._id || s.candidateId)?.toString();
+    if (cid) candidateIdSet.add(cid);
+  }
+
+  const rawCandidateIds = Array.from(candidateIdSet);
+  if (rawCandidateIds.length === 0) {
+    return {
+      validCandidateIds: [],
+      validCandidateMap: new Map(),
+      totalCandidates: 0,
+    };
+  }
+
+  // Strictly query Candidate collection to verify existence (purged/deleted candidates are excluded)
+  const candidateDocs = await Candidate.find({ _id: { $in: rawCandidateIds } }).lean();
+  const validCandidateMap = new Map();
+  for (const doc of candidateDocs) {
+    validCandidateMap.set(doc._id.toString(), doc);
+  }
+
+  const validCandidateIds = Array.from(validCandidateMap.keys());
+  return {
+    validCandidateIds,
+    validCandidateMap,
+    totalCandidates: validCandidateIds.length,
+  };
+};
 
 /**
  * Regenerate the shortlist for a given test.
  * FR-10.1: Shortlist.generatedAt updates on every change;
  * candidates re-filtered (by passingCriteria + malpracticeThreshold) and re-ranked
  * (rank 1 = highest score = ascending rank / descending score).
+ *
+ * Enforces the 3-step sequence:
+ * Step 1: Delete existing shortlist records belonging ONLY to the current test.
+ * Step 2: Recalculate rankings from current test candidates only.
+ * Step 3: Create fresh shortlist records with testId, totalCandidates, and rankings.
  *
  * @param {string} testId
  * @returns {Shortlist} The updated shortlist document
@@ -20,49 +75,55 @@ const regenerate = async (testId) => {
   const test = await Test.findById(testId);
   if (!test) throw new Error(`Test not found: ${testId}`);
 
-  // 1. Fetch raw evaluation results (lean) so candidateId is NEVER lost even if populate returns null
-  const allResults = await EvaluationResult.find({ testId }).lean();
+  // Step 1: Delete existing shortlist records belonging ONLY to the current test (clean rebuild)
+  await Shortlist.deleteOne({ testId });
 
-  // 2. Fetch existing shortlist so we have cached candidate names/emails as a resilient fallback
-  const existingShortlist = await Shortlist.findOne({ testId }).lean();
-  const existingCandidateMap = {};
-  if (existingShortlist?.candidates) {
-    for (const c of existingShortlist.candidates) {
-      if (c.candidateId) {
-        existingCandidateMap[c.candidateId.toString()] = c;
-      }
-    }
+  // Step 2: Recalculate rankings from current test candidates only
+  const { validCandidateIds, validCandidateMap, totalCandidates } = await getEnrolledTestCandidates(testId);
+
+  const passingCriteria = Number(test.passingCriteria ?? 0);
+  const rawThreshold = test.malpracticeDisqualifyThreshold;
+  const malpracticeThreshold =
+    rawThreshold !== null &&
+    rawThreshold !== undefined &&
+    rawThreshold !== '' &&
+    !isNaN(Number(rawThreshold))
+      ? Number(rawThreshold)
+      : null;
+
+  // If no valid candidates enrolled in this test, create empty shortlist and return
+  if (validCandidateIds.length === 0) {
+    const shortlist = await Shortlist.create({
+      testId,
+      passingCriteriaUsed: passingCriteria,
+      malpracticeThresholdUsed: malpracticeThreshold,
+      candidates: [],
+      totalCandidates: 0,
+      generatedAt: new Date(),
+    });
+    return shortlist;
   }
 
-  // 3. Extract unique candidate IDs and query Candidate collection for fresh metadata
-  const candidateIds = [
-    ...new Set(
-      allResults
-        .map((r) => (r.candidateId?._id || r.candidateId)?.toString())
-        .filter(Boolean)
-    ),
-  ];
-  const candidateDocs = await Candidate.find({ _id: { $in: candidateIds } }).lean();
-  const candidateDocMap = {};
-  for (const doc of candidateDocs) {
-    candidateDocMap[doc._id.toString()] = doc;
-  }
+  // Fetch raw evaluation results strictly for this test and enrolled valid candidates
+  const allResults = await EvaluationResult.find({
+    testId,
+    candidateId: { $in: validCandidateIds },
+  }).lean();
 
   // Group by candidateId — sum questionsCompletedCount and average scores
   const byCandidate = {};
   for (const r of allResults) {
     const cid = (r.candidateId?._id || r.candidateId)?.toString();
-    if (!cid) continue;
+    if (!cid || !validCandidateMap.has(cid)) continue;
 
-    const candDoc = candidateDocMap[cid];
-    const prevCand = existingCandidateMap[cid];
+    const candDoc = validCandidateMap.get(cid);
 
     if (!byCandidate[cid]) {
       byCandidate[cid] = {
-        candidateId: r.candidateId?._id || r.candidateId,
-        name: candDoc?.name || prevCand?.name || 'Candidate',
-        email: candDoc?.email || prevCand?.email || '—',
-        isDisqualified: Boolean(candDoc?.isDisqualified ?? prevCand?.isDisqualified ?? false),
+        candidateId: candDoc._id,
+        name: candDoc.name,
+        email: candDoc.email,
+        isDisqualified: Boolean(candDoc.isDisqualified),
         totalScore: 0,
         questionsCompleted: 0,
         resultCount: 0,
@@ -74,26 +135,20 @@ const regenerate = async (testId) => {
     byCandidate[cid].resultCount += 1;
   }
 
-  // Get malpractice counts for each candidate in this test
+  // Get malpractice counts strictly for this test and valid candidates
   const malpracticeCounts = await MalpracticeLog.aggregate([
-    { $match: { testId: test._id } },
+    {
+      $match: {
+        testId: test._id,
+        candidateId: { $in: validCandidateIds.map((id) => new mongoose.Types.ObjectId(id)) },
+      },
+    },
     { $group: { _id: '$candidateId', count: { $sum: 1 } } },
   ]);
   const malpracticeMap = {};
   malpracticeCounts.forEach((m) => {
     malpracticeMap[m._id.toString()] = m.count;
   });
-
-  // Filter candidates by passingCriteria and malpracticeDisqualifyThreshold
-  const passingCriteria = Number(test.passingCriteria ?? 0);
-  const rawThreshold = test.malpracticeDisqualifyThreshold;
-  const malpracticeThreshold =
-    rawThreshold !== null &&
-    rawThreshold !== undefined &&
-    rawThreshold !== '' &&
-    !isNaN(Number(rawThreshold))
-      ? Number(rawThreshold)
-      : null;
 
   const shortlistCandidates = [];
   for (const [cid, data] of Object.entries(byCandidate)) {
@@ -131,23 +186,28 @@ const regenerate = async (testId) => {
     c.rank = i + 1;
   });
 
-  // Upsert the Shortlist document (unique per testId)
-  const shortlist = await Shortlist.findOneAndUpdate(
-    { testId },
-    {
-      testId,
-      passingCriteriaUsed: passingCriteria,
-      malpracticeThresholdUsed: malpracticeThreshold,
-      candidates: shortlistCandidates,
-      generatedAt: new Date(),
-    },
-    { upsert: true, new: true }
-  );
+  // Backend safeguard check (Requirement 8): shortlistedCandidates <= totalCandidates
+  if (shortlistCandidates.length > totalCandidates) {
+    console.error(
+      `[Shortlist][Integrity Guard] shortlistedCandidates (${shortlistCandidates.length}) > totalCandidates (${totalCandidates}) for test ${testId}`
+    );
+  }
+
+  // Step 3: Create fresh shortlist records. Do not append to existing data.
+  const shortlist = await Shortlist.create({
+    testId,
+    passingCriteriaUsed: passingCriteria,
+    malpracticeThresholdUsed: malpracticeThreshold,
+    candidates: shortlistCandidates,
+    totalCandidates,
+    generatedAt: new Date(),
+  });
 
   console.log(
-    `[Shortlist] Regenerated for test ${testId}: ${shortlistCandidates.length} candidates`
+    `[Shortlist] Regenerated for test ${testId}: ${shortlistCandidates.length} shortlisted out of ${totalCandidates} candidates`
   );
   return shortlist;
 };
 
-module.exports = { regenerate };
+module.exports = { regenerate, getEnrolledTestCandidates };
+

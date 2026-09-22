@@ -42,6 +42,7 @@ export default function AdminResults() {
   const [passingCriteria, setPassingCriteria] = useState(3);
   const [malpracticeThreshold, setMalpracticeThreshold] = useState('');
   const [updatingThresholds, setUpdatingThresholds] = useState(false);
+  const [totalCandidates, setTotalCandidates] = useState(0);
 
   // Export PDF loading state (FR-10.2)
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -139,15 +140,25 @@ export default function AdminResults() {
 
       if (resultsRes.status === 'fulfilled') {
         setResults(resultsRes.value.data.results || []);
+        if (typeof resultsRes.value.data.totalCandidates === 'number') {
+          setTotalCandidates(resultsRes.value.data.totalCandidates);
+        }
       }
 
       if (shortlistRes.status === 'fulfilled') {
-        setShortlist(shortlistRes.value.data.shortlist);
+        const slData = shortlistRes.value.data;
+        setShortlist(slData.shortlist);
+        if (typeof slData.totalCandidates === 'number') {
+          setTotalCandidates(slData.totalCandidates);
+        }
       } else {
         // If shortlist hasn't been generated yet, try generating it
         try {
           const genRes = await api.regenerateShortlist(testId);
           setShortlist(genRes.data.shortlist);
+          if (typeof genRes.data.totalCandidates === 'number') {
+            setTotalCandidates(genRes.data.totalCandidates);
+          }
         } catch (_) { }
       }
     } catch (err) {
@@ -167,6 +178,9 @@ export default function AdminResults() {
       setUpdatingThresholds(true);
       const res = await api.regenerateShortlist(testId);
       setShortlist(res.data.shortlist);
+      if (typeof res.data.totalCandidates === 'number') {
+        setTotalCandidates(res.data.totalCandidates);
+      }
       toast.success('Shortlist regenerated successfully');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to regenerate shortlist');
@@ -192,6 +206,9 @@ export default function AdminResults() {
       // Refresh shortlist
       const res = await api.getShortlist(testId);
       setShortlist(res.data.shortlist);
+      if (typeof res.data.totalCandidates === 'number') {
+        setTotalCandidates(res.data.totalCandidates);
+      }
       toast.success('Thresholds updated & shortlist re-calculated (FR-10.1)');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update thresholds');
@@ -276,6 +293,17 @@ export default function AdminResults() {
 
   const averageScore = Math.min(10, Math.max(0, Number(rawAvg) || 0)).toFixed(1);
 
+  // Requirement 6: Compare candidate count from roster vs count used in shortlist
+  const hasIntegrityMismatch = totalCandidates > 0 && totalShortlisted > totalCandidates;
+
+  useEffect(() => {
+    if (hasIntegrityMismatch) {
+      console.error(
+        `[Results Data Integrity Alert] Shortlist candidate count (${totalShortlisted}) exceeds test candidate roster (${totalCandidates}) for test ${testId}`
+      );
+    }
+  }, [hasIntegrityMismatch, totalCandidates, totalShortlisted, testId]);
+
   if (loading) {
     return (
       <div className="app-layout">
@@ -346,6 +374,40 @@ export default function AdminResults() {
             </div>
           </div>
         </div>
+
+        {/* ── Data Integrity Alert Banner (Requirement 6) ── */}
+        {hasIntegrityMismatch && (
+          <div
+            style={{
+              background: '#450a0a',
+              border: '1px solid #ef4444',
+              color: '#fecaca',
+              padding: '12px 18px',
+              borderRadius: 8,
+              marginBottom: 20,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+              <div>
+                <strong>Data Integrity Alert:</strong> Shortlisted candidate count ({totalShortlisted}) exceeds the test candidate roster ({totalCandidates}).
+              </div>
+            </div>
+            <button
+              onClick={handleRegenerateShortlist}
+              className="btn btn-secondary"
+              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              disabled={updatingThresholds}
+            >
+              🔄 Re-sync Roster
+            </button>
+          </div>
+        )}
 
         {/* ── Key Metrics Summary Bar ── */}
         <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>

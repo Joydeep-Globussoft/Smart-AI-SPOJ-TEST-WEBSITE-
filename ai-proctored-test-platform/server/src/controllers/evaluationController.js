@@ -15,47 +15,26 @@ const path = require('path');
 const fs = require('fs');
 
 // ── GET /tests/:testId/results ────────────────────────────────────────────────
-// Response: { results: [] } (per-candidate scores)
+// Response: { results: [], testId, totalCandidates } (per-candidate scores)
 const getResults = async (req, res, next) => {
   try {
     const { testId } = req.params;
-    const rawResults = await EvaluationResult.find({ testId })
+
+    // Fetch valid candidates enrolled in this test
+    const { validCandidateIds, totalCandidates } = await shortlistService.getEnrolledTestCandidates(testId);
+
+    const rawResults = await EvaluationResult.find({
+      testId,
+      candidateId: { $in: validCandidateIds },
+    })
       .populate('candidateId', 'name email phone isDisqualified')
       .sort({ finalScorePerQuestion: -1 })
       .lean();
 
-    // Resilient fallback for candidate name/email if candidate document was purged or failed to populate
-    const shortlist = await Shortlist.findOne({ testId }).lean();
-    const shortlistCandidateMap = {};
-    if (shortlist?.candidates) {
-      for (const c of shortlist.candidates) {
-        if (c.candidateId) {
-          shortlistCandidateMap[c.candidateId.toString()] = c;
-        }
-      }
-    }
+    // Defensively keep only results where candidateId was properly populated
+    const results = rawResults.filter((r) => r.candidateId && r.candidateId._id);
 
-    const results = rawResults.map((r) => {
-      if (!r.candidateId || !r.candidateId.name) {
-        const rawCid = (r.candidateId?._id || r.candidateId)?.toString();
-        const slCand = shortlistCandidateMap[rawCid];
-        if (slCand) {
-          return {
-            ...r,
-            candidateId: {
-              _id: rawCid,
-              name: slCand.name,
-              email: slCand.email,
-              phone: slCand.phone || '',
-              isDisqualified: Boolean(slCand.isDisqualified),
-            },
-          };
-        }
-      }
-      return r;
-    });
-
-    res.json({ results });
+    res.json({ results, testId, totalCandidates });
   } catch (err) {
     next(err);
   }
@@ -69,7 +48,17 @@ const getShortlist = async (req, res, next) => {
     if (!shortlist) {
       shortlist = await shortlistService.regenerate(testId);
     }
-    res.json({ shortlist });
+    const totalCandidates =
+      shortlist.totalCandidates !== undefined
+        ? shortlist.totalCandidates
+        : (await shortlistService.getEnrolledTestCandidates(testId)).totalCandidates;
+
+    res.json({
+      shortlist,
+      testId,
+      totalCandidates,
+      shortlistedCandidates: shortlist.candidates?.length || 0,
+    });
   } catch (err) {
     next(err);
   }
@@ -81,7 +70,12 @@ const regenerateShortlist = async (req, res, next) => {
   try {
     const { testId } = req.params;
     const shortlist = await shortlistService.regenerate(testId);
-    res.json({ shortlist });
+    res.json({
+      shortlist,
+      testId,
+      totalCandidates: shortlist.totalCandidates || 0,
+      shortlistedCandidates: shortlist.candidates?.length || 0,
+    });
   } catch (err) {
     next(err);
   }
@@ -248,31 +242,22 @@ const getCandidateEvaluationDetail = async (req, res, next) => {
     const test = await Test.findById(testId).lean();
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    // 1. Fetch Candidate metadata (with fallback to Shortlist cache if candidate record was purged)
-    let candidate = await Candidate.findById(candidateId, 'name email phone isDisqualified').lean();
-    if (!candidate) {
-      const shortlist = await Shortlist.findOne({ testId }).lean();
-      const cached = shortlist?.candidates?.find(
-        (c) => c.candidateId?.toString() === candidateId.toString()
-      );
-      if (cached) {
-        candidate = {
-          _id: candidateId,
-          name: cached.name,
-          email: cached.email,
-          phone: cached.phone || '',
-          isDisqualified: Boolean(cached.isDisqualified),
-        };
-      } else {
-        candidate = {
-          _id: candidateId,
-          name: 'Candidate',
-          email: '—',
-          phone: '',
-          isDisqualified: false,
-        };
-      }
+    // 1. Verify candidate exists and is enrolled in this test
+    const [candidateDoc, roomJoined, subExists] = await Promise.all([
+      Candidate.findById(candidateId, 'name email phone isDisqualified').lean(),
+      Room.exists({ testId, 'joinedCandidates.candidateId': candidateId }),
+      Submission.exists({ testId, candidateId }),
+    ]);
+
+    if (!roomJoined && !subExists) {
+      return res.status(404).json({ error: 'Candidate is not enrolled in this test' });
     }
+
+    if (!candidateDoc) {
+      return res.status(404).json({ error: 'Candidate account not found or deleted' });
+    }
+
+    const candidate = candidateDoc;
 
     // 2. Fetch all Submissions and EvaluationResults for this candidate in this test
     const submissions = await Submission.find({ testId, candidateId }).lean();
