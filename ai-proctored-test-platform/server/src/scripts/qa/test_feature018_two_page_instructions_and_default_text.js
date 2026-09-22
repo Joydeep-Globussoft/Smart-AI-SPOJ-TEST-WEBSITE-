@@ -152,6 +152,25 @@ function runTests() {
     'Start test attempt and fullscreen activation logic preserved'
   );
 
+  // Step 5: Visual Design & Button Label (Follow-up)
+  console.log('\n--- Step 5: Verify Page 1 Visual Polish & "Next" Button Label ---');
+  assert(
+    page1Content.includes('<span>Next</span>') && page1Content.includes('id="next-step-btn"'),
+    'Page 1 button text is simplified to "Next"'
+  );
+  assert(
+    page1Content.includes('color: \'#0E7C86\'') && page1Content.includes('borderRadius: 6'),
+    'Test instructions use styled teal numbered badges'
+  );
+  assert(
+    page1Content.includes('background: \'#FFF8F6\'') && page1Content.includes('border: \'1px solid #FFE4DE\''),
+    'Mandatory Proctoring Rules section has subtle warning background tint'
+  );
+  assert(
+    page1Content.includes('<svg') && page1Content.includes('stroke="#DC2626"'),
+    'Mandatory Proctoring Rules use clean SVG warning/cross icon chips instead of bare characters'
+  );
+
   console.log('\n========================================================================');
   console.log(`SUMMARY: ${passed} passed, ${failed} failed`);
   console.log('========================================================================\n');
@@ -162,3 +181,4 @@ function runTests() {
 }
 
 runTests();
+

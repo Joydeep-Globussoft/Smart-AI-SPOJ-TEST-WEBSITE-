@@ -379,24 +379,147 @@ export default function CandidateInstructions() {
         {currentStep === 1 ? (
           /* ── PAGE 1: Instructions & Rules ── */
           <div style={{ maxWidth: 840, margin: '0 auto', width: '100%' }}>
-            <div className="card" style={{ background: '#FFFFFF', borderRadius: 12, padding: '28px 32px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}>
-              {/* Test Instructions */}
-              <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: 24, marginBottom: 24 }}>
-                <h2 className="card-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1A2B3C', display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px 0' }}>
-                  <span>📋</span> Test Instructions
-                </h2>
-                <div
-                  style={{ lineHeight: 1.75, color: '#374151', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}
-                  dangerouslySetInnerHTML={{ __html: joinData.instructions }}
-                />
+            <div
+              className="card"
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 14,
+                padding: '32px 36px',
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.05)',
+              }}
+            >
+              {/* Test Instructions Section */}
+              <div style={{ marginBottom: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 8,
+                      background: 'rgba(14, 124, 134, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      flexShrink: 0,
+                    }}
+                  >
+                    📋
+                  </div>
+                  <h2
+                    className="card-title"
+                    style={{
+                      fontSize: '1.3rem',
+                      fontWeight: 800,
+                      color: '#1A2B3C',
+                      margin: 0,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Test Instructions
+                  </h2>
+                </div>
+
+                {(() => {
+                  const rawInstructions = joinData?.instructions || '';
+                  const lines = String(rawInstructions)
+                    .split(/\r?\n|<br\s*\/?>/gi)
+                    .map((l) => l.replace(/<[^>]*>?/gm, '').trim())
+                    .filter((l) => l.length > 0)
+                    .map((line) => line.replace(/^\s*(\d+[\.\)\-:]|\([0-9]+\))\s*/, '').trim() || line);
+
+                  if (lines.length === 0) {
+                    return (
+                      <p style={{ color: '#64748B', fontSize: '0.9rem', margin: 0, fontStyle: 'italic' }}>
+                        No specific instructions provided. Follow general test guidelines.
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {lines.map((itemText, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 14,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 26,
+                              height: 26,
+                              minWidth: 26,
+                              borderRadius: 6,
+                              background: 'rgba(14, 124, 134, 0.12)',
+                              border: '1px solid rgba(14, 124, 134, 0.3)',
+                              color: '#0E7C86',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                              marginTop: 1,
+                            }}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.92rem',
+                              color: '#334155',
+                              lineHeight: 1.6,
+                              fontWeight: 500,
+                              paddingTop: 1,
+                            }}
+                          >
+                            {itemText}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
-              {/* Mandatory Proctoring Rules */}
-              <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1A2B3C', display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 14px 0' }}>
-                  <span>⚠️</span> Mandatory Proctoring Rules
-                </h3>
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 0, margin: 0 }}>
+              {/* Mandatory Proctoring Rules Section with subtle warning tint */}
+              <div
+                style={{
+                  background: '#FFF8F6',
+                  border: '1px solid #FFE4DE',
+                  borderRadius: 10,
+                  padding: '20px 24px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⚠️</span>
+                  <h3
+                    style={{
+                      fontSize: '1.05rem',
+                      fontWeight: 700,
+                      color: '#991B1B',
+                      margin: 0,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Mandatory Proctoring Rules
+                  </h3>
+                </div>
+
+                <ul
+                  style={{
+                    listStyle: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    paddingLeft: 0,
+                    margin: 0,
+                  }}
+                >
                   {[
                     'Stay in fullscreen mode throughout the test. Exiting fullscreen will be logged as a violation.',
                     'Alt+Tab and window switching are disabled. Leaving or defocusing the test window is logged with proof.',
@@ -406,8 +529,47 @@ export default function CandidateInstructions() {
                     'Your webcam and microphone must remain active and unobstructed at all times.',
                     'The test will automatically submit when your countdown timer expires.',
                   ].map((rule, i) => (
-                    <li key={i} style={{ display: 'flex', gap: 10, fontSize: '0.875rem', color: '#374151', lineHeight: 1.5 }}>
-                      <span style={{ color: '#E74C3C', fontWeight: 700, flexShrink: 0 }}>✗</span>
+                    <li
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 12,
+                        fontSize: '0.88rem',
+                        color: '#7F1D1D',
+                        lineHeight: 1.55,
+                        fontWeight: 500,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 20,
+                          height: 20,
+                          minWidth: 20,
+                          borderRadius: '50%',
+                          background: '#FEE2E2',
+                          border: '1px solid #FCA5A5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          marginTop: 2,
+                        }}
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#DC2626"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </div>
                       <span>{rule}</span>
                     </li>
                   ))}
@@ -425,7 +587,7 @@ export default function CandidateInstructions() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '12px 28px',
+                  padding: '12px 32px',
                   fontWeight: 700,
                   fontSize: '0.95rem',
                   borderRadius: 8,
@@ -438,7 +600,7 @@ export default function CandidateInstructions() {
                   if (sc) sc.scrollTop = 0;
                 }}
               >
-                <span>Next: Device Permissions &amp; Setup</span>
+                <span>Next</span>
                 <span style={{ fontSize: '1.15rem', lineHeight: 1 }}>→</span>
               </button>
             </div>
