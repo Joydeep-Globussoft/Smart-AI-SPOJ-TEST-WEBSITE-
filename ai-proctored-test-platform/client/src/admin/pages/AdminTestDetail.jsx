@@ -7,6 +7,7 @@ import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
 import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
+import QRCode from 'qrcode';
 import {
   initSocket,
   emitAdminJoin,
@@ -145,6 +146,11 @@ export default function AdminTestDetail() {
   // Room Candidates View Modal
   const [selectedRoomCandidates, setSelectedRoomCandidates] = useState(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
+
+  // QR Code Modal State (FEATURE-019)
+  const [selectedQrRoom, setSelectedQrRoom] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const [generatingQr, setGeneratingQr] = useState(false);
 
   // Edit Configuration Modal State (BUG-36, BUG-38)
   const [showEditModal, setShowEditModal] = useState(false);
@@ -502,6 +508,157 @@ export default function AdminTestDetail() {
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard!`);
+  };
+
+  // ── FEATURE-019: QR Code Modal & Print/Download Handlers ──────────────────
+  const handleOpenQrModal = async (room) => {
+    try {
+      setGeneratingQr(true);
+      setSelectedQrRoom(room);
+      const inviteLink = room.inviteToken
+        ? `${window.location.origin}/candidate/register?invite=${room.inviteToken}`
+        : `${window.location.origin}/candidate/register`;
+
+      const url = await QRCode.toDataURL(inviteLink, {
+        width: 800,
+        margin: 2,
+        color: {
+          dark: '#1A2B3C',
+          light: '#FFFFFF',
+        },
+        errorCorrectionLevel: 'H',
+      });
+      setQrDataUrl(url);
+    } catch (err) {
+      console.error('Failed to generate QR Code:', err);
+      toast.error('Failed to generate QR Code');
+    } finally {
+      setGeneratingQr(false);
+    }
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrDataUrl || !selectedQrRoom) return;
+    const link = document.createElement('a');
+    const cleanTestTitle = (test?.title || 'Test').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanRoomName = (selectedQrRoom.roomName || selectedQrRoom.roomCode || 'Room').replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.download = `QR_${cleanTestTitle}_${cleanRoomName}.png`;
+    link.href = qrDataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('QR Code image downloaded!');
+  };
+
+  const handlePrintQr = () => {
+    if (!qrDataUrl || !selectedQrRoom) return;
+    const printWindow = window.open('', '_blank', 'width=750,height=850');
+    if (!printWindow) {
+      return toast.error('Please allow popups in your browser to print the QR Code poster.');
+    }
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Exam Entry QR Code — ${selectedQrRoom.roomName || selectedQrRoom.roomCode}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+              text-align: center;
+              padding: 40px 20px;
+              color: #1a2b3c;
+              background: #ffffff;
+            }
+            .poster-card {
+              max-width: 520px;
+              margin: 0 auto;
+              border: 2px solid #0e7c86;
+              border-radius: 16px;
+              padding: 32px 28px;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            }
+            .brand-tag {
+              font-size: 13px;
+              font-weight: 700;
+              color: #0e7c86;
+              text-transform: uppercase;
+              letter-spacing: 1.5px;
+              margin-bottom: 6px;
+            }
+            .test-title {
+              font-size: 22px;
+              font-weight: 800;
+              margin: 0 0 16px 0;
+              line-height: 1.3;
+            }
+            .room-chip {
+              display: inline-block;
+              background: #e0f2fe;
+              color: #0369a1;
+              padding: 6px 18px;
+              border-radius: 20px;
+              font-weight: 700;
+              font-size: 15px;
+              margin-bottom: 20px;
+            }
+            .qr-img {
+              width: 280px;
+              height: 280px;
+              margin: 0 auto 18px auto;
+              display: block;
+            }
+            .info-grid {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 12px 16px;
+              margin-bottom: 18px;
+              text-align: left;
+              font-size: 13px;
+            }
+            .info-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 3px 0;
+            }
+            .instructions {
+              font-size: 13.5px;
+              color: #475569;
+              line-height: 1.5;
+              margin: 0;
+            }
+            @media print {
+              body { padding: 0; }
+              .poster-card { border: 1.5px solid #0e7c86; box-shadow: none; max-width: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="poster-card">
+            <div class="brand-tag">Globussoft Assessment Platform</div>
+            <h1 class="test-title">${test?.title || 'Online Assessment'}</h1>
+            <div class="room-chip">🏢 Room: ${selectedQrRoom.roomName || selectedQrRoom.roomCode}</div>
+            <img class="qr-img" src="${qrDataUrl}" alt="Test Room QR Code" />
+            <div class="info-grid">
+              <div class="info-row"><strong>Room Code:</strong> <span>${selectedQrRoom.roomCode}</span></div>
+              <div class="info-row"><strong>Room Password:</strong> <span>${selectedQrRoom.roomPassword}</span></div>
+            </div>
+            <p class="instructions">
+              <strong>📱 Scan QR code with your mobile or laptop camera to join.</strong><br/>
+              Sign in or register to automatically bypass room code entry and enter instructions.
+            </p>
+          </div>
+          <script>
+            window.onload = () => {
+              window.focus();
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   if (loading) {
@@ -981,21 +1138,33 @@ export default function AdminTestDetail() {
 
                       {/* Action Bar */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                        <button
-                          onClick={() => {
-                            const inviteLink = room.inviteToken
-                              ? `${window.location.origin}/candidate/register?invite=${room.inviteToken}`
-                              : `${window.location.origin}/candidate/register`;
-                            const details = isLive && room.passwordValidUntil
-                              ? `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nValid Until: ${new Date(room.passwordValidUntil).toLocaleTimeString()}`
-                              : `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nAccess Window: Starts when test goes LIVE (${test?.startTestWindowMinutes || 10} mins validity)`;
-                            copyToClipboard(details, 'Room Invite Link');
-                          }}
-                          className="btn btn-secondary"
-                          style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                        >
-                          📋 Copy Full Invite
-                        </button>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button
+                            id={`copy-invite-btn-${room._id}`}
+                            onClick={() => {
+                              const inviteLink = room.inviteToken
+                                ? `${window.location.origin}/candidate/register?invite=${room.inviteToken}`
+                                : `${window.location.origin}/candidate/register`;
+                              const details = isLive && room.passwordValidUntil
+                                ? `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nValid Until: ${new Date(room.passwordValidUntil).toLocaleTimeString()}`
+                                : `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nAccess Window: Starts when test goes LIVE (${test?.startTestWindowMinutes || 10} mins validity)`;
+                              copyToClipboard(details, 'Room Invite Link');
+                            }}
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                          >
+                            📋 Copy Full Invite
+                          </button>
+                          <button
+                            id={`qr-code-btn-${room._id}`}
+                            onClick={() => handleOpenQrModal(room)}
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            title="View & Download Room QR Code"
+                          >
+                            <span>📱</span> QR Code
+                          </button>
+                        </div>
 
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button
@@ -1552,6 +1721,166 @@ export default function AdminTestDetail() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {/* ── QR Code View & Download Modal (FEATURE-019) ── */}
+        {selectedQrRoom && (
+          <div className="modal-backdrop" onClick={() => setSelectedQrRoom(null)}>
+            <div
+              className="modal-container"
+              style={{ maxWidth: 460, textAlign: 'center' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header" style={{ textAlign: 'left' }}>
+                <div>
+                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>📱</span> Room Entry QR Code
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                    {selectedQrRoom.roomName || selectedQrRoom.roomCode} • {test?.title}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="close-qr-modal-x-btn"
+                  onClick={() => setSelectedQrRoom(null)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '20px 24px' }}>
+                {/* Info Strip */}
+                <div
+                  style={{
+                    width: '100%',
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    fontSize: '0.82rem',
+                    textAlign: 'left',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <span style={{ color: '#64748B' }}>Room Code: </span>
+                    <code style={{ fontWeight: 700, color: 'var(--color-navy)' }}>{selectedQrRoom.roomCode}</code>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B' }}>Password: </span>
+                    <code style={{ fontWeight: 700, color: 'var(--color-navy)' }}>{selectedQrRoom.roomPassword}</code>
+                  </div>
+                </div>
+
+                {/* QR Code Canvas / Image Display */}
+                <div
+                  style={{
+                    background: '#FFFFFF',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: 12,
+                    padding: 16,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 250,
+                    width: '100%',
+                    maxWidth: 270,
+                  }}
+                >
+                  {generatingQr || !qrDataUrl ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <LoadingDots size="md" />
+                      <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Generating QR Code...</span>
+                    </div>
+                  ) : (
+                    <img
+                      id="room-qr-code-img"
+                      src={qrDataUrl}
+                      alt={`QR Code for Room ${selectedQrRoom.roomName || selectedQrRoom.roomCode}`}
+                      style={{ width: 230, height: 230, display: 'block', borderRadius: 4 }}
+                    />
+                  )}
+                </div>
+
+                {/* Context instructions */}
+                <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, margin: 0, padding: '0 8px' }}>
+                  Candidates can scan this QR code with their mobile or laptop to register/login and automatically land on test instructions.
+                </p>
+
+                {/* Invite Link Quick Copy */}
+                <div style={{ width: '100%', display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      selectedQrRoom.inviteToken
+                        ? `${window.location.origin}/candidate/register?invite=${selectedQrRoom.inviteToken}`
+                        : `${window.location.origin}/candidate/register`
+                    }
+                    style={{
+                      flex: 1,
+                      fontSize: '0.75rem',
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: '1px solid #D1D5DB',
+                      background: '#F9FAFB',
+                      color: '#374151',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.78rem', flexShrink: 0 }}
+                    onClick={() => {
+                      const inviteLink = selectedQrRoom.inviteToken
+                        ? `${window.location.origin}/candidate/register?invite=${selectedQrRoom.inviteToken}`
+                        : `${window.location.origin}/candidate/register`;
+                      copyToClipboard(inviteLink, 'Invite Link');
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    id="download-qr-btn"
+                    className="btn btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 14px' }}
+                    onClick={handleDownloadQr}
+                    disabled={!qrDataUrl || generatingQr}
+                  >
+                    <span>📥</span> Download PNG
+                  </button>
+                  <button
+                    type="button"
+                    id="print-qr-btn"
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 14px' }}
+                    onClick={handlePrintQr}
+                    disabled={!qrDataUrl || generatingQr}
+                  >
+                    <span>🖨️</span> Print Poster
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  id="close-qr-modal-btn"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+                  onClick={() => setSelectedQrRoom(null)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
