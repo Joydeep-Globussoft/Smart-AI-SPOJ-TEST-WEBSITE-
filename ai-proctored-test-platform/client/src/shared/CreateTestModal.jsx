@@ -23,7 +23,13 @@ const INITIAL_FORM_STATE = {
   passingCriteria: 0,
   startTestWindowMinutes: 10,
   supportedLanguages: ['python', 'java', 'cpp', 'javascript'],
-  instructions: '1. Maintain full-screen mode throughout the test.\n2. Do not switch tabs or use secondary monitors.\n3. Keep your webcam on and ensure your face is clearly visible.\n4. Mobile phones and electronic gadgets are strictly prohibited.',
+  instructions:
+    '1. Carefully read problem instructions, and code using the specified language.\n' +
+    '2. Thoroughly test your code with sample cases before submitting.\n' +
+    '3. Avoid plagiarism and unauthorized collaboration; maintain integrity.\n' +
+    '4. Manage your time wisely among questions and monitor the clock.\n' +
+    '5. Ensure you answer the respective Set that will be assigned to you.\n' +
+    '6. Submit your solutions before the deadline, and remember to follow any offline instructions provided.',
 };
 
 export default function CreateTestModal({

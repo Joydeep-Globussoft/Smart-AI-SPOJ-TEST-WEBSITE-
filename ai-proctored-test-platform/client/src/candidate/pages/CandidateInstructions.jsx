@@ -12,6 +12,9 @@ import { verifyActiveVideoStream, checkHardwareDevices } from '../../services/me
 export default function CandidateInstructions() {
   const navigate = useNavigate();
   const [joinData, setJoinData] = useState(null);
+  const [currentStep, setCurrentStep] = useState(() => {
+    return sessionStorage.getItem('instructionsStep') === '2' ? 2 : 1;
+  });
   // Status states: 'UNCHECKED' | 'GRANTED' | 'NOT_FOUND' | 'DENIED'
   const [webcamStatus, setWebcamStatus] = useState('UNCHECKED');
   const [micStatus, setMicStatus] = useState('UNCHECKED');
@@ -340,6 +343,7 @@ export default function CandidateInstructions() {
           submissionSessionId: data.submissionSessionId,
         })
       );
+      sessionStorage.removeItem('instructionsStep');
 
       // Navigate based on test type
       if (joinData.test.testType === 'AI_TEST') {
@@ -362,7 +366,7 @@ export default function CandidateInstructions() {
 
   return (
     <div className="app-layout" style={{ height: '100vh', background: '#F7F9FA', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Header */}
+      {/* Top Banner Header */}
       <div style={{ background: '#1A2B3C', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <img
           src={globussoftLogo}
@@ -371,370 +375,442 @@ export default function CandidateInstructions() {
         />
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 32, maxWidth: 960, margin: '0 auto', width: '100%', scrollbarGutter: 'stable' }}>
-        {/* ── Header Section (FEATURE-017: Option B Restructure) ── */}
-        <div
-          className="instructions-header-block card"
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 12,
-            padding: '24px 28px',
-            border: '1px solid #E5E7EB',
-            borderLeft: '5px solid var(--color-primary, #0E7C86)',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-            marginBottom: 24,
-          }}
-        >
-          {/* Overline Test Type Badge */}
-          <div style={{ marginBottom: 6 }}>
-            <span
-              className="badge badge-teal"
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                padding: '3px 10px',
-                borderRadius: 6,
-              }}
-            >
-              {joinData.test?.testType || 'TEST'}
-            </span>
-          </div>
-
-          {/* Test Title */}
-          <h1
-            style={{
-              fontSize: '1.85rem',
-              fontWeight: 800,
-              color: '#1A2B3C',
-              margin: '0 0 18px 0',
-              lineHeight: 1.25,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            {joinData.test?.title || 'Test Instructions'}
-          </h1>
-
-          {/* Horizontal Mini Stat Blocks */}
-          <div
-            className="instructions-stat-blocks-row"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: 12,
-            }}
-          >
-            {/* Stat 1: Duration */}
-            <div
-              className="stat-block-item"
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 8,
-                padding: '10px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                minWidth: 0,
-              }}
-            >
-              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>⏱️</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Duration
+      <div className="instructions-scroll-container" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '32px 24px', maxWidth: 960, margin: '0 auto', width: '100%', scrollbarGutter: 'stable' }}>
+        {currentStep === 1 ? (
+          /* ── PAGE 1: Instructions & Rules ── */
+          <div style={{ maxWidth: 840, margin: '0 auto', width: '100%' }}>
+            <div className="card" style={{ background: '#FFFFFF', borderRadius: 12, padding: '28px 32px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}>
+              {/* Test Instructions */}
+              <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: 24, marginBottom: 24 }}>
+                <h2 className="card-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1A2B3C', display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px 0' }}>
+                  <span>📋</span> Test Instructions
+                </h2>
+                <div
+                  style={{ lineHeight: 1.75, color: '#374151', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}
+                  dangerouslySetInnerHTML={{ __html: joinData.instructions }}
+                />
               </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {joinData.test?.durationMinutes ?? 90} minutes
+
+              {/* Mandatory Proctoring Rules */}
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1A2B3C', display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 14px 0' }}>
+                  <span>⚠️</span> Mandatory Proctoring Rules
+                </h3>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 0, margin: 0 }}>
+                  {[
+                    'Stay in fullscreen mode throughout the test. Exiting fullscreen will be logged as a violation.',
+                    'Alt+Tab and window switching are disabled. Leaving or defocusing the test window is logged with proof.',
+                    'Do not switch tabs or minimize the browser window. Tab switches are logged with proof.',
+                    'Do not use your mobile phone. Automated AI phone detection is active.',
+                    'Copy-paste and context menus are disabled.',
+                    'Your webcam and microphone must remain active and unobstructed at all times.',
+                    'The test will automatically submit when your countdown timer expires.',
+                  ].map((rule, i) => (
+                    <li key={i} style={{ display: 'flex', gap: 10, fontSize: '0.875rem', color: '#374151', lineHeight: 1.5 }}>
+                      <span style={{ color: '#E74C3C', fontWeight: 700, flexShrink: 0 }}>✗</span>
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 
-            {/* Stat 2: Total Questions */}
-            <div
-              className="stat-block-item"
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 8,
-                padding: '10px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                minWidth: 0,
-              }}
-            >
-              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>📄</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Total Questions
-              </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {joinData.test?.totalQuestions ?? 0}
-              </div>
-            </div>
-
-            {/* Stat 3: Passing Criteria */}
-            <div
-              className="stat-block-item"
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 8,
-                padding: '10px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                minWidth: 0,
-              }}
-            >
-              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>✅</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Passing Criteria
-              </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                ≥ {joinData.test?.passingCriteria !== undefined && joinData.test?.passingCriteria !== null ? joinData.test.passingCriteria : 1} Qs
-              </div>
-            </div>
-
-            {/* Stat 4: Room */}
-            <div
-              className="stat-block-item"
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 8,
-                padding: '10px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                minWidth: 0,
-              }}
-            >
-              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>🏠</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Room
-              </div>
-              <div
-                style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                title={joinData.room?.roomName || joinData.room?.roomCode}
-              >
-                {joinData.room?.roomName || joinData.room?.roomCode || 'Assigned Room'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
-          {/* Instructions */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">📋 Test Instructions</h2>
-            </div>
-            <div
-              style={{ lineHeight: 1.7, color: '#374151', whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}
-              dangerouslySetInnerHTML={{ __html: joinData.instructions }}
-            />
-
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1A2B3C', marginBottom: 12 }}>
-                ⚠️ Mandatory Proctoring Rules
-              </h3>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 0 }}>
-                {[
-                  'Stay in fullscreen mode throughout the test. Exiting fullscreen will be logged as a violation.',
-                  'Alt+Tab and window switching are disabled. Leaving or defocusing the test window is logged with proof.',
-                  'Do not switch tabs or minimize the browser window. Tab switches are logged with proof.',
-                  'Do not use your mobile phone. Automated AI phone detection is active.',
-                  'Copy-paste and context menus are disabled.',
-                  'Your webcam and microphone must remain active and unobstructed at all times.',
-                  'The test will automatically submit when your countdown timer expires.',
-                ].map((rule, i) => (
-                  <li key={i} style={{ display: 'flex', gap: 10, fontSize: '0.85rem', color: '#374151' }}>
-                    <span style={{ color: '#E74C3C', flexShrink: 0 }}>✗</span>
-                    {rule}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Media Permission Verification & Start Panel */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">📸 Device Permissions (FR-5.2)</h3>
-              </div>
-              <div
+            {/* Next Step Navigation Action */}
+            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                id="next-step-btn"
+                type="button"
+                className="btn btn-primary btn-lg"
                 style={{
-                  width: '100%',
-                  aspectRatio: '4/3',
-                  background: '#1A2B3C',
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  marginBottom: 12,
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
+                  gap: 8,
+                  padding: '12px 28px',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setCurrentStep(2);
+                  sessionStorage.setItem('instructionsStep', '2');
+                  const sc = document.querySelector('.instructions-scroll-container');
+                  if (sc) sc.scrollTop = 0;
                 }}
               >
-                {webcamGranted ? (
-                  <video
-                    ref={handleVideoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '16px 12px' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📷</div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
-                      {webcamStatus === 'NOT_FOUND' ? 'No Webcam Detected' : 'Webcam Not Connected'}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', marginTop: 4, color: 'rgba(255,255,255,0.45)' }}>
-                      Connect a physical camera and click "Grant Permissions"
-                    </div>
+                <span>Next: Device Permissions &amp; Setup</span>
+                <span style={{ fontSize: '1.15rem', lineHeight: 1 }}>→</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── PAGE 2: Permissions & Start ── */
+          <div style={{ maxWidth: 840, margin: '0 auto', width: '100%' }}>
+            {/* Back Button */}
+            <div style={{ marginBottom: 16 }}>
+              <button
+                id="back-step-btn"
+                type="button"
+                className="btn btn-outline"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: '#4B5563',
+                  background: '#FFFFFF',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setCurrentStep(1);
+                  sessionStorage.setItem('instructionsStep', '1');
+                  const sc = document.querySelector('.instructions-scroll-container');
+                  if (sc) sc.scrollTop = 0;
+                }}
+              >
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>←</span>
+                <span>Back to Instructions &amp; Rules</span>
+              </button>
+            </div>
+
+            {/* ── Header Section (FEATURE-017: Option B Restructure) ── */}
+            <div
+              className="instructions-header-block card"
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 12,
+                padding: '24px 28px',
+                border: '1px solid #E5E7EB',
+                borderLeft: '5px solid var(--color-primary, #0E7C86)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                marginBottom: 24,
+              }}
+            >
+              {/* Overline Test Type Badge */}
+              <div style={{ marginBottom: 6 }}>
+                <span
+                  className="badge badge-teal"
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                  }}
+                >
+                  {joinData.test?.testType || 'TEST'}
+                </span>
+              </div>
+
+              {/* Test Title */}
+              <h1
+                style={{
+                  fontSize: '1.85rem',
+                  fontWeight: 800,
+                  color: '#1A2B3C',
+                  margin: '0 0 18px 0',
+                  lineHeight: 1.25,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {joinData.test?.title || 'Test Instructions'}
+              </h1>
+
+              {/* Horizontal Mini Stat Blocks */}
+              <div
+                className="instructions-stat-blocks-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {/* Stat 1: Duration */}
+                <div
+                  className="stat-block-item"
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>⏱️</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Duration
                   </div>
-                )}
-                {webcamGranted && (
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {joinData.test?.durationMinutes ?? 90} minutes
+                  </div>
+                </div>
+
+                {/* Stat 2: Total Questions */}
+                <div
+                  className="stat-block-item"
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>📄</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Total Questions
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {joinData.test?.totalQuestions ?? 0}
+                  </div>
+                </div>
+
+                {/* Stat 3: Passing Criteria */}
+                <div
+                  className="stat-block-item"
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>✅</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Passing Criteria
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    ≥ {joinData.test?.passingCriteria !== undefined && joinData.test?.passingCriteria !== null ? joinData.test.passingCriteria : 1} Qs
+                  </div>
+                </div>
+
+                {/* Stat 4: Room */}
+                <div
+                  className="stat-block-item"
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>🏠</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Room
+                  </div>
                   <div
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      background: '#2ECC71',
-                      borderRadius: 4,
-                      padding: '2px 8px',
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      color: 'white',
-                    }}
+                    style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    title={joinData.room?.roomName || joinData.room?.roomCode}
                   >
-                    ● LIVE PREVIEW
+                    {joinData.room?.roomName || joinData.room?.roomCode || 'Assigned Room'}
                   </div>
-                )}
-              </div>
-
-              {/* Status Indicators for Webcam, Mic & Screen */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#4b5563' }}>Webcam:</span>
-                  <span style={{ fontWeight: 600, color: webcamGranted ? '#2ECC71' : '#E74C3C' }}>
-                    {webcamStatus === 'GRANTED'
-                      ? '✓ Granted'
-                      : webcamStatus === 'NOT_FOUND'
-                      ? '✗ No Camera Found'
-                      : '✗ Not Granted'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#4b5563' }}>Microphone:</span>
-                  <span style={{ fontWeight: 600, color: micGranted ? '#2ECC71' : '#E74C3C' }}>
-                    {micStatus === 'GRANTED'
-                      ? '✓ Granted'
-                      : micStatus === 'NOT_FOUND'
-                      ? '✗ No Mic Found'
-                      : '✗ Not Granted'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#4b5563' }}>Screen Share:</span>
-                  <span style={{ fontWeight: 600, color: screenGranted ? '#2ECC71' : '#E74C3C' }}>
-                    {screenStatus === 'GRANTED' ? '✓ Granted' : '✗ Not Granted'}
-                  </span>
                 </div>
               </div>
+            </div>
 
-              <div style={{ fontSize: '0.74rem', color: '#64748b', marginBottom: 12, lineHeight: 1.4, background: '#f8fafc', padding: '8px 10px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                ℹ️ <strong>Screen sharing is required</strong> so violations like tab-switching and exiting fullscreen can be verified.
-              </div>
-
-              {!isPermissionsComplete ? (
-                <button
-                  id="grant-media-btn"
-                  className="btn btn-secondary"
+            {/* Device Permissions & Start Panel */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+              {/* Device Permissions Card */}
+              <div className="card">
+                <div className="card-header">
+                  <h3 className="card-title">📸 Device Permissions (FR-5.2)</h3>
+                </div>
+                <div
                   style={{
                     width: '100%',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    padding: '10px 8px',
+                    aspectRatio: '4/3',
+                    background: '#1A2B3C',
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    marginBottom: 12,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 6,
-                    whiteSpace: 'normal',
-                    lineHeight: 1.3,
-                    boxSizing: 'border-box',
-                    overflow: 'hidden',
+                    position: 'relative',
                   }}
-                  onClick={requestMediaPermissions}
-                  disabled={requestingPermissions}
                 >
-                  {requestingPermissions ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <LoadingDots size="xs" />
-                      <span>Requesting Permissions...</span>
-                    </span>
+                  {webcamGranted ? (
+                    <video
+                      ref={handleVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   ) : (
-                    <>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          flexShrink: 0,
-                          fontSize: '0.95rem',
-                          lineHeight: 1,
-                        }}
-                      >
-                        <span>📷</span>
-                        <span>🖥️</span>
-                      </span>
-                      <span style={{ display: 'inline', textAlign: 'center' }}>
-                        Grant Camera, Mic &amp; Screen Access
-                      </span>
-                    </>
+                    <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '16px 12px' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📷</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
+                        {webcamStatus === 'NOT_FOUND' ? 'No Webcam Detected' : 'Webcam Not Connected'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', marginTop: 4, color: 'rgba(255,255,255,0.45)' }}>
+                        Connect a physical camera and click "Grant Permissions"
+                      </div>
+                    </div>
                   )}
-                </button>
-              ) : (
-                <div className="alert alert-success" style={{ margin: 0, fontSize: '0.8rem' }}>
-                  ✅ Devices &amp; Screen verified — ready to begin!
+                  {webcamGranted && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        background: '#2ECC71',
+                        borderRadius: 4,
+                        padding: '2px 8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        color: 'white',
+                      }}
+                    >
+                      ● LIVE PREVIEW
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {error && (
-              <div className="alert alert-danger" id="instructions-error-alert" style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
-                {error.includes('active exam') ? `⚠️ ${error}` : error}
-              </div>
-            )}
+                {/* Status Indicators for Webcam, Mic & Screen */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#4b5563' }}>Webcam:</span>
+                    <span style={{ fontWeight: 600, color: webcamGranted ? '#2ECC71' : '#E74C3C' }}>
+                      {webcamStatus === 'GRANTED'
+                        ? '✓ Granted'
+                        : webcamStatus === 'NOT_FOUND'
+                        ? '✗ No Camera Found'
+                        : '✗ Not Granted'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#4b5563' }}>Microphone:</span>
+                    <span style={{ fontWeight: 600, color: micGranted ? '#2ECC71' : '#E74C3C' }}>
+                      {micStatus === 'GRANTED'
+                        ? '✓ Granted'
+                        : micStatus === 'NOT_FOUND'
+                        ? '✗ No Mic Found'
+                        : '✗ Not Granted'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#4b5563' }}>Screen Share:</span>
+                    <span style={{ fontWeight: 600, color: screenGranted ? '#2ECC71' : '#E74C3C' }}>
+                      {screenStatus === 'GRANTED' ? '✓ Granted' : '✗ Not Granted'}
+                    </span>
+                  </div>
+                </div>
 
-            <div className="card" style={{ background: '#1A2B3C', borderColor: '#1A2B3C' }}>
-              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginBottom: 12 }}>
-                Clicking Start will initiate your timer and lock the browser in full-screen mode.
-              </div>
-              <button
-                id="start-test-btn"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%' }}
-                onClick={handleStartTest}
-                disabled={loading || !isPermissionsComplete}
-              >
-                {loading ? (
-                  <>
-                    <LoadingDots size="sm" color="white" /> Starting test...
-                  </>
+                <div style={{ fontSize: '0.74rem', color: '#64748b', marginBottom: 12, lineHeight: 1.4, background: '#f8fafc', padding: '8px 10px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                  ℹ️ <strong>Screen sharing is required</strong> so violations like tab-switching and exiting fullscreen can be verified.
+                </div>
+
+                {!isPermissionsComplete ? (
+                  <button
+                    id="grant-media-btn"
+                    className="btn btn-secondary"
+                    style={{
+                      width: '100%',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      padding: '10px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      whiteSpace: 'normal',
+                      lineHeight: 1.3,
+                      boxSizing: 'border-box',
+                      overflow: 'hidden',
+                    }}
+                    onClick={requestMediaPermissions}
+                    disabled={requestingPermissions}
+                  >
+                    {requestingPermissions ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <LoadingDots size="xs" />
+                        <span>Requesting Permissions...</span>
+                      </span>
+                    ) : (
+                      <>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            flexShrink: 0,
+                            fontSize: '0.95rem',
+                            lineHeight: 1,
+                          }}
+                        >
+                          <span>📷</span>
+                          <span>🖥️</span>
+                        </span>
+                        <span style={{ display: 'inline', textAlign: 'center' }}>
+                          Grant Camera, Mic &amp; Screen Access
+                        </span>
+                      </>
+                    )}
+                  </button>
                 ) : (
-                  '🚀 Start Test — Enter Fullscreen'
+                  <div className="alert alert-success" style={{ margin: 0, fontSize: '0.8rem' }}>
+                    ✅ Devices &amp; Screen verified — ready to begin!
+                  </div>
                 )}
-              </button>
-              {!isPermissionsComplete && (
-                <p style={{ color: '#f87171', fontSize: '0.75rem', textAlign: 'center', marginTop: 8 }}>
-                  🔒 Camera, Mic &amp; Screen access must be granted to start
-                </p>
-              )}
+              </div>
+
+              {/* Start Test Card */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {error && (
+                  <div className="alert alert-danger" id="instructions-error-alert" style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
+                    {error.includes('active exam') ? `⚠️ ${error}` : error}
+                  </div>
+                )}
+
+                <div className="card" style={{ background: '#1A2B3C', borderColor: '#1A2B3C' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginBottom: 12 }}>
+                    Clicking Start will initiate your timer and lock the browser in full-screen mode.
+                  </div>
+                  <button
+                    id="start-test-btn"
+                    className="btn btn-primary btn-lg"
+                    style={{ width: '100%' }}
+                    onClick={handleStartTest}
+                    disabled={loading || !isPermissionsComplete}
+                  >
+                    {loading ? (
+                      <>
+                        <LoadingDots size="sm" color="white" /> Starting test...
+                      </>
+                    ) : (
+                      '🚀 Start Test — Enter Fullscreen'
+                    )}
+                  </button>
+                  {!isPermissionsComplete && (
+                    <p style={{ color: '#f87171', fontSize: '0.75rem', textAlign: 'center', marginTop: 8 }}>
+                      🔒 Camera, Mic &amp; Screen access must be granted to start
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
