@@ -4,8 +4,12 @@ const mongoose = require('mongoose');
 
 const candidateSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  fatherName: { type: String, trim: true, default: '' },
   email: { type: String, required: true, unique: true, lowercase: true },
-  phone: { type: String },
+  phone: { type: String, trim: true, default: '' },
+  qualification: { type: String, trim: true, default: '' },
+  stream: { type: String, trim: true, default: '' },
+  address: { type: String, trim: true, default: '' },
   passwordHash: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   // TTL index: index: { expires: 0 } means expire exactly AT expiresAt timestamp (Section 8.2 note)

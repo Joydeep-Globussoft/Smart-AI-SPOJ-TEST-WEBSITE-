@@ -106,12 +106,12 @@ const adminCreate = async (req, res, next) => {
 };
 
 // ── POST /auth/candidate/register ────────────────────────────────────────────
-// Body: { name, email, password, phone }
+// Body: { name, fatherName, email, phone, qualification, stream, address, password }
 // Response: { candidate, token }
 // AC: Record created with expiresAt = createdAt + 3 days (FR-1.2)
 const candidateRegister = async (req, res, next) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, fatherName, email, phone, qualification, stream, address, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'name, email, and password are required' });
     }
@@ -130,9 +130,13 @@ const candidateRegister = async (req, res, next) => {
     const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000); // createdAt + N days
 
     const candidate = await Candidate.create({
-      name,
-      email,
-      phone: phone || undefined,
+      name: name.trim(),
+      fatherName: fatherName ? fatherName.trim() : '',
+      email: email.trim().toLowerCase(),
+      phone: phone ? phone.trim() : '',
+      qualification: qualification ? qualification.trim() : '',
+      stream: stream ? stream.trim() : '',
+      address: address ? address.trim() : '',
       passwordHash,
       createdAt: now,
       expiresAt, // TTL index will auto-delete document at this time (Section 8.2 note)
@@ -146,8 +150,12 @@ const candidateRegister = async (req, res, next) => {
       candidate: {
         id: candidate._id,
         name: candidate.name,
+        fatherName: candidate.fatherName,
         email: candidate.email,
         phone: candidate.phone,
+        qualification: candidate.qualification,
+        stream: candidate.stream,
+        address: candidate.address,
         expiresAt: candidate.expiresAt,
       },
       token,
@@ -197,8 +205,12 @@ const candidateLogin = async (req, res, next) => {
       candidate: {
         id: candidate._id,
         name: candidate.name,
+        fatherName: candidate.fatherName,
         email: candidate.email,
         phone: candidate.phone,
+        qualification: candidate.qualification,
+        stream: candidate.stream,
+        address: candidate.address,
         expiresAt: candidate.expiresAt,
       },
       token,

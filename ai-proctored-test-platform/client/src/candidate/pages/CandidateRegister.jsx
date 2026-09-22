@@ -16,7 +16,16 @@ export default function CandidateRegister() {
   const inviteToken = searchParams.get('invite');
   const initialMountRef = useRef(false);
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({
+    name: '',
+    fatherName: '',
+    email: '',
+    phone: '',
+    qualification: '',
+    stream: '',
+    address: '',
+    password: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [inviteInfo, setInviteInfo] = useState(null);
@@ -44,16 +53,16 @@ export default function CandidateRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
     setLoading(true);
     try {
       const { data } = await api.candidateRegister({
         name: form.name,
+        fatherName: form.fatherName,
         email: form.email,
         phone: form.phone,
+        qualification: form.qualification,
+        stream: form.stream,
+        address: form.address,
         password: form.password,
       });
       // FR-1.2: account expires in 3 days
@@ -107,7 +116,7 @@ export default function CandidateRegister() {
         </div>
 
         <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Register to join the test. Your account is valid for 3 days.</p>
+        <p className="auth-subtitle">Register to join the test.</p>
 
         {inviteInfo && (
           <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -118,6 +127,7 @@ export default function CandidateRegister() {
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleSubmit}>
+          {/* 1. Full Name */}
           <div className="form-group">
             <label className="form-label" htmlFor="name">Full Name</label>
             <input
@@ -133,6 +143,22 @@ export default function CandidateRegister() {
             />
           </div>
 
+          {/* 2. Father's Name */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="fatherName">Father's Name</label>
+            <input
+              id="fatherName"
+              name="fatherName"
+              type="text"
+              className="form-input"
+              value={form.fatherName}
+              onChange={handleChange}
+              placeholder="Father's Full Name"
+              autoComplete="off"
+            />
+          </div>
+
+          {/* 3. Email */}
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email</label>
             <input
@@ -148,8 +174,9 @@ export default function CandidateRegister() {
             />
           </div>
 
+          {/* 4. Phone */}
           <div className="form-group">
-            <label className="form-label" htmlFor="phone">Phone (optional)</label>
+            <label className="form-label" htmlFor="phone">Phone</label>
             <input
               id="phone"
               name="phone"
@@ -162,6 +189,50 @@ export default function CandidateRegister() {
             />
           </div>
 
+          {/* 5. Qualification + Stream (side-by-side two-column row) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="qualification">Qualification</label>
+              <input
+                id="qualification"
+                name="qualification"
+                type="text"
+                className="form-input"
+                value={form.qualification}
+                onChange={handleChange}
+                placeholder="e.g. B.Tech / BCA"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="stream">Stream</label>
+              <input
+                id="stream"
+                name="stream"
+                type="text"
+                className="form-input"
+                value={form.stream}
+                onChange={handleChange}
+                placeholder="e.g. Computer Science"
+              />
+            </div>
+          </div>
+
+          {/* 6. Address */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="address">Address</label>
+            <input
+              id="address"
+              name="address"
+              type="text"
+              className="form-input"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="e.g. City, State"
+              autoComplete="street-address"
+            />
+          </div>
+
+          {/* 7. Password */}
           <div className="form-group">
             <label className="form-label" htmlFor="password">Password</label>
             <PasswordInput
@@ -176,19 +247,6 @@ export default function CandidateRegister() {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
-            <PasswordInput
-              id="confirmPassword"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Repeat your password"
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
           <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 8 }} disabled={loading}>
             {loading ? <><LoadingDots size="sm" color="white" /> Creating account...</> : 'Create Account'}
           </button>
@@ -197,11 +255,6 @@ export default function CandidateRegister() {
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: '0.875rem', color: '#6b7280' }}>
           Already registered? <Link to={`/candidate/login${location.search}`}>Login instead</Link>
         </p>
-
-        <div className="alert alert-info" style={{ marginTop: 16, marginBottom: 0 }}>
-          ⚠️ Use <strong>Chrome or Edge</strong> browser for the best test experience.
-          This platform requires webcam access and fullscreen mode.
-        </div>
       </div>
     </div>
   );
