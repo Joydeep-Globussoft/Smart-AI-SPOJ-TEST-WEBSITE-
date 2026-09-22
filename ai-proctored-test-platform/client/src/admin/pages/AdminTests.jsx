@@ -1,6 +1,6 @@
 // AdminTests.jsx — Test Management Page
-// Implements PRD Section 9.2, Section 11.2 (FR-2.1, FR-2.2, FR-2.3), Section 12.1
-import React, { useState, useEffect, useCallback } from 'react';
+// Implements PRD Section 9.2, Section 11.2 (FR-2.1, FR-2.2, FR-2.3), Section 12.1, FEATURE-021, BUG-86
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
@@ -8,6 +8,8 @@ import TestStatusBadge from '../../shared/TestStatusBadge';
 import CreateTestModal from '../../shared/CreateTestModal';
 import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
+import useAdminFilterState from '../../hooks/useAdminFilterState';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 
 const TEST_TYPES = [
   { value: 'SPOJ', label: 'SPOJ (DSA / Competitive Coding)' },
@@ -16,16 +18,32 @@ const TEST_TYPES = [
   { value: 'AI_TEST', label: 'AI Test (Kimi Assisted)' },
 ];
 
+const DEFAULT_FILTERS = {
+  search: '',
+  type: 'ALL',
+  status: 'ALL',
+};
+
 export default function AdminTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [questionSets, setQuestionSets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters & Search
-  const [filterType, setFilterType] = useState('ALL');
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  // FEATURE-021: Preserved Filters & Search via URL parameters
+  const [filters, updateFilter] = useAdminFilterState(DEFAULT_FILTERS);
+  const searchQuery = filters.search;
+  const filterType = filters.type;
+  const filterStatus = filters.status;
+
+  // FEATURE-021: Preserved scroll position for Test Management table
+  const tableContainerRef = useRef(null);
+  useScrollRestoration({
+    containerRef: tableContainerRef,
+    loading,
+    key: 'tests_table',
+    dependencies: [tests.length, searchQuery, filterType, filterStatus],
+  });
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -127,7 +145,7 @@ export default function AdminTests() {
                 className="form-control"
                 placeholder="Search by test title..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => updateFilter('search', e.target.value)}
               />
             </div>
             <div>
@@ -135,7 +153,7 @@ export default function AdminTests() {
               <select
                 className="form-select"
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
+                onChange={(e) => updateFilter('type', e.target.value)}
               >
                 <option value="ALL">All Test Types</option>
                 {TEST_TYPES.map((t) => (
@@ -148,7 +166,7 @@ export default function AdminTests() {
               <select
                 className="form-select"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => updateFilter('status', e.target.value)}
               >
                 <option value="ALL">All Statuses</option>
                 <option value="DRAFT">DRAFT</option>
@@ -178,7 +196,11 @@ export default function AdminTests() {
             </button>
           </div>
         ) : (
-          <div className="table-container test-table-scroll-container" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <div
+            ref={tableContainerRef}
+            className="table-container test-table-scroll-container"
+            style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+          >
             <table className="table" style={{ minWidth: 1250 }}>
               <thead>
                 <tr>

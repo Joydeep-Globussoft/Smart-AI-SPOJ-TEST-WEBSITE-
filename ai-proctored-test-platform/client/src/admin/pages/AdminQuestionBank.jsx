@@ -4,6 +4,8 @@ import AdminNavbar from '../../shared/AdminNavbar';
 import EmbeddedPdfViewer from '../../candidate/components/EmbeddedPdfViewer';
 import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
+import useAdminFilterState from '../../hooks/useAdminFilterState';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 
 const TEST_TYPES = [
   { value: 'SPOJ', label: 'SPOJ (DSA / Competitive)' },
@@ -11,6 +13,13 @@ const TEST_TYPES = [
   { value: 'REACT', label: 'React.js' },
   { value: 'AI_TEST', label: 'AI Test (Kimi Assisted)' },
 ];
+
+const DEFAULT_FILTERS = {
+  type: 'ALL',
+  search: '',
+  folder: '',
+  set: '',
+};
 
 // ── Helper to recursively extract all File objects from Drag-and-Drop DataTransfer (BUG-77) ──
 export const extractFilesFromDataTransfer = async (dataTransfer) => {
@@ -95,9 +104,17 @@ export default function AdminQuestionBank() {
   const [questions, setQuestions] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
 
-  // Search and Filter State
-  const [filterType, setFilterType] = useState('ALL');
-  const [folderSearch, setFolderSearch] = useState('');
+  // FEATURE-021: Search and Filter State via URL parameters
+  const [filters, updateFilter, setFilters] = useAdminFilterState(DEFAULT_FILTERS);
+  const filterType = filters.type;
+  const folderSearch = filters.search;
+
+  // FEATURE-021: Scroll restoration for Question Bank
+  useScrollRestoration({
+    loading: loadingFolders || loadingQuestions,
+    key: 'qbank',
+    dependencies: [folders.length, questions.length, filters.folder, filters.set],
+  });
 
   // ── Folder Modals State ──
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -184,9 +201,12 @@ export default function AdminQuestionBank() {
       setFolders(folderList);
 
       if (folderList.length > 0) {
+        const targetFolderId = preferredFolderId || filters.folder;
+        const targetSetId = preferredSetId || filters.set;
+
         let targetFolder = null;
-        if (preferredFolderId) {
-          targetFolder = folderList.find((f) => f._id === preferredFolderId);
+        if (targetFolderId) {
+          targetFolder = folderList.find((f) => f._id === targetFolderId);
         } else if (selectedFolder) {
           targetFolder = folderList.find((f) => f._id === selectedFolder._id);
         }
@@ -195,10 +215,10 @@ export default function AdminQuestionBank() {
         }
         setSelectedFolder(targetFolder);
 
-        // If preferredSetId is specified, switch to that set in STATE 2
+        // If targetSetId is specified, switch to that set in STATE 2
         const sets = targetFolder.questionSets || [];
-        if (preferredSetId && sets.some((s) => s._id === preferredSetId)) {
-          setSelectedSet(sets.find((s) => s._id === preferredSetId));
+        if (targetSetId && sets.some((s) => s._id === targetSetId)) {
+          setSelectedSet(sets.find((s) => s._id === targetSetId));
         } else if (selectedSet && sets.some((s) => s._id === selectedSet._id)) {
           setSelectedSet(sets.find((s) => s._id === selectedSet._id));
         } else {
@@ -213,7 +233,7 @@ export default function AdminQuestionBank() {
     } finally {
       setLoadingFolders(false);
     }
-  }, [selectedFolder, selectedSet]);
+  }, [filters.folder, filters.set, selectedFolder, selectedSet]);
 
   useEffect(() => {
     fetchFolders();
@@ -267,6 +287,19 @@ export default function AdminQuestionBank() {
   const handleSelectFolder = (folder) => {
     setSelectedFolder(folder);
     setSelectedSet(null); // Reset to STATE 1 (Folder Overview & Sets List)
+    setFilters((prev) => ({ ...prev, folder: folder._id, set: '' }));
+  };
+
+  // ── Question Set Selection Handler (Switches to STATE 2) ──
+  const handleSelectSet = (qs) => {
+    setSelectedSet(qs);
+    setFilters((prev) => ({ ...prev, folder: selectedFolder?._id || '', set: qs._id }));
+  };
+
+  // ── Back to Folder Sets List Handler ──
+  const handleBackToSets = () => {
+    setSelectedSet(null);
+    updateFilter('set', '');
   };
 
   // ── Filtered Folders ──
@@ -872,14 +905,14 @@ export default function AdminQuestionBank() {
                 placeholder="🔍 Search folders..."
                 style={{ fontSize: '0.8rem', padding: '6px 10px' }}
                 value={folderSearch}
-                onChange={(e) => setFolderSearch(e.target.value)}
+                onChange={(e) => updateFilter('search', e.target.value)}
               />
               <select
                 id="filter-type-select"
                 className="form-select"
                 style={{ fontSize: '0.8rem', padding: '6px 10px' }}
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
+                onChange={(e) => updateFilter('type', e.target.value)}
               >
                 <option value="ALL">All Test Types</option>
                 {TEST_TYPES.map((t) => (
@@ -1130,7 +1163,7 @@ export default function AdminQuestionBank() {
                               flexWrap: 'wrap',
                               gap: 12,
                             }}
-                            onClick={() => setSelectedSet(qs)}
+                            onClick={() => handleSelectSet(qs)}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 240 }}>
                               <span style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>📄</span>
@@ -1180,7 +1213,7 @@ export default function AdminQuestionBank() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setSelectedSet(qs)}
+                                onClick={() => handleSelectSet(qs)}
                                 className="btn btn-primary btn-sm"
                                 style={{ fontSize: '0.78rem', padding: '5px 14px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
@@ -1203,7 +1236,7 @@ export default function AdminQuestionBank() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
                     <button
                       type="button"
-                      onClick={() => setSelectedSet(null)}
+                      onClick={handleBackToSets}
                       className="btn btn-secondary btn-sm"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', padding: '4px 10px', fontWeight: 600 }}
                     >

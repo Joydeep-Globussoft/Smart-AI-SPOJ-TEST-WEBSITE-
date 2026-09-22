@@ -1,5 +1,5 @@
 // AdminCreateAdmin.jsx — Super Admin Account Provisioning & Management
-// Implements PRD Section 3 (Roles Matrix), Section 8.2 (Admin Schema), Section 9.1, Section 11.1 (FR-1.1), BUG-01, BUG-02
+// Implements PRD Section 3 (Roles Matrix), Section 8.2 (Admin Schema), Section 9.1, Section 11.1 (FR-1.1), BUG-01, BUG-02, FEATURE-021
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import PasswordInput from '../../shared/PasswordInput';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 
 export default function AdminCreateAdmin() {
   const { user } = useAuth();
@@ -26,6 +27,13 @@ export default function AdminCreateAdmin() {
   const [admins, setAdmins] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // FEATURE-021: Preserved scroll position for Manage Admins page
+  useScrollRestoration({
+    loading: loadingList,
+    key: 'admins_roster',
+    dependencies: [admins.length],
+  });
 
   // Modals state
   const [editAdmin, setEditAdmin] = useState(null);

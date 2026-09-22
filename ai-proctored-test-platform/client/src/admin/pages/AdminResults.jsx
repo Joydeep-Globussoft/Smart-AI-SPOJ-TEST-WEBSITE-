@@ -1,5 +1,5 @@
 // AdminResults.jsx — Results, Evaluation Breakdown, Shortlisting & PDF Export
-// Implements PRD Section 9.7, Section 11.9 (FR-9.1-9.4), Section 11.10 (FR-10.1, FR-10.2), Section 14 (Globussoft Branding)
+// Implements PRD Section 9.7, Section 11.9 (FR-9.1-9.4), Section 11.10 (FR-10.1, FR-10.2), Section 14 (Globussoft Branding), FEATURE-021
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -7,6 +7,13 @@ import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
 import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
+import useAdminFilterState from '../../hooks/useAdminFilterState';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
+
+const DEFAULT_FILTERS = {
+  tab: 'shortlist',
+  search: '',
+};
 
 export default function AdminResults() {
   const { testId } = useParams();
@@ -16,11 +23,19 @@ export default function AdminResults() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Active Tab: 'shortlist' | 'evaluations' | 'audit'
-  const [activeTab, setActiveTab] = useState('shortlist');
+  // FEATURE-021: Preserved Tab & Search query via URL parameters
+  const [filters, updateFilter] = useAdminFilterState(DEFAULT_FILTERS);
+  const activeTab = filters.tab;
+  const searchQuery = filters.search;
+  const setActiveTab = (tab) => updateFilter('tab', tab);
+  const setSearchQuery = (search) => updateFilter('search', search);
 
-  // Search & Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  // FEATURE-021: Preserved scroll position for Results page
+  useScrollRestoration({
+    loading,
+    key: `results_${activeTab}`,
+    dependencies: [results.length, shortlist?.candidates?.length, activeTab, searchQuery],
+  });
 
   // Threshold controls in Results view (FR-2.2, FR-2.3)
   const [passingCriteria, setPassingCriteria] = useState(3);

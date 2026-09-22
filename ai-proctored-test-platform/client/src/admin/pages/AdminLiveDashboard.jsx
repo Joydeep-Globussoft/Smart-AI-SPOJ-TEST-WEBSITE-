@@ -1,5 +1,5 @@
 // AdminLiveDashboard.jsx — Live Monitoring Dashboard & Seat Map
-// Implements PRD Section 9.8, Section 10 (Exact Socket.io Events), Section 11.7 (FR-7.3 persistent malpractice counter, FR-7.4), Section 11.8 (FR-8.1, FR-8.2, FR-8.3), Section 13 (NFR: 200ms debounce, React.memo, react-window virtualization for >50 items)
+// Implements PRD Section 9.8, Section 10 (Exact Socket.io Events), Section 11.7 (FR-7.3 persistent malpractice counter, FR-7.4), Section 11.8 (FR-8.1, FR-8.2, FR-8.3), Section 13 (NFR: 200ms debounce, React.memo, react-window virtualization for >50 items), FEATURE-021
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -9,6 +9,8 @@ import TestStatusBadge from '../../shared/TestStatusBadge';
 import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
+import useAdminFilterState from '../../hooks/useAdminFilterState';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   initSocket, disconnectSocket, emitAdminJoin,
   onDashboardUpdate, offDashboardUpdate,
@@ -22,6 +24,12 @@ import {
   onLateJoinProcessed, offLateJoinProcessed,
   onRoomTentativeTime, offRoomTentativeTime,
 } from '../../services/socketClient';
+
+const DEFAULT_FILTERS = {
+  room: 'ALL',
+  search: '',
+  status: 'ALL',
+};
 
 // Exact Section 14 colors
 const STATUS_COLORS = {
@@ -465,14 +473,44 @@ export default function AdminLiveDashboard() {
 
   const [test, setTest] = useState(null);
   const [rooms, setRooms] = useState([]);
-  const [selectedRoomId, setSelectedRoomId] = useState('ALL'); // FR-8.2: defaults to All Rooms
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
-  // Audio Voice Announcement Toggle (FR-8.3)
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  // FEATURE-021: Preserved Room, Search query, and Status Filter via URL parameters
+  const [filters, updateFilter] = useAdminFilterState(DEFAULT_FILTERS);
+  const selectedRoomId = filters.room;
+  const searchQuery = filters.search;
+  const filterStatus = filters.status;
+  const setSelectedRoomId = (r) => updateFilter('room', r);
+  const setSearchQuery = (s) => updateFilter('search', s);
+  const setFilterStatus = (st) => updateFilter('status', st);
+
+  // FEATURE-021: Audio Voice Announcement Toggle (FR-8.3) - persisted in localStorage per user direction
+  const [voiceEnabled, setVoiceEnabledState] = useState(() => {
+    try {
+      const stored = localStorage.getItem('admin_voice_announcements_enabled');
+      return stored !== null ? stored === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const setVoiceEnabled = useCallback((valOrFn) => {
+    setVoiceEnabledState((prev) => {
+      const next = typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn;
+      try {
+        localStorage.setItem('admin_voice_announcements_enabled', String(next));
+      } catch (_) {}
+      return next;
+    });
+  }, []);
+
+  // FEATURE-021: Preserved scroll position for Live Monitor / Summary
+  useScrollRestoration({
+    loading,
+    key: `live_${selectedRoomId}_${filterStatus}`,
+    dependencies: [selectedRoomId, filterStatus, searchQuery],
+  });
 
   // Candidate Data Store: candidateId -> candidateObj
   const [candidatesMap, setCandidatesMap] = useState({});

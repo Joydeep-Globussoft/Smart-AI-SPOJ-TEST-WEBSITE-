@@ -1,5 +1,5 @@
 // AdminTestDetail.jsx — Test Detail, Configuration & Room Management
-// Implements PRD Section 9.2, 9.3, 11.2 (FR-2.1, FR-2.2, FR-2.3), 11.3 (FR-3.1, FR-3.2, FR-3.3)
+// Implements PRD Section 9.2, 9.3, 11.2 (FR-2.1, FR-2.2, FR-2.3), 11.3 (FR-3.1, FR-3.2, FR-3.3), FEATURE-021
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import TestStatusBadge from '../../shared/TestStatusBadge';
 import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import QRCode from 'qrcode';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   initSocket,
   emitAdminJoin,
@@ -122,6 +123,13 @@ export default function AdminTestDetail() {
   const [test, setTest] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // FEATURE-021: Preserved scroll position for Test Detail & Rooms
+  useScrollRestoration({
+    loading,
+    key: `test_detail_${testId}`,
+    dependencies: [rooms.length, test?._id],
+  });
 
   // Dynamic Threshold States (FR-2.2, FR-2.3)
   const [passingCriteria, setPassingCriteria] = useState(3);

@@ -1,5 +1,5 @@
 // AdminDashboard.jsx — Admin Overview & Landing Screen
-// Note: Per user instruction and PRD Rule 1, summary widgets and metrics are flagged as // ASSUMPTION
+// Note: Per user instruction and PRD Rule 1, summary widgets and metrics are flagged as // ASSUMPTION, FEATURE-021
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminNavbar from '../../shared/AdminNavbar';
@@ -8,6 +8,7 @@ import CreateTestModal from '../../shared/CreateTestModal';
 import LoadingDots from '../../shared/LoadingDots';
 import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -17,6 +18,13 @@ export default function AdminDashboard() {
   const [questionSets, setQuestionSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // FEATURE-021: Preserved scroll position for Dashboard overview
+  useScrollRestoration({
+    loading,
+    key: 'dashboard_overview',
+    dependencies: [tests.length, questionSets.length],
+  });
 
   // Fetch overview data
   const fetchDashboardData = useCallback(async () => {
