@@ -1,10 +1,16 @@
 import React from 'react';
 
 /**
- * FEATURE-016: Custom 3-Dot Triangular Orbit Loading Animation
+ * FEATURE-016: Exact Reference 3-Dot Orbit & Independent Breathe Loading Animation
  * 
- * Replaces traditional circular spinners across the platform with a sleek,
- * pure-CSS triangular orbit animation rendered in brand tokens.
+ * Implements the exact 3-dot tumbling animation mechanism:
+ * - Outer square container (scales per xs/sm/md/lg variants)
+ * - Inner rotating spinner with continuous 360° linear orbit (2.4s)
+ * - 3 dots positioned at fixed, asymmetric anchor points (12.5%, 12.5%), (65.625%, 25%), (28.125%, 65.625%)
+ * - Each dot independently pulses (scale 0.7x -> 1.2x, opacity 45% -> 100%, 1.8s ease-in-out)
+ * - Staggered negative delays: Dot 1 (0s), Dot 2 (-0.6s), Dot 3 (-1.2s)
+ * - Accessibility: wrapped in role="status" and aria-live="polite", decorative spinner marked aria-hidden="true"
+ * - Reduced motion: under prefers-reduced-motion: reduce, stops rotation and slows breathing to 3.2s
  *
  * @param {'xs'|'sm'|'md'|'lg'|number} size - Size variant or numeric pixel dimension
  * @param {'primary'|'white'|'currentColor'|string} color - Dot color token or custom CSS color
@@ -20,47 +26,33 @@ export function LoadingDots({
   label = 'Loading...',
   ...restProps
 }) {
-  // Size metrics: container dimension, dot diameter, orbit radius
-  let containerSize = 18;
-  let dotSize = 4;
-  let orbitRadius = 5.5;
+  // Size metrics: container dimension (reference is 16px container with 4px dots)
+  let containerSize = 16;
 
   if (typeof size === 'number') {
     containerSize = size;
-    dotSize = Math.max(2.5, Math.round(size * 0.22 * 10) / 10);
-    orbitRadius = Math.round(size * 0.30 * 10) / 10;
   } else {
     switch (size) {
       case 'xs':
         containerSize = 14;
-        dotSize = 3;
-        orbitRadius = 3.8;
         break;
       case 'sm':
-        containerSize = 18;
-        dotSize = 4;
-        orbitRadius = 5.5;
+        containerSize = 16;
         break;
       case 'md':
         containerSize = 28;
-        dotSize = 5.5;
-        orbitRadius = 8.5;
         break;
       case 'lg':
         containerSize = 44;
-        dotSize = 8;
-        orbitRadius = 13;
         break;
       default:
-        containerSize = 18;
-        dotSize = 4;
-        orbitRadius = 5.5;
+        containerSize = 16;
         break;
     }
   }
 
   // Resolve color
-  let resolvedColor = 'var(--color-primary)';
+  let resolvedColor = 'var(--color-primary, #0E7C86)';
   if (color === 'white') {
     resolvedColor = '#ffffff';
   } else if (color === 'currentColor') {
@@ -74,8 +66,6 @@ export function LoadingDots({
     height: `${containerSize}px`,
     minWidth: `${containerSize}px`,
     minHeight: `${containerSize}px`,
-    '--dot-size': `${dotSize}px`,
-    '--orbit-radius': `${orbitRadius}px`,
     '--dot-color': resolvedColor,
     ...style
   };
@@ -83,14 +73,17 @@ export function LoadingDots({
   return (
     <span
       role="status"
+      aria-live="polite"
       aria-label={label}
       className={`orbiting-dots-container ${className}`.trim()}
       style={containerStyle}
       {...restProps}
     >
-      <span className="orbiting-dot" aria-hidden="true" />
-      <span className="orbiting-dot" aria-hidden="true" />
-      <span className="orbiting-dot" aria-hidden="true" />
+      <span className="loading-dots-orbit" aria-hidden="true">
+        <span className="orbiting-dot loading-dots-dot dot-1" />
+        <span className="orbiting-dot loading-dots-dot dot-2" />
+        <span className="orbiting-dot loading-dots-dot dot-3" />
+      </span>
       <span className="sr-only">{label}</span>
     </span>
   );

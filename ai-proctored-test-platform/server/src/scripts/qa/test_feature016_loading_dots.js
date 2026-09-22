@@ -55,16 +55,20 @@ function runTests() {
   console.log('\n--- Step 2: Verify CSS Keyframes & Classes in global.css ---');
   const globalCssPath = path.join(CLIENT_ROOT, 'styles/global.css');
   const globalCssContent = fs.readFileSync(globalCssPath, 'utf8');
-  assert(globalCssContent.includes('@keyframes dotTumble1'), 'global.css defines @keyframes dotTumble1 for Dot 1');
-  assert(globalCssContent.includes('@keyframes dotTumble2'), 'global.css defines @keyframes dotTumble2 for Dot 2');
-  assert(globalCssContent.includes('@keyframes dotTumble3'), 'global.css defines @keyframes dotTumble3 for Dot 3');
+  assert(globalCssContent.includes('@keyframes loadingDotsOrbit'), 'global.css defines 360-deg container orbit @keyframes loadingDotsOrbit');
+  assert(globalCssContent.includes('@keyframes loadingDotsBreathe'), 'global.css defines independent dot breathe @keyframes loadingDotsBreathe');
   assert(globalCssContent.includes('@keyframes triangularOrbit'), 'global.css defines backward-compatible @keyframes triangularOrbit');
   assert(globalCssContent.includes('.orbiting-dots-container'), 'global.css defines .orbiting-dots-container');
   assert(globalCssContent.includes('.orbiting-dot'), 'global.css defines .orbiting-dot');
-  assert(globalCssContent.includes('animation: dotTumble1'), 'Dot 1 uses independent tumbling animation');
-  assert(globalCssContent.includes('animation: dotTumble2'), 'Dot 2 uses independent tumbling animation');
-  assert(globalCssContent.includes('animation: dotTumble3'), 'Dot 3 uses independent tumbling animation');
-  assert(globalCssContent.includes('scale(1.25)') && globalCssContent.includes('scale(0.65)'), 'Keyframes include depth-simulating scale variations (1.25 close to 0.65 far)');
+  assert(globalCssContent.includes('animation: loadingDotsOrbit 2.4s linear infinite'), 'Container rotates 360-deg linear over 2.4s');
+  assert(globalCssContent.includes('animation: loadingDotsBreathe 1.8s ease-in-out infinite'), 'Dots independently breathe over 1.8s ease-in-out');
+  assert(globalCssContent.includes('animation-delay: 0s'), 'Dot 1 uses 0s delay');
+  assert(globalCssContent.includes('animation-delay: -0.6s'), 'Dot 2 uses -0.6s negative delay');
+  assert(globalCssContent.includes('animation-delay: -1.2s'), 'Dot 3 uses -1.2s negative delay');
+  assert(globalCssContent.includes('top: 12.5%') && globalCssContent.includes('left: 12.5%'), 'Dot 1 positioned at (2px, 2px) in 16px container (12.5%, 12.5%)');
+  assert(globalCssContent.includes('top: 25%') && globalCssContent.includes('left: 65.625%'), 'Dot 2 positioned at (10.5px, 4px) in 16px container (65.625%, 25%)');
+  assert(globalCssContent.includes('top: 65.625%') && globalCssContent.includes('left: 28.125%'), 'Dot 3 positioned at (4.5px, 10.5px) in 16px container (28.125%, 65.625%)');
+  assert(globalCssContent.includes('@media (prefers-reduced-motion: reduce)'), 'Includes prefers-reduced-motion fallback');
 
   // Check 3: Check each of the 28 locations in their respective files
   console.log('\n--- Step 3: Verify All 28 Locations Replaced with LoadingDots ---');
@@ -118,9 +122,9 @@ function runTests() {
         scanDir(full);
       } else if (full.endsWith('.jsx')) {
         const text = fs.readFileSync(full, 'utf8');
-        const match = text.match(/className=["'][^"']*spinner[^"']*["']/);
+        const match = text.match(/className=["'][^"']*\bspinner\b[^"']*["']/);
         if (match) {
-          assert(false, `Found unexpected spinner class in ${path.relative(CLIENT_ROOT, full)}: ${match[0]}`);
+          assert(false, `Found unexpected legacy spinner class in ${path.relative(CLIENT_ROOT, full)}: ${match[0]}`);
         }
       }
     }
