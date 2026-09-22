@@ -420,8 +420,8 @@ export default function AdminTestDetail() {
     });
   };
 
-  // Edit Configuration Save Handler
-  const handleEditSave = async (e) => {
+  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012/013, BUG-92: Edit Configuration Save Handler ───
+  const handleSaveConfig = async (e) => {
     e.preventDefault();
     if (test?.status !== 'DRAFT') {
       return toast.error('Editing is only allowed while the test is in DRAFT status');
@@ -481,6 +481,7 @@ export default function AdminTestDetail() {
       setEditingConfig(false);
     }
   };
+  const handleEditSave = handleSaveConfig;
 
   // View Candidates in Room
   const handleViewRoomCandidates = async (room) => {
