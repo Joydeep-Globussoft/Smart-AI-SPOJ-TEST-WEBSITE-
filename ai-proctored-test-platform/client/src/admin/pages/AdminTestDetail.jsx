@@ -1754,8 +1754,8 @@ export default function AdminTestDetail() {
                 <div
                   style={{
                     width: '100%',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: 'var(--color-bg-subtle)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: 8,
                     padding: '12px 16px',
                     fontSize: '0.85rem',
@@ -1766,14 +1766,14 @@ export default function AdminTestDetail() {
                   }}
                 >
                   <div>
-                    <span style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 500 }}>Room Code: </span>
-                    <span style={{ fontWeight: 700, color: '#38BDF8', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 500 }}>Room Code: </span>
+                    <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
                       {selectedQrRoom.roomCode || '—'}
                     </span>
                   </div>
                   <div>
-                    <span style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 500 }}>Password: </span>
-                    <span style={{ fontWeight: 700, color: '#F1F5F9', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 500 }}>Password: </span>
+                    <span style={{ fontWeight: 700, color: 'var(--color-navy)', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
                       {selectedQrRoom.roomPassword || '—'}
                     </span>
                   </div>
@@ -1783,10 +1783,10 @@ export default function AdminTestDetail() {
                 <div
                   style={{
                     background: '#FFFFFF',
-                    border: '2px solid #E2E8F0',
+                    border: '1px solid var(--color-border)',
                     borderRadius: 12,
                     padding: 16,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                    boxShadow: 'var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08))',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1798,7 +1798,7 @@ export default function AdminTestDetail() {
                   {generatingQr || !qrDataUrl ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                       <LoadingDots size="md" />
-                      <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Generating QR Code...</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Generating QR Code...</span>
                     </div>
                   ) : (
                     <img
@@ -1815,7 +1815,7 @@ export default function AdminTestDetail() {
                   id="qr-helper-text"
                   style={{
                     fontSize: '0.85rem',
-                    color: '#CBD5E1',
+                    color: 'var(--color-text-muted)',
                     lineHeight: 1.45,
                     margin: 0,
                     padding: '0 8px',
@@ -1840,9 +1840,9 @@ export default function AdminTestDetail() {
                       fontSize: '0.78rem',
                       padding: '8px 12px',
                       borderRadius: 6,
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      color: '#F1F5F9',
+                      border: '1px solid var(--color-input-border)',
+                      background: 'var(--color-input-bg)',
+                      color: 'var(--color-input-text)',
                     }}
                   />
                   <button

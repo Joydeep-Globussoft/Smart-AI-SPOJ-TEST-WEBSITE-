@@ -95,13 +95,20 @@ function runTests() {
   );
   assert(
     testDetailCode.includes('selectedQrRoom.roomCode') &&
-    testDetailCode.includes('selectedQrRoom.roomPassword'),
-    'Modal displays room context: Title, Room Code, and Room Password'
+    testDetailCode.includes('selectedQrRoom.roomPassword') &&
+    testDetailCode.includes("color: 'var(--color-navy)'") &&
+    testDetailCode.includes("color: 'var(--color-primary)'"),
+    'Modal displays room context with theme-aware tokens: Room Code and Password'
   );
   assert(
     testDetailCode.includes('Candidates can scan this QR code with their mobile or laptop to test.') &&
-    testDetailCode.includes("color: '#CBD5E1'"),
-    'Helper text reads updated wording with high contrast color'
+    testDetailCode.includes("color: 'var(--color-text-muted)'"),
+    'Helper text reads updated wording with theme-aware muted text color'
+  );
+  assert(
+    testDetailCode.includes("color: 'var(--color-input-text)'") &&
+    testDetailCode.includes("background: 'var(--color-input-bg)'"),
+    'Invite link input uses theme-aware input variables for light and dark modes'
   );
   assert(
     testDetailCode.includes('id="download-qr-btn"') &&
