@@ -2,6 +2,8 @@
 // Implements all endpoints from Section 9.2 exactly
 const Test = require('../models/Test');
 const Room = require('../models/Room');
+const Submission = require('../models/Submission');
+const MalpracticeLog = require('../models/MalpracticeLog');
 const shortlistService = require('../services/shortlistService');
 
 // ── POST /tests ───────────────────────────────────────────────────────────────
@@ -168,10 +170,68 @@ const getTests = async (req, res, next) => {
 
     const tests = await Test.find()
       .populate('createdBy', 'name email')
-      .populate('questionSetId', 'name testType')
+      .populate('questionSetId', 'name testType folderId')
       .populate('folderId', 'name testType')
       .sort({ createdAt: -1 })
       .lean();
+
+    // FEATURE-022: Aggregate Room, Submission, and MalpracticeLog metrics for activity filters
+    const testIds = tests.map((t) => t._id);
+
+    const [roomStats, submissionStats, violationStats] = await Promise.all([
+      Room.aggregate([
+        { $match: { testId: { $in: testIds } } },
+        {
+          $group: {
+            _id: '$testId',
+            totalRooms: { $sum: 1 },
+            activeRooms: {
+              $sum: { $cond: [{ $eq: ['$status', 'ACTIVE'] }, 1, 0] },
+            },
+            joinedCandidatesCount: {
+              $sum: { $size: { $ifNull: ['$joinedCandidates', []] } },
+            },
+          },
+        },
+      ]),
+      Submission.aggregate([
+        { $match: { testId: { $in: testIds } } },
+        {
+          $group: {
+            _id: '$testId',
+            distinctCandidates: { $addToSet: '$candidateId' },
+            disqualifiedCount: {
+              $sum: { $cond: [{ $eq: ['$status', 'AUTO_SUBMITTED_DISQUALIFIED'] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+      MalpracticeLog.aggregate([
+        { $match: { testId: { $in: testIds } } },
+        {
+          $group: {
+            _id: '$testId',
+            totalViolations: { $sum: 1 },
+            disqualifiedCount: {
+              $sum: { $cond: [{ $eq: ['$adminAction', 'DISQUALIFIED'] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const roomMap = {};
+    for (const r of roomStats) {
+      if (r._id) roomMap[r._id.toString()] = r;
+    }
+    const subMap = {};
+    for (const s of submissionStats) {
+      if (s._id) subMap[s._id.toString()] = s;
+    }
+    const violMap = {};
+    for (const v of violationStats) {
+      if (v._id) violMap[v._id.toString()] = v;
+    }
 
     // Hydrate pool information for pool-based tests (FEATURE-012 & FEATURE-013)
     const QuestionSet = require('../models/QuestionSet');
@@ -203,19 +263,45 @@ const getTests = async (req, res, next) => {
     }
 
     const enrichedTests = tests.map((t) => {
+      const testIdStr = t._id.toString();
+      const rStat = roomMap[testIdStr];
+      const sStat = subMap[testIdStr];
+      const vStat = violMap[testIdStr];
+
+      const totalRooms = rStat ? rStat.totalRooms : 0;
+      const activeRooms = rStat ? rStat.activeRooms : 0;
+      const joinedCount = rStat ? rStat.joinedCandidatesCount : 0;
+      const subCount = sStat && sStat.distinctCandidates ? sStat.distinctCandidates.length : 0;
+      const candidateCount = Math.max(joinedCount, subCount);
+
+      const violCount = vStat ? vStat.totalViolations : 0;
+      const disqSubCount = sStat ? sStat.disqualifiedCount : 0;
+      const totalViolations = violCount + disqSubCount;
+
+      const base = {
+        ...t,
+        roomCount: totalRooms,
+        activeRoomsCount: activeRooms,
+        hasActiveRooms: activeRooms > 0,
+        candidateCount,
+        hasCandidates: candidateCount > 0,
+        violationsCount: totalViolations,
+        hasViolations: totalViolations > 0,
+      };
+
       const pId = (t.folderId?._id || t.folderId || t.questionSetPoolId)?.toString();
       if (pId) {
         const sets = poolSetsByFolder[pId] || [];
         const poolName = t.folderId?.name || `Question Set Pool (${sets.length} Sets)`;
         return {
-          ...t,
+          ...base,
           isPool: true,
           poolSetCount: sets.length,
           questionSetPoolName: poolName,
           poolSets: sets.map((s) => ({ _id: s._id, name: s.name })),
         };
       }
-      return t;
+      return base;
     });
 
     res.json({ tests: enrichedTests });
