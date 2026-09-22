@@ -171,6 +171,8 @@ export const api = {
   regenerateShortlist: (testId) => axios.post(`/tests/${testId}/shortlist/regenerate`),
   exportShortlistPdf: (testId) =>
     axios.get(`/tests/${testId}/shortlist/export-pdf`, { responseType: 'blob' }),
+  getCandidateEvaluationDetail: (testId, candidateId) =>
+    axios.get(`/tests/${testId}/candidates/${candidateId}/evaluations`),
   getCopyPasteLog: (submissionId) =>
     axios.get(`/submissions/${submissionId}/copy-paste-log`),
 };

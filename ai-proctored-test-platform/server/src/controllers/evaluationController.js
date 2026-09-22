@@ -1,6 +1,10 @@
 // Evaluation Controller — Module 7 + Reports Module 8
 // Implements all endpoints from Section 9.7 exactly
 const Test = require('../models/Test');
+const Candidate = require('../models/Candidate');
+const Question = require('../models/Question');
+const QuestionSet = require('../models/QuestionSet');
+const Room = require('../models/Room');
 const Submission = require('../models/Submission');
 const EvaluationResult = require('../models/EvaluationResult');
 const Shortlist = require('../models/Shortlist');
@@ -235,10 +239,202 @@ const getCopyPasteLog = async (req, res, next) => {
   }
 };
 
+// ── GET /tests/:testId/candidates/:candidateId/evaluations ────────────────────
+// FEATURE-023: Per-candidate drill-down showing all questions, submissions & evaluations
+const getCandidateEvaluationDetail = async (req, res, next) => {
+  try {
+    const { testId, candidateId } = req.params;
+
+    const test = await Test.findById(testId).lean();
+    if (!test) return res.status(404).json({ error: 'Test not found' });
+
+    // 1. Fetch Candidate metadata (with fallback to Shortlist cache if candidate record was purged)
+    let candidate = await Candidate.findById(candidateId, 'name email phone isDisqualified').lean();
+    if (!candidate) {
+      const shortlist = await Shortlist.findOne({ testId }).lean();
+      const cached = shortlist?.candidates?.find(
+        (c) => c.candidateId?.toString() === candidateId.toString()
+      );
+      if (cached) {
+        candidate = {
+          _id: candidateId,
+          name: cached.name,
+          email: cached.email,
+          phone: cached.phone || '',
+          isDisqualified: Boolean(cached.isDisqualified),
+        };
+      } else {
+        candidate = {
+          _id: candidateId,
+          name: 'Candidate',
+          email: '—',
+          phone: '',
+          isDisqualified: false,
+        };
+      }
+    }
+
+    // 2. Fetch all Submissions and EvaluationResults for this candidate in this test
+    const submissions = await Submission.find({ testId, candidateId }).lean();
+    const evaluations = await EvaluationResult.find({ testId, candidateId }).lean();
+
+    // 3. Resolve assignedQuestionSetId for this candidate (supporting FEATURE-012 Round-Robin)
+    let assignedQuestionSetId = null;
+
+    // Check submissions first
+    for (const sub of submissions) {
+      if (sub.assignedQuestionSetId) {
+        assignedQuestionSetId = sub.assignedQuestionSetId;
+        break;
+      }
+    }
+
+    // If not in submissions, check Room joinedCandidates
+    if (!assignedQuestionSetId) {
+      const room = await Room.findOne({
+        testId,
+        'joinedCandidates.candidateId': candidateId,
+      }).lean();
+      if (room) {
+        const entry = room.joinedCandidates.find(
+          (jc) => jc.candidateId?.toString() === candidateId.toString()
+        );
+        if (entry?.assignedQuestionSetId) {
+          assignedQuestionSetId = entry.assignedQuestionSetId;
+        } else if (room.assignedQuestionSetId) {
+          assignedQuestionSetId = room.assignedQuestionSetId;
+        }
+      }
+    }
+
+    // Fallback to test.questionSetId
+    if (!assignedQuestionSetId && test.questionSetId) {
+      assignedQuestionSetId = test.questionSetId;
+    }
+
+    // 4. Fetch all Question documents for this candidate
+    let questions = [];
+    if (assignedQuestionSetId) {
+      questions = await Question.find({ questionSetId: assignedQuestionSetId })
+        .sort({ createdAt: 1 })
+        .lean();
+    } else if (test.folderId) {
+      const poolSets = await QuestionSet.find({ folderId: test.folderId }).lean();
+      if (poolSets.length > 0) {
+        questions = await Question.find({ questionSetId: poolSets[0]._id })
+          .sort({ createdAt: 1 })
+          .lean();
+      }
+    }
+
+    // 5. Ensure all questions from submissions are also accounted for
+    const knownQIds = new Set(questions.map((q) => q._id.toString()));
+    const extraQIds = submissions
+      .map((s) => s.questionId?.toString())
+      .filter((qid) => qid && !knownQIds.has(qid));
+
+    if (extraQIds.length > 0) {
+      const extraQuestions = await Question.find({ _id: { $in: extraQIds } }).lean();
+      questions.push(...extraQuestions);
+    }
+
+    // 6. Map submissions & evaluations by questionId / submissionId
+    const subByQId = {};
+    const evalBySubId = {};
+    const evalByQId = {};
+
+    for (const sub of submissions) {
+      if (sub.questionId) {
+        subByQId[sub.questionId.toString()] = sub;
+      }
+    }
+
+    for (const ev of evaluations) {
+      if (ev.submissionId) {
+        evalBySubId[ev.submissionId.toString()] = ev;
+      }
+    }
+
+    // Also link evaluation by questionId via its submission
+    for (const sub of submissions) {
+      const ev = evalBySubId[sub._id.toString()];
+      if (ev && sub.questionId) {
+        evalByQId[sub.questionId.toString()] = ev;
+      }
+    }
+
+    // 7. Format structured per-question result list
+    const formattedQuestions = questions.map((q, idx) => {
+      const qIdStr = q._id.toString();
+      const sub = subByQId[qIdStr];
+      const ev = sub ? (evalBySubId[sub._id.toString()] || evalByQId[qIdStr]) : evalByQId[qIdStr];
+
+      const isAttempted = Boolean(
+        sub &&
+          (sub.isAttempted ||
+            (sub.code && sub.code.trim().length > 0) ||
+            sub.status === 'SUBMITTED' ||
+            sub.status === 'AUTO_SUBMITTED_TIME_UP')
+      );
+
+      const status = sub?.status
+        ? sub.status
+        : isAttempted
+        ? 'SUBMITTED'
+        : 'NOT_ATTEMPTED';
+
+      const questionTitle = q.title && q.title.trim() ? q.title.trim() : `Question ${idx + 1}`;
+
+      return {
+        questionIndex: idx + 1,
+        questionId: q._id,
+        title: questionTitle,
+        description: q.description || '',
+        testType: q.testType || test.testType,
+        difficulty: q.difficulty || 'MEDIUM',
+        isAttempted,
+        status,
+        code: sub?.code || '',
+        language: sub?.language || test.supportedLanguages?.[0] || 'javascript',
+        filesJson: sub?.filesJson || null,
+        promptLog: sub?.promptLog || ev?.promptLog || [],
+        submittedAt: sub?.submittedAt || null,
+        evaluation: ev
+          ? {
+              _id: ev._id,
+              finalScorePerQuestion: ev.finalScorePerQuestion ?? 0,
+              scoreBreakdown: ev.scoreBreakdown || {},
+              llmFeedback: ev.llmFeedback || '',
+              promptLog: ev.promptLog || sub?.promptLog || [],
+              isPassed: Boolean(ev.isPassed),
+              evaluatedAt: ev.evaluatedAt,
+            }
+          : null,
+      };
+    });
+
+    res.json({
+      candidate,
+      test: {
+        _id: test._id,
+        title: test.title,
+        testType: test.testType,
+        durationMinutes: test.durationMinutes,
+        passingCriteria: test.passingCriteria,
+        totalQuestions: test.totalQuestions,
+      },
+      questions: formattedQuestions,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getResults,
   getShortlist,
   regenerateShortlist,
   exportShortlistPdf,
   getCopyPasteLog,
+  getCandidateEvaluationDetail,
 };

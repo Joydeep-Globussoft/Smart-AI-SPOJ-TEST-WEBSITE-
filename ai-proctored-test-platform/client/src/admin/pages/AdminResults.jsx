@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Editor from '@monaco-editor/react';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
 import LoadingDots from '../../shared/LoadingDots';
@@ -45,13 +46,76 @@ export default function AdminResults() {
   // Export PDF loading state (FR-10.2)
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  // Candidate evaluation inspect modal
-  const [selectedResult, setSelectedResult] = useState(null);
+  // FEATURE-023: Per-candidate Detail Evaluation & Split-Screen Inspect Code modals
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [candidateDetail, setCandidateDetail] = useState(null);
+  const [candidateDetailLoading, setCandidateDetailLoading] = useState(false);
+  const [inspectingQuestion, setInspectingQuestion] = useState(null);
+  const [activeFile, setActiveFile] = useState(null);
 
   // Copy-paste audit log modal
   const [selectedAuditSubmission, setSelectedAuditSubmission] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+
+  // FEATURE-023: Open candidate detail evaluation modal
+  const handleOpenCandidateDetail = async (candidate) => {
+    try {
+      setSelectedCandidate(candidate);
+      setCandidateDetailLoading(true);
+      const cid = candidate.candidateId?._id || candidate.candidateId || candidate._id;
+      const res = await api.getCandidateEvaluationDetail(testId, cid);
+      setCandidateDetail(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to load candidate evaluation detail');
+      setSelectedCandidate(null);
+    } finally {
+      setCandidateDetailLoading(false);
+    }
+  };
+
+  const handleCloseCandidateDetail = () => {
+    setSelectedCandidate(null);
+    setCandidateDetail(null);
+    setInspectingQuestion(null);
+    setActiveFile(null);
+  };
+
+  const handleInspectCode = (question) => {
+    setInspectingQuestion(question);
+    if (question.filesJson && typeof question.filesJson === 'object') {
+      const keys = Object.keys(question.filesJson);
+      if (keys.length > 0) setActiveFile(keys[0]);
+    } else {
+      setActiveFile(null);
+    }
+  };
+
+  const handleCloseInspectCode = () => {
+    setInspectingQuestion(null);
+    setActiveFile(null);
+  };
+
+  const getMonacoLanguage = (lang, fileName) => {
+    if (fileName) {
+      if (fileName.endsWith('.html')) return 'html';
+      if (fileName.endsWith('.css')) return 'css';
+      if (fileName.endsWith('.js') || fileName.endsWith('.jsx')) return 'javascript';
+      if (fileName.endsWith('.json')) return 'json';
+      if (fileName.endsWith('.py')) return 'python';
+      if (fileName.endsWith('.cpp') || fileName.endsWith('.h')) return 'cpp';
+      if (fileName.endsWith('.java')) return 'java';
+    }
+    if (!lang) return 'javascript';
+    const l = lang.toLowerCase();
+    if (l.includes('python')) return 'python';
+    if (l.includes('javascript') || l.includes('js')) return 'javascript';
+    if (l.includes('react') || l.includes('jsx')) return 'javascript';
+    if (l.includes('cpp') || l.includes('c++')) return 'cpp';
+    if (l.includes('c')) return 'c';
+    if (l.includes('java')) return 'java';
+    return 'plaintext';
+  };
 
   const fetchResultsAndShortlist = useCallback(async () => {
     try {
@@ -362,342 +426,266 @@ export default function AdminResults() {
           </form>
         </div>
 
-        {/* ── Navigation Tabs ── */}
-        <div style={{ display: 'flex', borderBottom: '2px solid var(--color-border)', marginBottom: 20, gap: 12 }}>
-          <button
-            onClick={() => setActiveTab('shortlist')}
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              background: 'none',
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: activeTab === 'shortlist' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              borderBottom: activeTab === 'shortlist' ? '3px solid var(--color-primary)' : '3px solid transparent',
-              marginBottom: -2,
-            }}
-          >
-            🏆 Official Shortlist ({totalShortlisted})
-          </button>
-          <button
-            onClick={() => setActiveTab('evaluations')}
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              background: 'none',
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: activeTab === 'evaluations' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              borderBottom: activeTab === 'evaluations' ? '3px solid var(--color-primary)' : '3px solid transparent',
-              marginBottom: -2,
-            }}
-          >
-            📊 Detailed Evaluation Results ({results.length})
-          </button>
+        {/* ── Official Shortlist Unified Table (FEATURE-023) ── */}
+        <div className="card">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h3 className="card-title">Official Shortlist ({totalShortlisted})</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                Generated on {shortlist?.generatedAt ? new Date(shortlist.generatedAt).toLocaleString() : '—'}
+              </p>
+            </div>
+
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search candidate in shortlist..."
+              style={{ width: 260, fontSize: '0.8rem', padding: '6px 12px' }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {shortlistCandidates.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📋</div>
+              <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No candidates on the shortlist</h4>
+              <p style={{ fontSize: '0.85rem' }}>
+                {results.length === 0
+                  ? 'Evaluations are still in progress or no submissions have been recorded.'
+                  : 'Try lowering the Passing Criteria or adjusting the Malpractice Threshold.'}
+              </p>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 80 }}>Rank</th>
+                    <th>Candidate Name</th>
+                    <th>Email</th>
+                    <th>Total Score (0–10)</th>
+                    <th>Questions Solved</th>
+                    <th>Malpractice Count</th>
+                    <th style={{ textAlign: 'center' }}>Status</th>
+                    <th style={{ textAlign: 'right' }}>Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shortlistCandidates.map((c) => {
+                    let rankBadge = `#${c.rank}`;
+                    if (c.rank === 1) rankBadge = '🥇 #1';
+                    if (c.rank === 2) rankBadge = '🥈 #2';
+                    if (c.rank === 3) rankBadge = '🥉 #3';
+
+                    return (
+                      <tr key={c.candidateId || c.rank}>
+                        <td>
+                          <strong
+                            style={{
+                              color: c.rank <= 3 ? '#d97706' : 'var(--color-navy)',
+                              fontSize: '0.9rem',
+                            }}
+                          >
+                            {rankBadge}
+                          </strong>
+                        </td>
+                        <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
+                        <td style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{c.email}</td>
+                        <td>
+                          <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>
+                            {(c.score || 0).toFixed(2)}
+                          </strong>
+                        </td>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
+                          {c.questionsCompleted} Qs
+                        </td>
+                        <td>
+                          {c.malpracticeCount > 0 ? (
+                            <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
+                              ⚠️ {c.malpracticeCount}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#2ECC71', fontSize: '0.8rem' }}>✓ Clean (0)</span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
+                            Shortlisted
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            onClick={() => handleOpenCandidateDetail(c)}
+                            className="btn btn-secondary"
+                            style={{ padding: '5px 12px', fontSize: '0.8rem', fontWeight: 600 }}
+                          >
+                            Detail Evaluation
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* ── TAB 1: Ranked Shortlist (FR-10.1, FR-10.2) ── */}
-        {activeTab === 'shortlist' && (
-          <div className="card">
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <h3 className="card-title">Ranked Shortlist</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  Generated on {shortlist?.generatedAt ? new Date(shortlist.generatedAt).toLocaleString() : '—'}
-                </p>
-              </div>
-
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search candidate in shortlist..."
-                style={{ width: 260, fontSize: '0.8rem', padding: '6px 12px' }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {shortlistCandidates.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📋</div>
-                <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No candidates on the shortlist</h4>
-                <p style={{ fontSize: '0.85rem' }}>
-                  {results.length === 0
-                    ? 'Evaluations are still in progress or no submissions have been recorded.'
-                    : 'Try lowering the Passing Criteria or adjusting the Malpractice Threshold.'}
-                </p>
-              </div>
-            ) : (
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 80 }}>Rank</th>
-                      <th>Candidate Name</th>
-                      <th>Email</th>
-                      <th>Total Score (0–10)</th>
-                      <th>Questions Solved</th>
-                      <th>Malpractice Count</th>
-                      <th style={{ textAlign: 'right' }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shortlistCandidates.map((c) => {
-                      let rankBadge = `#${c.rank}`;
-                      if (c.rank === 1) rankBadge = '🥇 #1';
-                      if (c.rank === 2) rankBadge = '🥈 #2';
-                      if (c.rank === 3) rankBadge = '🥉 #3';
-
-                      return (
-                        <tr key={c.candidateId || c.rank}>
-                          <td>
-                            <strong
-                              style={{
-                                color: c.rank <= 3 ? '#d97706' : 'var(--color-navy)',
-                                fontSize: '0.9rem',
-                              }}
-                            >
-                              {rankBadge}
-                            </strong>
-                          </td>
-                          <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{c.email}</td>
-                          <td>
-                            <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>
-                              {(c.score || 0).toFixed(2)}
-                            </strong>
-                          </td>
-                          <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                            {c.questionsCompleted} Qs
-                          </td>
-                          <td>
-                            {c.malpracticeCount > 0 ? (
-                              <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
-                                ⚠️ {c.malpracticeCount}
-                              </span>
-                            ) : (
-                              <span style={{ color: '#2ECC71', fontSize: '0.8rem' }}>✓ Clean (0)</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
-                              Shortlisted
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── TAB 2: Granular Evaluation Breakdown (FR-9.1 through FR-9.4) ── */}
-        {activeTab === 'evaluations' && (
-          <div className="card">
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <h3 className="card-title">Per-Question Evaluation Scoring</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  Granular 10-parameter weighted rubric &amp; Judge0 hidden test case results (FR-9.1-9.4).
-                </p>
-              </div>
-
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search candidate name or email..."
-                style={{ width: 260, fontSize: '0.8rem', padding: '6px 12px' }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {filteredResults.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⚙️</div>
-                <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No evaluation results recorded yet</h4>
-                <p style={{ fontSize: '0.85rem' }}>
-                  Evaluations run automatically after candidates submit their test questions.
-                </p>
-              </div>
-            ) : (
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Candidate</th>
-                      <th>Email</th>
-                      <th>Final Weighted Score</th>
-                      <th>Correctness (30%)</th>
-                      <th>Complexity (25%)</th>
-                      <th>Structure &amp; Approach</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredResults.map((r) => {
-                      const breakdown = r.scoreBreakdown || {};
-                      const correctness = (breakdown.codeCorrectness || 0).toFixed(1);
-                      const complexity = (
-                        ((breakdown.timeComplexity || 0) + (breakdown.spaceComplexity || 0)) /
-                        2
-                      ).toFixed(1);
-
-                      return (
-                        <tr key={r._id}>
-                          <td>
-                            <strong style={{ color: 'var(--color-navy)' }}>
-                              {r.candidateId?.name || 'Candidate'}
-                            </strong>
-                          </td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                            {r.candidateId?.email || '—'}
-                          </td>
-                          <td>
-                            <strong style={{ color: 'var(--color-primary)', fontSize: '1rem' }}>
-                              {(r.finalScorePerQuestion || 0).toFixed(2)} / 10
-                            </strong>
-                          </td>
-                          <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                            {correctness} / 10
-                          </td>
-                          <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                            {complexity} / 10
-                          </td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
-                            Opt: {(breakdown.codeOptimization || 0).toFixed(1)} · Exc: {(breakdown.exceptionHandling || 0).toFixed(1)}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <button
-                              onClick={() => setSelectedResult(r)}
-                              className="btn btn-secondary"
-                              style={{ padding: '4px 12px', fontSize: '0.78rem' }}
-                            >
-                              Inspect Full Rubric
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Candidate Rubric Inspection Modal (FR-9.4) ── */}
-        {selectedResult && (
-          <div className="modal-backdrop" onClick={() => setSelectedResult(null)}>
-            <div className="modal-container" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
+        {/* ── FEATURE-023: Candidate Detail Evaluation Modal ── */}
+        {selectedCandidate && !inspectingQuestion && (
+          <div className="modal-backdrop" onClick={handleCloseCandidateDetail}>
+            <div
+              className="modal-container"
+              style={{ maxWidth: 960, width: '95vw', maxHeight: '88vh' }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <div>
-                  <h3 className="modal-title">
-                    Evaluation Breakdown: {selectedResult.candidateId?.name}
+                  <h3 className="modal-title" style={{ fontSize: '1.15rem' }}>
+                    Candidate Evaluation: {selectedCandidate.name}
                   </h3>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                    Weighted Final Score: <strong>{(selectedResult.finalScorePerQuestion || 0).toFixed(2)} / 10.0</strong>
-                  </span>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      {selectedCandidate.email}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-border)' }}>•</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                      Total Score: {(selectedCandidate.score || 0).toFixed(2)} / 10.0
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-border)' }}>•</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>
+                      Solved: {selectedCandidate.questionsCompleted} Qs
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-border)' }}>•</span>
+                    {selectedCandidate.malpracticeCount > 0 ? (
+                      <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
+                        ⚠️ {selectedCandidate.malpracticeCount} Malpractice
+                      </span>
+                    ) : (
+                      <span style={{ color: '#2ECC71', fontSize: '0.75rem', fontWeight: 600 }}>✓ Clean (0)</span>
+                    )}
+                  </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedResult(null)}
+                  onClick={handleCloseCandidateDetail}
                   style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                {/* Rubric Score Grid (FR-9.4) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-                  {selectedResult.scoreBreakdown &&
-                    Object.entries(selectedResult.scoreBreakdown).map(([param, score]) => (
-                      <div
-                        key={param}
-                        style={{
-                          background: 'var(--color-bg-subtle)',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: 8,
-                          padding: 12,
-                        }}
-                      >
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, display: 'block' }}>
-                          {param.replace(/([A-Z])/g, ' $1')}
-                        </span>
-                        <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)', marginTop: 2, display: 'block' }}>
-                          {typeof score === 'number' ? score.toFixed(1) : score} <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>/ 10</span>
-                        </strong>
-                      </div>
-                    ))}
-                </div>
-
-                {/* LLM Feedback & Rubric Notes */}
-                {selectedResult.llmFeedback && (
-                  <div>
-                    <strong style={{ fontSize: '0.85rem', color: 'var(--color-navy)' }}>🤖 AI Evaluator Feedback:</strong>
-                    <div
-                      style={{
-                        background: 'rgba(16, 185, 129, 0.1)',
-                        border: '1px solid rgba(16, 185, 129, 0.25)',
-                        borderRadius: 8,
-                        padding: 14,
-                        fontSize: '0.85rem',
-                        color: 'var(--color-text)',
-                        marginTop: 6,
-                        whiteSpace: 'pre-line',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {selectedResult.llmFeedback}
-                    </div>
+              <div className="modal-body" style={{ overflowY: 'auto', padding: '16px 20px' }}>
+                {candidateDetailLoading ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <LoadingDots size="md" />
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 12 }}>
+                      Loading question-level evaluation details...
+                    </p>
                   </div>
-                )}
+                ) : !candidateDetail?.questions || candidateDetail.questions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                    <p>No question evaluation records found for this candidate.</p>
+                  </div>
+                ) : (
+                  <div className="table-container">
+                    <table className="table" style={{ width: '100%', marginBottom: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Question</th>
+                          <th>Status</th>
+                          <th>Final Weighted Score</th>
+                          <th>Correctness (30%)</th>
+                          <th>Complexity (25%)</th>
+                          <th>Structure &amp; Approach</th>
+                          <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {candidateDetail.questions.map((q) => {
+                          const ev = q.evaluation;
+                          const breakdown = ev?.scoreBreakdown || {};
+                          const hasEval = Boolean(ev);
+                          const correctness = hasEval ? (breakdown.codeCorrectness || 0).toFixed(1) : '—';
+                          const complexity = hasEval
+                            ? (((breakdown.timeComplexity || 0) + (breakdown.spaceComplexity || 0)) / 2).toFixed(1)
+                            : '—';
+                          const finalScore = hasEval ? (ev.finalScorePerQuestion ?? 0).toFixed(2) : '—';
 
-                {/* AI Test Prompt Log Inspection (FR-6.2, FR-9.3) */}
-                {selectedResult.promptLog?.length > 0 && (
-                  <div>
-                    <strong style={{ fontSize: '0.85rem', color: 'var(--color-navy)' }}>
-                      💬 AI Test Prompt Log ({selectedResult.promptLog.length} messages):
-                    </strong>
-                    <div
-                      style={{
-                        background: 'var(--color-bg-subtle)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginTop: 6,
-                        maxHeight: 200,
-                        overflowY: 'auto',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                        fontSize: '0.8rem',
-                      }}
-                    >
-                      {selectedResult.promptLog.map((log, lIdx) => (
-                        <div
-                          key={lIdx}
-                          style={{
-                            background: log.role === 'user' ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: 6,
-                            padding: 8,
-                          }}
-                        >
-                          <span style={{ fontWeight: 700, color: log.role === 'user' ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                            {log.role === 'user' ? 'Candidate Prompt:' : 'Kimi AI Reply:'}
-                          </span>
-                          <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>{log.content}</p>
-                        </div>
-                      ))}
-                    </div>
+                          const isAttempted = q.isAttempted;
+                          const hasCode = Boolean(q.code && q.code.trim().length > 0) || Boolean(q.filesJson);
+
+                          return (
+                            <tr key={q.questionId || q.questionIndex}>
+                              <td>
+                                <strong style={{ color: 'var(--color-navy)', display: 'block' }}>
+                                  {q.title}
+                                </strong>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                  {q.testType} · {q.difficulty}
+                                </span>
+                              </td>
+                              <td>
+                                {!isAttempted ? (
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: 'rgba(156, 163, 175, 0.15)',
+                                      color: '#9ca3af',
+                                      fontSize: '0.72rem',
+                                    }}
+                                  >
+                                    Not Attempted
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                                    {q.status === 'SUBMITTED' ? 'Submitted' : 'Auto-Submitted'}
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {hasEval ? (
+                                  <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>
+                                    {finalScore} / 10
+                                  </strong>
+                                ) : (
+                                  <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
+                                {correctness !== '—' ? `${correctness} / 10` : '—'}
+                              </td>
+                              <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
+                                {complexity !== '—' ? `${complexity} / 10` : '—'}
+                              </td>
+                              <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                                {hasEval
+                                  ? `Opt: ${(breakdown.codeOptimization || 0).toFixed(1)} · Exc: ${(breakdown.exceptionHandling || 0).toFixed(1)}`
+                                  : '—'}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <button
+                                  onClick={() => handleInspectCode(q)}
+                                  className="btn btn-primary"
+                                  style={{
+                                    background: '#0E7C86',
+                                    padding: '4px 12px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    opacity: hasCode || hasEval ? 1 : 0.6,
+                                  }}
+                                  disabled={!hasCode && !hasEval}
+                                  title={hasCode || hasEval ? 'Inspect submitted code and rubric' : 'No submission recorded'}
+                                >
+                                  {hasCode || hasEval ? '🔍 Inspect Code' : 'No Submission'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -705,10 +693,337 @@ export default function AdminResults() {
               <div className="modal-footer">
                 <button
                   type="button"
-                  onClick={() => setSelectedResult(null)}
+                  onClick={handleCloseCandidateDetail}
                   className="btn btn-secondary"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── FEATURE-023: Split-Screen Inspect Code Modal (Code Left, Rubric Right) ── */}
+        {inspectingQuestion && (
+          <div className="modal-backdrop" onClick={handleCloseInspectCode}>
+            <div
+              className="modal-container"
+              style={{ maxWidth: 1150, width: '95vw', maxHeight: '90vh' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseInspectCode}
+                    className="btn btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: 600 }}
+                  >
+                    ← Back to Question List
+                  </button>
+                  <h3 className="modal-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                    Inspect Code — {inspectingQuestion.title}
+                  </h3>
+                  <span
+                    className="badge badge-primary"
+                    style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}
+                  >
+                    {inspectingQuestion.language || inspectingQuestion.testType}
+                  </span>
+                  {inspectingQuestion.evaluation && (
+                    <span
+                      style={{
+                        background: 'rgba(14, 124, 134, 0.15)',
+                        color: 'var(--color-primary)',
+                        padding: '3px 10px',
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      Score: {(inspectingQuestion.evaluation.finalScorePerQuestion ?? 0).toFixed(2)} / 10.0
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseCandidateDetail}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  title="Close Modal"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="modal-body" style={{ overflowY: 'auto', padding: 20 }}>
+                <div className="inspect-split-screen">
+                  {/* ── LEFT PANE: Submitted Code ── */}
+                  <div className="inspect-split-left" style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--color-navy)' }}>
+                        📄 Submitted Code
+                      </strong>
+                      {inspectingQuestion.code && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              activeFile && inspectingQuestion.filesJson
+                                ? inspectingQuestion.filesJson[activeFile]
+                                : inspectingQuestion.code
+                            );
+                            toast.success('Code copied to clipboard!');
+                          }}
+                          className="btn btn-secondary"
+                          style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                        >
+                          📋 Copy Code
+                        </button>
+                      )}
+                    </div>
+
+                    {/* AI Test Multi-File Tab Selector */}
+                    {inspectingQuestion.filesJson && typeof inspectingQuestion.filesJson === 'object' && (
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                        {Object.keys(inspectingQuestion.filesJson).map((fileName) => (
+                          <button
+                            key={fileName}
+                            type="button"
+                            onClick={() => setActiveFile(fileName)}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '0.75rem',
+                              borderRadius: 4,
+                              border: activeFile === fileName ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                              background: activeFile === fileName ? 'var(--color-primary)' : 'var(--color-bg-subtle)',
+                              color: activeFile === fileName ? '#fff' : 'var(--color-text)',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {fileName}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Monaco Editor Read-Only Code Viewer */}
+                    <div
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        height: 450,
+                        background: '#1e1e1e',
+                      }}
+                    >
+                      <Editor
+                        height="450px"
+                        language={getMonacoLanguage(inspectingQuestion.language, activeFile)}
+                        value={
+                          activeFile && inspectingQuestion.filesJson
+                            ? inspectingQuestion.filesJson[activeFile] || '// Empty file'
+                            : inspectingQuestion.code || '// No code submitted for this question'
+                        }
+                        theme="vs-dark"
+                        options={{
+                          readOnly: true,
+                          minimap: { enabled: false },
+                          fontSize: 13,
+                          scrollBeyondLastLine: false,
+                          lineNumbers: 'on',
+                          wordWrap: 'on',
+                          automaticLayout: true,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── RIGHT PANE: Granular Rubric Breakdown ── */}
+                  <div className="inspect-split-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--color-navy)' }}>
+                        📊 Evaluation Rubric Breakdown
+                      </strong>
+                      {inspectingQuestion.evaluation && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                          Final: <strong>{(inspectingQuestion.evaluation.finalScorePerQuestion ?? 0).toFixed(2)} / 10.0</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    {!inspectingQuestion.evaluation ? (
+                      <div
+                        style={{
+                          background: 'var(--color-bg-subtle)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 8,
+                          padding: 24,
+                          textAlign: 'center',
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        <p style={{ margin: 0, fontSize: '0.88rem' }}>
+                          No evaluation rubric recorded for this question.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* 10-Parameter Rubric Grid */}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                            gap: 10,
+                            maxHeight: 320,
+                            overflowY: 'auto',
+                            paddingRight: 4,
+                          }}
+                        >
+                          {inspectingQuestion.evaluation.scoreBreakdown &&
+                            Object.entries(inspectingQuestion.evaluation.scoreBreakdown)
+                              .filter(([key]) => {
+                                // Filter AI-only vs standard parameters appropriately
+                                if (inspectingQuestion.testType !== 'AI_TEST' && (key === 'promptQuality' || key === 'outputCorrectnessDesign')) {
+                                  return false;
+                                }
+                                return true;
+                              })
+                              .map(([param, score]) => (
+                                <div
+                                  key={param}
+                                  style={{
+                                    background: 'var(--color-bg-subtle)',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: 8,
+                                    padding: 10,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      color: 'var(--color-text-muted)',
+                                      textTransform: 'uppercase',
+                                      fontWeight: 600,
+                                      display: 'block',
+                                    }}
+                                  >
+                                    {param.replace(/([A-Z])/g, ' $1')}
+                                  </span>
+                                  <strong
+                                    style={{
+                                      fontSize: '1.05rem',
+                                      color: 'var(--color-primary)',
+                                      marginTop: 2,
+                                      display: 'block',
+                                    }}
+                                  >
+                                    {typeof score === 'number' ? score.toFixed(1) : score}{' '}
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>
+                                      / 10
+                                    </span>
+                                  </strong>
+                                </div>
+                              ))}
+                        </div>
+
+                        {/* AI Test Evaluator Feedback / Prompt Log (Condition 3: AI_TEST only) */}
+                        {(test?.testType === 'AI_TEST' || inspectingQuestion.testType === 'AI_TEST') && (
+                          <>
+                            {inspectingQuestion.evaluation.llmFeedback && (
+                              <div style={{ marginTop: 6 }}>
+                                <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy)' }}>
+                                  🤖 AI Evaluator Feedback:
+                                </strong>
+                                <div
+                                  style={{
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                                    borderRadius: 8,
+                                    padding: 12,
+                                    fontSize: '0.82rem',
+                                    color: 'var(--color-text)',
+                                    marginTop: 4,
+                                    whiteSpace: 'pre-line',
+                                    lineHeight: 1.4,
+                                    maxHeight: 140,
+                                    overflowY: 'auto',
+                                  }}
+                                >
+                                  {inspectingQuestion.evaluation.llmFeedback}
+                                </div>
+                              </div>
+                            )}
+
+                            {inspectingQuestion.promptLog?.length > 0 && (
+                              <div style={{ marginTop: 6 }}>
+                                <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy)' }}>
+                                  💬 AI Test Prompt Log ({inspectingQuestion.promptLog.length} messages):
+                                </strong>
+                                <div
+                                  style={{
+                                    background: 'var(--color-bg-subtle)',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: 8,
+                                    padding: 10,
+                                    marginTop: 4,
+                                    maxHeight: 150,
+                                    overflowY: 'auto',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 6,
+                                    fontSize: '0.78rem',
+                                  }}
+                                >
+                                  {inspectingQuestion.promptLog.map((log, lIdx) => (
+                                    <div
+                                      key={lIdx}
+                                      style={{
+                                        background:
+                                          log.role === 'user' || log.role === 'candidate'
+                                            ? 'rgba(14, 124, 134, 0.15)'
+                                            : 'var(--color-bg-card)',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: 6,
+                                        padding: 6,
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          fontWeight: 700,
+                                          color:
+                                            log.role === 'user' || log.role === 'candidate'
+                                              ? 'var(--color-primary)'
+                                              : 'var(--color-text)',
+                                        }}
+                                      >
+                                        {log.role === 'user' || log.role === 'candidate'
+                                          ? 'Candidate Prompt:'
+                                          : 'AI Reply:'}
+                                      </span>
+                                      <p style={{ margin: '2px 0 0 0', whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>
+                                        {log.content || log.message}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={handleCloseInspectCode}
+                  className="btn btn-secondary"
+                >
+                  Close Inspection
                 </button>
               </div>
             </div>
