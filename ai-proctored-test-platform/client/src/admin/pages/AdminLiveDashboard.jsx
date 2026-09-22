@@ -581,8 +581,13 @@ export default function AdminLiveDashboard() {
   // FEATURE-007: Open Candidate Inspection modal and sync candidateId in URL
   const handleOpenInspectCandidate = useCallback((cand) => {
     if (!cand) return;
-    setInspectCandidate(cand);
     const cid = cand.candidateId || cand.id || cand._id;
+    // Reset dismissed ref so candidate can be opened
+    dismissedCandidateIdRef.current = null;
+    if (cid) {
+      deepLinkOpenedRef.current = String(cid);
+    }
+    setInspectCandidate(cand);
     if (cid && !routeCandidateId) {
       const nextParams = new URLSearchParams(searchParams);
       if (nextParams.get('candidateId') !== String(cid)) {
@@ -595,6 +600,10 @@ export default function AdminLiveDashboard() {
 
   // FEATURE-007: Close Candidate Inspection modal and remove deep-link parameter from URL
   const handleCloseInspectModal = useCallback(() => {
+    const currentCid = inspectCandidate?.candidateId || inspectCandidate?.id || inspectCandidate?._id || deepLinkCandidateId;
+    if (currentCid) {
+      dismissedCandidateIdRef.current = String(currentCid);
+    }
     setInspectCandidate(null);
     if (routeCandidateId) {
       navigate(`/admin/tests/${testId}/live`, { replace: true });
@@ -604,24 +613,27 @@ export default function AdminLiveDashboard() {
       nextParams.delete('roomId');
       setSearchParams(nextParams, { replace: true });
     }
-  }, [routeCandidateId, searchParams, setSearchParams, navigate, testId]);
+  }, [routeCandidateId, searchParams, setSearchParams, navigate, testId, inspectCandidate, deepLinkCandidateId]);
 
   // FEATURE-007: Automatically open candidate inspection when navigated via deep link
-  const deepLinkHandledRef = useRef(null);
+  const deepLinkOpenedRef = useRef(null);
+  const dismissedCandidateIdRef = useRef(null);
 
   useEffect(() => {
     if (!deepLinkCandidateId) {
-      deepLinkHandledRef.current = null;
+      deepLinkOpenedRef.current = null;
+      dismissedCandidateIdRef.current = null;
       return;
     }
     if (loading) return;
 
-    // Prevent repeated re-opening if already inspected
-    if (deepLinkHandledRef.current === deepLinkCandidateId && inspectCandidate) return;
+    // If candidate was already dismissed by user or already opened, do not re-open!
+    if (dismissedCandidateIdRef.current === String(deepLinkCandidateId)) return;
+    if (deepLinkOpenedRef.current === String(deepLinkCandidateId)) return;
 
     const targetCandidate = candidatesMap[deepLinkCandidateId];
     if (targetCandidate) {
-      deepLinkHandledRef.current = deepLinkCandidateId;
+      deepLinkOpenedRef.current = String(deepLinkCandidateId);
       setInspectCandidate(targetCandidate);
       return;
     }
@@ -630,6 +642,7 @@ export default function AdminLiveDashboard() {
     if (deepLinkRoomId) {
       api.getRoomCandidates(deepLinkRoomId)
         .then((res) => {
+          if (dismissedCandidateIdRef.current === String(deepLinkCandidateId)) return;
           const matched = (res.data?.candidates || []).find(
             (c) => (c.candidateId || c._id)?.toString() === deepLinkCandidateId.toString()
           );
@@ -643,22 +656,22 @@ export default function AdminLiveDashboard() {
               ...prev,
               [deepLinkCandidateId]: enriched,
             }));
-            deepLinkHandledRef.current = deepLinkCandidateId;
+            deepLinkOpenedRef.current = String(deepLinkCandidateId);
             setInspectCandidate(enriched);
           } else {
-            deepLinkHandledRef.current = deepLinkCandidateId;
+            deepLinkOpenedRef.current = String(deepLinkCandidateId);
             toast.error('Candidate record not found.');
           }
         })
         .catch(() => {
-          deepLinkHandledRef.current = deepLinkCandidateId;
+          deepLinkOpenedRef.current = String(deepLinkCandidateId);
           toast.error('Candidate record not found.');
         });
     } else {
-      deepLinkHandledRef.current = deepLinkCandidateId;
+      deepLinkOpenedRef.current = String(deepLinkCandidateId);
       toast.error('Candidate record not found.');
     }
-  }, [deepLinkCandidateId, deepLinkRoomId, loading, candidatesMap, inspectCandidate]);
+  }, [deepLinkCandidateId, deepLinkRoomId, loading, candidatesMap]);
 
   // FEATURE-007: Scroll to inspected candidate row in roster when modal opens
   useEffect(() => {
