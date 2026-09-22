@@ -372,21 +372,153 @@ export default function CandidateInstructions() {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 32, maxWidth: 960, margin: '0 auto', width: '100%', scrollbarGutter: 'stable' }}>
-        <div style={{ marginBottom: 24 }}>
-          <span className="badge badge-teal" style={{ marginBottom: 8 }}>
-            {joinData.test.testType}
-          </span>
-          <h1 style={{ fontSize: '1.8rem', color: '#1A2B3C', marginBottom: 8 }}>{joinData.test.title}</h1>
-          <div style={{ display: 'flex', gap: 24, color: '#6b7280', fontSize: '0.875rem' }}>
-            <span>
-              ⏱️ Duration: <strong>{joinData.test.durationMinutes} minutes</strong>
+        {/* ── Header Section (FEATURE-017: Option B Restructure) ── */}
+        <div
+          className="instructions-header-block card"
+          style={{
+            background: '#FFFFFF',
+            borderRadius: 12,
+            padding: '24px 28px',
+            border: '1px solid #E5E7EB',
+            borderLeft: '5px solid var(--color-primary, #0E7C86)',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+            marginBottom: 24,
+          }}
+        >
+          {/* Overline Test Type Badge */}
+          <div style={{ marginBottom: 6 }}>
+            <span
+              className="badge badge-teal"
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                padding: '3px 10px',
+                borderRadius: 6,
+              }}
+            >
+              {joinData.test?.testType || 'TEST'}
             </span>
-            <span>
-              📋 Questions: <strong>{joinData.test.totalQuestions}</strong>
-            </span>
-            <span>
-              🏠 Room: <strong>{joinData.room.roomName}</strong>
-            </span>
+          </div>
+
+          {/* Test Title */}
+          <h1
+            style={{
+              fontSize: '1.85rem',
+              fontWeight: 800,
+              color: '#1A2B3C',
+              margin: '0 0 18px 0',
+              lineHeight: 1.25,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {joinData.test?.title || 'Test Instructions'}
+          </h1>
+
+          {/* Horizontal Mini Stat Blocks */}
+          <div
+            className="instructions-stat-blocks-row"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {/* Stat 1: Duration */}
+            <div
+              className="stat-block-item"
+              style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>⏱️</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Duration
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {joinData.test?.durationMinutes ?? 90} minutes
+              </div>
+            </div>
+
+            {/* Stat 2: Total Questions */}
+            <div
+              className="stat-block-item"
+              style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>📄</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Total Questions
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {joinData.test?.totalQuestions ?? 0}
+              </div>
+            </div>
+
+            {/* Stat 3: Passing Criteria */}
+            <div
+              className="stat-block-item"
+              style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>✅</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Passing Criteria
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                ≥ {joinData.test?.passingCriteria !== undefined && joinData.test?.passingCriteria !== null ? joinData.test.passingCriteria : 1} Qs
+              </div>
+            </div>
+
+            {/* Stat 4: Room */}
+            <div
+              className="stat-block-item"
+              style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ fontSize: '1.2rem', lineHeight: 1 }}>🏠</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Room
+              </div>
+              <div
+                style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                title={joinData.room?.roomName || joinData.room?.roomCode}
+              >
+                {joinData.room?.roomName || joinData.room?.roomCode || 'Assigned Room'}
+              </div>
+            </div>
           </div>
         </div>
 

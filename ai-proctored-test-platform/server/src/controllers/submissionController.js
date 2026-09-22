@@ -294,6 +294,7 @@ const joinRoom = async (req, res, next) => {
         testType: test.testType,
         durationMinutes: test.durationMinutes,
         totalQuestions: test.totalQuestions,
+        passingCriteria: test.passingCriteria !== undefined && test.passingCriteria !== null ? test.passingCriteria : 1,
         supportedLanguages: test.supportedLanguages,
       },
       room: {
