@@ -1,7 +1,7 @@
 // AdminTestDetail.jsx — Test Detail, Configuration & Room Management
 // Implements PRD Section 9.2, 9.3, 11.2 (FR-2.1, FR-2.2, FR-2.3), 11.3 (FR-3.1, FR-3.2, FR-3.3), FEATURE-021
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
@@ -119,6 +119,9 @@ const getLiveSessionText = (test) => {
 export default function AdminTestDetail() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openRoomId = searchParams.get('openRoomId');
+  const returnQuery = searchParams.get('q');
 
   const [test, setTest] = useState(null);
   const [rooms, setRooms] = useState([]);
@@ -510,10 +513,10 @@ export default function AdminTestDetail() {
   const handleEditSave = handleSaveConfig;
 
   // View Candidates in Room
-  const handleViewRoomCandidates = async (room) => {
+  const handleViewRoomCandidates = async (room, initialQuery = '') => {
     try {
       setSelectedRoomCandidates({ room, list: [] });
-      setCandidateSearchQuery('');
+      setCandidateSearchQuery(initialQuery);
       setLoadingCandidates(true);
       const res = await api.getRoomCandidates(room._id);
       setSelectedRoomCandidates({ room, list: res.data.candidates || [] });
@@ -530,11 +533,36 @@ export default function AdminTestDetail() {
   const handleInspectCandidate = (c) => {
     const cid = c.candidateId || c._id;
     if (!cid) return;
-    const roomId = selectedRoomCandidates?.room?._id;
+    const roomId = selectedRoomCandidates?.room?._id || selectedRoomCandidates?.room?.id;
+    const currentQ = candidateSearchQuery ? candidateSearchQuery.trim() : '';
     setSelectedRoomCandidates(null);
     setCandidateSearchQuery('');
-    navigate(`/admin/tests/${testId}/live?candidateId=${cid}${roomId ? `&roomId=${roomId}` : ''}`);
+    navigate(
+      `/admin/tests/${testId}/live?candidateId=${cid}${roomId ? `&roomId=${roomId}&from=roomCandidates` : ''}${currentQ ? `&q=${encodeURIComponent(currentQ)}` : ''}`,
+      { state: { fromRoomCandidates: true, roomId, q: currentQ } }
+    );
   };
+
+  // ── Return-to-source: Auto-open Room Candidates modal if returning from Candidate Inspection ──
+  const openedRoomRef = useRef(null);
+  useEffect(() => {
+    if (!openRoomId) {
+      openedRoomRef.current = null;
+      return;
+    }
+    if (rooms.length === 0) return;
+    if (openedRoomRef.current === openRoomId) return;
+
+    const targetRoom = rooms.find((r) => (r._id || r.id)?.toString() === openRoomId.toString());
+    if (targetRoom) {
+      openedRoomRef.current = openRoomId;
+      handleViewRoomCandidates(targetRoom, returnQuery || '');
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('openRoomId');
+      nextParams.delete('q');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [openRoomId, rooms, searchParams, setSearchParams, returnQuery]);
 
   // Copy helper
   const copyToClipboard = (text, label) => {

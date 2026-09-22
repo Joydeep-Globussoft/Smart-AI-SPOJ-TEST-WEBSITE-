@@ -1,7 +1,7 @@
 // AdminLiveDashboard.jsx — Live Monitoring Dashboard & Seat Map
 // Implements PRD Section 9.8, Section 10 (Exact Socket.io Events), Section 11.7 (FR-7.3 persistent malpractice counter, FR-7.4), Section 11.8 (FR-8.1, FR-8.2, FR-8.3), Section 13 (NFR: 200ms debounce, React.memo, react-window virtualization for >50 items), FEATURE-021
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { List } from 'react-window';
 import AdminNavbar from '../../shared/AdminNavbar';
@@ -473,6 +473,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
 export default function AdminLiveDashboard() {
   const { testId, candidateId: routeCandidateId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const deepLinkCandidateId = routeCandidateId || searchParams.get('candidateId');
   const deepLinkRoomId = searchParams.get('roomId');
@@ -601,22 +602,38 @@ export default function AdminLiveDashboard() {
     }
   }, [routeCandidateId, searchParams, setSearchParams]);
 
-  // FEATURE-007: Close Candidate Inspection modal and remove deep-link parameter from URL
+  // FEATURE-007 / Return-to-source: Close Candidate Inspection modal and return to origin if opened from room candidates
   const handleCloseInspectModal = useCallback(() => {
     const cid = inspectCandidate?.candidateId || inspectCandidate?.id || inspectCandidate?._id || deepLinkCandidateId;
     if (cid) {
       dismissedCandidateIdRef.current = String(cid);
     }
     setInspectCandidate(null);
+
+    const fromRoom = searchParams.get('from') === 'roomCandidates' || location.state?.fromRoomCandidates;
+    const returnRoomId = searchParams.get('roomId') || location.state?.roomId;
+    const searchQ = searchParams.get('q') || location.state?.q;
+
+    if (fromRoom) {
+      if (returnRoomId) {
+        navigate(`/admin/tests/${testId}?openRoomId=${returnRoomId}${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ''}`);
+      } else {
+        navigate(`/admin/tests/${testId}`);
+      }
+      return;
+    }
+
     if (routeCandidateId) {
       navigate(`/admin/tests/${testId}/live`, { replace: true });
     } else if (searchParams.has('candidateId') || searchParams.has('roomId')) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete('candidateId');
       nextParams.delete('roomId');
+      nextParams.delete('from');
+      nextParams.delete('q');
       setSearchParams(nextParams, { replace: true });
     }
-  }, [inspectCandidate, deepLinkCandidateId, routeCandidateId, searchParams, setSearchParams, navigate, testId]);
+  }, [inspectCandidate, deepLinkCandidateId, routeCandidateId, searchParams, setSearchParams, navigate, testId, location]);
 
   // FEATURE-007: Automatically open candidate inspection when navigated via deep link
   useEffect(() => {
