@@ -512,6 +512,15 @@ export default function AdminTestDetail() {
     }
   };
 
+  // ── FEATURE-007: Deep-link to Candidate Inspection & Evidence from Room Candidates Modal ──
+  const handleInspectCandidate = (c) => {
+    const cid = c.candidateId || c._id;
+    if (!cid) return;
+    const roomId = selectedRoomCandidates?.room?._id;
+    setSelectedRoomCandidates(null);
+    navigate(`/admin/tests/${testId}/live?candidateId=${cid}${roomId ? `&roomId=${roomId}` : ''}`);
+  };
+
   // Copy helper
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
@@ -1359,10 +1368,10 @@ export default function AdminTestDetail() {
           </div>
         )}
 
-        {/* ── Room Candidates Modal with Real-time Status Sync (FR-3.3, FR-8.3) ── */}
+        {/* ── Room Candidates Modal with Real-time Status Sync (FR-3.3, FR-8.3, FEATURE-007) ── */}
         {selectedRoomCandidates && (
           <div className="modal-backdrop" onClick={() => setSelectedRoomCandidates(null)}>
-            <div className="modal-container" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-container" style={{ maxWidth: 820 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
                   <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
@@ -1405,6 +1414,7 @@ export default function AdminTestDetail() {
                         <th>Violations</th>
                         <th>Status</th>
                         <th>Submitted At</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1461,6 +1471,16 @@ export default function AdminTestDetail() {
                           </td>
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
                             {c.submittedAt ? new Date(c.submittedAt).toLocaleTimeString() : '—'}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleInspectCandidate(c)}
+                              className="btn btn-secondary"
+                              style={{ padding: '3px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+                            >
+                              Inspect
+                            </button>
                           </td>
                         </tr>
                       ))}

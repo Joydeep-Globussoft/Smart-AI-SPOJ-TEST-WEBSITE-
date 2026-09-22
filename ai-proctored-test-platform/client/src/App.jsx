@@ -79,6 +79,7 @@ function AppRoutes() {
         <Route path="/admin/tests" element={<RequireAdmin><AdminTests /></RequireAdmin>} />
         <Route path="/admin/tests/:testId" element={<RequireAdmin><AdminTestDetail /></RequireAdmin>} />
         <Route path="/admin/tests/:testId/live" element={<RequireAdmin><AdminLiveDashboard /></RequireAdmin>} />
+        <Route path="/admin/tests/:testId/inspect/:candidateId" element={<RequireAdmin><AdminLiveDashboard /></RequireAdmin>} />
         <Route path="/admin/tests/:testId/results" element={<RequireAdmin><AdminResults /></RequireAdmin>} />
         <Route path="/admin/question-bank" element={<RequireAdmin><AdminQuestionBank /></RequireAdmin>} />
         <Route

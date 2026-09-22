@@ -1,7 +1,7 @@
 // AdminLiveDashboard.jsx — Live Monitoring Dashboard & Seat Map
 // Implements PRD Section 9.8, Section 10 (Exact Socket.io Events), Section 11.7 (FR-7.3 persistent malpractice counter, FR-7.4), Section 11.8 (FR-8.1, FR-8.2, FR-8.3), Section 13 (NFR: 200ms debounce, React.memo, react-window virtualization for >50 items), FEATURE-021
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { List } from 'react-window';
 import AdminNavbar from '../../shared/AdminNavbar';
@@ -246,8 +246,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
   );
 });
 
-// ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name) ──
-const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now, isTestEnded }) => {
+// ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate) ──
+const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now, isTestEnded, isActive }) => {
   const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
   const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
@@ -286,6 +286,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
 
   return (
     <div
+      id={`candidate-row-${candidate.candidateId || candidate._id}`}
       style={{
         ...style,
         display: 'grid',
@@ -293,9 +294,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         alignItems: 'center',
         padding: '8px 16px',
         borderBottom: '1px solid var(--color-border)',
+        borderLeft: isActive ? '4px solid var(--color-primary, #0e7c86)' : '4px solid transparent',
         fontSize: '0.85rem',
-        background: 'var(--color-bg-card)',
+        background: isActive ? 'var(--color-bg-subtle, rgba(14, 124, 134, 0.08))' : 'var(--color-bg-card)',
         opacity: 1,
+        transition: 'background 0.2s ease, border-left 0.2s ease',
       }}
     >
       {/* Candidate Name + Persistent Malpractice Counter (FR-7.3) */}
@@ -468,7 +471,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
 });
 
 export default function AdminLiveDashboard() {
-  const { testId } = useParams();
+  const { testId, candidateId: routeCandidateId } = useParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkCandidateId = routeCandidateId || searchParams.get('candidateId');
+  const deepLinkRoomId = searchParams.get('roomId');
   const { user } = useAuth();
 
   const [test, setTest] = useState(null);
@@ -570,6 +577,101 @@ export default function AdminLiveDashboard() {
 
   // BUG-91: Target candidate ID stabilized to avoid re-fetch loops on live status updates
   const targetInspectCandidateId = inspectCandidate?.candidateId || inspectCandidate?.id || inspectCandidate?._id;
+
+  // FEATURE-007: Open Candidate Inspection modal and sync candidateId in URL
+  const handleOpenInspectCandidate = useCallback((cand) => {
+    if (!cand) return;
+    setInspectCandidate(cand);
+    const cid = cand.candidateId || cand.id || cand._id;
+    if (cid && !routeCandidateId) {
+      const nextParams = new URLSearchParams(searchParams);
+      if (nextParams.get('candidateId') !== String(cid)) {
+        nextParams.set('candidateId', String(cid));
+        if (cand.roomId) nextParams.set('roomId', String(cand.roomId));
+        setSearchParams(nextParams, { replace: true });
+      }
+    }
+  }, [routeCandidateId, searchParams, setSearchParams]);
+
+  // FEATURE-007: Close Candidate Inspection modal and remove deep-link parameter from URL
+  const handleCloseInspectModal = useCallback(() => {
+    setInspectCandidate(null);
+    if (routeCandidateId) {
+      navigate(`/admin/tests/${testId}/live`, { replace: true });
+    } else if (searchParams.has('candidateId') || searchParams.has('roomId')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('candidateId');
+      nextParams.delete('roomId');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [routeCandidateId, searchParams, setSearchParams, navigate, testId]);
+
+  // FEATURE-007: Automatically open candidate inspection when navigated via deep link
+  const deepLinkHandledRef = useRef(null);
+
+  useEffect(() => {
+    if (!deepLinkCandidateId) {
+      deepLinkHandledRef.current = null;
+      return;
+    }
+    if (loading) return;
+
+    // Prevent repeated re-opening if already inspected
+    if (deepLinkHandledRef.current === deepLinkCandidateId && inspectCandidate) return;
+
+    const targetCandidate = candidatesMap[deepLinkCandidateId];
+    if (targetCandidate) {
+      deepLinkHandledRef.current = deepLinkCandidateId;
+      setInspectCandidate(targetCandidate);
+      return;
+    }
+
+    // Fallback if not yet in candidatesMap (e.g. joined room but no submissions yet)
+    if (deepLinkRoomId) {
+      api.getRoomCandidates(deepLinkRoomId)
+        .then((res) => {
+          const matched = (res.data?.candidates || []).find(
+            (c) => (c.candidateId || c._id)?.toString() === deepLinkCandidateId.toString()
+          );
+          if (matched) {
+            const enriched = {
+              ...matched,
+              candidateId: deepLinkCandidateId,
+              roomId: deepLinkRoomId,
+            };
+            setCandidatesMap((prev) => ({
+              ...prev,
+              [deepLinkCandidateId]: enriched,
+            }));
+            deepLinkHandledRef.current = deepLinkCandidateId;
+            setInspectCandidate(enriched);
+          } else {
+            deepLinkHandledRef.current = deepLinkCandidateId;
+            toast.error('Candidate record not found.');
+          }
+        })
+        .catch(() => {
+          deepLinkHandledRef.current = deepLinkCandidateId;
+          toast.error('Candidate record not found.');
+        });
+    } else {
+      deepLinkHandledRef.current = deepLinkCandidateId;
+      toast.error('Candidate record not found.');
+    }
+  }, [deepLinkCandidateId, deepLinkRoomId, loading, candidatesMap, inspectCandidate]);
+
+  // FEATURE-007: Scroll to inspected candidate row in roster when modal opens
+  useEffect(() => {
+    if (inspectCandidate) {
+      const cid = inspectCandidate.candidateId || inspectCandidate.id || inspectCandidate._id;
+      if (cid) {
+        const el = document.getElementById(`candidate-row-${cid}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+  }, [inspectCandidate]);
 
   // BUG-91: Fetch candidate malpractice logs whenever inspect modal opens with pagination support
   useEffect(() => {
@@ -1473,15 +1575,16 @@ export default function AdminLiveDashboard() {
       <CandidateRowItem
         candidate={candidate}
         roomName={roomsById[candidate.roomId] || 'Room'}
-        onSelect={setInspectCandidate}
+        onSelect={handleOpenInspectCandidate}
         onWarn={handleManualWarn}
         onDisqualify={handleManualDisqualify}
         style={style}
         now={now}
         isTestEnded={isTestEnded}
+        isActive={candidate.candidateId === targetInspectCandidateId}
       />
     );
-  }, [candidateList, roomsById, now, isTestEnded]);
+  }, [candidateList, roomsById, now, isTestEnded, handleOpenInspectCandidate, targetInspectCandidateId]);
 
   if (loading) {
     return (
@@ -1834,7 +1937,7 @@ export default function AdminLiveDashboard() {
                   key={c.candidateId}
                   candidate={c}
                   roomName={roomsById[c.roomId] || 'Room'}
-                  onClick={setInspectCandidate}
+                  onClick={handleOpenInspectCandidate}
                   now={now}
                   isTestEnded={isTestEnded}
                 />
@@ -1925,11 +2028,12 @@ export default function AdminLiveDashboard() {
                   key={c.candidateId}
                   candidate={c}
                   roomName={roomsById[c.roomId] || 'Room'}
-                  onSelect={setInspectCandidate}
+                  onSelect={handleOpenInspectCandidate}
                   onWarn={handleManualWarn}
                   onDisqualify={handleManualDisqualify}
                   now={now}
                   isTestEnded={isTestEnded}
+                  isActive={c.candidateId === targetInspectCandidateId}
                 />
               ))}
             </div>
@@ -1940,8 +2044,8 @@ export default function AdminLiveDashboard() {
 
         {/* ── Candidate Inspect Modal with Malpractice Proof & Evidence History (FR-7.3, FR-7.4) ── */}
         {activeInspectCandidate && (
-          <div className="modal-backdrop" onClick={() => setInspectCandidate(null)}>
-            <div className="modal-container" style={{ maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-backdrop" onClick={handleCloseInspectModal}>
+            <div id="candidate-inspection-modal" className="modal-container" style={{ maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
                   <h3 className="modal-title" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1953,7 +2057,7 @@ export default function AdminLiveDashboard() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setInspectCandidate(null)}
+                  onClick={handleCloseInspectModal}
                   style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
                 >
                   ✕
@@ -2338,7 +2442,7 @@ export default function AdminLiveDashboard() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setInspectCandidate(null)}
+                  onClick={handleCloseInspectModal}
                   className="btn btn-secondary"
                   style={{ padding: '6px 16px' }}
                 >
@@ -2589,7 +2693,7 @@ export default function AdminLiveDashboard() {
                       roomName: activeAlert.roomName,
                       malpracticeCount: activeAlert.currentCount,
                     };
-                    setInspectCandidate(cand);
+                    handleOpenInspectCandidate(cand);
                     closeActiveAlert();
                   }}
                   className="btn btn-secondary"
