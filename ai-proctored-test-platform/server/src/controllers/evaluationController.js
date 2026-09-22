@@ -44,14 +44,20 @@ const getResults = async (req, res, next) => {
 const getShortlist = async (req, res, next) => {
   try {
     const { testId } = req.params;
+    const { validCandidateIds, totalCandidates } = await shortlistService.getEnrolledTestCandidates(testId);
+
     let shortlist = await Shortlist.findOne({ testId });
-    if (!shortlist) {
+
+    // Proactive auto-resync: if shortlist does not exist, or if candidate count exceeds total enrolled candidates,
+    // or if any candidate in the shortlist is not an enrolled valid candidate, regenerate fresh immediately.
+    const validSet = new Set(validCandidateIds);
+    const hasInvalidCandidate = shortlist?.candidates?.some(
+      (c) => !c.candidateId || !validSet.has(c.candidateId.toString())
+    );
+
+    if (!shortlist || hasInvalidCandidate || (shortlist.candidates && shortlist.candidates.length > totalCandidates)) {
       shortlist = await shortlistService.regenerate(testId);
     }
-    const totalCandidates =
-      shortlist.totalCandidates !== undefined
-        ? shortlist.totalCandidates
-        : (await shortlistService.getEnrolledTestCandidates(testId)).totalCandidates;
 
     res.json({
       shortlist,
