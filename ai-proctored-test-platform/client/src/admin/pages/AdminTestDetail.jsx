@@ -1,6 +1,6 @@
 // AdminTestDetail.jsx — Test Detail, Configuration & Room Management
 // Implements PRD Section 9.2, 9.3, 11.2 (FR-2.1, FR-2.2, FR-2.3), 11.3 (FR-3.1, FR-3.2, FR-3.3), FEATURE-021
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../shared/AdminNavbar';
@@ -154,6 +154,18 @@ export default function AdminTestDetail() {
   // Room Candidates View Modal
   const [selectedRoomCandidates, setSelectedRoomCandidates] = useState(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [candidateSearchQuery, setCandidateSearchQuery] = useState('');
+
+  // FEATURE-008: Real-time case-insensitive candidate name filtering for room candidates modal
+  const filteredRoomCandidates = useMemo(() => {
+    if (!selectedRoomCandidates?.list) return [];
+    const query = candidateSearchQuery.trim().toLowerCase();
+    if (!query) return selectedRoomCandidates.list;
+    return selectedRoomCandidates.list.filter((c) => {
+      const name = (c.name || '').toLowerCase();
+      return name.includes(query);
+    });
+  }, [selectedRoomCandidates?.list, candidateSearchQuery]);
 
   // QR Code Modal State (FEATURE-019)
   const [selectedQrRoom, setSelectedQrRoom] = useState(null);
@@ -501,12 +513,14 @@ export default function AdminTestDetail() {
   const handleViewRoomCandidates = async (room) => {
     try {
       setSelectedRoomCandidates({ room, list: [] });
+      setCandidateSearchQuery('');
       setLoadingCandidates(true);
       const res = await api.getRoomCandidates(room._id);
       setSelectedRoomCandidates({ room, list: res.data.candidates || [] });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to fetch candidates');
       setSelectedRoomCandidates(null);
+      setCandidateSearchQuery('');
     } finally {
       setLoadingCandidates(false);
     }
@@ -518,6 +532,7 @@ export default function AdminTestDetail() {
     if (!cid) return;
     const roomId = selectedRoomCandidates?.room?._id;
     setSelectedRoomCandidates(null);
+    setCandidateSearchQuery('');
     navigate(`/admin/tests/${testId}/live?candidateId=${cid}${roomId ? `&roomId=${roomId}` : ''}`);
   };
 
@@ -1368,11 +1383,26 @@ export default function AdminTestDetail() {
           </div>
         )}
 
-        {/* ── Room Candidates Modal with Real-time Status Sync (FR-3.3, FR-8.3, FEATURE-007) ── */}
+        {/* ── Room Candidates Modal with Real-time Status Sync (FR-3.3, FR-8.3, FEATURE-007, FEATURE-008) ── */}
         {selectedRoomCandidates && (
-          <div className="modal-backdrop" onClick={() => setSelectedRoomCandidates(null)}>
+          <div
+            className="modal-backdrop"
+            onClick={() => {
+              setSelectedRoomCandidates(null);
+              setCandidateSearchQuery('');
+            }}
+          >
             <div className="modal-container" style={{ maxWidth: 820 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+              <div
+                className="modal-header"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
                 <div>
                   <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                     Candidates in Room {selectedRoomCandidates.room.roomName || selectedRoomCandidates.room.roomCode}
@@ -1387,14 +1417,76 @@ export default function AdminTestDetail() {
                     </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRoomCandidates(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
-                >
-                  ✕
-                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                  {/* FEATURE-008: Candidate Name Search Input */}
+                  <div style={{ position: 'relative', width: 240 }}>
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        fontSize: '0.8rem',
+                        color: 'var(--color-text-muted)',
+                        pointerEvents: 'none',
+                        lineHeight: 1,
+                      }}
+                    >
+                      🔍
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search candidate name..."
+                      value={candidateSearchQuery}
+                      onChange={(e) => setCandidateSearchQuery(e.target.value)}
+                      style={{
+                        paddingLeft: 30,
+                        paddingRight: candidateSearchQuery ? 26 : 10,
+                        fontSize: '0.8rem',
+                        height: 34,
+                        width: '100%',
+                        borderRadius: 6,
+                      }}
+                    />
+                    {candidateSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setCandidateSearchQuery('')}
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--color-text-muted)',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          padding: 0,
+                          lineHeight: 1,
+                        }}
+                        title="Clear search"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRoomCandidates(null);
+                      setCandidateSearchQuery('');
+                    }}
+                    style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
+
               <div className="modal-body" style={{ maxHeight: 420, overflowY: 'auto' }}>
                 {loadingCandidates ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
@@ -1402,7 +1494,11 @@ export default function AdminTestDetail() {
                   </div>
                 ) : selectedRoomCandidates.list.length === 0 ? (
                   <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 28 }}>
-                    No candidates have joined this room yet.
+                    No candidates available.
+                  </p>
+                ) : filteredRoomCandidates.length === 0 ? (
+                  <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 28 }}>
+                    No candidates found.
                   </p>
                 ) : (
                   <table className="table" style={{ fontSize: '0.85rem' }}>
@@ -1418,7 +1514,7 @@ export default function AdminTestDetail() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedRoomCandidates.list.map((c) => (
+                      {filteredRoomCandidates.map((c) => (
                         <tr key={c._id || c.candidateId}>
                           <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{c.email}</td>
@@ -1490,11 +1586,22 @@ export default function AdminTestDetail() {
               </div>
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                  Total: <strong>{selectedRoomCandidates.list.length}</strong> candidate{selectedRoomCandidates.list.length === 1 ? '' : 's'}
+                  {candidateSearchQuery.trim() ? (
+                    <>
+                      Showing <strong>{filteredRoomCandidates.length}</strong> of <strong>{selectedRoomCandidates.list.length}</strong> candidate{selectedRoomCandidates.list.length === 1 ? '' : 's'}
+                    </>
+                  ) : (
+                    <>
+                      Total: <strong>{selectedRoomCandidates.list.length}</strong> candidate{selectedRoomCandidates.list.length === 1 ? '' : 's'}
+                    </>
+                  )}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setSelectedRoomCandidates(null)}
+                  onClick={() => {
+                    setSelectedRoomCandidates(null);
+                    setCandidateSearchQuery('');
+                  }}
                   className="btn btn-secondary"
                 >
                   Close
