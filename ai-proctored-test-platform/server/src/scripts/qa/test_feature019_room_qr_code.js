@@ -90,10 +90,18 @@ function runTests() {
   // Step 4: Verify QR Modal Elements & Context
   console.log('\n--- Step 4: Verify QR Modal Elements & Actions ---');
   assert(
-    testDetailCode.includes('Room Entry QR Code') &&
+    testDetailCode.includes('<h3 className="modal-title">Room Entry QR Code</h3>'),
+    'Modal title renders without icon preceding it'
+  );
+  assert(
     testDetailCode.includes('selectedQrRoom.roomCode') &&
     testDetailCode.includes('selectedQrRoom.roomPassword'),
     'Modal displays room context: Title, Room Code, and Room Password'
+  );
+  assert(
+    testDetailCode.includes('Candidates can scan this QR code with their mobile or laptop to test.') &&
+    testDetailCode.includes("color: '#CBD5E1'"),
+    'Helper text reads updated wording with high contrast color'
   );
   assert(
     testDetailCode.includes('id="download-qr-btn"') &&

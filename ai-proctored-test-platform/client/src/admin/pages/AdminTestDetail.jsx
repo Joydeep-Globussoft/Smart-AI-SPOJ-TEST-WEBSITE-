@@ -1734,9 +1734,7 @@ export default function AdminTestDetail() {
             >
               <div className="modal-header" style={{ textAlign: 'left' }}>
                 <div>
-                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>📱</span> Room Entry QR Code
-                  </h3>
+                  <h3 className="modal-title">Room Entry QR Code</h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
                     {selectedQrRoom.roomName || selectedQrRoom.roomCode} • {test?.title}
                   </p>
@@ -1756,23 +1754,28 @@ export default function AdminTestDetail() {
                 <div
                   style={{
                     width: '100%',
-                    background: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
                     borderRadius: 8,
-                    padding: '10px 14px',
-                    fontSize: '0.82rem',
+                    padding: '12px 16px',
+                    fontSize: '0.85rem',
                     textAlign: 'left',
                     display: 'flex',
                     justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
                   <div>
-                    <span style={{ color: '#64748B' }}>Room Code: </span>
-                    <code style={{ fontWeight: 700, color: 'var(--color-navy)' }}>{selectedQrRoom.roomCode}</code>
+                    <span style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 500 }}>Room Code: </span>
+                    <span style={{ fontWeight: 700, color: '#38BDF8', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
+                      {selectedQrRoom.roomCode || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span style={{ color: '#64748B' }}>Password: </span>
-                    <code style={{ fontWeight: 700, color: 'var(--color-navy)' }}>{selectedQrRoom.roomPassword}</code>
+                    <span style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 500 }}>Password: </span>
+                    <span style={{ fontWeight: 700, color: '#F1F5F9', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
+                      {selectedQrRoom.roomPassword || '—'}
+                    </span>
                   </div>
                 </div>
 
@@ -1808,8 +1811,18 @@ export default function AdminTestDetail() {
                 </div>
 
                 {/* Context instructions */}
-                <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, margin: 0, padding: '0 8px' }}>
-                  Candidates can scan this QR code with their mobile or laptop to register/login and automatically land on test instructions.
+                <p
+                  id="qr-helper-text"
+                  style={{
+                    fontSize: '0.85rem',
+                    color: '#CBD5E1',
+                    lineHeight: 1.45,
+                    margin: 0,
+                    padding: '0 8px',
+                    textAlign: 'center',
+                  }}
+                >
+                  Candidates can scan this QR code with their mobile or laptop to test.
                 </p>
 
                 {/* Invite Link Quick Copy */}
@@ -1824,18 +1837,18 @@ export default function AdminTestDetail() {
                     }
                     style={{
                       flex: 1,
-                      fontSize: '0.75rem',
-                      padding: '6px 10px',
+                      fontSize: '0.78rem',
+                      padding: '8px 12px',
                       borderRadius: 6,
-                      border: '1px solid #D1D5DB',
-                      background: '#F9FAFB',
-                      color: '#374151',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      color: '#F1F5F9',
                     }}
                   />
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    style={{ padding: '6px 12px', fontSize: '0.78rem', flexShrink: 0 }}
+                    style={{ padding: '8px 14px', fontSize: '0.8rem', flexShrink: 0 }}
                     onClick={() => {
                       const inviteLink = selectedQrRoom.inviteToken
                         ? `${window.location.origin}/candidate/register?invite=${selectedQrRoom.inviteToken}`
