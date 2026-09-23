@@ -637,22 +637,6 @@ export default function AdminLiveDashboard() {
     dependencies: [selectedRoomId, filterStatus, searchQuery],
   });
 
-  // FEATURE-030: Expand/Fullscreen Seat Map View State
-  const [isSeatMapExpanded, setIsSeatMapExpanded] = useState(false);
-
-  // Close expanded seat map on Escape key
-  useEffect(() => {
-    if (!isSeatMapExpanded) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        if (inspectCandidate || zoomScreenshotUrl || evaluationDetailCandidate) return;
-        setIsSeatMapExpanded(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSeatMapExpanded, inspectCandidate, zoomScreenshotUrl, evaluationDetailCandidate]);
-
   // Candidate Data Store: candidateId -> candidateObj
   const [candidatesMap, setCandidatesMap] = useState({});
 
@@ -903,6 +887,22 @@ export default function AdminLiveDashboard() {
 
   // Zoom proof screenshot modal
   const [zoomScreenshotUrl, setZoomScreenshotUrl] = useState(null);
+
+  // FEATURE-030: Expand/Fullscreen Seat Map View State
+  const [isSeatMapExpanded, setIsSeatMapExpanded] = useState(false);
+
+  // Close expanded seat map on Escape key
+  useEffect(() => {
+    if (!isSeatMapExpanded) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (inspectCandidate || zoomScreenshotUrl || evaluationDetailCandidate) return;
+        setIsSeatMapExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSeatMapExpanded, inspectCandidate, zoomScreenshotUrl, evaluationDetailCandidate]);
 
   // NFR: Debounce buffer for socket events (max 1 re-render per 200ms)
   const debounceBufferRef = useRef({});
