@@ -1588,3 +1588,30 @@ Executed automated test suite `test_bug_malpractice_alert_warning_button_visibil
 - Adjacent Disqualify and Dismiss buttons untouched: **PASS**
 - Client production bundle (`npm run build`): **0 errors in 2.89s**.
 
+---
+
+## 16. BUG/UX-XX: Candidate Live Proctoring Roster — Remove Duplicate Malpractice Count from Name Column
+
+### 1. Problem Summary
+- In the Candidate Live Proctoring Roster table ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx)), each candidate row displayed the malpractice count twice:
+  1. Beside the candidate name in the "Candidate Name" column (e.g. `● Suresh ⚠️ 15`).
+  2. In the dedicated "Malpractice" column (e.g. `⚠️ 15 VIOLATIONS` / `✓ Clean (0)`).
+- Showing the violation counter inside the name column caused unnecessary clutter and redundant visual noise.
+
+### 2. Implementation Details
+1. **Candidate Name Column Cleanup ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx#L628-L648))**:
+   - Removed the duplicate `<span>` badge (`⚠️ ${malpracticeCount}`) from `CandidateRowItem`.
+   - Preserved candidate name and the status/online dot indicator (`seat-tile-dot-pulse`, status colors).
+2. **Dedicated Malpractice Column Intact**:
+   - The dedicated "Malpractice" column continues to show `⚠️ ${malpracticeCount} VIOLATIONS` with clickable modal inspection drill-down for violations, and `✓ Clean (0)` for clean candidates.
+3. **No Layout or Filtering Regressions**:
+   - All other roster columns (Room, Status, Qs Solved, Time Left / Status, Actions) and sorting/virtualization remain 100% untouched.
+
+### 3. QA Verification Results
+Executed automated test suite `test_bug_roster_candidate_name_duplicate_malpractice.js`:
+- Candidate Name column has NO duplicate malpractice badge: **PASS**
+- Candidate Name text rendering preserved: **PASS**
+- Status/online dot indicator preserved: **PASS**
+- Dedicated Malpractice column retained (`⚠️ ${malpracticeCount} VIOLATIONS` & `✓ Clean (0)`): **PASS**
+- Action buttons intact (`Inspect`, `View Result`, `Warn`, `Disqualify`): **PASS**
+- Client production bundle (`npm run build`): **0 errors in 2.85s**.
