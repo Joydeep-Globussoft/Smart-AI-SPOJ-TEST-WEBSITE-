@@ -255,6 +255,67 @@ const getCandidateTimeSpent = (candidate, currentNow, isTestEnded) => {
   return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
 };
 
+// ── Candidate Status Badge Renderer for Proctoring Roster (BUG-018) ───────────
+const renderCandidateStatusBadge = (candidate, isCandidateInProgress, colorStatus, isTestEnded) => {
+  let statusKey = 'NOT_STARTED';
+  let label = 'NOT STARTED';
+  let bg = 'rgba(100, 116, 139, 0.14)';
+  let color = 'var(--color-navy, #334155)';
+  let border = '1px solid rgba(100, 116, 139, 0.35)';
+
+  if (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || colorStatus === 'RED') {
+    statusKey = 'DISQUALIFIED';
+    label = 'DISQUALIFIED';
+    bg = 'rgba(239, 68, 68, 0.14)';
+    color = '#dc2626';
+    border = '1px solid rgba(239, 68, 68, 0.4)';
+  } else if (candidate.status === 'AUTO_SUBMITTED_TIME_UP' || candidate.status === 'AUTO_SUBMITTED') {
+    statusKey = 'AUTO_SUBMITTED';
+    label = 'AUTO SUBMITTED';
+    bg = 'rgba(2, 132, 199, 0.14)';
+    color = '#0284c7';
+    border = '1px solid rgba(2, 132, 199, 0.4)';
+  } else if (candidate.status === 'SUBMITTED' || colorStatus === 'GREEN' || (isTestEnded && candidate.candidateStartTime)) {
+    statusKey = 'SUBMITTED';
+    label = 'SUBMITTED';
+    bg = 'rgba(16, 185, 129, 0.14)';
+    color = '#059669';
+    border = '1px solid rgba(16, 185, 129, 0.4)';
+  } else if (candidate.status === 'IN_PROGRESS' || isCandidateInProgress || colorStatus === 'YELLOW') {
+    statusKey = 'IN_PROGRESS';
+    label = 'IN PROGRESS';
+    bg = 'rgba(245, 158, 11, 0.14)';
+    color = '#b45309';
+    border = '1px solid rgba(245, 158, 11, 0.4)';
+  } else {
+    statusKey = 'NOT_STARTED';
+    label = 'NOT STARTED';
+    bg = 'rgba(100, 116, 139, 0.14)';
+    color = 'var(--color-navy, #334155)';
+    border = '1px solid rgba(100, 116, 139, 0.35)';
+  }
+
+  return (
+    <span
+      className={`badge status-badge-${statusKey.toLowerCase()}`}
+      style={{
+        background: bg,
+        color,
+        border,
+        fontSize: '0.72rem',
+        fontWeight: 700,
+        padding: '3px 8px',
+        borderRadius: 4,
+        display: 'inline-flex',
+        alignItems: 'center',
+        letterSpacing: '0.3px',
+      }}
+    >
+      {label}
+    </span>
+  );
+};
+
 // ── Memoized Seat Tile (FR-7.3: Persistent Malpractice counter beside name) ────
 const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
   const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
@@ -419,7 +480,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
   );
 });
 
-// ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate, FEATURE-024: View Result) ──
+// ── Memoized Table Row Component (Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate, FEATURE-024: View Result) ──
 const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, onOpenEvaluationDetail, style, now, isTestEnded, isActive }) => {
   const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
   const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
@@ -474,7 +535,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         transition: 'background 0.2s ease, border-left 0.2s ease',
       }}
     >
-      {/* Candidate Name + Persistent Malpractice Counter (FR-7.3) */}
+      {/* Candidate Name + Persistent Malpractice Counter */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
         <span
           className={isYellowDot ? 'seat-tile-dot-pulse' : ''}
@@ -494,7 +555,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         <strong style={{ color: 'var(--color-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {candidate.name || candidate.candidateName || 'Candidate'}
         </strong>
-        {/* FR-7.3: Persistent Malpractice counter directly beside name */}
+        {/* Persistent Malpractice counter directly beside name */}
         <span
           className={`badge ${malpracticeCount > 0 ? 'badge-danger' : 'badge-secondary'}`}
           style={{
@@ -506,25 +567,31 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-text-muted)',
             border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border)',
           }}
-          title={`Persistent Malpractice Counter: ${malpracticeCount}`}
+          title={`Malpractice Counter: ${malpracticeCount}`}
         >
           ⚠️ {malpracticeCount}
         </span>
       </div>
 
-      <div style={{ color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <span>{roomName || candidate.roomName || 'Room'}</span>
+      {/* Room and Question Set Grouping (BUG-018) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <strong style={{ color: 'var(--color-navy)', fontSize: '0.84rem' }}>
+          {roomName || candidate.roomName || 'Room'}
+        </strong>
         {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
           <span
             style={{
-              fontSize: '0.68rem',
-              padding: '1px 5px',
+              fontSize: '0.7rem',
+              padding: '2px 6px',
               fontWeight: 700,
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
-              color: '#4f46e5',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
+              backgroundColor: 'rgba(99, 102, 241, 0.12)',
+              color: '#4338ca',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
               borderRadius: 4,
               whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
             }}
             title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
           >
@@ -533,29 +600,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         )}
       </div>
 
+      {/* Candidate Status Badge (BUG-018) */}
       <div>
-        <span
-          className="badge"
-          style={{
-            background: `${color}20`,
-            color: color === '#F1C40F' ? '#b45309' : (color === '#E0E0E0' ? 'var(--color-text-muted)' : color),
-            border: `1px solid ${color}60`,
-            fontSize: '0.72rem',
-            fontWeight: 600,
-          }}
-        >
-          {isTestEnded
-            ? (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || colorStatus === 'RED'
-              ? 'DISQUALIFIED'
-              : candidate.status === 'NOT_STARTED' || colorStatus === 'WHITE'
-                ? 'NOT_STARTED'
-                : candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-                  ? 'SUBMITTED (TIME UP)'
-                  : 'SUBMITTED')
-            : candidate.status === 'AUTO_SUBMITTED_TIME_UP'
-              ? 'SUBMITTED (TIME UP)'
-              : (candidate.status || (isCandidateInProgress ? 'IN_PROGRESS' : colorStatus) || 'IN_PROGRESS')}
-        </span>
+        {renderCandidateStatusBadge(candidate, isCandidateInProgress, colorStatus, isTestEnded)}
       </div>
 
       <div style={{ color: 'var(--color-navy)', fontWeight: 600 }}>
@@ -590,20 +637,40 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             ⚠️ {malpracticeCount} Violations
           </button>
         ) : (
-          <span style={{ color: '#2ECC71', fontSize: '0.75rem' }}>✓ Clean (0)</span>
+          <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem' }}>✓ Clean (0)</span>
         )}
       </div>
 
-      {/* Countdown timer / Status for roster */}
-      <div style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+      {/* Countdown timer / Status for roster (BUG-018: High contrast & readability) */}
+      <div style={{
+        color: formattedTimer === 'Not started'
+          ? 'var(--color-navy, #334155)'
+          : formattedTimer === 'Submitted'
+            ? '#059669'
+            : formattedTimer === 'Disqualified'
+              ? '#dc2626'
+              : 'var(--color-navy, #0f172a)',
+        fontFamily: formattedTimer.includes('m') || formattedTimer.includes('s') ? 'monospace' : 'inherit',
+        fontSize: '0.82rem',
+        fontWeight: 600,
+      }}>
         {formattedTimer}
       </div>
 
+      {/* Action Buttons (BUG-018: Crisp border, high contrast, active styling) */}
       <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
         <button
           onClick={() => onSelect(candidate)}
           className="btn btn-secondary"
-          style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+          style={{
+            padding: '4px 10px',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            border: '1.5px solid var(--color-border)',
+            background: 'var(--color-bg-card)',
+            color: 'var(--color-navy)',
+            cursor: 'pointer',
+          }}
         >
           Inspect
         </button>
@@ -614,12 +681,12 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
           className="btn btn-primary"
           style={{
             background: isCandidateSubmitted(candidate, isTestEnded) ? '#0E7C86' : 'var(--color-bg-subtle)',
-            borderColor: isCandidateSubmitted(candidate, isTestEnded) ? '#0E7C86' : 'var(--color-border)',
+            border: isCandidateSubmitted(candidate, isTestEnded) ? '1.5px solid #0E7C86' : '1.5px solid var(--color-border)',
             color: isCandidateSubmitted(candidate, isTestEnded) ? '#ffffff' : 'var(--color-text-muted)',
-            opacity: isCandidateSubmitted(candidate, isTestEnded) ? 1 : 0.5,
+            opacity: isCandidateSubmitted(candidate, isTestEnded) ? 1 : 0.55,
             cursor: isCandidateSubmitted(candidate, isTestEnded) ? 'pointer' : 'not-allowed',
-            padding: '3px 8px',
-            fontSize: '0.72rem',
+            padding: '4px 10px',
+            fontSize: '0.75rem',
             fontWeight: 600,
             whiteSpace: 'nowrap',
           }}
@@ -639,10 +706,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
                 disabled={malpracticeCount < 1}
                 className="btn btn-secondary"
                 style={{
-                  padding: '3px 6px',
-                  fontSize: '0.72rem',
-                  color: malpracticeCount > 0 ? '#d97706' : 'var(--color-text-muted)',
-                  borderColor: malpracticeCount > 0 ? '#f59e0b' : 'var(--color-border)',
+                  padding: '4px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: malpracticeCount > 0 ? '#b45309' : 'var(--color-text-muted)',
+                  border: malpracticeCount > 0 ? '1.5px solid #f59e0b' : '1.5px solid var(--color-border)',
                   background: malpracticeCount > 0 ? '#fffbeb' : 'var(--color-bg-subtle)',
                   opacity: malpracticeCount > 0 ? 1 : 0.55,
                   cursor: malpracticeCount > 0 ? 'pointer' : 'not-allowed',
@@ -655,8 +723,13 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             <button
               onClick={() => onDisqualify(candidate)}
               className="btn btn-danger"
-              style={{ padding: '3px 6px', fontSize: '0.72rem' }}
-              title={isTestEnded ? 'Retroactively Disqualify Candidate' : 'Disqualify Candidate (FR-7.4)'}
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: '1.5px solid #dc2626',
+              }}
+              title={isTestEnded ? 'Retroactively Disqualify Candidate' : 'Disqualify Candidate'}
             >
               Disqualify
             </button>
@@ -2016,7 +2089,7 @@ export default function AdminLiveDashboard() {
                   }}
                   className="btn btn-secondary"
                   style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                  title="AI Voice announcement when candidates submit (FR-8.3)"
+                  title="AI Voice announcement when candidates submit"
                 >
                   {voiceEnabled ? '🔊 Voice TTS: ON' : '🔇 Voice TTS: OFF'}
                 </button>
@@ -2533,7 +2606,7 @@ export default function AdminLiveDashboard() {
             </div>
           </div>
 
-          {/* Table Header Bar */}
+          {/* Table Header Bar (BUG-018: Clean label "Candidate Name") */}
           <div
             style={{
               display: 'grid',
@@ -2546,7 +2619,7 @@ export default function AdminLiveDashboard() {
               color: 'var(--color-table-header-text)',
             }}
           >
-            <div>Candidate (FR-7.3 Counter)</div>
+            <div>Candidate Name</div>
             <div>Room</div>
             <div>Status</div>
             <div>Qs Solved</div>
@@ -2563,7 +2636,24 @@ export default function AdminLiveDashboard() {
           ) : candidateList.length > 50 ? (
             // Section 13 NFR: react-window List Virtualization for > 50 candidates
             <List
-              rowComponent={VirtualizedRow}
+              rowComponent={({ index, style }) => {
+                const c = candidateList[index];
+                if (!c) return null;
+                return (
+                  <CandidateRowItem
+                    candidate={c}
+                    roomName={roomsById[c.roomId] || 'Room'}
+                    onSelect={handleOpenInspectCandidate}
+                    onWarn={handleManualWarn}
+                    onDisqualify={handleManualDisqualify}
+                    onOpenEvaluationDetail={handleOpenEvaluationDetail}
+                    style={style}
+                    now={now}
+                    isTestEnded={isTestEnded}
+                    isActive={c.candidateId === targetInspectCandidateId}
+                  />
+                );
+              }}
               rowCount={candidateList.length}
               rowHeight={48}
               style={{ height: 450 }}
@@ -2667,7 +2757,7 @@ export default function AdminLiveDashboard() {
                     </strong>
                   </div>
                   <div>
-                    <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Time Taken:</span>
+                    <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Time Spent:</span>
                     <strong id="inspect-candidate-time-spent-val" style={{ display: 'block', fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
                       {getCandidateTimeSpent(activeInspectCandidate, now, isTestEnded)}
                     </strong>
@@ -2807,8 +2897,22 @@ export default function AdminLiveDashboard() {
                                   </span>
                                 )}
                                 {isUnreviewed && (
-                                  <span className="badge badge-secondary" style={{ fontSize: '0.72rem', padding: '2px 8px', background: 'var(--color-bg-card)', color: 'var(--color-text-muted)' }}>
-                                    ⏳ Unreviewed
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      padding: '3px 8px',
+                                      background: 'rgba(100, 116, 139, 0.15)',
+                                      color: 'var(--color-navy, #334155)',
+                                      border: '1px solid rgba(100, 116, 139, 0.35)',
+                                      borderRadius: 4,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}
+                                  >
+                                    ⏳ UNREVIEWED
                                   </span>
                                 )}
                               </div>

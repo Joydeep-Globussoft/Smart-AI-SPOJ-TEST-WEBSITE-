@@ -1434,5 +1434,64 @@ Executed automated test suite `test_ui_text_update017_applied_successfully.js`:
 - Summary: **3 / 3 assertions passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 3.07s**.
 
+---
+
+## 41. BUG-018: Fix Poor Visibility and Data Presentation in Candidate Proctoring Summary Roster
+
+### Problem Addressed
+In the Candidate Proctoring Summary Roster on the Live Monitoring / Test Summary Dashboard:
+1. **Column Header Issue**: The first column header read `"Candidate (FR-7.3 Counter)"`, exposing internal requirement references in production UI.
+2. **Status Badge Visibility**: Badges such as `NOT_STARTED` had low contrast and blended into the background.
+3. **Status / Time Readability**: Roster timer/status values appeared faint with low contrast.
+4. **Room & Set Information**: Room name and question set badge were visually disconnected and difficult to scan.
+5. **Action Buttons & Badges**: `Inspect`, `View Result`, `Warn`, `Disqualify`, and `UNREVIEWED` buttons/badges appeared washed out.
+
+### Key Changes Implemented
+
+1. **Header & Label Cleanup**:
+   - Replaced `"Candidate (FR-7.3 Counter)"` with `"Candidate Name"`.
+   - Removed all visible internal requirement identifiers (`FR-*`) from headers, tooltips, and labels.
+
+2. **Redesigned Candidate Status Badges (`renderCandidateStatusBadge`)**:
+   - **`NOT STARTED`**: High-contrast neutral slate background (`rgba(100, 116, 139, 0.14)`), `var(--color-navy, #334155)` text, and `rgba(100, 116, 139, 0.35)` border.
+   - **`IN PROGRESS`**: High-contrast amber background (`rgba(245, 158, 11, 0.14)`), `#b45309` text, and `rgba(245, 158, 11, 0.4)` border.
+   - **`SUBMITTED`**: High-contrast emerald background (`rgba(16, 185, 129, 0.14)`), `#059669` text, and `rgba(16, 185, 129, 0.4)` border.
+   - **`AUTO SUBMITTED`**: High-contrast blue/cyan background (`rgba(2, 132, 199, 0.14)`), `#0284c7` text, and `rgba(2, 132, 199, 0.4)` border.
+   - **`DISQUALIFIED`**: High-contrast red background (`rgba(239, 68, 68, 0.14)`), `#dc2626` text, and `rgba(239, 68, 68, 0.4)` border.
+
+3. **Status / Time Column High Contrast**:
+   - Styled timer and status text (`Not started`, `Submitted`, `Disqualified`, `15m 30s`) with font weight 600 and semantic colors (`#334155`, `#059669`, `#dc2626`, `var(--color-navy)`) across both Light and Dark modes.
+
+4. **Room & Question Set Presentation Grouping**:
+   - Grouped Room Name (`<strong style={{ color: 'var(--color-navy)', fontSize: '0.84rem' }}>`) and Question Set (`[🎲 Set 1]`) with crisp borders and consistent alignment.
+
+5. **Action Buttons & Evidence Badges**:
+   - Added defined `1.5px solid var(--color-border)` borders and high-contrast font styling to `Inspect`, `View Result`, `Warn`, and `Disqualify` buttons.
+   - Upgraded `UNREVIEWED` badge in malpractice evidence logs to prominent `⏳ UNREVIEWED` badge with slate styling and clear boundary.
+
+6. **Virtualized Roster Support**:
+   - Standardized `CandidateRowItem` across both small lists ($\le 50$) and virtualized `react-window` lists ($> 50$).
+
+### QA Verification Results
+Executed automated test suite `test_bug018_proctoring_roster_visibility.js`:
+- Table header includes `Candidate Name`: **PASS**
+- `Candidate (FR-7.3 Counter)` removed: **PASS**
+- Zero visible `FR-*` identifiers in JSX attributes/tooltips: **PASS**
+- `renderCandidateStatusBadge` helper implemented: **PASS**
+- `NOT_STARTED` badge high contrast: **PASS**
+- `IN_PROGRESS` badge amber contrast: **PASS**
+- `SUBMITTED` badge emerald contrast: **PASS**
+- `AUTO_SUBMITTED` badge cyan contrast: **PASS**
+- `DISQUALIFIED` badge red contrast: **PASS**
+- `CandidateRowItem` status column badge integration: **PASS**
+- Room and Question Set grouping: **PASS**
+- Status / Time column high-contrast typography: **PASS**
+- `Inspect` button crisp border: **PASS**
+- `View Result` button contrast & state: **PASS**
+- `⏳ UNREVIEWED` badge styling: **PASS**
+- Summary: **16 / 16 assertions passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 2.79s**.
+
+
 
 
