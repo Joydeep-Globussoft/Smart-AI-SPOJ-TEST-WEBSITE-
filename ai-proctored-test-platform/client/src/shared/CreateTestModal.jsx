@@ -1,7 +1,8 @@
 // CreateTestModal.jsx — Standalone Reusable Create Test Modal
 // Implements PRD Section 9.2, Section 11.2 (FR-2.1, FR-2.2, FR-2.3), Section 12.1, FEATURE-012/013 Consolidation
 // Preserves BUG-60 (auto-derived read-only Total Questions & passing criteria validation)
-import React, { useState, useEffect, useCallback } from 'react';
+// FEATURE-025: Searchable combobox for Question Folder selection with live filtering & keyboard navigation
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/apiClient';
 
@@ -41,6 +42,14 @@ export default function CreateTestModal({
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
+  // FEATURE-025: Searchable combobox state
+  const [folderSearchText, setFolderSearchText] = useState('');
+  const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
+  const [highlightedFolderIndex, setHighlightedFolderIndex] = useState(-1);
+  const folderComboboxRef = useRef(null);
+  const folderInputRef = useRef(null);
+  const dropdownListRef = useRef(null);
+
   const fetchFolderData = useCallback(async () => {
     try {
       const poolRes = await api.getQuestionPools().catch(() => ({ data: { pools: [] } }));
@@ -77,6 +86,9 @@ export default function CreateTestModal({
   const handleClose = () => {
     if (creating) return;
     setFormData(INITIAL_FORM_STATE);
+    setFolderSearchText('');
+    setIsFolderDropdownOpen(false);
+    setHighlightedFolderIndex(-1);
     if (onClose) onClose();
   };
 
@@ -85,6 +97,126 @@ export default function CreateTestModal({
   );
 
   const selectedFolder = folders.find((f) => f.poolId === formData.folderId);
+
+  // Synchronize input display text with selected folder
+  useEffect(() => {
+    if (selectedFolder) {
+      setFolderSearchText(selectedFolder.poolName);
+    } else if (!formData.folderId) {
+      setFolderSearchText('');
+    }
+  }, [formData.folderId, selectedFolder]);
+
+  // FEATURE-025: Close dropdown and revert on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (folderComboboxRef.current && !folderComboboxRef.current.contains(e.target)) {
+        setIsFolderDropdownOpen(false);
+        setHighlightedFolderIndex(-1);
+        if (selectedFolder) {
+          setFolderSearchText(selectedFolder.poolName);
+        } else {
+          setFolderSearchText('');
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, selectedFolder]);
+
+  // FEATURE-025: Live search filter
+  const searchedFolders = filteredFolders.filter((f) => {
+    if (!folderSearchText.trim()) return true;
+    if (selectedFolder && folderSearchText === selectedFolder.poolName) return true;
+    return f.poolName.toLowerCase().includes(folderSearchText.trim().toLowerCase());
+  });
+
+  const handleSelectFolder = (folder) => {
+    const qCount = folder && folder.isValid ? (folder.questionCount || 0) : 0;
+    setFormData((prev) => ({
+      ...prev,
+      folderId: folder.poolId,
+      totalQuestions: qCount,
+      passingCriteria: prev.passingCriteria > qCount ? qCount : prev.passingCriteria,
+    }));
+    setFolderSearchText(folder.poolName);
+    setIsFolderDropdownOpen(false);
+    setHighlightedFolderIndex(-1);
+  };
+
+  const handleClearFolder = (e) => {
+    e.stopPropagation();
+    setFormData((prev) => ({
+      ...prev,
+      folderId: '',
+      totalQuestions: 0,
+      passingCriteria: 0,
+    }));
+    setFolderSearchText('');
+    setIsFolderDropdownOpen(true);
+    setHighlightedFolderIndex(-1);
+    if (folderInputRef.current) {
+      folderInputRef.current.focus();
+    }
+  };
+
+  const handleFolderKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isFolderDropdownOpen) {
+        setIsFolderDropdownOpen(true);
+        setHighlightedFolderIndex(0);
+      } else if (searchedFolders.length > 0) {
+        setHighlightedFolderIndex((prev) => (prev < searchedFolders.length - 1 ? prev + 1 : 0));
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (isFolderDropdownOpen && searchedFolders.length > 0) {
+        setHighlightedFolderIndex((prev) => (prev > 0 ? prev - 1 : searchedFolders.length - 1));
+      }
+    } else if (e.key === 'Enter') {
+      if (isFolderDropdownOpen) {
+        e.preventDefault();
+        if (highlightedFolderIndex >= 0 && searchedFolders[highlightedFolderIndex]) {
+          handleSelectFolder(searchedFolders[highlightedFolderIndex]);
+        } else if (searchedFolders.length === 1) {
+          handleSelectFolder(searchedFolders[0]);
+        }
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsFolderDropdownOpen(false);
+      setHighlightedFolderIndex(-1);
+      if (selectedFolder) {
+        setFolderSearchText(selectedFolder.poolName);
+      } else {
+        setFolderSearchText('');
+      }
+    } else if (e.key === 'Tab') {
+      setIsFolderDropdownOpen(false);
+      setHighlightedFolderIndex(-1);
+      if (selectedFolder) {
+        setFolderSearchText(selectedFolder.poolName);
+      } else {
+        setFolderSearchText('');
+      }
+    }
+  };
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (isFolderDropdownOpen && dropdownListRef.current && highlightedFolderIndex >= 0) {
+      const activeEl = dropdownListRef.current.children[highlightedFolderIndex];
+      if (activeEl && typeof activeEl.scrollIntoView === 'function') {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [highlightedFolderIndex, isFolderDropdownOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -184,6 +316,9 @@ export default function CreateTestModal({
                       totalQuestions: 0,
                       passingCriteria: 0,
                     }));
+                    setFolderSearchText('');
+                    setIsFolderDropdownOpen(false);
+                    setHighlightedFolderIndex(-1);
                   }}
                   required
                 >
@@ -193,32 +328,193 @@ export default function CreateTestModal({
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Question Folder *</label>
-                <select
-                  name="folderId"
-                  className="form-select"
-                  value={formData.folderId}
-                  onChange={(e) => {
-                    const newFolderId = e.target.value;
-                    const f = folders.find((item) => item.poolId === newFolderId);
-                    const qCount = f && f.isValid ? (f.questionCount || 0) : 0;
-                    setFormData((prev) => ({
-                      ...prev,
-                      folderId: newFolderId,
-                      totalQuestions: qCount,
-                      passingCriteria: prev.passingCriteria > qCount ? qCount : prev.passingCriteria,
-                    }));
-                  }}
-                  required
-                >
-                  <option value="">Select a Question Folder...</option>
-                  {filteredFolders.map((f) => (
-                    <option key={f.poolId} value={f.poolId}>
-                      📁 {f.poolName} ({f.setCount} {f.setCount === 1 ? 'Set' : 'Sets'}{f.isValid ? `, ${f.questionCount} Qs each` : ' — Mismatched Counts'})
-                    </option>
-                  ))}
-                </select>
+              {/* FEATURE-025: Searchable Combobox for Question Folder */}
+              <div className="form-group" ref={folderComboboxRef} style={{ position: 'relative' }}>
+                <label className="form-label" htmlFor="create-test-folder-input">Question Folder *</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    id="create-test-folder-input"
+                    ref={folderInputRef}
+                    type="text"
+                    className="form-control"
+                    placeholder="Select a Question Folder..."
+                    value={folderSearchText}
+                    onFocus={() => setIsFolderDropdownOpen(true)}
+                    onClick={() => setIsFolderDropdownOpen(true)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFolderSearchText(val);
+                      setIsFolderDropdownOpen(true);
+                      setHighlightedFolderIndex(0);
+                      if (val === '') {
+                        setFormData((prev) => ({
+                          ...prev,
+                          folderId: '',
+                          totalQuestions: 0,
+                          passingCriteria: 0,
+                        }));
+                      }
+                    }}
+                    onKeyDown={handleFolderKeyDown}
+                    autoComplete="off"
+                    style={{
+                      paddingRight: formData.folderId || folderSearchText ? '60px' : '36px',
+                      cursor: 'text',
+                    }}
+                  />
+
+                  {/* Combobox Action Icons (Clear + Toggle) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    {(formData.folderId || folderSearchText) && (
+                      <button
+                        type="button"
+                        onClick={handleClearFolder}
+                        title="Clear selection"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--color-text-muted, #94a3b8)',
+                          cursor: 'pointer',
+                          padding: '2px 4px',
+                          fontSize: '0.85rem',
+                          lineHeight: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFolderDropdownOpen((prev) => !prev);
+                        if (!isFolderDropdownOpen && folderInputRef.current) {
+                          folderInputRef.current.focus();
+                        }
+                      }}
+                      title={isFolderDropdownOpen ? 'Close list' : 'Open list'}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-text-muted, #64748b)',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        fontSize: '0.75rem',
+                        lineHeight: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isFolderDropdownOpen ? '▲' : '▼'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dropdown Menu */}
+                {isFolderDropdownOpen && (
+                  <div
+                    ref={dropdownListRef}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      left: 0,
+                      right: 0,
+                      zIndex: 1050,
+                      background: 'var(--color-bg-card, #ffffff)',
+                      border: '1.5px solid var(--color-border, #cbd5e1)',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      maxHeight: '240px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {filteredFolders.length === 0 ? (
+                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#e74c3c' }}>
+                        No Folders found for {formData.testType}. Create a folder in Question Bank first.
+                      </div>
+                    ) : searchedFolders.length === 0 ? (
+                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)', textAlign: 'center' }}>
+                        🔍 No folders found matching "{folderSearchText}"
+                      </div>
+                    ) : (
+                      searchedFolders.map((f, index) => {
+                        const isSelected = f.poolId === formData.folderId;
+                        const isHighlighted = index === highlightedFolderIndex;
+                        return (
+                          <div
+                            key={f.poolId}
+                            onClick={() => handleSelectFolder(f)}
+                            onMouseEnter={() => setHighlightedFolderIndex(index)}
+                            style={{
+                              padding: '10px 12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '8px',
+                              background: isSelected
+                                ? 'rgba(14, 124, 134, 0.12)'
+                                : isHighlighted
+                                ? 'var(--color-bg-subtle, #f8fafc)'
+                                : 'transparent',
+                              borderBottom: index < searchedFolders.length - 1 ? '1px solid #f1f5f9' : 'none',
+                              transition: 'background 0.15s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>📁</span>
+                              <span
+                                style={{
+                                  fontSize: '0.875rem',
+                                  fontWeight: isSelected ? 600 : 500,
+                                  color: isSelected ? 'var(--color-primary, #0e7c86)' : 'var(--color-navy, #1e293b)',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={f.poolName}
+                              >
+                                {f.poolName}
+                              </span>
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.75rem',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                flexShrink: 0,
+                                fontWeight: 500,
+                                background: f.isValid ? 'rgba(14, 124, 134, 0.08)' : '#fee2e2',
+                                color: f.isValid ? 'var(--color-primary, #0e7c86)' : '#991b1b',
+                                border: f.isValid ? '1px solid rgba(14, 124, 134, 0.2)' : '1px solid #fca5a5',
+                              }}
+                            >
+                              {f.setCount} {f.setCount === 1 ? 'Set' : 'Sets'}
+                              {f.isValid ? `, ${f.questionCount} Qs each` : ' — Mismatched Counts'}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
                 {filteredFolders.length === 0 ? (
                   <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
                     No Folders found for {formData.testType}. Create a folder in Question Bank first.
