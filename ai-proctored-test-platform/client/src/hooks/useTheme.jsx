@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext({
-  theme: 'light',
-  isDark: false,
+  theme: 'dark',
+  isDark: true,
   toggleTheme: () => {},
   setTheme: () => {},
 });
@@ -11,9 +11,9 @@ export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     try {
       const stored = localStorage.getItem('admin_theme');
-      return stored === 'dark' ? 'dark' : 'light';
+      return stored === 'light' ? 'light' : 'dark';
     } catch (_) {
-      return 'light';
+      return 'dark';
     }
   });
 

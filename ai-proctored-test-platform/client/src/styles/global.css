@@ -10,77 +10,8 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* CSS Custom Properties */
-:root, [data-theme="light"] {
-  --color-primary: #0E7C86;
-  --color-teal: #0E7C86;
-  --color-primary-dark: #0a5f67;
-  --color-primary-light: #12a0ad;
-  --color-navy: #1A2B3C;
-  --color-navy-light: #243447;
-  --color-bg: #F7F9FA;
-  --color-bg-card: #ffffff;
-  --color-bg-subtle: #f8fafc;
-  --color-bg-hover: #f1f5f9;
-  --color-text: #1A2B3C;
-  --color-text-muted: #64748b;
-  --color-text-light: #9ca3af;
-  --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
-  --color-border-focus: #0E7C86;
-
-  /* Modals & Tables */
-  --color-modal-bg: #ffffff;
-  --color-modal-header-bg: #f8fafc;
-  --color-modal-footer-bg: #f8fafc;
-  --color-table-header-bg: #1A2B3C;
-  --color-table-header-text: #ffffff;
-  --color-table-row-hover: rgba(14, 124, 134, 0.04);
-  --color-input-bg: #ffffff;
-  --color-input-text: #1A2B3C;
-  --color-input-border: #e2e8f0;
-  --color-dropdown-bg: #ffffff;
-  --color-dropdown-border: #e2e8f0;
-  --color-dropdown-hover: #f1f5f9;
-  --color-navbar-bg: #1A2B3C;
-
-  /* Badges in Light Mode */
-  --badge-primary-bg: rgba(14, 124, 134, 0.12);
-  --badge-primary-text: #0E7C86;
-  --badge-primary-border: rgba(14, 124, 134, 0.25);
-  --badge-secondary-bg: #f3f4f6;
-  --badge-secondary-text: #4b5563;
-  --badge-secondary-border: #e5e7eb;
-  --badge-success-bg: #d1fae5;
-  --badge-success-text: #065f46;
-  --badge-warning-bg: #fef3c7;
-  --badge-warning-text: #92400e;
-  --badge-danger-bg: #fee2e2;
-  --badge-danger-text: #991b1b;
-  --badge-info-bg: #dbeafe;
-  --badge-info-text: #1e40af;
-
-  /* Seat map colors */
-  --color-green: #2ECC71;
-  --color-yellow: #F1C40F;
-  --color-red: #E74C3C;
-  --color-white-seat: #e5e7eb;
-  --color-seat-not-started-border: #cbd5e1;
-
-  /* UI */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
-  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-[data-theme="dark"] {
+/* CSS Custom Properties — Dark Theme Default */
+:root, [data-theme="dark"] {
   --color-primary: #14b8a6;
   --color-teal: #14b8a6;
   --color-primary-dark: #0d9488;
@@ -130,10 +61,86 @@
   --badge-info-bg: rgba(59, 130, 246, 0.18);
   --badge-info-text: #93c5fd;
 
-  /* Shadows for dark mode */
+  /* Seat map colors */
+  --color-green: #2ECC71;
+  --color-yellow: #F1C40F;
+  --color-red: #E74C3C;
+  --color-white-seat: #e5e7eb;
+
+  /* UI */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Light Mode Overrides */
+[data-theme="light"] {
+  --color-primary: #0E7C86;
+  --color-teal: #0E7C86;
+  --color-primary-dark: #0a5f67;
+  --color-primary-light: #12a0ad;
+  --color-navy: #1A2B3C;
+  --color-navy-light: #243447;
+  --color-bg: #F7F9FA;
+  --color-bg-card: #ffffff;
+  --color-bg-subtle: #f8fafc;
+  --color-bg-hover: #f1f5f9;
+  --color-text: #1A2B3C;
+  --color-text-muted: #64748b;
+  --color-text-light: #9ca3af;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+  --color-border-focus: #0E7C86;
+  --color-seat-not-started-border: #cbd5e1;
+
+  /* Modals & Tables */
+  --color-modal-bg: #ffffff;
+  --color-modal-header-bg: #f8fafc;
+  --color-modal-footer-bg: #f8fafc;
+  --color-table-header-bg: #1A2B3C;
+  --color-table-header-text: #ffffff;
+  --color-table-row-hover: rgba(14, 124, 134, 0.04);
+  --color-input-bg: #ffffff;
+  --color-input-text: #1A2B3C;
+  --color-input-border: #e2e8f0;
+  --color-dropdown-bg: #ffffff;
+  --color-dropdown-border: #e2e8f0;
+  --color-dropdown-hover: #f1f5f9;
+  --color-navbar-bg: #1A2B3C;
+
+  /* Badges in Light Mode */
+  --badge-primary-bg: rgba(14, 124, 134, 0.12);
+  --badge-primary-text: #0E7C86;
+  --badge-primary-border: rgba(14, 124, 134, 0.25);
+  --badge-secondary-bg: #f3f4f6;
+  --badge-secondary-text: #4b5563;
+  --badge-secondary-border: #e5e7eb;
+  --badge-success-bg: #d1fae5;
+  --badge-success-text: #065f46;
+  --badge-warning-bg: #fef3c7;
+  --badge-warning-text: #92400e;
+  --badge-danger-bg: #fee2e2;
+  --badge-danger-text: #991b1b;
+  --badge-info-bg: #dbeafe;
+  --badge-info-text: #1e40af;
+
+  /* Seat map colors */
+  --color-green: #2ECC71;
+  --color-yellow: #F1C40F;
+  --color-red: #E74C3C;
+  --color-white-seat: #e5e7eb;
+
+  /* Shadows for Light Mode */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Reset ───────────────────────────────────────────────────────────────────── */

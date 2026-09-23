@@ -424,7 +424,7 @@ export default function AdminResults() {
               disabled={updatingThresholds}
               style={{ fontSize: '0.85rem' }}
             >
-              {updatingThresholds ? 'Applying...' : 'Apply & Recalculate Shortlist'}
+              {updatingThresholds ? 'Applying...' : 'Apply & Regenerate Shortlist'}
             </button>
           </form>
         </div>

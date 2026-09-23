@@ -9,12 +9,14 @@
       (function() {
         try {
           var saved = localStorage.getItem('admin_theme');
-          if (saved === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-          } else {
+          if (saved === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
           }
-        } catch (e) {}
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
       })();
     </script>
   </head>
