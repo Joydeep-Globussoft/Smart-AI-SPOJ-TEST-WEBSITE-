@@ -1134,15 +1134,13 @@ export default function AdminTests() {
             className="table-container test-table-scroll-container"
             style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
           >
-            <table className="table" style={{ minWidth: 1250 }}>
+            <table className="table" style={{ width: '100%', minWidth: 980 }}>
               <thead>
                 <tr>
-                  {/* FEATURE-029: Position-based row index column */}
-                  <th style={{ width: 48, minWidth: 48, textAlign: 'center', color: 'var(--color-table-header-text, #ffffff)' }}>
-                    #
-                  </th>
+                  {/* FEATURE-029 & FOLLOW-UP: Position-based row index column (blank header) */}
+                  <th style={{ width: 36, minWidth: 36, textAlign: 'center' }}></th>
                   {/* FEATURE-029: Sticky column header with live filtered count */}
-                  <th style={{ minWidth: 240 }}>
+                  <th style={{ width: '20%', minWidth: 160 }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <span>Test Title</span>
                       <span
@@ -1162,13 +1160,13 @@ export default function AdminTests() {
                       </span>
                     </div>
                   </th>
-                  <th style={{ minWidth: 110 }}>Type</th>
-                  <th style={{ minWidth: 110 }}>Status</th>
-                  <th style={{ minWidth: 100 }}>Duration</th>
-                  <th style={{ minWidth: 120 }}>Passing Criteria</th>
-                  <th style={{ minWidth: 260 }}>Question Set</th>
-                  <th style={{ minWidth: 110 }}>Created</th>
-                  <th style={{ minWidth: 220, textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: 95, minWidth: 85 }}>Type</th>
+                  <th style={{ width: 90, minWidth: 80 }}>Status</th>
+                  <th style={{ width: 85, minWidth: 75 }}>Duration</th>
+                  <th style={{ width: 110, minWidth: 95 }}>Passing Criteria</th>
+                  <th style={{ width: '18%', minWidth: 140, maxWidth: 190 }}>Question Set</th>
+                  <th style={{ width: 90, minWidth: 85 }}>Created</th>
+                  <th style={{ width: 210, minWidth: 200, textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1194,55 +1192,69 @@ export default function AdminTests() {
                     if (test.testType === 'REACT') typeBadgeColor = '#2980b9';
                     if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#d35400';
 
+                    const questionSetName = test.questionSetPoolName || test.folderId?.name || test.questionSetId?.name || '—';
+
                     return (
                       <tr key={test._id}>
                         {/* FEATURE-029: Position-based row index (1, 2, 3...) */}
-                        <td style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, width: 48 }}>
+                        <td style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, width: 36 }}>
                           {index + 1}
                         </td>
-                        <td style={{ fontWeight: 600 }}>
+                        <td style={{ fontWeight: 600, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <Link
                             to={`/admin/tests/${test._id}`}
                             style={{ color: 'var(--color-navy)', textDecoration: 'none' }}
                             className="hover-underline"
+                            title={test.title}
                           >
                             {test.title}
                           </Link>
                         </td>
-                      <td>
-                        <span
-                          className="badge"
-                          style={{
-                            background: `${typeBadgeColor}15`,
-                            color: typeBadgeColor,
-                            border: `1px solid ${typeBadgeColor}40`,
-                            fontSize: '0.75rem',
-                          }}
-                        >
-                          {test.testType}
-                        </span>
-                      </td>
-                      <td>
-                        <TestStatusBadge
-                          status={test.status}
-                          style={{ fontSize: '0.75rem' }}
-                        />
-                      </td>
-                      <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                        {test.durationMinutes} mins
-                      </td>
-                      <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                        ≥ {test.passingCriteria} Qs
-                      </td>
-                      {/* BUG-87: Render folder-linked and manual question sets as plain text without badges or icons */}
-                      <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
-                        {test.questionSetPoolName || test.folderId?.name || test.questionSetId?.name || '—'}
-                      </td>
-                      <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
-                        {new Date(test.createdAt).toLocaleDateString()}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                        <td>
+                          <span
+                            className="badge"
+                            style={{
+                              background: `${typeBadgeColor}15`,
+                              color: typeBadgeColor,
+                              border: `1px solid ${typeBadgeColor}40`,
+                              fontSize: '0.75rem',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {test.testType}
+                          </span>
+                        </td>
+                        <td>
+                          <TestStatusBadge
+                            status={test.status}
+                            style={{ fontSize: '0.75rem' }}
+                          />
+                        </td>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          {test.durationMinutes} mins
+                        </td>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          ≥ {test.passingCriteria} Qs
+                        </td>
+                        {/* BUG-87 & FOLLOW-UP: Truncate long question sets with ellipsis and hover tooltip */}
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', maxWidth: 180 }}>
+                          <div
+                            title={questionSetName}
+                            style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 180,
+                            }}
+                          >
+                            {questionSetName}
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                          {new Date(test.createdAt).toLocaleDateString()}
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
                           <Link
                             to={`/admin/tests/${test._id}`}
                             className="btn btn-secondary"
