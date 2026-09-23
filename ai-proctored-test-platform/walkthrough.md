@@ -1613,5 +1613,35 @@ Executed automated test suite `test_bug_roster_candidate_name_duplicate_malpract
 - Candidate Name text rendering preserved: **PASS**
 - Status/online dot indicator preserved: **PASS**
 - Dedicated Malpractice column retained (`⚠️ ${malpracticeCount} VIOLATIONS` & `✓ Clean (0)`): **PASS**
-- Action buttons intact (`Inspect`, `View Result`, `Warn`, `Disqualify`): **PASS**
+- Summary: **8 / 8 assertions passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 2.85s**.
+
+---
+
+## 17. UX-XX: Candidate Card (SeatTile) — Replace Duplicate "Not started" with "Awaiting attempt"
+
+### 1. Problem Summary
+- In the Candidate Card / Physical Seat Map tile (`SeatTile` in [`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx)), when a candidate had not started the test, "Not started" was rendered twice:
+  1. Main status line rendered "Not started".
+  2. Bottom timer/status line also rendered "Not started".
+
+### 2. Implementation Details
+1. **Status Clarification ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx#L420-L445))**:
+   - Main status line continues to display: `"Not started"`.
+   - Bottom line in `formattedTimer` now displays: `"Awaiting attempt"`.
+2. **Preserved Active States**:
+   - In-progress candidates continue showing attempt counters (`Attempted 0/5`) and dynamic countdown (`27m 48s left`).
+   - Submitted candidates continue showing solved counts (`3 Qs Solved`) and `"Submitted"`.
+   - Disqualified candidates continue showing `"Disqualified"`.
+3. **Zero Layout Regressions**:
+   - Card dimensions, hover transitions, pulse indicators, room names, and assigned question sets remain identical.
+
+### 3. QA Verification Results
+Executed automated test suite `test_ux_seat_tile_awaiting_attempt.js`:
+- Main status line retains "Not started": **PASS**
+- Bottom line renders "Awaiting attempt": **PASS**
+- Duplicate "Not started" removed from `formattedTimer`: **PASS**
+- In-progress countdown and submitted states preserved: **PASS**
+- Summary: **6 / 6 assertions passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 3.14s**.
+
