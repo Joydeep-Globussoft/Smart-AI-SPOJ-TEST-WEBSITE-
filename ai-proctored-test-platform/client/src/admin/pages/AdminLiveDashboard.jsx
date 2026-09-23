@@ -40,6 +40,79 @@ const STATUS_COLORS = {
   WHITE: '#e5e7eb',
 };
 
+// ── FEATURE-027: Live duration & session formatting helpers (matching AdminTestDetail) ──
+const formatLiveDuration = (startDateStr, endDateStr) => {
+  if (!startDateStr || !endDateStr) return null;
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  const diffMs = end - start;
+  if (diffMs <= 0 || isNaN(diffMs)) return null;
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
+  return '< 1m';
+};
+
+const isSameCalendarDay = (d1, d2) => {
+  if (!d1 || !d2) return false;
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+const formatTimeOnly = (dateObj) => {
+  return dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+};
+
+const formatDateOnly = (dateObj) => {
+  return dateObj.toLocaleDateString();
+};
+
+const getLiveSessionText = (test) => {
+  if (!test?.liveStartedAt) return null;
+
+  const startDate = new Date(test.liveStartedAt);
+  const createdDate = new Date(test.createdAt);
+  const isLive = test.status === 'LIVE';
+  const isEnded = test.status === 'ENDED';
+
+  if (!isLive && !isEnded) return null;
+
+  if (isEnded) {
+    if (!test.endedAt) return null;
+    const endDate = new Date(test.endedAt);
+
+    const sameDayLive = isSameCalendarDay(startDate, endDate);
+    const sameDayCreated = isSameCalendarDay(startDate, createdDate);
+
+    if (sameDayLive) {
+      if (sameDayCreated) {
+        return `Live: ${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
+      } else {
+        return `Live: ${formatDateOnly(startDate)} | ${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
+      }
+    } else {
+      return `Live: ${formatDateOnly(startDate)} | ${formatTimeOnly(startDate)} – ${formatDateOnly(endDate)} | ${formatTimeOnly(endDate)}`;
+    }
+  }
+
+  if (isLive) {
+    const sameDayCreated = isSameCalendarDay(startDate, createdDate);
+    if (sameDayCreated) {
+      return `Live: ${formatTimeOnly(startDate)} – now`;
+    } else {
+      return `Live: ${formatDateOnly(startDate)} | ${formatTimeOnly(startDate)} – now`;
+    }
+  }
+
+  return null;
+};
+
 // ── Helper to check if a candidate has completed/submitted the test (FEATURE-024) ──
 export const isCandidateSubmitted = (candidate, isTestEnded = false) => {
   if (!candidate) return false;
@@ -1812,11 +1885,10 @@ export default function AdminLiveDashboard() {
                   </div>
                 </div>
               </div>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 4 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 6, marginBottom: 0 }}>
                 {isTestEnded
-                  ? 'Post-test operational summary · Passing Threshold: '
-                  : 'Real-time multi-room monitoring · Passing Threshold: '}
-                <strong>≥ {test?.passingCriteria} Qs</strong>
+                  ? 'Post-test operational summary & malpractice review'
+                  : 'Real-time multi-room monitoring & candidate proctoring'}
               </p>
             </div>
 
@@ -1857,6 +1929,217 @@ export default function AdminLiveDashboard() {
               >
                 View Shortlist &amp; Results →
               </Link>
+            </div>
+          </div>
+
+          {/* FEATURE-027: Header Metadata Stat Blocks (Duration, Passing Criteria, Question Set, Created, Live Session) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+              gap: 12,
+              marginTop: 18,
+              paddingTop: 16,
+              borderTop: '1px solid var(--color-border)',
+            }}
+          >
+            {/* 1. Duration */}
+            <div
+              style={{
+                background: 'var(--color-bg-subtle, #F8FAFC)',
+                border: '1px solid var(--color-border, #E2E8F0)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>⏱️</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  Duration
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  color: 'var(--color-navy, #0F172A)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={test?.durationMinutes ? `${test.durationMinutes} Minutes` : '—'}
+              >
+                {test?.durationMinutes ? `${test.durationMinutes} Minutes` : '—'}
+              </div>
+            </div>
+
+            {/* 2. Passing Criteria (Renamed from Passing Threshold per FEATURE-027) */}
+            <div
+              style={{
+                background: 'var(--color-bg-subtle, #F8FAFC)',
+                border: '1px solid var(--color-border, #E2E8F0)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>✅</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  Passing Criteria
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  color: 'var(--color-navy, #0F172A)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                ≥ {test?.passingCriteria !== undefined && test?.passingCriteria !== null ? test.passingCriteria : 1} Qs
+              </div>
+            </div>
+
+            {/* 3. Question Set / Folder */}
+            <div
+              style={{
+                background: 'var(--color-bg-subtle, #F8FAFC)',
+                border: '1px solid var(--color-border, #E2E8F0)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>📁</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  Question Set
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  color: 'var(--color-navy, #0F172A)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={
+                  test?.questionSetPoolName || test?.folderId?.name
+                    ? `📁 ${test.questionSetPoolName || test.folderId?.name}${test.poolSetCount ? ` (${test.poolSetCount} ${test.poolSetCount === 1 ? 'Set' : 'Sets'})` : ''}`
+                    : (test?.questionSetId?.name || '—')
+                }
+              >
+                {test?.questionSetPoolName || test?.folderId?.name
+                  ? `${test.questionSetPoolName || test.folderId?.name}${test.poolSetCount ? ` (${test.poolSetCount} ${test.poolSetCount === 1 ? 'Set' : 'Sets'})` : ''}`
+                  : (test?.questionSetId?.name || '—')}
+              </div>
+            </div>
+
+            {/* 4. Created */}
+            <div
+              style={{
+                background: 'var(--color-bg-subtle, #F8FAFC)',
+                border: '1px solid var(--color-border, #E2E8F0)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>📅</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  Created
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  color: 'var(--color-navy, #0F172A)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={`Created by ${test?.createdBy?.name || 'Admin'} on ${test?.createdAt ? new Date(test.createdAt).toLocaleDateString() : '—'}`}
+              >
+                {test?.createdAt
+                  ? `By ${test?.createdBy?.name || 'Admin'} on ${new Date(test.createdAt).toLocaleDateString()}`
+                  : '—'}
+              </div>
+            </div>
+
+            {/* 5. Live Session / Live for */}
+            <div
+              style={{
+                background: 'var(--color-bg-subtle, #F8FAFC)',
+                border: '1px solid var(--color-border, #E2E8F0)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>🕐</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  Live Session
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  color: 'var(--color-navy, #0F172A)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={
+                  test?.liveStartedAt
+                    ? `${getLiveSessionText(test) || ''}${test?.status === 'ENDED' && formatLiveDuration(test.liveStartedAt, test.endedAt) ? ` (Live for ${formatLiveDuration(test.liveStartedAt, test.endedAt)})` : ''}`
+                    : 'Not yet live'
+                }
+              >
+                {test?.liveStartedAt ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span>{getLiveSessionText(test)}</span>
+                    {test?.status === 'ENDED' && formatLiveDuration(test.liveStartedAt, test.endedAt) && (
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          color: 'var(--color-primary, #0e7c86)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        (Live for {formatLiveDuration(test.liveStartedAt, test.endedAt)})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span style={{ color: 'var(--color-text-muted)' }}>Not yet live</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
