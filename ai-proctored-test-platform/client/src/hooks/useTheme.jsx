@@ -10,6 +10,12 @@ const ThemeContext = createContext({
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     try {
+      const v = localStorage.getItem('theme_version');
+      if (v !== '2') {
+        localStorage.setItem('theme_version', '2');
+        localStorage.setItem('admin_theme', 'dark');
+        return 'dark';
+      }
       const stored = localStorage.getItem('admin_theme');
       return stored === 'light' ? 'light' : 'dark';
     } catch (_) {
@@ -19,6 +25,7 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     try {
+      localStorage.setItem('theme_version', '2');
       localStorage.setItem('admin_theme', theme);
       document.documentElement.setAttribute('data-theme', theme);
     } catch (_) {}

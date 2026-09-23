@@ -365,7 +365,7 @@ export default function CandidateInstructions() {
   if (!joinData) return null;
 
   return (
-    <div className="app-layout" style={{ height: '100vh', background: '#F7F9FA', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="app-layout" style={{ height: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Top Banner Header */}
       <div style={{ background: '#1A2B3C', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <img
@@ -382,11 +382,11 @@ export default function CandidateInstructions() {
             <div
               className="card"
               style={{
-                background: '#FFFFFF',
+                background: 'var(--color-bg-card)',
                 borderRadius: 14,
                 padding: '32px 36px',
-                border: '1px solid #E2E8F0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-md)',
               }}
             >
               {/* Test Instructions Section */}

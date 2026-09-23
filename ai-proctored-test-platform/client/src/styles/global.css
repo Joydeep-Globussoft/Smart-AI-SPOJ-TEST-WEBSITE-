@@ -899,7 +899,8 @@ tbody td {
 }
 
 .auth-card {
-  background: white;
+  background: var(--color-bg-card, #131b2e);
+  border: 1px solid var(--color-border, #23314f);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   padding: 40px;

@@ -8,6 +8,13 @@
     <script>
       (function() {
         try {
+          var v = localStorage.getItem('theme_version');
+          if (v !== '2') {
+            localStorage.setItem('theme_version', '2');
+            localStorage.setItem('admin_theme', 'dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+            return;
+          }
           var saved = localStorage.getItem('admin_theme');
           if (saved === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
