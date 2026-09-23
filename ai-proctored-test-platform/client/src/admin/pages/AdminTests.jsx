@@ -873,26 +873,18 @@ export default function AdminTests() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 250 }}>
             <LoadingDots size="md" />
           </div>
-        ) : filteredTests.length === 0 ? (
+        ) : tests.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flexShrink: 0 }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>📋</div>
             <h3 style={{ color: 'var(--color-navy)', marginBottom: 8 }}>
-              {activeChips.length > 0 ? 'No tests match your filter criteria' : 'No tests found'}
+              No tests found
             </h3>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>
-              {activeChips.length > 0
-                ? 'Try adjusting or clearing your filters to see available tests'
-                : 'Get started by creating your first proctored test'}
+              Get started by creating your first proctored test
             </p>
-            {activeChips.length > 0 ? (
-              <button onClick={handleClearAll} className="btn btn-secondary">
-                Clear All Filters
-              </button>
-            ) : (
-              <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
-                + Create New Test
-              </button>
-            )}
+            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+              + Create New Test
+            </button>
           </div>
         ) : (
           <div
@@ -903,7 +895,31 @@ export default function AdminTests() {
             <table className="table" style={{ minWidth: 1250 }}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: 220 }}>Test Title</th>
+                  {/* FEATURE-029: Position-based row index column */}
+                  <th style={{ width: 48, minWidth: 48, textAlign: 'center', color: 'var(--color-table-header-text, #ffffff)' }}>
+                    #
+                  </th>
+                  {/* FEATURE-029: Sticky column header with live filtered count */}
+                  <th style={{ minWidth: 240 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <span>Test Title</span>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: 10,
+                          background: 'rgba(255, 255, 255, 0.15)',
+                          color: '#ffffff',
+                          letterSpacing: 'normal',
+                          textTransform: 'none',
+                        }}
+                        title={`Filtered result count: ${filteredTests.length}`}
+                      >
+                        {filteredTests.length} {filteredTests.length === 1 ? 'result' : 'results'}
+                      </span>
+                    </div>
+                  </th>
                   <th style={{ minWidth: 110 }}>Type</th>
                   <th style={{ minWidth: 110 }}>Status</th>
                   <th style={{ minWidth: 100 }}>Duration</th>
@@ -914,23 +930,43 @@ export default function AdminTests() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTests.map((test) => {
-                  let typeBadgeColor = '#0E7C86';
-                  if (test.testType === 'AI_TEST') typeBadgeColor = '#8e44ad';
-                  if (test.testType === 'REACT') typeBadgeColor = '#2980b9';
-                  if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#d35400';
+                {filteredTests.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
+                      <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
+                        No tests match your filter criteria
+                      </h3>
+                      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: 16 }}>
+                        Try adjusting or clearing your filters to see available tests
+                      </p>
+                      <button onClick={handleClearAll} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                        Clear All Filters
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTests.map((test, index) => {
+                    let typeBadgeColor = '#0E7C86';
+                    if (test.testType === 'AI_TEST') typeBadgeColor = '#8e44ad';
+                    if (test.testType === 'REACT') typeBadgeColor = '#2980b9';
+                    if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#d35400';
 
-                  return (
-                    <tr key={test._id}>
-                      <td style={{ fontWeight: 600 }}>
-                        <Link
-                          to={`/admin/tests/${test._id}`}
-                          style={{ color: 'var(--color-navy)', textDecoration: 'none' }}
-                          className="hover-underline"
-                        >
-                          {test.title}
-                        </Link>
-                      </td>
+                    return (
+                      <tr key={test._id}>
+                        {/* FEATURE-029: Position-based row index (1, 2, 3...) */}
+                        <td style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, width: 48 }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>
+                          <Link
+                            to={`/admin/tests/${test._id}`}
+                            style={{ color: 'var(--color-navy)', textDecoration: 'none' }}
+                            className="hover-underline"
+                          >
+                            {test.title}
+                          </Link>
+                        </td>
                       <td>
                         <span
                           className="badge"
@@ -1014,7 +1050,7 @@ export default function AdminTests() {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>
