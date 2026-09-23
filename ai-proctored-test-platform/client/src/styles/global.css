@@ -13,6 +13,7 @@
 /* CSS Custom Properties */
 :root, [data-theme="light"] {
   --color-primary: #0E7C86;
+  --color-teal: #0E7C86;
   --color-primary-dark: #0a5f67;
   --color-primary-light: #12a0ad;
   --color-navy: #1A2B3C;
@@ -81,6 +82,7 @@
 
 [data-theme="dark"] {
   --color-primary: #14b8a6;
+  --color-teal: #14b8a6;
   --color-primary-dark: #0d9488;
   --color-primary-light: #2dd4bf;
   --color-navy: #f8fafc;

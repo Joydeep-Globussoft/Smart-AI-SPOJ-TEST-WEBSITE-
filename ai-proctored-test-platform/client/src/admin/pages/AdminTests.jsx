@@ -18,11 +18,27 @@ const TEST_TYPES = [
   { value: 'AI_TEST', label: 'AI Test (Kimi Assisted)' },
 ];
 
+const SORT_FIELDS = [
+  { id: 'name', label: 'Name' },
+  { id: 'date', label: 'Date' },
+  { id: 'duration', label: 'Duration' },
+  { id: 'type', label: 'Type' },
+  { id: 'status', label: 'Status' },
+  { id: 'passing', label: 'Passing Criteria' },
+];
+
+const SORT_DIRS = [
+  { id: 'asc', label: 'Ascending' },
+  { id: 'desc', label: 'Descending' },
+];
+
 const DEFAULT_FILTERS = {
   search: '',
   type: 'ALL',
   status: 'ALL',
   sort: 'NEWEST',
+  sortField: 'date',
+  sortDir: 'desc',
   dateCreated: 'ALL',
   dateFrom: '',
   dateTo: '',
@@ -65,13 +81,109 @@ export default function AdminTests() {
     return val && val !== 'ALL';
   }).length;
 
+  // FEATURE-022 / FEATURE-029: Sort by Menu State & Derivations
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortMenuRef = useRef(null);
+  const sortBtnRef = useRef(null);
+
+  // Derive active sortField and sortDir from URL filter state with backwards-compatible fallbacks
+  const activeSortField = useMemo(() => {
+    if (filters.sortField) return filters.sortField;
+    const s = filters.sort;
+    if (s === 'TITLE_AZ' || s === 'name_asc' || s === 'name_desc') return 'name';
+    if (s === 'DURATION' || s === 'duration_asc' || s === 'duration_desc') return 'duration';
+    if (s === 'type_asc' || s === 'type_desc') return 'type';
+    if (s === 'status_asc' || s === 'status_desc') return 'status';
+    if (s === 'passing_asc' || s === 'passing_desc') return 'passing';
+    return 'date';
+  }, [filters.sortField, filters.sort]);
+
+  const activeSortDir = useMemo(() => {
+    if (filters.sortDir) return filters.sortDir;
+    const s = filters.sort;
+    if (s === 'OLDEST' || s === 'TITLE_AZ' || s?.endsWith('_asc')) return 'asc';
+    return 'desc';
+  }, [filters.sortDir, filters.sort]);
+
+  // Close Sort Menu when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!showSortMenu) return;
+    const handleClickOutside = (e) => {
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(e.target) &&
+        sortBtnRef.current &&
+        !sortBtnRef.current.contains(e.target)
+      ) {
+        setShowSortMenu(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowSortMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showSortMenu]);
+
+  const handleSelectSortField = (fieldId) => {
+    setFilters((prev) => {
+      const currentDir = prev.sortDir || activeSortDir || (fieldId === 'name' || fieldId === 'type' || fieldId === 'status' ? 'asc' : 'desc');
+      let legacy = 'NEWEST';
+      if (fieldId === 'date') legacy = currentDir === 'asc' ? 'OLDEST' : 'NEWEST';
+      else if (fieldId === 'duration') legacy = 'DURATION';
+      else if (fieldId === 'name') legacy = currentDir === 'asc' ? 'TITLE_AZ' : 'name_desc';
+      else legacy = `${fieldId}_${currentDir}`;
+      return { ...prev, sortField: fieldId, sortDir: currentDir, sort: legacy };
+    });
+  };
+
+  const handleSelectSortDir = (dirId) => {
+    setFilters((prev) => {
+      const currentField = prev.sortField || activeSortField || 'date';
+      let legacy = 'NEWEST';
+      if (currentField === 'date') legacy = dirId === 'asc' ? 'OLDEST' : 'NEWEST';
+      else if (currentField === 'duration') legacy = 'DURATION';
+      else if (currentField === 'name') legacy = dirId === 'asc' ? 'TITLE_AZ' : 'name_desc';
+      else legacy = `${currentField}_${dirId}`;
+      return { ...prev, sortDir: dirId, sort: legacy };
+    });
+  };
+
+  const currentSortSummaryLabel = useMemo(() => {
+    const fieldObj = SORT_FIELDS.find((f) => f.id === activeSortField);
+    const fieldName = fieldObj ? fieldObj.label : 'Date';
+    if (activeSortField === 'date') {
+      return `Date (${activeSortDir === 'desc' ? 'Newest first' : 'Oldest first'})`;
+    }
+    if (activeSortField === 'name') {
+      return `Name (${activeSortDir === 'asc' ? 'Alphabetical (A-Z)' : 'Z-A'})`;
+    }
+    if (activeSortField === 'duration') {
+      return `Duration (${activeSortDir === 'desc' ? 'Longest' : 'Shortest'})`;
+    }
+    if (activeSortField === 'type') {
+      return `Type (${activeSortDir === 'asc' ? 'A-Z' : 'Z-A'})`;
+    }
+    if (activeSortField === 'status') {
+      return `Status (${activeSortDir === 'asc' ? 'A-Z' : 'Z-A'})`;
+    }
+    if (activeSortField === 'passing') {
+      return `Passing Criteria (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
+    }
+    return `${fieldName} (${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`;
+  }, [activeSortField, activeSortDir]);
+
   // FEATURE-021: Preserved scroll position for Test Management table
   const tableContainerRef = useRef(null);
   useScrollRestoration({
     containerRef: tableContainerRef,
     loading,
     key: 'tests_table',
-    dependencies: [tests.length, searchQuery, filterType, filterStatus, filters.sort, advancedActiveCount],
+    dependencies: [tests.length, searchQuery, filterType, filterStatus, filters.sort, filters.sortField, filters.sortDir, advancedActiveCount],
   });
 
   // Create Modal State
@@ -257,22 +369,34 @@ export default function AdminTests() {
       );
     });
 
-    // Apply Sorting
+    // Apply Sorting (FEATURE-022 & FEATURE-029: Name, Date, Duration, Type, Status, Passing Criteria)
     return list.sort((a, b) => {
-      const sortVal = filters.sort || 'NEWEST';
-      if (sortVal === 'OLDEST') {
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      let comparison = 0;
+      switch (activeSortField) {
+        case 'name':
+          comparison = (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' });
+          break;
+        case 'date':
+          comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+          break;
+        case 'duration':
+          comparison = (Number(a.durationMinutes) || 0) - (Number(b.durationMinutes) || 0);
+          break;
+        case 'type':
+          comparison = (a.testType || '').localeCompare(b.testType || '', undefined, { sensitivity: 'base' });
+          break;
+        case 'status':
+          comparison = (a.status || '').localeCompare(b.status || '', undefined, { sensitivity: 'base' });
+          break;
+        case 'passing':
+          comparison = (Number(a.passingCriteriaQuestions) || 0) - (Number(b.passingCriteriaQuestions) || 0);
+          break;
+        default:
+          comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
       }
-      if (sortVal === 'DURATION') {
-        return (b.durationMinutes || 0) - (a.durationMinutes || 0);
-      }
-      if (sortVal === 'TITLE_AZ') {
-        return (a.title || '').localeCompare(b.title || '');
-      }
-      // Default: NEWEST
-      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      return activeSortDir === 'asc' ? comparison : -comparison;
     });
-  }, [tests, filterType, filterStatus, searchQuery, filters]);
+  }, [tests, filterType, filterStatus, searchQuery, filters, activeSortField, activeSortDir]);
 
   // Active filter chips list for both primary and advanced filters
   const activeChips = useMemo(() => {
@@ -441,9 +565,9 @@ export default function AdminTests() {
         {/* Filter & Search Bar */}
         <div className="card" style={{ padding: '14px 18px', marginBottom: 14, flexShrink: 0 }}>
           {/* Main Filter Bar Row */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, flexWrap: 'wrap' }}>
-            {/* 1. Search Tests */}
-            <div style={{ flex: '1 1 200px', minWidth: 180 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+            {/* 1. Search Tests (Reduced to 2/3 width) */}
+            <div style={{ flex: '0 1 260px', minWidth: 180, maxWidth: 300 }}>
               <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Search Tests</label>
               <input
                 type="text"
@@ -455,7 +579,7 @@ export default function AdminTests() {
             </div>
 
             {/* 2. Filter by Type */}
-            <div style={{ flex: '0 1 180px', minWidth: 160 }}>
+            <div style={{ flex: '0 1 180px', minWidth: 150 }}>
               <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Filter by Type</label>
               <select
                 className="form-select"
@@ -470,7 +594,7 @@ export default function AdminTests() {
             </div>
 
             {/* 3. Filter by Status */}
-            <div style={{ flex: '0 1 160px', minWidth: 140 }}>
+            <div style={{ flex: '0 1 150px', minWidth: 130 }}>
               <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Filter by Status</label>
               <select
                 className="form-select"
@@ -509,13 +633,16 @@ export default function AdminTests() {
                 {advancedActiveCount > 0 && (
                   <span
                     style={{
-                      background: showMoreFilters || advancedActiveCount > 0 ? '#FFFFFF' : 'var(--color-teal)',
-                      color: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-teal)' : '#FFFFFF',
+                      background: showMoreFilters || advancedActiveCount > 0 ? '#FFFFFF' : 'var(--color-primary, #0E7C86)',
+                      color: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-primary, #0E7C86)' : '#FFFFFF',
                       borderRadius: 10,
                       padding: '1px 6px',
                       fontSize: '0.72rem',
                       fontWeight: 800,
                       lineHeight: 1.2,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
                     ({advancedActiveCount})
@@ -525,19 +652,134 @@ export default function AdminTests() {
               </button>
             </div>
 
-            {/* 5. Sort by Dropdown (Positioned on far right) */}
-            <div style={{ flex: '0 1 180px', minWidth: 160, marginLeft: 'auto' }}>
+            {/* 5. Sort by Dropdown Menu (Positioned on far right) */}
+            <div style={{ position: 'relative', flex: '0 0 auto', marginLeft: 'auto', alignSelf: 'flex-end' }}>
               <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Sort by</label>
-              <select
-                className="form-select"
-                value={filters.sort || 'NEWEST'}
-                onChange={(e) => updateFilter('sort', e.target.value)}
+              <button
+                type="button"
+                ref={sortBtnRef}
+                onClick={() => setShowSortMenu((prev) => !prev)}
+                className="form-control"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  cursor: 'pointer',
+                  height: 38,
+                  minWidth: 165,
+                  padding: '0 12px',
+                  fontSize: '0.85rem',
+                  background: 'var(--color-input-bg, #ffffff)',
+                  borderColor: showSortMenu ? 'var(--color-primary)' : 'var(--color-border)',
+                  color: 'var(--color-navy, #1A2B3C)',
+                  textAlign: 'left',
+                  fontWeight: 500,
+                }}
+                aria-haspopup="true"
+                aria-expanded={showSortMenu}
+                title={`Sorted by ${SORT_FIELDS.find(f => f.id === activeSortField)?.label || 'Date'} (${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`}
               >
-                <option value="NEWEST">Newest first</option>
-                <option value="OLDEST">Oldest first</option>
-                <option value="DURATION">Duration</option>
-                <option value="TITLE_AZ">Alphabetical (A-Z)</option>
-              </select>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary, #0E7C86)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 15l5 5 5-5"/>
+                    <path d="M7 9l5-5 5 5"/>
+                  </svg>
+                  <span>{currentSortSummaryLabel}</span>
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{showSortMenu ? '▲' : '▼'}</span>
+              </button>
+
+              {showSortMenu && (
+                <div
+                  ref={sortMenuRef}
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    right: 0,
+                    zIndex: 1000,
+                    background: 'var(--color-bg-card, #ffffff)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.14)',
+                    minWidth: 190,
+                    padding: '6px 4px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  {/* Sortable Field Items */}
+                  {SORT_FIELDS.map((f) => {
+                    const isSelected = activeSortField === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => handleSelectSortField(f.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          width: '100%',
+                          padding: '7px 10px',
+                          border: 'none',
+                          background: isSelected ? 'var(--color-bg-hover, #f1f5f9)' : 'transparent',
+                          color: 'var(--color-navy, #1A2B3C)',
+                          borderRadius: 5,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          fontWeight: isSelected ? 600 : 400,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover, #f1f5f9)'; }}
+                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-primary, #0E7C86)' }}>
+                          {isSelected ? '●' : ''}
+                        </span>
+                        <span>{f.label}</span>
+                      </button>
+                    );
+                  })}
+
+                  {/* Divider */}
+                  <div style={{ height: 1, background: 'var(--color-border)', margin: '5px 4px' }} />
+
+                  {/* Direction Items */}
+                  {SORT_DIRS.map((d) => {
+                    const isSelected = activeSortDir === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => handleSelectSortDir(d.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          width: '100%',
+                          padding: '7px 10px',
+                          border: 'none',
+                          background: isSelected ? 'var(--color-bg-hover, #f1f5f9)' : 'transparent',
+                          color: 'var(--color-navy, #1A2B3C)',
+                          borderRadius: 5,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          fontWeight: isSelected ? 600 : 400,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover, #f1f5f9)'; }}
+                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-primary, #0E7C86)' }}>
+                          {isSelected ? '●' : ''}
+                        </span>
+                        <span>{d.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
