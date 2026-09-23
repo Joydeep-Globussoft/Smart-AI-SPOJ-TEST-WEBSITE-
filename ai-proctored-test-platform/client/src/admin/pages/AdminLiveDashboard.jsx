@@ -2122,7 +2122,7 @@ export default function AdminLiveDashboard() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
               gap: 12,
               marginTop: 18,
               paddingTop: 16,
@@ -2281,7 +2281,7 @@ export default function AdminLiveDashboard() {
                 padding: '10px 14px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
                 minWidth: 0,
               }}
             >
@@ -2296,9 +2296,10 @@ export default function AdminLiveDashboard() {
                   fontSize: '0.88rem',
                   fontWeight: 600,
                   color: 'var(--color-navy, #0F172A)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 3,
+                  wordBreak: 'break-word',
                 }}
                 title={
                   test?.liveStartedAt
@@ -2307,21 +2308,23 @@ export default function AdminLiveDashboard() {
                 }
               >
                 {test?.liveStartedAt ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    <span>{getLiveSessionText(test)}</span>
+                  <>
+                    <span style={{ lineHeight: 1.35 }}>{getLiveSessionText(test)}</span>
                     {test?.status === 'ENDED' && formatLiveDuration(test.liveStartedAt, test.endedAt) && (
                       <span
                         style={{
-                          fontSize: '0.75rem',
+                          fontSize: '0.78rem',
                           fontWeight: 700,
                           color: 'var(--color-primary, #0e7c86)',
-                          whiteSpace: 'nowrap',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
                         }}
                       >
-                        (Live for {formatLiveDuration(test.liveStartedAt, test.endedAt)})
+                        ⏱️ Live for {formatLiveDuration(test.liveStartedAt, test.endedAt)}
                       </span>
                     )}
-                  </div>
+                  </>
                 ) : (
                   <span style={{ color: 'var(--color-text-muted)' }}>Not yet live</span>
                 )}
