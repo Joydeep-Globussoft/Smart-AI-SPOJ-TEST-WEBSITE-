@@ -3114,8 +3114,10 @@ export default function AdminLiveDashboard() {
                                     className="btn btn-secondary"
                                     style={{
                                       padding: '3px 10px', fontSize: '0.72rem',
-                                      color: '#d97706', borderColor: '#d97706',
-                                      background: isWarned ? '#fef3c7' : 'transparent',
+                                      fontWeight: 600,
+                                      color: isWarned ? '#ffffff' : '#f59e0b',
+                                      borderColor: '#f59e0b',
+                                      background: isWarned ? '#f59e0b' : 'transparent',
                                     }}
                                     disabled={isDisqualified}
                                   >
@@ -3467,6 +3469,7 @@ export default function AdminLiveDashboard() {
                   {!isTestEnded && (
                     <button
                       type="button"
+                      id="alert-warn-candidate-btn"
                       onClick={async () => {
                         if (activeAlert.malpracticeLogId) {
                           await handleReviewMalpractice(activeAlert.malpracticeLogId, 'WARNED');
@@ -3480,13 +3483,11 @@ export default function AdminLiveDashboard() {
                         }
                         closeActiveAlert();
                       }}
-                      className="btn btn-secondary"
+                      className="btn btn-warning"
                       style={{
-                        padding: '6px 12px',
+                        padding: '6px 14px',
                         fontSize: '0.82rem',
-                        color: '#d97706',
-                        borderColor: '#f59e0b',
-                        background: '#fffbeb',
+                        fontWeight: 600,
                       }}
                     >
                       ⚠️ Warn Candidate
