@@ -1559,3 +1559,32 @@ Executed automated test suite `test_bug_candidate_inspection_live_remaining_and_
 - Not started candidate displays "Time Spent: —": **PASS**
 - Summary: **21 / 21 assertions passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 2.92s**.
+
+---
+
+## 15. BUG/UX-XX: Real-Time Malpractice Alert Modal — Warning Button Dark Mode Visibility Fix
+
+### 1. Problem Summary
+- In the Real-Time Malpractice Alert modal ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx)), the "Warn Candidate" action button positioned immediately left of "Disqualify" had hardcoded inline styles (`background: '#fffbeb'`, `color: '#d97706'`, `borderColor: '#f59e0b'`).
+- In dark mode, this rendered as a washed-out, glaring pale-white box with nearly invisible light text against the dark modal theme.
+
+### 2. Implementation Details
+1. **Design System Class Adoption ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx))**:
+   - Replaced `.btn-secondary` and inline `#fffbeb` background with standard `.btn-warning` (`#alert-warn-candidate-btn`).
+   - Uses the project's design system token `.btn-warning` (`background: #f59e0b; color: #ffffff !important; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3)`).
+   - Ensured high-contrast crisp `#ffffff` text and icon `⚠️ Warn Candidate` on solid amber background.
+2. **Alignment & Visual Harmony**:
+   - Matches the dimensions, border radius, and font size of `.btn-danger` (`🚫 Disqualify`) and `.btn-secondary` (`Dismiss`, `🔍 Inspect Candidate`).
+   - Also updated the reviewed state in the inspection modal incident cards to use `#f59e0b` / `#ffffff` for optimal contrast.
+3. **Preserved Logic & Handlers**:
+   - Zero changes to click handlers, API calls (`handleReviewMalpractice`, `handleManualWarn`), or modal layout.
+
+### 3. QA Verification Results
+Executed automated test suite `test_bug_malpractice_alert_warning_button_visibility.js`:
+- `.btn-warning` styling verified in `global.css`: **PASS**
+- Alert modal uses `.btn-warning` and id `#alert-warn-candidate-btn`: **PASS**
+- Washed-out `#fffbeb` background removed: **PASS**
+- Button text `⚠️ Warn Candidate` and click handlers preserved: **PASS**
+- Adjacent Disqualify and Dismiss buttons untouched: **PASS**
+- Client production bundle (`npm run build`): **0 errors in 2.89s**.
+
