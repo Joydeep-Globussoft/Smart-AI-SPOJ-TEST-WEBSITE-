@@ -123,7 +123,11 @@ export default function CandidateRegister() {
           </div>
         )}
 
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && (
+          <div className="alert alert-danger">
+            {error.includes('take another test yet') ? `⏳ ${error}` : error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* 1. Full Name */}

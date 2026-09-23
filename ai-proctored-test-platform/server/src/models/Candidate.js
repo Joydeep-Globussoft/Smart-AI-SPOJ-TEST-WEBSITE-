@@ -16,6 +16,7 @@ const candidateSchema = new mongoose.Schema({
   // Account expiration timestamp — login check enforces 401 after this time (FR-1.2)
   expiresAt: { type: Date },
   isDisqualified: { type: Boolean, default: false },
+  lastTestFinishedAt: { type: Date, default: null }, // FEATURE-032: 12-hour cooldown between tests
   lateJoinRequestedAt: { type: Date, default: null },
   lateJoinRoomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', default: null },
   manualJoinOverride: { type: Boolean, default: false },

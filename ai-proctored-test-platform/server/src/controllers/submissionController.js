@@ -7,6 +7,7 @@ const QuestionSet = require('../models/QuestionSet');
 const Submission = require('../models/Submission');
 const Candidate = require('../models/Candidate');
 const judge0Service = require('../services/judge0Service');
+const { getCandidateCooldownStatus, recordCandidateTestFinish } = require('../utils/cooldownHelper');
 
 // BUG-21: Tentative Time = MAX remaining time (candidateEndTime - now) among candidates currently IN_PROGRESS
 const broadcastTentativeTime = async (io, testId, targetRoomId = null) => {
@@ -91,6 +92,19 @@ const getActiveExamSessionForCandidate = async (candidateId, excludeTestId = nul
 const joinRoom = async (req, res, next) => {
   try {
     const { roomCode, roomPassword, inviteToken, roomId } = req.body;
+
+    // FEATURE-032: Enforce 12-hour cooldown check before joining
+    const cooldownStatus = await getCandidateCooldownStatus(req.user.id);
+    if (cooldownStatus.inCooldown) {
+      return res.status(403).json({
+        error: cooldownStatus.message,
+        cooldownRemainingMs: cooldownStatus.remainingMs,
+        cooldownHours: cooldownStatus.hours,
+        cooldownMinutes: cooldownStatus.minutes,
+        eligibleAt: cooldownStatus.eligibleAt,
+      });
+    }
+
     let room;
 
     if (inviteToken) {
@@ -346,7 +360,22 @@ const startAttempt = async (req, res, next) => {
 
     // Check if candidate already has active attempt for this test (BUG-53 Single-Session Enforcement)
     const existingSubmissions = await Submission.find({ candidateId, testId });
+    const hasActiveAttempt = existingSubmissions.some((s) => s.status === 'IN_PROGRESS' && Boolean(s.candidateStartTime));
     const hasStartedAttempt = existingSubmissions.some((s) => Boolean(s.candidateStartTime));
+
+    // FEATURE-032: If candidate does not have an active in-progress attempt for this test, enforce cooldown
+    if (!hasActiveAttempt) {
+      const cooldownStatus = await getCandidateCooldownStatus(candidateId);
+      if (cooldownStatus.inCooldown) {
+        return res.status(403).json({
+          error: cooldownStatus.message,
+          cooldownRemainingMs: cooldownStatus.remainingMs,
+          cooldownHours: cooldownStatus.hours,
+          cooldownMinutes: cooldownStatus.minutes,
+          eligibleAt: cooldownStatus.eligibleAt,
+        });
+      }
+    }
 
     let candidateStartTime = null;
     let candidateEndTime = null;
@@ -531,6 +560,9 @@ const startAttempt = async (req, res, next) => {
             { candidateId, testId, status: 'IN_PROGRESS' },
             { status: 'AUTO_SUBMITTED_TIME_UP', submittedAt: autoNow }
           );
+
+          // FEATURE-032: Record candidate test finish timestamp for 12-hour cooldown
+          await recordCandidateTestFinish(candidateId, autoNow);
 
           // Finalize any open CAMERA_DISCONNECTED malpractice logs
           const MalpracticeLog = require('../models/MalpracticeLog');
@@ -970,6 +1002,9 @@ const submitAll = async (req, res, next) => {
       { candidateId, testId, status: 'IN_PROGRESS' },
       { status: 'SUBMITTED', submittedAt: now }
     );
+
+    // FEATURE-032: Record candidate test finish timestamp for 12-hour cooldown
+    await recordCandidateTestFinish(candidateId, now);
 
     // Finalize any open CAMERA_DISCONNECTED malpractice logs (camera never reconnected before test submission)
     const MalpracticeLog = require('../models/MalpracticeLog');

@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Candidate = require('../models/Candidate');
+const { getCandidateCooldownStatus } = require('../utils/cooldownHelper');
 
 const BCRYPT_SALT_ROUNDS = 12; // >= 10 as required by Section 13
 
@@ -124,6 +125,18 @@ const candidateRegister = async (req, res, next) => {
     const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000); // createdAt/updatedAt + N days
 
     if (candidate) {
+      // FEATURE-032: Enforce 12-hour cooldown on re-registration attempt
+      const cooldownStatus = await getCandidateCooldownStatus(candidate._id);
+      if (cooldownStatus.inCooldown) {
+        return res.status(403).json({
+          error: cooldownStatus.message,
+          cooldownRemainingMs: cooldownStatus.remainingMs,
+          cooldownHours: cooldownStatus.hours,
+          cooldownMinutes: cooldownStatus.minutes,
+          eligibleAt: cooldownStatus.eligibleAt,
+        });
+      }
+
       // FEATURE-031: Re-registration upsert — update candidate details and refresh expiry
       candidate.name = name.trim();
       if (fatherName !== undefined) candidate.fatherName = fatherName ? fatherName.trim() : '';
@@ -177,7 +190,7 @@ const candidateRegister = async (req, res, next) => {
 // ── POST /auth/candidate/login ────────────────────────────────────────────────
 // Body: { email }
 // Response: { candidate, token, refreshToken }
-// AC: 401 if account not found or expired (FR-1.2, FEATURE-031)
+// AC: 401 if account not found or expired, 403 if in 12-hour cooldown (FR-1.2, FEATURE-031, FEATURE-032)
 const candidateLogin = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -189,6 +202,18 @@ const candidateLogin = async (req, res, next) => {
     const candidate = await Candidate.findOne({ email: normalizedEmail });
     if (!candidate) {
       return res.status(401).json({ error: 'No account found with this email. Please create an account.' });
+    }
+
+    // FEATURE-032: Enforce 12-hour cooldown between tests at login
+    const cooldownStatus = await getCandidateCooldownStatus(candidate._id);
+    if (cooldownStatus.inCooldown) {
+      return res.status(403).json({
+        error: cooldownStatus.message,
+        cooldownRemainingMs: cooldownStatus.remainingMs,
+        cooldownHours: cooldownStatus.hours,
+        cooldownMinutes: cooldownStatus.minutes,
+        eligibleAt: cooldownStatus.eligibleAt,
+      });
     }
 
     // AC: login attempts after expiresAt return 401 "Account expired, please register again" (FR-1.2)

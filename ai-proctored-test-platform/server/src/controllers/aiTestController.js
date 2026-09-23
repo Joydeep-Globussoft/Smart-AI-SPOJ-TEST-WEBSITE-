@@ -5,6 +5,7 @@
 const Submission = require('../models/Submission');
 const Question = require('../models/Question');
 const kimiService = require('../services/kimiService');
+const { recordCandidateTestFinish } = require('../utils/cooldownHelper');
 
 // ── POST /ai-test/:questionId/chat ────────────────────────────────────────────
 // Body: { message, testId }
@@ -145,6 +146,9 @@ const submitAiTest = async (req, res, next) => {
     if (!submission) {
       return res.status(404).json({ error: 'Submission session not found. Call start-attempt first.' });
     }
+
+    // FEATURE-032: Record candidate test finish timestamp for 12-hour cooldown
+    await recordCandidateTestFinish(candidateId, new Date());
 
     // Enqueue AI Test evaluation
     const evaluationService = require('../services/evaluationService');

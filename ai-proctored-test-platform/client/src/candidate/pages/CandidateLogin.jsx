@@ -110,6 +110,8 @@ export default function CandidateLogin() {
           <div className="alert alert-danger">
             {error.includes('expired')
               ? '⏰ Your account has expired (3-day window). Please register again.'
+              : error.includes('take another test yet')
+              ? `⏳ ${error}`
               : error}
           </div>
         )}

@@ -51,7 +51,16 @@ const performEndTest = async (testId, io, reason = 'MANUAL') => {
       { status: 'CLOSED' }
     );
 
-    // FEATURE-008: Transition any remaining IN_PROGRESS submissions to AUTO_SUBMITTED_TIME_UP
+    // FEATURE-008 & FEATURE-032: Transition any remaining IN_PROGRESS submissions to AUTO_SUBMITTED_TIME_UP and record lastTestFinishedAt
+    const inProgressCandidates = await Submission.find({ testId: test._id, status: 'IN_PROGRESS' }).distinct('candidateId');
+    if (inProgressCandidates.length > 0) {
+      const Candidate = require('../models/Candidate');
+      await Candidate.updateMany(
+        { _id: { $in: inProgressCandidates } },
+        { lastTestFinishedAt: now }
+      );
+    }
+
     await Submission.updateMany(
       { testId: test._id, status: 'IN_PROGRESS' },
       { status: 'AUTO_SUBMITTED_TIME_UP', submittedAt: now }

@@ -312,7 +312,7 @@ const reviewMalpractice = async (req, res, next) => {
 
     if (adminAction === 'DISQUALIFIED') {
       // FR-7.4: Admin manual disqualification
-      await Candidate.findByIdAndUpdate(log.candidateId, { isDisqualified: true });
+      await Candidate.findByIdAndUpdate(log.candidateId, { isDisqualified: true, lastTestFinishedAt: new Date() });
 
       // Auto-submit / update disqualified candidate's submissions
       const Submission = require('../models/Submission');

@@ -319,7 +319,11 @@ const disqualifyCandidate = async (req, res, next) => {
     const Candidate = require('../models/Candidate');
     const Submission = require('../models/Submission');
 
-    const candidate = await Candidate.findByIdAndUpdate(candidateId, { isDisqualified: true }, { new: true });
+    const candidate = await Candidate.findByIdAndUpdate(
+      candidateId,
+      { isDisqualified: true, lastTestFinishedAt: new Date() },
+      { new: true }
+    );
     if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
 
     if (testId) {
