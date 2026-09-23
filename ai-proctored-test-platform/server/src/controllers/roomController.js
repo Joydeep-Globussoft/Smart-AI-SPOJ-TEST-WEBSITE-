@@ -1,6 +1,7 @@
 // Room Controller — Module 2
 // Implements all endpoints from Section 9.3 exactly
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Room = require('../models/Room');
 const Test = require('../models/Test');
 const Candidate = require('../models/Candidate');
@@ -122,26 +123,49 @@ const getRooms = async (req, res, next) => {
     }
 
     const now = Date.now();
+    const testId = req.params.testId;
+    const testIdObj = mongoose.Types.ObjectId.isValid(testId) ? new mongoose.Types.ObjectId(testId) : testId;
     const roomIds = rooms.map((r) => r._id);
 
+    // BUG-019: Establish single source of truth for room metrics
+    // Multi-stage aggregate: Group by candidate per room, then group by room to extract distinct candidates & distinct submitted candidates
     const [activeSubmissions, subStats, violStats] = await Promise.all([
       Submission.find({
-        testId: req.params.testId,
+        testId: testIdObj,
         status: 'IN_PROGRESS',
         candidateEndTime: { $gt: new Date(now) },
       }, { roomId: 1, candidateEndTime: 1 }),
       Submission.aggregate([
-        { $match: { roomId: { $in: roomIds } } },
         {
+          $match: {
+            roomId: { $in: roomIds },
+            testId: testIdObj,
+          },
+        },
+        {
+          // Group by candidate per room to evaluate overall completion status
           $group: {
-            _id: '$roomId',
-            totalCandidates: { $addToSet: '$candidateId' },
-            submittedCount: {
-              $sum: {
+            _id: { roomId: '$roomId', candidateId: '$candidateId' },
+            statuses: { $addToSet: '$status' },
+          },
+        },
+        {
+          // Group by room to get distinct candidate IDs and distinct submitted candidate IDs
+          $group: {
+            _id: '$_id.roomId',
+            candidateIds: { $addToSet: '$_id.candidateId' },
+            submittedCandidateIds: {
+              $addToSet: {
                 $cond: [
-                  { $in: ['$status', ['SUBMITTED', 'AUTO_SUBMITTED', 'AUTO_SUBMITTED_DISQUALIFIED']] },
-                  1,
-                  0,
+                  {
+                    $or: [
+                      { $in: ['SUBMITTED', '$statuses'] },
+                      { $in: ['AUTO_SUBMITTED_TIME_UP', '$statuses'] },
+                      { $in: ['AUTO_SUBMITTED_DISQUALIFIED', '$statuses'] },
+                    ],
+                  },
+                  '$_id.candidateId',
+                  '$$REMOVE',
                 ],
               },
             },
@@ -149,11 +173,17 @@ const getRooms = async (req, res, next) => {
         },
       ]),
       MalpracticeLog.aggregate([
-        { $match: { roomId: { $in: roomIds } } },
+        {
+          $match: {
+            roomId: { $in: roomIds },
+            testId: testIdObj,
+          },
+        },
         {
           $group: {
             _id: '$roomId',
             totalViolations: { $sum: 1 },
+            violatorIds: { $addToSet: '$candidateId' },
           },
         },
       ]),
@@ -184,15 +214,47 @@ const getRooms = async (req, res, next) => {
       const rid = r._id.toString();
       const sStat = subMap[rid];
       const vStat = violMap[rid];
-      const joinedCount = r.joinedCandidates ? r.joinedCandidates.length : 0;
-      const distinctSubCandidates = sStat && sStat.totalCandidates ? sStat.totalCandidates.length : 0;
+
+      // BUG-019: Distinct candidate count combining joinedCandidates, submissions, and malpractice logs
+      const distinctCandidateSet = new Set();
+      for (const entry of (r.joinedCandidates || [])) {
+        const cid = entry?.candidateId?._id
+          ? entry.candidateId._id.toString()
+          : entry?.candidateId?.toString();
+        if (cid) distinctCandidateSet.add(cid);
+      }
+      if (sStat?.candidateIds) {
+        for (const cid of sStat.candidateIds) {
+          if (cid) distinctCandidateSet.add(cid.toString());
+        }
+      }
+      if (vStat?.violatorIds) {
+        for (const cid of vStat.violatorIds) {
+          if (cid) distinctCandidateSet.add(cid.toString());
+        }
+      }
+
+      // BUG-019: Distinct count of submitted candidates (fixing multi-question document sum inflation)
+      const distinctSubmittedSet = new Set();
+      if (sStat?.submittedCandidateIds) {
+        for (const cid of sStat.submittedCandidateIds) {
+          if (cid) distinctSubmittedSet.add(cid.toString());
+        }
+      }
+
+      const candidateCount = distinctCandidateSet.size;
+      const submittedCount = distinctSubmittedSet.size;
+      const violationCount = vStat ? vStat.totalViolations : 0;
+
+      // Diagnostic logging for room summaries
+      console.log(`[BUG-019 Diagnostics] Room "${r.roomName}" (${rid}) | Test ${testId} -> Distinct Candidates: ${candidateCount}, Distinct Submitted: ${submittedCount}, Total Violations: ${violationCount}`);
 
       // BUG-21: Tentative Time = MAX remaining time among candidates currently IN_PROGRESS
       rObj.tentativeTime = maxRemByRoom[rid] || null;
-      // UI/UX IMPROVEMENT-013: Summary metrics per room
-      rObj.candidateCount = Math.max(joinedCount, distinctSubCandidates);
-      rObj.submittedCount = sStat ? sStat.submittedCount : 0;
-      rObj.violationCount = vStat ? vStat.totalViolations : 0;
+      // BUG-019: Single source of truth metrics
+      rObj.candidateCount = candidateCount;
+      rObj.submittedCount = submittedCount;
+      rObj.violationCount = violationCount;
       return rObj;
     });
 
@@ -277,15 +339,15 @@ const getRoomCandidates = async (req, res, next) => {
       .populate('joinedCandidates.assignedQuestionSetId', 'name testType');
     if (!room) return res.status(404).json({ error: 'Room not found' });
 
-    // 1. Fetch all submissions for this room, sorted newest first
-    const submissions = await Submission.find({ roomId })
+    // 1. Fetch all submissions for this room & test, sorted newest first
+    const submissions = await Submission.find({ roomId, testId: room.testId })
       .populate('candidateId', 'name email phone isDisqualified')
       .populate('assignedQuestionSetId', 'name testType')
       .sort({ createdAt: -1 });
 
-    // 2. Fetch malpractice incident logs for this room
+    // 2. Fetch malpractice incident logs for this room & test
     const MalpracticeLog = require('../models/MalpracticeLog');
-    const malpracticeLogs = await MalpracticeLog.find({ roomId }).populate('candidateId', 'name email phone isDisqualified');
+    const malpracticeLogs = await MalpracticeLog.find({ roomId, testId: room.testId }).populate('candidateId', 'name email phone isDisqualified');
     const malpracticeCounts = {};
     const malpracticeCandidates = [];
     malpracticeLogs.forEach((log) => {
@@ -432,6 +494,8 @@ const getRoomCandidates = async (req, res, next) => {
         };
       }
     }
+
+    console.log(`[BUG-019 Diagnostics] getRoomCandidates for Room "${room.roomName}" (${roomId}) | Test ${room.testId} -> Total candidates: ${Object.keys(candidateMap).length} (IDs: ${Object.keys(candidateMap).join(', ')})`);
 
     res.json({ candidates: Object.values(candidateMap), room });
   } catch (err) {

@@ -223,16 +223,22 @@ const joinRoom = async (req, res, next) => {
           const setIndex = (joinIndex - 1) % poolSets.length;
           assignedQuestionSetId = poolSets[setIndex]._id;
 
-          await Room.findByIdAndUpdate(room._id, {
-            $push: {
-              joinedCandidates: {
-                candidateId,
-                joinedAt: new Date(),
-                assignedQuestionSetId,
-                joinIndex,
-              },
+          await Room.findOneAndUpdate(
+            {
+              _id: room._id,
+              'joinedCandidates.candidateId': { $ne: candidateId },
             },
-          });
+            {
+              $push: {
+                joinedCandidates: {
+                  candidateId,
+                  joinedAt: new Date(),
+                  assignedQuestionSetId,
+                  joinIndex,
+                },
+              },
+            }
+          );
         } else {
           // Re-fetch in case of concurrent join
           const reloadedRoom = await Room.findById(room._id);
@@ -469,10 +475,21 @@ const startAttempt = async (req, res, next) => {
     }));
 
     if (targetRoomId) {
-      await Room.findByIdAndUpdate(
-        targetRoomId,
+      // BUG-019: Prevent duplicate joinedCandidates entries on test attempt starts/reconnects
+      await Room.findOneAndUpdate(
         {
-          $addToSet: { joinedCandidates: { candidateId, joinedAt: now, assignedQuestionSetId } },
+          _id: targetRoomId,
+          'joinedCandidates.candidateId': { $ne: candidateId },
+        },
+        {
+          $push: {
+            joinedCandidates: {
+              candidateId,
+              joinedAt: now,
+              assignedQuestionSetId,
+              joinIndex: 1,
+            },
+          },
         }
       );
     }

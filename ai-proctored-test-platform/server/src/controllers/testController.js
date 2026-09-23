@@ -188,9 +188,7 @@ const getTests = async (req, res, next) => {
             activeRooms: {
               $sum: { $cond: [{ $eq: ['$status', 'ACTIVE'] }, 1, 0] },
             },
-            joinedCandidatesCount: {
-              $sum: { $size: { $ifNull: ['$joinedCandidates', []] } },
-            },
+            allJoinedCandidateArrays: { $push: '$joinedCandidates.candidateId' },
           },
         },
       ]),
@@ -270,9 +268,15 @@ const getTests = async (req, res, next) => {
 
       const totalRooms = rStat ? rStat.totalRooms : 0;
       const activeRooms = rStat ? rStat.activeRooms : 0;
-      const joinedCount = rStat ? rStat.joinedCandidatesCount : 0;
-      const subCount = sStat && sStat.distinctCandidates ? sStat.distinctCandidates.length : 0;
-      const candidateCount = Math.max(joinedCount, subCount);
+      const joinedIds = (rStat?.allJoinedCandidateArrays || [])
+        .flat()
+        .map((c) => (c?._id ? c._id.toString() : c?.toString()))
+        .filter(Boolean);
+      const subIds = (sStat?.distinctCandidates || [])
+        .map((c) => (c?._id ? c._id.toString() : c?.toString()))
+        .filter(Boolean);
+      const distinctTestCandidates = new Set([...joinedIds, ...subIds]);
+      const candidateCount = distinctTestCandidates.size;
 
       const violCount = vStat ? vStat.totalViolations : 0;
       const disqSubCount = sStat ? sStat.disqualifiedCount : 0;
