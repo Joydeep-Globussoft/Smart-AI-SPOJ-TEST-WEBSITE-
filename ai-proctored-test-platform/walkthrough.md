@@ -1492,6 +1492,41 @@ Executed automated test suite `test_bug018_proctoring_roster_visibility.js`:
 - Summary: **16 / 16 assertions passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 2.79s**.
 
+---
+
+## 13. BUG-XX: Candidate Coding Test Screen — Run Button Contrast & Legibility Fix
+
+### 1. Problem Summary
+- In the Candidate Coding Test screen (`CandidateTestScreen.jsx`), the "Run" button (`#run-code-btn`) in the Code Editor action bar rendered extremely dark and faded against the dark background.
+- While "Submit All & Finish" was vibrant and clearly readable, the "▶ Run" button had almost 1:1 contrast ratio against the dark container, making it appear invisible, broken, or erroneously disabled.
+
+### 2. Root Cause
+- `CandidateTestScreen.jsx` used `className="btn btn-secondary btn-sm"` with inline `style={{ background: '#2d2d44', color: '#cdd6f4', border: '1px solid #444' }}`.
+- In `global.css`, `button.btn-secondary` defines `color: var(--color-navy) !important;`.
+- In light theme (default candidate theme), `--color-navy` is `#1A2B3C` (dark navy / near black).
+- The `!important` rule from `global.css` completely overrode the inline `#cdd6f4` text color, forcing `#1A2B3C` dark navy text directly onto the dark `#2d2d44` background.
+- When `code` was empty or candidate was disabled, `.btn:disabled` applied `opacity: 0.5`, making the button almost completely blend into the background.
+
+### 3. Changes Implemented
+1. **Dedicated High-Contrast CSS in `global.css` ([`global.css`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/styles/global.css))**:
+   - `.editor-run-btn` / `#run-code-btn`:
+     - **Enabled State**: High-contrast emerald theme (`background: #10B981 !important`, `color: #ffffff !important`, `border: 1px solid #059669 !important`, `box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35)`, `font-weight: 700`).
+     - **Hover State**: Darker emerald (`background: #059669 !important`, `color: #ffffff !important`, `box-shadow: 0 4px 14px rgba(16, 185, 129, 0.5)`).
+     - **Disabled State**: Readable slate theme (`background: #252d3d !important`, `color: #94a3b8 !important`, `border: 1px solid #3b4861 !important`, `opacity: 0.75`, `cursor: not-allowed`).
+2. **Component Markup in `CandidateTestScreen.jsx` ([`CandidateTestScreen.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/candidate/pages/CandidateTestScreen.jsx))**:
+   - Replaced `.btn-secondary` with `.editor-run-btn`.
+   - Removed conflicting inline `#2d2d44` background.
+   - Added descriptive `title` tooltip explaining disabled states (e.g. `"Enter code to run"`, `"Camera disconnected"`, `"Test session disqualified"`).
+   - Preserved all existing execution and test evaluation logic.
+
+### 4. QA Verification Results
+Executed automated test suite `test_bug_run_button_contrast.js`:
+- Dedicated `.editor-run-btn` CSS rules in `global.css`: **PASS**
+- Enabled high-contrast styling (`#10B981`, `#ffffff`): **PASS**
+- Disabled legible styling (`#252d3d`, `#94a3b8`): **PASS**
+- Removed `.btn-secondary` override clash: **PASS**
+- Client production bundle (`npm run build`): **0 errors in 3.29s**.
+
 
 
 
