@@ -1049,3 +1049,37 @@ Executed automated test suite `test_feature029_row_indexing_and_total_count.js`:
 - Summary: **7 / 7 checks passed (100%)**.
 - Client production build (`npm run build`): **0 errors, bundled in 2.78s**.
 
+---
+
+## 31. FEATURE-022 Follow-up: Filter Bar Refinements
+
+### Problem & Feedback Addressed
+1. **"More Filters" Badge Contrast**: The badge rendered as a solid blank white shape because `var(--color-teal)` was undefined in CSS variables, causing text color to fall back to `white` on a `#FFFFFF` background.
+2. **Sort by Redesign**: The plain select dropdown was replaced by a Windows File Explorer-style dropdown menu featuring the 6 table-relevant fields and an Ascending / Descending selector with active bullet indicators (`●`).
+3. **Search Box Width**: The "Search Tests" input was occupying disproportionate width (~450px) and has now been reduced to 2/3 width (~260px) with balanced surrounding spacing.
+
+### Key Changes Implemented
+1. **Badge Visibility & Color System**:
+   - Added `--color-teal: #0E7C86` in `:root, [data-theme="light"]` and `--color-teal: #14b8a6` in `[data-theme="dark"]` within [`global.css`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/styles/global.css).
+   - In [`AdminTests.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminTests.jsx), styled active state with `#FFFFFF` background and `#0E7C86` bold text, rendering `({advancedActiveCount})` with crisp contrast.
+2. **Windows File Explorer-Style Sort Menu**:
+   - Replaced `<select>` with a custom anchored dropdown menu.
+   - Fields: **Name** (Test Title), **Date** (Created), **Duration**, **Type**, **Status**, **Passing Criteria**.
+   - Direction: **Ascending** and **Descending**.
+   - Active indicators: Bullet dot `●` positioned next to selected field and selected direction.
+   - Dismissal: Automatically closes on outside click or `Escape` key.
+   - Persistence: Synchronized with URL parameters (`sortField`, `sortDir`, `sort`) through `useAdminFilterState`.
+3. **Proportional Search Box**:
+   - Set Search input container to `flex: '0 1 260px', minWidth: 180, maxWidth: 300` (2/3 width), left-aligned, with right-aligned Sort by menu (`marginLeft: 'auto'`).
+
+### QA Verification Results
+Executed automated test suite `test_feature022_filter_bar_refinements.js`:
+- `--color-teal` CSS variable defined in light and dark themes: **PASS**
+- "More Filters" badge renders high contrast legible text and background: **PASS**
+- Sort by dropdown menu includes all 6 table fields: **PASS**
+- Ascending and Descending selector with bullet dot (`●`) indicator: **PASS**
+- Click-outside and Escape key dismissal: **PASS**
+- Search Tests input width reduced to 2/3: **PASS**
+- Multi-field sorting engine calculation (6 fields, asc/desc): **PASS**
+- FEATURE-029 row indexing & BUG-86 sticky table preservation: **PASS**
+- Summary: **8 / 8 checks passed (100%)**.
