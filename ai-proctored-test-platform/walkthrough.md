@@ -1527,6 +1527,35 @@ Executed automated test suite `test_bug_run_button_contrast.js`:
 - Removed `.btn-secondary` override clash: **PASS**
 - Client production bundle (`npm run build`): **0 errors in 3.29s**.
 
+---
 
+## 14. BUG/UX-XX: Candidate Inspection & Evidence Modal — Dynamic Time Remaining vs Time Spent
 
+### 1. Problem Summary
+- Previously, the Key Metrics Grid inside the Candidate Inspection & Evidence modal unconditionally displayed the label `"Time Spent:"`.
+- For a candidate actively attempting a test during a LIVE session, displaying "Time Spent" was misleading for proctors. The modal needed to display `"Time Remaining:"` dynamically counting down during an active attempt, while cleanly switching to `"Time Spent:"` once the candidate submits, is disqualified, or when the overall test ends.
 
+### 2. Implementation Details
+1. **Timing Resolution & State Distinction ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx))**:
+   - Implemented `getCandidateInspectionTimeInfo(candidate, currentNow, isTestEnded, testDurationMinutes)`:
+     - **LIVE + In-Progress**: Resolves `label: 'Time Remaining:'` and derives remaining time from authoritative timestamps (`candidateEndTime`, `candidateStartTime`, `timeRemaining`), formatting as `27m 48s` (or `0s` if time expires without going negative).
+     - **Submitted (Early or On-Time)**: If `status === 'SUBMITTED'`, `AUTO_SUBMITTED_TIME_UP'`, or `submittedAt` is set, immediately switches `label: 'Time Spent:'` and displays actual elapsed duration (`18m 42s`).
+     - **Disqualified**: Switches `label: 'Time Spent:'` and displays elapsed time until disqualification (`24m 18s`).
+     - **Concluded Test (`isTestEnded`)**: Shows `label: 'Time Spent:'` and total session duration (`42m 12s`).
+     - **Unstarted (`NOT_STARTED`)**: Shows `label: 'Time Spent:'` with `'—'`.
+2. **Smooth 1-Second Dynamic Countdown**:
+   - Modal consumes real-time `now` ticker from dashboard hook for smooth client countdown without state resetting on refresh.
+3. **Element IDs & Layout Preservation**:
+   - Preserved `#inspect-candidate-time-spent-label` and `#inspect-candidate-time-spent-val` element IDs and surrounding monospace card metrics styling.
+
+### 3. QA Verification Results
+Executed automated test suite `test_bug_candidate_inspection_live_remaining_and_spent_time.js`:
+- Live active candidate shows "Time Remaining:" with live countdown: **PASS**
+- Expired active candidate floors at "0s" without negative numbers: **PASS**
+- Early submitted candidate immediately switches to "Time Spent:" with actual elapsed time: **PASS**
+- Auto-submitted / Time-Up candidate displays "Time Spent:": **PASS**
+- Disqualified candidate displays "Time Spent:": **PASS**
+- Concluded test displays "Time Spent:": **PASS**
+- Not started candidate displays "Time Spent: —": **PASS**
+- Summary: **21 / 21 assertions passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 2.92s**.
