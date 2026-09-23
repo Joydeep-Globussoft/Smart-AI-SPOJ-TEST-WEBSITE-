@@ -1016,17 +1016,36 @@ Executed automated test suite `test_bug52_edit_question_set_name_and_type.js`:
 - Summary: **18 / 18 tests passed (100%)**.
 - Full repository QA suites (all 26 suites): **26 / 26 passed (100%)**.
 
+---
 
+## 30. FEATURE-029: Row Indexing & Always-Visible Total Count in Test Management Table
 
+### Problem & Motivation
+1. The Test Management table lacked a row numbering column, making it hard to count or reference specific tests in sorted and filtered views.
+2. The total count was only shown at page top / not visible inside the pinned table header while scrolling down through large test lists.
 
+### Implementation Details
+1. **Leftmost `#` Index Column (`AdminTests.jsx`)**:
+   - Added a compact `<th style={{ width: 48, minWidth: 48, textAlign: 'center' }}>#</th>` as the first column in `<thead>`.
+   - In `<tbody>`, each row displays `{index + 1}` representing its current 1-based display position in the filtered/sorted table.
+   - Position-based (not identity/creation order): automatically re-flows to `1, 2, 3...` whenever sort criteria or filters change.
+2. **Always-Visible Total Count Badge in Sticky Header**:
+   - Added a count badge directly within the `Test Title` header cell (`{filteredTests.length} {filteredTests.length === 1 ? 'result' : 'results'}`).
+   - Styled with clean pill treatment (`background: rgba(255, 255, 255, 0.15)`, `border-radius: 10px`, `padding: 2px 8px`, `font-size: 0.72rem`, `font-weight: 600`).
+   - Because `.test-table-scroll-container thead th` is `position: sticky; top: 0; z-index: 10`, the count remains fixed and visible at all times regardless of vertical scroll depth.
+   - Accurately reflects the currently active filter combination (e.g. `24 results` or `0 results` when filtering to a non-existent subset).
+3. **Empty Filtered State**:
+   - When filters yield 0 results, the table container and sticky header remain visible, rendering an empty state message with `colSpan={9}` inside the table body and displaying `0 results` in the header badge.
 
-
-
-
-
-
-
-
-
-
+### QA Verification Results
+Executed automated test suite `test_feature029_row_indexing_and_total_count.js`:
+- Leftmost `#` column header present in table: **PASS**
+- Position-based row numbering (`index + 1`) re-flows dynamically: **PASS**
+- Total filtered count badge rendered inside sticky `Test Title` header: **PASS**
+- Empty filtered state with `colSpan={9}` preserved: **PASS**
+- BUG-86 sticky header & scrollbar behavior preserved: **PASS**
+- BUG-87 plain text Question Set rendering preserved: **PASS**
+- FEATURE-021/022 filter, sort, search and action buttons intact: **PASS**
+- Summary: **7 / 7 checks passed (100%)**.
+- Client production build (`npm run build`): **0 errors, bundled in 2.78s**.
 
