@@ -625,7 +625,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         transition: 'background 0.2s ease, border-left 0.2s ease',
       }}
     >
-      {/* Candidate Name + Persistent Malpractice Counter */}
+      {/* Candidate Name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
         <span
           className={isYellowDot ? 'seat-tile-dot-pulse' : ''}
@@ -645,22 +645,6 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         <strong style={{ color: 'var(--color-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {candidate.name || candidate.candidateName || 'Candidate'}
         </strong>
-        {/* Persistent Malpractice counter directly beside name */}
-        <span
-          className={`badge ${malpracticeCount > 0 ? 'badge-danger' : 'badge-secondary'}`}
-          style={{
-            fontSize: '0.65rem',
-            padding: '1px 5px',
-            fontWeight: 700,
-            flexShrink: 0,
-            backgroundColor: malpracticeCount > 0 ? '#E74C3C' : 'var(--color-bg-subtle)',
-            color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-text-muted)',
-            border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border)',
-          }}
-          title={`Malpractice Counter: ${malpracticeCount}`}
-        >
-          ⚠️ {malpracticeCount}
-        </span>
       </div>
 
       {/* Room and Question Set Grouping (BUG-018) */}
