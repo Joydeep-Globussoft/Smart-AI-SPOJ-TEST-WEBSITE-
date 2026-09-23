@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const ThemeContext = createContext({
   theme: 'dark',
@@ -8,7 +9,10 @@ const ThemeContext = createContext({
 });
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setThemeState] = useState(() => {
+  const location = useLocation();
+  const isCandidateRoute = location.pathname.startsWith('/candidate');
+
+  const [adminTheme, setAdminThemeState] = useState(() => {
     try {
       const v = localStorage.getItem('theme_version');
       if (v !== '2') {
@@ -25,24 +29,37 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem('theme_version', '2');
-      localStorage.setItem('admin_theme', theme);
-      document.documentElement.setAttribute('data-theme', theme);
+      if (isCandidateRoute) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        localStorage.setItem('theme_version', '2');
+        localStorage.setItem('admin_theme', adminTheme);
+        document.documentElement.setAttribute('data-theme', adminTheme);
+      }
     } catch (_) {}
-  }, [theme]);
+  }, [adminTheme, isCandidateRoute, location.pathname]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setAdminThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   const setTheme = (newTheme) => {
     if (newTheme === 'dark' || newTheme === 'light') {
-      setThemeState(newTheme);
+      setAdminThemeState(newTheme);
     }
   };
 
+  const activeTheme = isCandidateRoute ? 'light' : adminTheme;
+
   return (
-    <ThemeContext.Provider value={{ theme, isDark: theme === 'dark', toggleTheme, setTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme: activeTheme,
+        isDark: activeTheme === 'dark',
+        toggleTheme,
+        setTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

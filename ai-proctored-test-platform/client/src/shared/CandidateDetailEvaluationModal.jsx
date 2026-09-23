@@ -101,9 +101,9 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
     ? Number(candidate.score).toFixed(2)
     : candidateDetail?.questions?.length
       ? (
-          candidateDetail.questions.reduce((acc, q) => acc + (q.evaluation?.finalScorePerQuestion || 0), 0) /
-          candidateDetail.questions.length
-        ).toFixed(2)
+        candidateDetail.questions.reduce((acc, q) => acc + (q.evaluation?.finalScorePerQuestion || 0), 0) /
+        candidateDetail.questions.length
+      ).toFixed(2)
       : '0.00';
 
   // Solved questions count
@@ -320,7 +320,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                   ← Back to Question List
                 </button>
                 <h3 className="modal-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                  Inspect Code — {inspectingQuestion.title}
+                  Submission Report — {inspectingQuestion.title}
                 </h3>
                 <span
                   className="badge badge-primary"

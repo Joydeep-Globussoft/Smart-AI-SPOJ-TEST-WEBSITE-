@@ -8,6 +8,11 @@
     <script>
       (function() {
         try {
+          var isCandidateRoute = window.location.pathname.indexOf('/candidate') === 0;
+          if (isCandidateRoute) {
+            document.documentElement.setAttribute('data-theme', 'light');
+            return;
+          }
           var v = localStorage.getItem('theme_version');
           if (v !== '2') {
             localStorage.setItem('theme_version', '2');
@@ -22,7 +27,7 @@
             document.documentElement.setAttribute('data-theme', 'dark');
           }
         } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
     </script>
