@@ -412,10 +412,10 @@ const getCandidateMalpracticeLogs = async (req, res, next) => {
       totalPages: isAll ? 1 : (limit > 0 ? Math.ceil(totalCount / limit) : 1),
       hasMore,
       sessionTimestamps: {
-        candidateStartTime: subDoc?.candidateStartTime || candDoc?.createdAt || null,
+        candidateStartTime: subDoc?.candidateStartTime || null,
         candidateEndTime: subDoc?.candidateEndTime || null,
         submittedAt: subDoc?.submittedAt || null,
-        status: subDoc?.status || (candDoc?.isDisqualified ? 'DISQUALIFIED' : null),
+        status: subDoc?.status || (candDoc?.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED'),
         isDisqualified: Boolean(candDoc?.isDisqualified),
       },
     });

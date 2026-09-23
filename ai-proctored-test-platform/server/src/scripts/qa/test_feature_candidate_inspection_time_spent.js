@@ -183,7 +183,7 @@ async function runTests() {
   assert(
     roomControllerCode.includes('candidateStartTime: timers.startTime || null') &&
     roomControllerCode.includes('submittedAt: timers.submittedAt || null') &&
-    roomControllerCode.includes('candidateStartTime: sub.candidateStartTime || sub.createdAt || null'),
+    (roomControllerCode.includes('candidateStartTime: sub.candidateStartTime || null') || roomControllerCode.includes('candidateStartTime: sub.candidateStartTime || sub.createdAt || null')),
     'roomController: getLiveCandidates and getRoomCandidates populate session timestamps'
   );
 

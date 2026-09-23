@@ -1645,3 +1645,91 @@ Executed automated test suite `test_ux_seat_tile_awaiting_attempt.js`:
 - Summary: **6 / 6 assertions passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 3.14s**.
 
+---
+
+## 18. BUG/UX-XX: Candidate Live Proctoring Roster — Action Button Visibility & Contrast in Light and Dark Modes
+
+### 1. Problem Summary
+- In the Candidate Live Proctoring Roster ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx)), action buttons had poor contrast and washed-out states across Light Mode and Dark Mode:
+  - **Disabled "View Result"**: Inherited `className="btn btn-primary"` which had `color: #ffffff !important;` in `global.css`. On light backgrounds with 55% opacity, white text on off-white background was nearly invisible. In Dark Mode, it was dim and blurry.
+  - **Enabled "Warn"**: Used inline `#fffbeb` background which created a glaring white box in Dark Mode with illegible text.
+  - **Disabled "Warn"**: Had low boundary and text contrast against dark backgrounds.
+  - **Inspect & Disqualify**: Required standardized styling to guarantee crisp borders, legible text, and defined hover/focus states across themes.
+
+### 2. Implementation Details
+1. **Dedicated High-Contrast CSS Classes ([`global.css`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/styles/global.css#L1340-L1470))**:
+   - `.roster-action-btn`: Standardized dimensions (`padding: 4px 10px`, `font-size: 0.75rem`, `font-weight: 600`, `border-radius: 6px`, smooth transitions).
+   - `.roster-action-btn-inspect`: Card background, `1.5px solid var(--color-border)`, `var(--color-navy)` text (12:1 contrast in light mode, 11:1 in dark mode).
+   - `.roster-action-btn-result-enabled`: Brand teal background (`#0E7C86` / `#14b8a6`), crisp text (`#ffffff` / `#042f2e`), hover effects.
+   - `.roster-action-btn-warn-enabled`: Theme-aware amber warning (`var(--badge-warning-bg)` + `var(--badge-warning-text)` + `1.5px solid #f59e0b` in light mode; `rgba(241, 196, 15, 0.18)` + `#fde047` + `rgba(245, 158, 11, 0.65)` in dark mode).
+   - `.roster-action-btn-danger`: Solid red (`#dc2626`) with `#ffffff` text (5.5:1 contrast).
+   - `.roster-action-btn-disabled` / `.roster-action-btn:disabled`: Clearly bounded disabled state (`opacity: 0.85`, `border: 1.5px solid var(--color-border)`, `color: var(--color-text-muted)`, `cursor: not-allowed`), ensuring disabled buttons are immediately recognizable yet 100% legible in both Light and Dark modes.
+2. **Component Integration ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx#L734-L800))**:
+   - Replaced fragile inline color/background styles with clean CSS class bindings.
+   - Preserved all candidate status checks (`isCandidateSubmitted(candidate, isTestEnded)`, `malpracticeCount > 0`, `isTestEnded`), permissions, and click handlers (`onSelect`, `onOpenEvaluationDetail`, `onWarn`, `onDisqualify`).
+
+### 3. QA Verification Results
+Executed automated test suite `test_bug_roster_action_buttons_contrast.js` & regression suites:
+- All required CSS classes and dark/light mode overrides present in `global.css`: **PASS**
+- Inspect button uses `.roster-action-btn-inspect`: **PASS**
+- View Result button toggles `.roster-action-btn-result-enabled` and `.roster-action-btn-disabled`: **PASS**
+- Warn button toggles `.roster-action-btn-warn-enabled` and `.roster-action-btn-disabled`: **PASS**
+- Disqualify button uses `.roster-action-btn-danger`: **PASS**
+- Handlers and candidate logic preserved: **PASS**
+- BUG-018 Proctoring Roster visibility test: **16/16 PASS**
+- FEATURE-024 View Result modal test: **7/7 PASS**
+- Client production bundle (`npm run build`): **0 errors in 3.12s**.
+- Pushed to GitHub `origin/master` (commit `825a38a`).
+
+---
+
+## 19. BUG/XX: Candidate Inspection Modal — Fix Incorrect Initial State When Inspecting Not-Started Candidate
+
+### 1. Problem Summary
+- When an admin clicked a candidate who had NOT started the test, the Candidate Inspection & Evidence modal briefly displayed:
+  - Status badge: `WHITE`
+  - Questions Solved: `0`
+  - Time: `Time Remaining: 6m 49s`
+  - After 3–4 seconds, it updated to `NOT_STARTED`, `—`, `Time Spent: —`.
+
+### 2. Root Cause Identified
+1. **Backend Registration Timestamp Leak**:
+   - In [`proctoringController.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/controllers/proctoringController.js), `sessionTimestamps` was calculating `candidateStartTime: subDoc?.candidateStartTime || candDoc?.createdAt || null`.
+   - For an unstarted candidate with no submission record (`subDoc === null`), it fell back to the candidate's account creation timestamp (`candDoc.createdAt`), falsely indicating the candidate started their test at registration time.
+2. **Client-Side Duration Calculation**:
+   - In [`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx), `getCandidateRemainingMs` and `getCandidateInspectionTimeInfo` calculated a countdown against `candDoc.createdAt + testDurationMinutes`.
+3. **Missing Initial State Normalization**:
+   - When `handleOpenInspectCandidate` was invoked, it stored raw un-normalized candidate objects before server validation, falling back to raw `'WHITE'` status and `0` for Questions Solved instead of `'NOT_STARTED'` and `'—'`.
+
+### 3. Implementation Details
+1. **Backend Timestamp Correction ([`proctoringController.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/controllers/proctoringController.js#L412-L422) & [`roomController.js`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/server/src/controllers/roomController.js#L403-L410))**:
+   - Eliminated `candDoc?.createdAt` and `sub.createdAt` fallbacks for `candidateStartTime`.
+   - `candidateStartTime` is strictly `subDoc?.candidateStartTime || null`. If no test attempt exists, `candidateStartTime` is guaranteed `null` and status is `'NOT_STARTED'`.
+2. **Client-Side Time & Attempt Rules ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx#L165-L270))**:
+   - `getCandidateInspectionTimeInfo` strictly gates `Time Remaining` behind `hasStarted && candidate.status === 'IN_PROGRESS'`.
+   - Unstarted candidates immediately return `{ label: 'Time Spent:', value: '—' }`.
+   - `getCandidateRemainingMs` returns `0` for unstarted candidates.
+3. **Immediate Modal State Normalization ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx#L916-L934))**:
+   - `handleOpenInspectCandidate` normalizes unstarted candidates synchronously on click:
+     - `status: 'NOT_STARTED'`
+     - `candidateStartTime: null`
+     - `candidateEndTime: null`
+   - Status badge evaluates to `'NOT_STARTED'` (never the raw string `'WHITE'`).
+   - Questions Solved immediately renders `'—'`.
+
+### 4. QA Verification Results
+Executed automated test suite `test_bug_inspect_not_started_initial_state.js` & regression suites:
+- Removed `candDoc.createdAt` from `proctoringController.js`: **PASS**
+- Removed `sub.createdAt` from `roomController.js`: **PASS**
+- `handleOpenInspectCandidate` normalizes unstarted candidates immediately: **PASS**
+- Modal badge renders `NOT_STARTED` immediately: **PASS**
+- Questions Solved renders `—` immediately: **PASS**
+- Time field renders `Time Spent: —` immediately: **PASS**
+- Active in-progress candidates continue showing `Time Remaining:` countdown: **PASS**
+- Submitted candidates continue showing `Time Spent:` with actual duration: **PASS**
+- Disqualified candidates continue showing `Time Spent:` with actual duration: **PASS**
+- Summary: **17 / 17 assertions passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 3.00s**.
+
+
+

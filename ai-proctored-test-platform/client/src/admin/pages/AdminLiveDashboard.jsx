@@ -180,8 +180,8 @@ const getCandidateRemainingMs = (candidate, currentNow, testDurationMinutes) => 
     return 0;
   }
 
-  const startRaw = candidate.candidateStartTime || candidate.startedAt || candidate.sessionStartTime;
-  if (!startRaw && candidate.status !== 'IN_PROGRESS' && candidate.colorStatus !== 'YELLOW') {
+  const startRaw = candidate.candidateStartTime || candidate.startedAt;
+  if (!startRaw) {
     return 0;
   }
 
@@ -241,9 +241,11 @@ const getCandidateInspectionTimeInfo = (candidate, currentNow, isTestEnded, test
     Boolean(candidate.submittedAt) ||
     candidate.colorStatus === 'GREEN';
 
-  // 1. If candidate never started test
-  const startRaw = candidate.candidateStartTime || candidate.startedAt || candidate.sessionStartTime;
-  if (candidate.status === 'NOT_STARTED' || (!startRaw && !isSubmitted && !isDisqualified)) {
+  // 1. If candidate never started test (strictly check candidateStartTime / startedAt)
+  const startRaw = candidate.candidateStartTime || candidate.startedAt;
+  const hasStarted = Boolean(startRaw);
+
+  if (candidate.status === 'NOT_STARTED' || (!hasStarted && !isSubmitted && !isDisqualified)) {
     return { label: 'Time Spent:', value: '—' };
   }
 
@@ -255,8 +257,8 @@ const getCandidateInspectionTimeInfo = (candidate, currentNow, isTestEnded, test
     };
   }
 
-  // 3. Candidate is actively attempting during a LIVE test -> Show "Time Remaining"
-  if (candidate.status === 'IN_PROGRESS' || candidate.colorStatus === 'YELLOW' || Boolean(startRaw)) {
+  // 3. Candidate is actively attempting during a LIVE test -> Show "Time Remaining" ONLY IF candidate has actually started
+  if (hasStarted && (candidate.status === 'IN_PROGRESS' || candidate.colorStatus === 'YELLOW')) {
     const remainingMs = getCandidateRemainingMs(candidate, currentNow, testDurationMinutes);
     return {
       label: 'Time Remaining:',
@@ -920,7 +922,18 @@ export default function AdminLiveDashboard() {
       dismissedCandidateIdRef.current = null;
       deepLinkHandledRef.current = String(cid);
     }
-    setInspectCandidate(cand);
+    const isStarted = Boolean(cand.candidateStartTime || cand.startedAt);
+    const isSubmitted = cand.status === 'SUBMITTED' || cand.status === 'AUTO_SUBMITTED' || cand.status === 'AUTO_SUBMITTED_TIME_UP' || Boolean(cand.submittedAt) || cand.colorStatus === 'GREEN';
+    const isDisqualified = cand.status === 'DISQUALIFIED' || cand.isDisqualified || cand.colorStatus === 'RED';
+    const status = isDisqualified ? 'DISQUALIFIED' : isSubmitted ? (cand.status || 'SUBMITTED') : isStarted ? (cand.status || 'IN_PROGRESS') : 'NOT_STARTED';
+    const normalized = {
+      ...cand,
+      candidateId: cid,
+      status,
+      candidateStartTime: isStarted ? (cand.candidateStartTime || cand.startedAt) : null,
+      candidateEndTime: isStarted ? cand.candidateEndTime : null,
+    };
+    setInspectCandidate(normalized);
     if (cid && !routeCandidateId) {
       const nextParams = new URLSearchParams(searchParams);
       if (nextParams.get('candidateId') !== String(cid)) {
@@ -1053,14 +1066,18 @@ export default function AdminLiveDashboard() {
         if (res.data.sessionTimestamps) {
           setCandidatesMap((prev) => {
             const cur = prev[targetInspectCandidateId] || {};
+            const startTime = res.data.sessionTimestamps.candidateStartTime || cur.candidateStartTime || null;
+            const hasStarted = Boolean(startTime);
+            const status = res.data.sessionTimestamps.status || (hasStarted ? (cur.status || 'IN_PROGRESS') : (cur.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED'));
             return {
               ...prev,
               [targetInspectCandidateId]: {
                 ...cur,
                 ...res.data.sessionTimestamps,
-                candidateStartTime: res.data.sessionTimestamps.candidateStartTime || cur.candidateStartTime,
-                candidateEndTime: res.data.sessionTimestamps.candidateEndTime || cur.candidateEndTime,
-                submittedAt: res.data.sessionTimestamps.submittedAt || cur.submittedAt,
+                status,
+                candidateStartTime: startTime,
+                candidateEndTime: hasStarted ? (res.data.sessionTimestamps.candidateEndTime || cur.candidateEndTime || null) : null,
+                submittedAt: res.data.sessionTimestamps.submittedAt || cur.submittedAt || null,
               },
             };
           });
@@ -2770,8 +2787,23 @@ export default function AdminLiveDashboard() {
                     </span>
                   </div>
                   {(() => {
-                    const inspectColorStatus = getCandidateColorStatus(activeInspectCandidate);
+                    const isCandidateStarted = Boolean(activeInspectCandidate.candidateStartTime || activeInspectCandidate.startedAt);
+                    const inspectColorStatus = getCandidateColorStatus(activeInspectCandidate, isTestEnded);
                     const inspectColor = STATUS_COLORS[inspectColorStatus] || '#9ca3af';
+
+                    let displayStatus = activeInspectCandidate.status;
+                    if (activeInspectCandidate.status === 'AUTO_SUBMITTED_TIME_UP') {
+                      displayStatus = 'SUBMITTED (TIME UP)';
+                    } else if (activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.isDisqualified || inspectColorStatus === 'RED') {
+                      displayStatus = 'DISQUALIFIED';
+                    } else if (activeInspectCandidate.status === 'SUBMITTED' || inspectColorStatus === 'GREEN') {
+                      displayStatus = 'SUBMITTED';
+                    } else if (activeInspectCandidate.status === 'IN_PROGRESS' && isCandidateStarted) {
+                      displayStatus = 'IN_PROGRESS';
+                    } else {
+                      displayStatus = 'NOT_STARTED';
+                    }
+
                     return (
                       <span
                         className="badge"
@@ -2784,9 +2816,7 @@ export default function AdminLiveDashboard() {
                           padding: '4px 10px',
                         }}
                       >
-                        {activeInspectCandidate.status === 'AUTO_SUBMITTED_TIME_UP'
-                          ? 'SUBMITTED (TIME UP)'
-                          : (activeInspectCandidate.status || inspectColorStatus || 'ACTIVE')}
+                        {displayStatus}
                       </span>
                     );
                   })()}
@@ -2797,7 +2827,9 @@ export default function AdminLiveDashboard() {
                   <div>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Questions Solved:</span>
                     <strong style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
-                      {activeInspectCandidate.status === 'NOT_STARTED' ? '—' : (activeInspectCandidate.questionsCompleted ?? 0)}
+                      {activeInspectCandidate.status === 'NOT_STARTED' || (!activeInspectCandidate.candidateStartTime && activeInspectCandidate.status !== 'SUBMITTED' && activeInspectCandidate.status !== 'IN_PROGRESS')
+                        ? '—'
+                        : (activeInspectCandidate.questionsCompleted ?? 0)}
                     </strong>
                   </div>
                   <div>

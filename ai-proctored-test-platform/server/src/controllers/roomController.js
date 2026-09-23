@@ -403,8 +403,8 @@ const getRoomCandidates = async (req, res, next) => {
           status, // 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED_TIME_UP' | 'DISQUALIFIED'
           questionsCompleted: sub.questionsCompleted || (sub.status === 'SUBMITTED' ? 1 : 0),
           submittedAt: sub.submittedAt || null,
-          startedAt: sub.candidateStartTime || sub.createdAt,
-          candidateStartTime: sub.candidateStartTime || sub.createdAt || null,
+          startedAt: sub.candidateStartTime || null,
+          candidateStartTime: sub.candidateStartTime || null,
           candidateEndTime: sub.candidateEndTime,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId,
