@@ -91,24 +91,47 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ── ASSUMPTION: Summary Metric Cards for At-A-Glance Status ── */}
+        {/* ── FEATURE-028: Clickable Summary Metric Cards with Filtered Navigation ── */}
         <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-          <div className="stat-card" style={{ borderLeft: '4px solid #2ECC71' }}>
+          <Link
+            to="/admin/tests?status=LIVE"
+            className="stat-card stat-card-clickable"
+            style={{ borderLeft: '4px solid #2ECC71' }}
+            title="View Active LIVE Tests"
+          >
             <div className="stat-value" style={{ color: '#2ECC71' }}>{liveTests.length}</div>
             <div className="stat-label">Active LIVE Tests</div>
-          </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid var(--color-primary)' }}>
+          </Link>
+
+          <Link
+            to="/admin/tests"
+            className="stat-card stat-card-clickable"
+            style={{ borderLeft: '4px solid var(--color-primary)' }}
+            title="View All Tests"
+          >
             <div className="stat-value" style={{ color: 'var(--color-primary)' }}>{tests.length}</div>
             <div className="stat-label">Total Tests Created</div>
-          </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #8e44ad' }}>
+          </Link>
+
+          <Link
+            to="/admin/question-bank"
+            className="stat-card stat-card-clickable"
+            style={{ borderLeft: '4px solid #8e44ad' }}
+            title="View Question Bank"
+          >
             <div className="stat-value" style={{ color: '#8e44ad' }}>{questionSets.length}</div>
             <div className="stat-label">Question Sets</div>
-          </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #3498db' }}>
+          </Link>
+
+          <Link
+            to="/admin/tests?status=ENDED"
+            className="stat-card stat-card-clickable"
+            style={{ borderLeft: '4px solid #3498db' }}
+            title="View Completed Assessments"
+          >
             <div className="stat-value" style={{ color: '#3498db' }}>{endedTests.length}</div>
             <div className="stat-label">Completed Assessments</div>
-          </div>
+          </Link>
         </div>
 
         {/* 2-Column Section: Active/Recent Tests & Quick Navigation */}

@@ -999,6 +999,19 @@ tbody td {
   transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
+.stat-card-clickable {
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  background-color: var(--color-bg-subtle);
+}
+
 .stat-value {
   font-size: 2rem;
   font-weight: 800;
