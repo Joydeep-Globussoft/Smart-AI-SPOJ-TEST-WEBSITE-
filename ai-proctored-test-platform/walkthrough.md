@@ -1222,6 +1222,49 @@ Executed automated test suite `test_bug009_button_hover_text_visibility.js`:
 - Summary: **7 / 7 checks passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 2.96s**.
 
+---
 
+## 36. BUG-011: Improve Light Mode Visibility in Physical Seat Map Summary + Display Total Candidate Count
 
+### Problem Addressed
+In Light Mode, the Physical Seat Map Summary section had severe visibility and readability deficits:
+1. **Expand & Collapse Buttons**: Rendered as near-invisible/faint controls due to low contrast against light backgrounds.
+2. **Legend Labels**: Labels (`Submitted`, `In Progress`, `Disqualified`, `Not Started`) suffered from low contrast against white cards.
+3. **Candidate Cards (`SeatTile`)**: Candidate name, room name, solved questions count, status badges (`Set 1`, `CONCLUDED`, `ACTIVE`), and Not Started cards blended into the white page background due to lack of distinct borders and crisp typography tokens.
+4. **Missing Total Candidate Count**: The summary section did not clearly indicate how many candidates were represented in the seat map or whether room filtering was in effect.
 
+### Key Changes Implemented
+
+1. **Dedicated Light Mode Contrast Tokens & Styles ([`global.css`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/styles/global.css) & [`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx))**:
+   - **Not-Started Border**: Updated `--color-seat-not-started-border: #cbd5e1;` in Light Mode to provide a visible, crisp 2px border for unstarted candidate tiles against white card backgrounds.
+   - **Expand & Collapse Buttons (`#expand-seat-map-btn`, `#collapse-seat-map-btn`)**: Configured with visible borders (`1.5px solid var(--color-border, #cbd5e1)`), high-contrast text (`color: var(--color-navy, #0f172a)`), subtle background (`var(--color-bg-subtle, #f1f5f9)`), and clear hover feedback (`background: var(--color-bg-hover, #e2e8f0)`).
+   - **Legend Labels**: Applied `color: 'var(--color-navy, #0f172a)'` and `fontWeight: 600` across all legend items for high-contrast legibility.
+   - **Candidate Tile Card (`SeatTile`) Readability**:
+     - Candidate Name: High-contrast `var(--color-navy, #0f172a)` font with `fontWeight: 700`.
+     - Room Name: Crisp secondary text in `var(--color-text-muted, #475569)`.
+     - Set Badge: High-contrast purple pill badge (`background: rgba(139, 92, 246, 0.15)`, `color: #6d28d9`, `border: 1px solid rgba(139, 92, 246, 0.3)`).
+     - Solved Questions: Bold `var(--color-navy, #0f172a)` counter (`0 Qs Solved`).
+     - Status Line: Contextual high-contrast colors (`#059669` for Submitted, `#b45309` for In-Progress, `#dc2626` for Disqualified, `#475569` for Not Started).
+     - Tile Border & Elevation: Robust border (`2px solid`) and box shadow (`var(--shadow-sm)`).
+   - **Overlay Header Bar**: Full-viewport expanded overlay header styled with `background: var(--color-bg-card, #ffffff)`, `borderBottom: 1.5px solid var(--color-border, #cbd5e1)`, and high-contrast `CONCLUDED`/`LIVE` badges.
+
+2. **Dynamic Total Candidate Count Badges**:
+   - Added `#seat-map-total-count-badge` to the embedded card header and `#expanded-seat-map-total-count-badge` to the full-viewport expanded header.
+   - Dynamically calculates:
+     - **All Rooms / Unfiltered**: `Total Candidates: ${totalCount}` (e.g., `Total Candidates: 30`).
+     - **Filtered Room Active**: `Showing ${filteredCount} of ${totalCount} Candidates` (e.g., `Showing 1 of 1 Candidates`).
+     - **Zero Candidates**: `Total Candidates: 0`.
+   - Real-time synchronization: Automatically updates upon websocket events (`candidate:join`, `candidate:status`, `candidate:disqualified`, room filtering).
+
+### QA Verification Results
+Executed automated test suite `test_bug011_seat_map_light_mode_and_total_count.js`:
+- Dynamic embedded `#seat-map-total-count-badge` verified: **PASS**
+- Dynamic expanded `#expanded-seat-map-total-count-badge` verified: **PASS**
+- High-contrast `#expand-seat-map-btn` styling & borders verified: **PASS**
+- High-contrast `#collapse-seat-map-btn` styling & borders verified: **PASS**
+- High-contrast legend label styling verified: **PASS**
+- `SeatTile` high-contrast typography, badges, and card borders verified: **PASS**
+- `--color-seat-not-started-border: #cbd5e1` defined in `global.css`: **PASS**
+- Full-viewport seat map expand/collapse behavior preserved: **PASS**
+- Summary: **8 / 8 checks passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 3.15s**.

@@ -222,8 +222,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
     <div
       onClick={() => onClick(candidate)}
       style={{
-        background: isWhite ? 'var(--color-bg-card)' : `${color}15`,
-        border: `2px solid ${isWhite ? 'var(--color-seat-not-started-border)' : color}`,
+        background: isWhite ? 'var(--color-bg-card)' : `${color}18`,
+        border: `2px solid ${isWhite ? 'var(--color-seat-not-started-border, #cbd5e1)' : color}`,
         borderRadius: 10,
         padding: '12px 14px',
         cursor: 'pointer',
@@ -232,7 +232,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
         flexDirection: 'column',
         justifyContent: 'space-between',
         minHeight: 115,
-        boxShadow: isWhite ? '0 1px 4px rgba(0,0,0,0.06)' : `0 2px 8px ${color}20`,
+        boxShadow: isWhite ? '0 2px 6px rgba(0,0,0,0.06)' : `0 2px 8px ${color}25`,
         position: 'relative',
         overflow: 'hidden',
         opacity: 1,
@@ -244,7 +244,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
           <strong
             style={{
-              fontSize: '0.85rem',
+              fontSize: '0.88rem',
+              fontWeight: 700,
               color: 'var(--color-navy)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
@@ -263,9 +264,9 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
               padding: '1px 5px',
               fontWeight: 700,
               flexShrink: 0,
-              backgroundColor: malpracticeCount > 0 ? '#E74C3C' : 'var(--color-bg-subtle)',
-              color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-text-muted)',
-              border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border)',
+              backgroundColor: malpracticeCount > 0 ? '#E74C3C' : 'var(--color-bg-subtle, #f1f5f9)',
+              color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-navy, #334155)',
+              border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border, #cbd5e1)',
             }}
             title={`Persistent Malpractice Counter: ${malpracticeCount} violations`}
           >
@@ -281,7 +282,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             height: 10,
             borderRadius: '50%',
             backgroundColor: isWhite ? '#94A3B8' : color,
-            border: isWhite ? '1.5px solid var(--color-border)' : `1px solid ${color}`,
+            border: isWhite ? '1.5px solid var(--color-seat-not-started-border, #cbd5e1)' : `1px solid ${color}`,
             display: 'inline-block',
             boxShadow: isWhite ? 'none' : `0 0 6px ${color}`,
             flexShrink: 0,
@@ -294,18 +295,18 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
       </div>
 
       {/* Room and progress */}
-      <div style={{ margin: '6px 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+      <div style={{ margin: '6px 0', fontSize: '0.78rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{roomName || candidate.roomName || 'Room'}</span>
+          <span style={{ fontWeight: 600, color: 'var(--color-text-muted, #475569)' }}>{roomName || candidate.roomName || 'Room'}</span>
           {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
             <span
               style={{
-                fontSize: '0.65rem',
-                padding: '1px 5px',
+                fontSize: '0.68rem',
+                padding: '1px 6px',
                 fontWeight: 700,
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                color: '#4f46e5',
-                border: '1px solid rgba(99, 102, 241, 0.25)',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                color: '#4338ca',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
                 borderRadius: 4,
                 whiteSpace: 'nowrap',
                 maxWidth: 90,
@@ -318,7 +319,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             </span>
           )}
         </div>
-        <div style={{ fontWeight: 600, color: 'var(--color-text)', marginTop: 2 }}>
+        <div style={{ fontWeight: 700, color: 'var(--color-navy)', marginTop: 3, fontSize: '0.82rem' }}>
           {candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP' || (isTestEnded && candidate.candidateStartTime)
             ? `${candidate.questionsCompleted ?? 0} Qs Solved`
             : candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress)
@@ -330,8 +331,12 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
       </div>
 
       {/* Bottom Footer: Live Countdown Timer / Status (BUG-32: redundant color label removed) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', marginTop: 4 }}>
-        <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontWeight: 600 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', marginTop: 4 }}>
+        <span style={{
+          color: colorStatus === 'GREEN' ? '#059669' : colorStatus === 'YELLOW' ? '#b45309' : colorStatus === 'RED' ? '#dc2626' : 'var(--color-text-muted, #64748b)',
+          fontFamily: 'monospace',
+          fontWeight: 700
+        }}>
           {formattedTimer}
         </span>
       </div>
@@ -2269,16 +2274,37 @@ export default function AdminLiveDashboard() {
         {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter, FEATURE-008 Post-Test Summary) ── */}
         <div className="card" style={{ marginBottom: 24 }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h3 className="card-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <h3 className="card-title" style={{ margin: 0 }}>
                 {isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-              </p>
+              {/* BUG-011: Total Candidate Count Badge */}
+              <span
+                id="seat-map-total-count-badge"
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  padding: '3px 10px',
+                  borderRadius: 6,
+                  background: 'var(--color-bg-subtle, #f1f5f9)',
+                  color: 'var(--color-navy, #0f172a)',
+                  border: '1px solid var(--color-border, #cbd5e1)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>👥</span>
+                <span>
+                  {selectedRoomId && selectedRoomId !== 'ALL'
+                    ? `Showing ${candidateList.length} of ${Object.keys(candidatesMap).length} Candidates`
+                    : `Total Candidates: ${Object.keys(candidatesMap).length}`}
+                </span>
+              </span>
             </div>
 
-            {/* Seat Map Legend & Expand Button (FEATURE-030) */}
-            <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Seat Map Legend & Expand Button (FEATURE-030, BUG-011) */}
+            <div style={{ display: 'flex', gap: 14, fontSize: '0.78rem', alignItems: 'center', flexWrap: 'wrap', color: 'var(--color-navy, #0f172a)', fontWeight: 600 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.GREEN }} />
                 <span>Submitted</span>
@@ -2292,11 +2318,11 @@ export default function AdminLiveDashboard() {
                 <span>Disqualified</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-seat-not-started-border)' }} />
+                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card, #ffffff)', border: '2px solid var(--color-seat-not-started-border, #cbd5e1)' }} />
                 <span>Not Started</span>
               </div>
 
-              {/* FEATURE-030: Expand/Fullscreen Seat Map Toggle */}
+              {/* FEATURE-030 / BUG-011: Expand/Fullscreen Seat Map Toggle */}
               <button
                 id="expand-seat-map-btn"
                 type="button"
@@ -2307,27 +2333,30 @@ export default function AdminLiveDashboard() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'var(--color-bg-subtle, rgba(255,255,255,0.06))',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-text-primary, #ffffff)',
-                  padding: '5px 10px',
+                  background: 'var(--color-bg-subtle, #f1f5f9)',
+                  border: '1.5px solid var(--color-border, #cbd5e1)',
+                  color: 'var(--color-navy, #0f172a)',
+                  padding: '6px 12px',
                   borderRadius: 6,
                   cursor: 'pointer',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
                   transition: 'all 0.15s ease',
                   marginLeft: 8,
+                  boxShadow: 'var(--shadow-sm)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-bg-hover, rgba(255,255,255,0.12))';
+                  e.currentTarget.style.background = 'var(--color-bg-hover, #e2e8f0)';
                   e.currentTarget.style.borderColor = 'var(--color-primary, #0E7C86)';
+                  e.currentTarget.style.color = 'var(--color-primary, #0E7C86)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--color-bg-subtle, rgba(255,255,255,0.06))';
-                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.background = 'var(--color-bg-subtle, #f1f5f9)';
+                  e.currentTarget.style.borderColor = 'var(--color-border, #cbd5e1)';
+                  e.currentTarget.style.color = 'var(--color-navy, #0f172a)';
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polyline points="15 3 21 3 21 9" />
                   <polyline points="9 21 3 21 3 15" />
                   <line x1="21" y1="3" x2="14" y2="10" />
@@ -3322,42 +3351,62 @@ export default function AdminLiveDashboard() {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '16px 28px',
-                background: 'var(--color-bg-card, #131b2e)',
-                borderBottom: '1px solid var(--color-border)',
+                background: 'var(--color-bg-card, #ffffff)',
+                borderBottom: '1.5px solid var(--color-border, #cbd5e1)',
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 12,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary, #ffffff)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-navy, #0f172a)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>{isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}</span>
                   <span
                     style={{
                       fontSize: '0.75rem',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       padding: '2px 8px',
                       borderRadius: 12,
-                      background: isTestEnded ? 'rgba(148, 163, 184, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                      color: isTestEnded ? '#94a3b8' : '#10B981',
-                      border: `1px solid ${isTestEnded ? '#94a3b8' : '#10B981'}40`,
+                      background: isTestEnded ? 'rgba(100, 116, 139, 0.12)' : 'rgba(16, 185, 129, 0.15)',
+                      color: isTestEnded ? 'var(--color-text-muted, #475569)' : '#059669',
+                      border: `1px solid ${isTestEnded ? 'rgba(100, 116, 139, 0.3)' : 'rgba(16, 185, 129, 0.35)'}`,
                     }}
                   >
                     {isTestEnded ? 'CONCLUDED' : 'LIVE'}
                   </span>
                 </h3>
                 {test?.testTitle && (
-                  <span style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '0.88rem', color: 'var(--color-text-muted, #64748b)', fontWeight: 600 }}>
                     · {test.testTitle}
                   </span>
                 )}
-                <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', background: 'var(--color-bg-subtle)', padding: '2px 8px', borderRadius: 4 }}>
-                  {candidateList.length} seat{candidateList.length === 1 ? '' : 's'}
+                {/* BUG-011: Total Candidates Badge */}
+                <span
+                  id="expanded-seat-map-total-count-badge"
+                  style={{
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                    background: 'var(--color-bg-subtle, #f1f5f9)',
+                    color: 'var(--color-navy, #0f172a)',
+                    border: '1px solid var(--color-border, #cbd5e1)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>👥</span>
+                  <span>
+                    {selectedRoomId && selectedRoomId !== 'ALL'
+                      ? `Showing ${candidateList.length} of ${Object.keys(candidatesMap).length} Candidates`
+                      : `Total Candidates: ${Object.keys(candidatesMap).length}`}
+                  </span>
                 </span>
               </div>
 
               {/* Legend & Collapse Button */}
-              <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 16, fontSize: '0.78rem', alignItems: 'center', flexWrap: 'wrap', color: 'var(--color-navy, #0f172a)', fontWeight: 600 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.GREEN }} />
                   <span>Submitted</span>
@@ -3371,7 +3420,7 @@ export default function AdminLiveDashboard() {
                   <span>Disqualified</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-seat-not-started-border)' }} />
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card, #ffffff)', border: '2px solid var(--color-seat-not-started-border, #cbd5e1)' }} />
                   <span>Not Started</span>
                 </div>
 
@@ -3386,27 +3435,30 @@ export default function AdminLiveDashboard() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    background: 'var(--color-bg-subtle, rgba(255,255,255,0.06))',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-text-primary, #ffffff)',
+                    background: 'var(--color-bg-subtle, #f1f5f9)',
+                    border: '1.5px solid var(--color-border, #cbd5e1)',
+                    color: 'var(--color-navy, #0f172a)',
                     padding: '6px 14px',
                     borderRadius: 6,
                     cursor: 'pointer',
                     fontSize: '0.8rem',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     transition: 'all 0.15s ease',
                     marginLeft: 8,
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--color-bg-hover, rgba(255,255,255,0.12))';
+                    e.currentTarget.style.background = 'var(--color-bg-hover, #e2e8f0)';
                     e.currentTarget.style.borderColor = 'var(--color-primary, #0E7C86)';
+                    e.currentTarget.style.color = 'var(--color-primary, #0E7C86)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'var(--color-bg-subtle, rgba(255,255,255,0.06))';
-                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                    e.currentTarget.style.background = 'var(--color-bg-subtle, #f1f5f9)';
+                    e.currentTarget.style.borderColor = 'var(--color-border, #cbd5e1)';
+                    e.currentTarget.style.color = 'var(--color-navy, #0f172a)';
                   }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="4 14 10 14 10 20" />
                     <polyline points="20 10 14 10 14 4" />
                     <line x1="14" y1="10" x2="21" y2="3" />

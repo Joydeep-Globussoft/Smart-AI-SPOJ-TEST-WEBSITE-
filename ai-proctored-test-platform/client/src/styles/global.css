@@ -65,7 +65,7 @@
   --color-yellow: #F1C40F;
   --color-red: #E74C3C;
   --color-white-seat: #e5e7eb;
-  --color-seat-not-started-border: var(--color-border);
+  --color-seat-not-started-border: #cbd5e1;
 
   /* UI */
   --radius-sm: 6px;
