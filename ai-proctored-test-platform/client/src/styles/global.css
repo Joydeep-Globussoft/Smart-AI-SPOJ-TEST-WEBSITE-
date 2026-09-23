@@ -888,6 +888,45 @@ tbody td {
   gap: 12px;
 }
 
+/* ── Candidate Coding Test - Run Button High Contrast Styling (BUG-XX) ── */
+.editor-run-btn,
+#run-code-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #10B981 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.editor-run-btn:hover:not(:disabled),
+#run-code-btn:hover:not(:disabled) {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.5);
+}
+
+.editor-run-btn:disabled,
+#run-code-btn:disabled {
+  background: #252d3d !important;
+  color: #94a3b8 !important;
+  border: 1px solid #3b4861 !important;
+  cursor: not-allowed;
+  opacity: 0.75;
+  box-shadow: none;
+  transform: none !important;
+}
+
 /* ── Auth Pages ──────────────────────────────────────────────────────────────── */
 .auth-page {
   min-height: 100vh;

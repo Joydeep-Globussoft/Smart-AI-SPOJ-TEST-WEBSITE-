@@ -1448,10 +1448,20 @@ export default function CandidateTestScreen() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   id="run-code-btn"
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-sm editor-run-btn"
                   onClick={handleRun}
                   disabled={isRunning || !code || disqualified || proctoring?.isCameraDisconnected}
-                  style={{ background: '#2d2d44', color: '#cdd6f4', border: '1px solid #444' }}
+                  title={
+                    disqualified
+                      ? 'Test session disqualified'
+                      : proctoring?.isCameraDisconnected
+                      ? 'Camera disconnected'
+                      : !code
+                      ? 'Enter code to run'
+                      : isRunning
+                      ? 'Running code...'
+                      : 'Run code against visible test cases'
+                  }
                 >
                   {isRunning ? <><LoadingDots size="sm" color="white" /> Running...</> : '▶ Run'}
                 </button>
