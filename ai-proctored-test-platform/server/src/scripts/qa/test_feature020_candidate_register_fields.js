@@ -72,7 +72,7 @@ async function runTests() {
       nextCalled = true;
     });
 
-    assert(!nextCalled && mock1.getStatus() === 201, 'Status 201 on full candidate registration');
+    assert(!nextCalled && (mock1.getStatus() === 200 || mock1.getStatus() === 201), 'Status 200/201 on full candidate registration');
     const registered1 = mock1.getData();
     assert(registered1 && registered1.candidate, 'Response includes candidate object');
     assert(registered1.candidate.name === fullCandidateData.name, 'Candidate name matches');
@@ -98,7 +98,6 @@ async function runTests() {
     const minimalCandidateData = {
       name: `Minimal Candidate ${timestamp}`,
       email: `minimal_candidate_${timestamp}@globussoft.com`,
-      password: 'StrongPassword123!',
     };
 
     const mock2 = createMockReqRes(minimalCandidateData);
@@ -106,7 +105,7 @@ async function runTests() {
       if (err) console.error(err);
     });
 
-    assert(mock2.getStatus() === 201, 'Status 201 on minimal candidate registration (optional fields omitted)');
+    assert(mock2.getStatus() === 200 || mock2.getStatus() === 201, 'Status 200/201 on minimal candidate registration (optional fields omitted)');
     const registered2 = mock2.getData();
     assert(registered2.candidate.fatherName === '', 'fatherName defaults to empty string');
     assert(registered2.candidate.phone === '', 'phone defaults to empty string');
@@ -118,30 +117,25 @@ async function runTests() {
     // ── TEST 3: Validation enforcement ──
     console.log('\n--- 3. Validation enforcement ---');
     // Missing email
-    const mockNoEmail = createMockReqRes({ name: 'No Email', password: 'password123' });
+    const mockNoEmail = createMockReqRes({ name: 'No Email' });
     await candidateRegister(mockNoEmail.req, mockNoEmail.res, () => {});
     assert(mockNoEmail.getStatus() === 400, 'Status 400 when mandatory email is missing');
 
-    // Missing password
-    const mockNoPass = createMockReqRes({ name: 'No Pass', email: `nopass_${timestamp}@globussoft.com` });
-    await candidateRegister(mockNoPass.req, mockNoPass.res, () => {});
-    assert(mockNoPass.getStatus() === 400, 'Status 400 when mandatory password is missing');
+    // Missing name
+    const mockNoName = createMockReqRes({ email: `noname_${timestamp}@globussoft.com` });
+    await candidateRegister(mockNoName.req, mockNoName.res, () => {});
+    assert(mockNoName.getStatus() === 400, 'Status 400 when mandatory name is missing');
 
-    // Password length < 6
-    const mockShortPass = createMockReqRes({ name: 'Short', email: `short_${timestamp}@globussoft.com`, password: '123' });
-    await candidateRegister(mockShortPass.req, mockShortPass.res, () => {});
-    assert(mockShortPass.getStatus() === 400, 'Status 400 when password is < 6 characters');
-
-    // Duplicate email
-    const mockDup = createMockReqRes(fullCandidateData);
-    await candidateRegister(mockDup.req, mockDup.res, () => {});
-    assert(mockDup.getStatus() === 409, 'Status 409 when email already exists');
+    // Re-registration upsert on existing email
+    const mockUpsert = createMockReqRes({ ...fullCandidateData, name: 'Re-registered Name' });
+    await candidateRegister(mockUpsert.req, mockUpsert.res, () => {});
+    assert(mockUpsert.getStatus() === 200 || mockUpsert.getStatus() === 201, 'Status 200/201 on re-registration upsert');
+    assert(mockUpsert.getData().candidate.name === 'Re-registered Name', 'Name updated on re-registration upsert');
 
     // ── TEST 4: Login returns full candidate model ──
     console.log('\n--- 4. Candidate login returns new profile fields ---');
     const mockLogin = createMockReqRes({
       email: fullCandidateData.email,
-      password: fullCandidateData.password,
     });
     await candidateLogin(mockLogin.req, mockLogin.res, () => {});
     assert(mockLogin.getStatus() === 200, 'Status 200 on candidate login');
@@ -151,7 +145,7 @@ async function runTests() {
     assert(loginData.candidate.stream === 'Computer Science', 'Login returns candidate stream');
     assert(loginData.candidate.address === 'Bangalore, Karnataka, India', 'Login returns candidate address');
 
-    // ── TEST 5: Frontend File Inspection for FEATURE-020 requirements ──
+    // ── TEST 5: Frontend CandidateRegister.jsx Inspection ──
     console.log('\n--- 5. Frontend CandidateRegister.jsx Inspection ---');
     const candidateRegisterPath = path.join(__dirname, '../../../../client/src/candidate/pages/CandidateRegister.jsx');
     const fileContent = fs.readFileSync(candidateRegisterPath, 'utf8');
@@ -163,8 +157,8 @@ async function runTests() {
     const phoneIdx = fileContent.indexOf('htmlFor="phone"');
     const qualIdx = fileContent.indexOf('htmlFor="qualification"');
     const streamIdx = fileContent.indexOf('htmlFor="stream"');
+    const instituteIdx = fileContent.indexOf('htmlFor="instituteName"');
     const addressIdx = fileContent.indexOf('htmlFor="address"');
-    const passIdx = fileContent.indexOf('htmlFor="password"');
 
     assert(
       nameIdx !== -1 &&
@@ -173,13 +167,14 @@ async function runTests() {
       phoneIdx > emailIdx &&
       qualIdx > phoneIdx &&
       streamIdx > qualIdx &&
-      addressIdx > streamIdx &&
-      passIdx > addressIdx,
-      'Exact field order verified: Full Name -> Father\'s Name -> Email -> Phone -> Qualification -> Stream -> Address -> Password'
+      instituteIdx > streamIdx &&
+      addressIdx > instituteIdx,
+      'Exact field order verified: Full Name -> Father\'s Name -> Email -> Phone -> Qualification -> Stream -> Institute Name -> Address'
     );
 
-    // Requirement 2: Confirm Password removed entirely
+    // Requirement 2: Password and Confirm Password removed entirely per FEATURE-031
     assert(!fileContent.includes('confirmPassword') && !fileContent.includes('Confirm Password'), 'Confirm Password field and logic completely removed');
+    assert(!fileContent.includes('PasswordInput') && !fileContent.includes('htmlFor="password"'), 'Password field and logic completely removed');
 
     // Requirement 3: No (optional) or (required) text in labels
     assert(!fileContent.includes('(optional)'), 'No "(optional)" labels present in form');

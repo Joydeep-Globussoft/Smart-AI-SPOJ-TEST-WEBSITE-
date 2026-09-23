@@ -5,12 +5,13 @@ const mongoose = require('mongoose');
 const candidateSchema = new mongoose.Schema({
   name: { type: String, required: true },
   fatherName: { type: String, trim: true, default: '' },
-  email: { type: String, required: true, unique: true, lowercase: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   phone: { type: String, trim: true, default: '' },
   qualification: { type: String, trim: true, default: '' },
   stream: { type: String, trim: true, default: '' },
+  instituteName: { type: String, trim: true, default: '' },
   address: { type: String, trim: true, default: '' },
-  passwordHash: { type: String, required: true },
+  passwordHash: { type: String, required: false }, // FEATURE-031: Password removed, retained for backwards compatibility
   createdAt: { type: Date, default: Date.now },
   // Account expiration timestamp — login check enforces 401 after this time (FR-1.2)
   expiresAt: { type: Date },

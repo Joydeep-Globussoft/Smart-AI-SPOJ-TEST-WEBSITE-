@@ -5,7 +5,6 @@ import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import globussoftLogo from '../../assets/globussoft-logo.png';
-import PasswordInput from '../../shared/PasswordInput';
 import LoadingDots from '../../shared/LoadingDots';
 
 export default function CandidateLogin() {
@@ -16,7 +15,7 @@ export default function CandidateLogin() {
   const inviteToken = searchParams.get('invite');
   const initialMountRef = useRef(false);
 
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [inviteInfo, setInviteInfo] = useState(null);
@@ -46,7 +45,7 @@ export default function CandidateLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.candidateLogin(form);
+      const { data } = await api.candidateLogin({ email: form.email });
       const candidate = { ...data.candidate, type: 'candidate' };
       const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken');
 
@@ -99,7 +98,7 @@ export default function CandidateLogin() {
         </div>
 
         <h1 className="auth-title">Sign In</h1>
-        <p className="auth-subtitle">Enter your credentials to access the test</p>
+        <p className="auth-subtitle">Enter your email to access the test</p>
 
         {inviteInfo && (
           <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -129,19 +128,6 @@ export default function CandidateLogin() {
               required
               autoComplete="email"
               autoFocus
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
-            <PasswordInput
-              id="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
             />
           </div>
 

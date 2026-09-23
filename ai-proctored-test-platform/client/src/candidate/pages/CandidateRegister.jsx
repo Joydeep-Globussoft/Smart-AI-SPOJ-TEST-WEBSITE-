@@ -5,7 +5,6 @@ import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import globussoftLogo from '../../assets/globussoft-logo.png';
-import PasswordInput from '../../shared/PasswordInput';
 import LoadingDots from '../../shared/LoadingDots';
 
 export default function CandidateRegister() {
@@ -23,8 +22,8 @@ export default function CandidateRegister() {
     phone: '',
     qualification: '',
     stream: '',
+    instituteName: '',
     address: '',
-    password: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,8 +61,8 @@ export default function CandidateRegister() {
         phone: form.phone,
         qualification: form.qualification,
         stream: form.stream,
+        instituteName: form.instituteName,
         address: form.address,
-        password: form.password,
       });
       // FR-1.2: account expires in 3 days
       const candidate = { ...data.candidate, type: 'candidate' };
@@ -217,7 +216,22 @@ export default function CandidateRegister() {
             </div>
           </div>
 
-          {/* 6. Address */}
+          {/* 6. Institute Name */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="instituteName">Institute Name</label>
+            <input
+              id="instituteName"
+              name="instituteName"
+              type="text"
+              className="form-input"
+              value={form.instituteName}
+              onChange={handleChange}
+              placeholder="e.g. ABC Institute of Technology"
+              autoComplete="organization"
+            />
+          </div>
+
+          {/* 7. Address */}
           <div className="form-group">
             <label className="form-label" htmlFor="address">Address</label>
             <input
@@ -229,21 +243,6 @@ export default function CandidateRegister() {
               onChange={handleChange}
               placeholder="e.g. City, State"
               autoComplete="street-address"
-            />
-          </div>
-
-          {/* 7. Password */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
-            <PasswordInput
-              id="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Create a strong password"
-              required
-              minLength={6}
-              autoComplete="new-password"
             />
           </div>
 

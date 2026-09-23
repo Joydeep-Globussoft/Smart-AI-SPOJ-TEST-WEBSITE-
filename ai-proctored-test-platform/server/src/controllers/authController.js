@@ -106,47 +106,54 @@ const adminCreate = async (req, res, next) => {
 };
 
 // ── POST /auth/candidate/register ────────────────────────────────────────────
-// Body: { name, fatherName, email, phone, qualification, stream, address, password }
-// Response: { candidate, token }
-// AC: Record created with expiresAt = createdAt + 3 days (FR-1.2)
+// Body: { name, fatherName, email, phone, qualification, stream, instituteName, address }
+// Response: { candidate, token, refreshToken }
+// AC: Record created or upserted with expiresAt = now + 3 days (FR-1.2, FEATURE-031)
 const candidateRegister = async (req, res, next) => {
   try {
-    const { name, fatherName, email, phone, qualification, stream, address, password } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'name, email, and password are required' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    const { name, fatherName, email, phone, qualification, stream, instituteName, address } = req.body;
+    if (!name || !name.trim() || !email || !email.trim()) {
+      return res.status(400).json({ error: 'Name and email are required' });
     }
 
-    const existing = await Candidate.findOne({ email: email.toLowerCase() });
-    if (existing) {
-      return res.status(409).json({ error: 'A candidate with this email already exists' });
-    }
+    const normalizedEmail = email.trim().toLowerCase();
+    let candidate = await Candidate.findOne({ email: normalizedEmail });
 
-    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
     const now = new Date();
     const expiryDays = parseInt(process.env.CANDIDATE_ACCOUNT_EXPIRY_DAYS || '3', 10);
-    const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000); // createdAt + N days
+    const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000); // createdAt/updatedAt + N days
 
-    const candidate = await Candidate.create({
-      name: name.trim(),
-      fatherName: fatherName ? fatherName.trim() : '',
-      email: email.trim().toLowerCase(),
-      phone: phone ? phone.trim() : '',
-      qualification: qualification ? qualification.trim() : '',
-      stream: stream ? stream.trim() : '',
-      address: address ? address.trim() : '',
-      passwordHash,
-      createdAt: now,
-      expiresAt, // TTL index will auto-delete document at this time (Section 8.2 note)
-    });
+    if (candidate) {
+      // FEATURE-031: Re-registration upsert — update candidate details and refresh expiry
+      candidate.name = name.trim();
+      if (fatherName !== undefined) candidate.fatherName = fatherName ? fatherName.trim() : '';
+      if (phone !== undefined) candidate.phone = phone ? phone.trim() : '';
+      if (qualification !== undefined) candidate.qualification = qualification ? qualification.trim() : '';
+      if (stream !== undefined) candidate.stream = stream ? stream.trim() : '';
+      if (instituteName !== undefined) candidate.instituteName = instituteName ? instituteName.trim() : '';
+      if (address !== undefined) candidate.address = address ? address.trim() : '';
+      candidate.expiresAt = expiresAt;
+      await candidate.save();
+    } else {
+      candidate = await Candidate.create({
+        name: name.trim(),
+        fatherName: fatherName ? fatherName.trim() : '',
+        email: normalizedEmail,
+        phone: phone ? phone.trim() : '',
+        qualification: qualification ? qualification.trim() : '',
+        stream: stream ? stream.trim() : '',
+        instituteName: instituteName ? instituteName.trim() : '',
+        address: address ? address.trim() : '',
+        createdAt: now,
+        expiresAt,
+      });
+    }
 
     const payload = { id: candidate._id.toString(), type: 'candidate' };
     const token = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    res.status(201).json({
+    res.status(200).json({
       candidate: {
         id: candidate._id,
         name: candidate.name,
@@ -155,6 +162,7 @@ const candidateRegister = async (req, res, next) => {
         phone: candidate.phone,
         qualification: candidate.qualification,
         stream: candidate.stream,
+        instituteName: candidate.instituteName || '',
         address: candidate.address,
         expiresAt: candidate.expiresAt,
       },
@@ -167,19 +175,20 @@ const candidateRegister = async (req, res, next) => {
 };
 
 // ── POST /auth/candidate/login ────────────────────────────────────────────────
-// Body: { email, password }
+// Body: { email }
 // Response: { candidate, token, refreshToken }
-// AC: 401 if account expired/deleted (FR-1.2)
+// AC: 401 if account not found or expired (FR-1.2, FEATURE-031)
 const candidateLogin = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    const { email } = req.body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    const candidate = await Candidate.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.trim().toLowerCase();
+    const candidate = await Candidate.findOne({ email: normalizedEmail });
     if (!candidate) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'No account found with this email. Please create an account.' });
     }
 
     // AC: login attempts after expiresAt return 401 "Account expired, please register again" (FR-1.2)
@@ -190,11 +199,6 @@ const candidateLogin = async (req, res, next) => {
 
     if (candidate.isDisqualified) {
       return res.status(403).json({ error: 'Account has been disqualified' });
-    }
-
-    const isMatch = await bcrypt.compare(password, candidate.passwordHash);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const payload = { id: candidate._id.toString(), type: 'candidate' };
@@ -210,6 +214,7 @@ const candidateLogin = async (req, res, next) => {
         phone: candidate.phone,
         qualification: candidate.qualification,
         stream: candidate.stream,
+        instituteName: candidate.instituteName || '',
         address: candidate.address,
         expiresAt: candidate.expiresAt,
       },
