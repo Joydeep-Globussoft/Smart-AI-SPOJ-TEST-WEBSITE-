@@ -637,6 +637,22 @@ export default function AdminLiveDashboard() {
     dependencies: [selectedRoomId, filterStatus, searchQuery],
   });
 
+  // FEATURE-030: Expand/Fullscreen Seat Map View State
+  const [isSeatMapExpanded, setIsSeatMapExpanded] = useState(false);
+
+  // Close expanded seat map on Escape key
+  useEffect(() => {
+    if (!isSeatMapExpanded) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (inspectCandidate || zoomScreenshotUrl || evaluationDetailCandidate) return;
+        setIsSeatMapExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSeatMapExpanded, inspectCandidate, zoomScreenshotUrl, evaluationDetailCandidate]);
+
   // Candidate Data Store: candidateId -> candidateObj
   const [candidatesMap, setCandidatesMap] = useState({});
 
@@ -2252,7 +2268,7 @@ export default function AdminLiveDashboard() {
 
         {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter, FEATURE-008 Post-Test Summary) ── */}
         <div className="card" style={{ marginBottom: 24 }}>
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <h3 className="card-title">
                 {isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}
@@ -2261,7 +2277,7 @@ export default function AdminLiveDashboard() {
               </p>
             </div>
 
-            {/* Seat Map Legend (Section 14, BUG-44: GREEN = Submitted) */}
+            {/* Seat Map Legend & Expand Button (FEATURE-030) */}
             <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.GREEN }} />
@@ -2279,6 +2295,46 @@ export default function AdminLiveDashboard() {
                 <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-seat-not-started-border)' }} />
                 <span>Not Started</span>
               </div>
+
+              {/* FEATURE-030: Expand/Fullscreen Seat Map Toggle */}
+              <button
+                id="expand-seat-map-btn"
+                type="button"
+                onClick={() => setIsSeatMapExpanded(true)}
+                title="Expand Seat Map (Full-screen view)"
+                aria-label="Expand Seat Map to fullscreen"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--color-bg-subtle, rgba(255,255,255,0.06))',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary, #ffffff)',
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  transition: 'all 0.15s ease',
+                  marginLeft: 8,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--color-bg-hover, rgba(255,255,255,0.12))';
+                  e.currentTarget.style.borderColor = 'var(--color-primary, #0E7C86)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--color-bg-subtle, rgba(255,255,255,0.06))';
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="15 3 21 3 21 9" />
+                  <polyline points="9 21 3 21 3 15" />
+                  <line x1="21" y1="3" x2="14" y2="10" />
+                  <line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+                <span>Expand</span>
+              </button>
             </div>
           </div>
 
@@ -3239,6 +3295,172 @@ export default function AdminLiveDashboard() {
             testType={test?.testType}
             onClose={handleCloseEvaluationDetail}
           />
+        )}
+
+        {/* ── FEATURE-030: Expanded Full-Viewport Live Physical Seat Map ── */}
+        {isSeatMapExpanded && (
+          <div
+            id="seat-map-expanded-overlay"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              zIndex: 900,
+              background: 'var(--color-bg, #0b0f19)',
+              display: 'flex',
+              flexDirection: 'column',
+              boxSizing: 'border-box',
+              animation: 'modalFadeIn 0.18s ease-out',
+            }}
+          >
+            {/* Expanded Header Bar */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 28px',
+                background: 'var(--color-bg-card, #131b2e)',
+                borderBottom: '1px solid var(--color-border)',
+                flexShrink: 0,
+                flexWrap: 'wrap',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary, #ffffff)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}</span>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      background: isTestEnded ? 'rgba(148, 163, 184, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                      color: isTestEnded ? '#94a3b8' : '#10B981',
+                      border: `1px solid ${isTestEnded ? '#94a3b8' : '#10B981'}40`,
+                    }}
+                  >
+                    {isTestEnded ? 'CONCLUDED' : 'LIVE'}
+                  </span>
+                </h3>
+                {test?.testTitle && (
+                  <span style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+                    · {test.testTitle}
+                  </span>
+                )}
+                <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', background: 'var(--color-bg-subtle)', padding: '2px 8px', borderRadius: 4 }}>
+                  {candidateList.length} seat{candidateList.length === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              {/* Legend & Collapse Button */}
+              <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.GREEN }} />
+                  <span>Submitted</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.YELLOW }} />
+                  <span>In Progress</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.RED }} />
+                  <span>Disqualified</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card)', border: '2px solid var(--color-seat-not-started-border)' }} />
+                  <span>Not Started</span>
+                </div>
+
+                {/* Collapse Button */}
+                <button
+                  id="collapse-seat-map-btn"
+                  type="button"
+                  onClick={() => setIsSeatMapExpanded(false)}
+                  title="Collapse Seat Map (Return to normal view)"
+                  aria-label="Collapse Seat Map to normal view"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: 'var(--color-bg-subtle, rgba(255,255,255,0.06))',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary, #ffffff)',
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    transition: 'all 0.15s ease',
+                    marginLeft: 8,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--color-bg-hover, rgba(255,255,255,0.12))';
+                    e.currentTarget.style.borderColor = 'var(--color-primary, #0E7C86)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--color-bg-subtle, rgba(255,255,255,0.06))';
+                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="4 14 10 14 10 20" />
+                    <polyline points="20 10 14 10 14 4" />
+                    <line x1="14" y1="10" x2="21" y2="3" />
+                    <line x1="3" y1="21" x2="10" y2="14" />
+                  </svg>
+                  <span>Collapse</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Grid of Seats */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '24px 32px',
+                boxSizing: 'border-box',
+              }}
+            >
+              {candidateList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--color-text-muted)' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: 12 }}>📡</div>
+                  <h4 style={{ color: 'var(--color-navy)', marginBottom: 6, fontSize: '1.2rem' }}>
+                    {isTestEnded ? 'No candidates recorded for this test.' : 'Waiting for candidates to connect...'}
+                  </h4>
+                  <p style={{ fontSize: '0.9rem' }}>
+                    {isTestEnded
+                      ? 'Candidate records will appear here once candidates have taken the test.'
+                      : 'As candidates join physical rooms and send heartbeats, their seats will appear here in real time.'}
+                  </p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: 16,
+                    paddingBottom: 40,
+                  }}
+                >
+                  {candidateList.map((c) => (
+                    <SeatTile
+                      key={`expanded-${c.candidateId}`}
+                      candidate={c}
+                      roomName={roomsById[c.roomId] || 'Room'}
+                      onClick={handleOpenInspectCandidate}
+                      now={now}
+                      isTestEnded={isTestEnded}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </main>
     </div>
