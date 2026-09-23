@@ -1941,7 +1941,7 @@ export default function AdminLiveDashboard() {
               <Link
                 to={`/admin/tests/${testId}/results`}
                 className="btn btn-primary"
-                style={{ fontSize: '0.85rem', padding: '8px 16px' }}
+                style={{ fontSize: '0.85rem', padding: '8px 16px', color: '#ffffff' }}
               >
                 View Shortlist &amp; Results →
               </Link>
