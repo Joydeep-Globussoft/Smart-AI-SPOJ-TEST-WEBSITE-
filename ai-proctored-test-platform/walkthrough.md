@@ -1146,4 +1146,44 @@ Executed automated test suite `test_test_status_badge_icon_removal.js`:
 - Summary: **3 / 3 checks passed (100%)**.
 - Client production build (`npm run build`): **0 errors in 3.13s**.
 
+---
+
+## 34. FEATURE-030: Expand/Fullscreen Toggle for Live Physical Seat Map
+
+### Problem Addressed
+On the Live Monitoring and Test Summary page (`/admin/tests/:testId/live`), the "Live Physical Seat Map" section grid expanded vertically as candidate seats were populated. Admins had to scroll the entire dashboard page up and down just to inspect various seats, without an option to isolate and focus on the seat map independently.
+
+### Key Changes Implemented
+1. **Embedded Expand Toggle Button (`#expand-seat-map-btn`)**:
+   - Added an "Expand" button with expand vector icon (`⤢`) to the right of the seat map legend in [`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx).
+   - Features rich hover states, accessible tooltip (`title="Expand Seat Map (Full-screen view)"`), and toggles `isSeatMapExpanded` to `true`.
+
+2. **Full-Viewport Expanded Overlay (`#seat-map-expanded-overlay`)**:
+   - Displays a dedicated full-viewport view (`position: fixed, inset: 0, zIndex: 900, background: var(--color-bg)`).
+   - **Header Bar**: Displays the section title, `LIVE` / `CONCLUDED` status indicator, test name, total seat count badge, color-coded legend, and a "Collapse" button (`#collapse-seat-map-btn`).
+   - **Independent Scrollable Canvas**: Scroll area (`overflowY: auto, padding: 24px 32px`) dedicated solely to the seat tile grid, isolating seat scrolling from the rest of the dashboard.
+   - **Collapse Trigger (`#collapse-seat-map-btn`) & Escape Key Listener**: Clicking "Collapse" or pressing the `Escape` key restores the standard dashboard layout immediately.
+
+3. **Real-Time Data Parity & Interaction Preservation**:
+   - Both normal and expanded views map over the identical `candidateList`, `roomsById`, `now` timer timestamp, and `handleOpenInspectCandidate` handler.
+   - Live socket heartbeats, time-remaining countdowns, and color status updates reflect synchronously in both views.
+   - Clicking any seat tile opens the Candidate Inspection modal (`#candidate-inspection-modal`) and detail evaluations cleanly on top of the overlay (`zIndex: 1050+ > 900`).
+   - `isSeatMapExpanded` initializes to `false` on navigation, avoiding unwanted cross-session layout persistence.
+
+### QA Verification Results
+Executed automated test suite `test_feature030_seat_map_expand_fullscreen.js`:
+- `isSeatMapExpanded` state declared with default false: **PASS**
+- Escape key listener collapses expanded seat map safely: **PASS**
+- Embedded seat map card header contains `#expand-seat-map-btn`: **PASS**
+- Expand button renders clean vector icon: **PASS**
+- `#seat-map-expanded-overlay` renders full-viewport overlay at `zIndex: 900`: **PASS**
+- Expanded header contains `#collapse-seat-map-btn`: **PASS**
+- Collapse button renders clean collapse vector icon: **PASS**
+- Independent scrollable area for seat tiles: **PASS**
+- Real-time socket updates and click-to-inspect props parity: **PASS**
+- Modals, Roster, and Dashboard feature non-regression: **PASS**
+- Summary: **10 / 10 checks passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 2.83s**.
+
+
 
