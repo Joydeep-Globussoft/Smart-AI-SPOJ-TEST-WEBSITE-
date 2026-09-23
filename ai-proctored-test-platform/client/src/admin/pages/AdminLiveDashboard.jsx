@@ -163,21 +163,111 @@ const getCandidateColorStatus = (candidate, isTestEnded = false) => {
 };
 
 // ── Candidate Session Remaining Time Helper (Pure client-side countdown) ──────
-const getCandidateRemainingMs = (candidate, currentNow) => {
+const getCandidateRemainingMs = (candidate, currentNow, testDurationMinutes) => {
   if (!candidate) return 0;
   // BUG-24, BUG-78, BUG-83: Only candidates genuinely IN_PROGRESS with active candidateStartTime have active remaining time.
   // Terminal/completed states (SUBMITTED, DISQUALIFIED, etc.) or NOT_STARTED immediately yield 0.
-  if (candidate.status !== 'IN_PROGRESS' || !candidate.candidateStartTime) {
+  const isTerminal =
+    candidate.status === 'SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED_TIME_UP' ||
+    candidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+    candidate.status === 'DISQUALIFIED' ||
+    candidate.isDisqualified ||
+    Boolean(candidate.submittedAt);
+
+  if (isTerminal || candidate.status === 'NOT_STARTED') {
     return 0;
   }
-  if (candidate.candidateEndTime) {
-    return Math.max(0, new Date(candidate.candidateEndTime).getTime() - currentNow);
+
+  const startRaw = candidate.candidateStartTime || candidate.startedAt || candidate.sessionStartTime;
+  if (!startRaw && candidate.status !== 'IN_PROGRESS' && candidate.colorStatus !== 'YELLOW') {
+    return 0;
   }
+
+  if (candidate.candidateEndTime) {
+    const endMs = new Date(candidate.candidateEndTime).getTime();
+    if (!isNaN(endMs) && endMs > 0) {
+      return Math.max(0, endMs - currentNow);
+    }
+  }
+
+  if (typeof testDurationMinutes === 'number' && testDurationMinutes > 0 && startRaw) {
+    const startMs = new Date(startRaw).getTime();
+    if (!isNaN(startMs) && startMs > 0) {
+      const endMs = startMs + testDurationMinutes * 60 * 1000;
+      return Math.max(0, endMs - currentNow);
+    }
+  }
+
   if (typeof candidate.timeRemaining === 'number' && candidate.timeRemaining > 0) {
     const elapsed = candidate.lastSyncedAt ? Math.max(0, currentNow - candidate.lastSyncedAt) : 0;
     return Math.max(0, candidate.timeRemaining - elapsed);
   }
   return 0;
+};
+
+// ── Format Remaining Time Helper ─────────────────────────────────────────────
+const formatCandidateRemainingTime = (remainingMs) => {
+  if (typeof remainingMs !== 'number' || isNaN(remainingMs) || remainingMs <= 0) {
+    return '0s';
+  }
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  if (totalSeconds <= 0) {
+    return '0s';
+  }
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${mins < 10 ? '0' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  }
+  return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+};
+
+// ── Candidate Inspection Time Info (BUG/UX-XX: Time Remaining during LIVE, Time Spent after completion) ──
+const getCandidateInspectionTimeInfo = (candidate, currentNow, isTestEnded, testDurationMinutes) => {
+  if (!candidate) {
+    return { label: 'Time Spent:', value: '—' };
+  }
+
+  const isDisqualified = candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || candidate.colorStatus === 'RED';
+  const isSubmitted =
+    candidate.status === 'SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED_TIME_UP' ||
+    candidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+    Boolean(candidate.submittedAt) ||
+    candidate.colorStatus === 'GREEN';
+
+  // 1. If candidate never started test
+  const startRaw = candidate.candidateStartTime || candidate.startedAt || candidate.sessionStartTime;
+  if (candidate.status === 'NOT_STARTED' || (!startRaw && !isSubmitted && !isDisqualified)) {
+    return { label: 'Time Spent:', value: '—' };
+  }
+
+  // 2. If test has ended OR candidate already submitted OR candidate is disqualified -> Show "Time Spent"
+  if (isTestEnded || isSubmitted || isDisqualified) {
+    return {
+      label: 'Time Spent:',
+      value: getCandidateTimeSpent(candidate, currentNow, isTestEnded),
+    };
+  }
+
+  // 3. Candidate is actively attempting during a LIVE test -> Show "Time Remaining"
+  if (candidate.status === 'IN_PROGRESS' || candidate.colorStatus === 'YELLOW' || Boolean(startRaw)) {
+    const remainingMs = getCandidateRemainingMs(candidate, currentNow, testDurationMinutes);
+    return {
+      label: 'Time Remaining:',
+      value: formatCandidateRemainingTime(remainingMs),
+    };
+  }
+
+  return {
+    label: 'Time Spent:',
+    value: getCandidateTimeSpent(candidate, currentNow, isTestEnded),
+  };
 };
 
 // ── Candidate Session Time Spent Helper (Actual Participation Duration) ──────
@@ -2760,10 +2850,24 @@ export default function AdminLiveDashboard() {
                     </strong>
                   </div>
                   <div>
-                    <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Time Spent:</span>
-                    <strong id="inspect-candidate-time-spent-val" style={{ display: 'block', fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
-                      {getCandidateTimeSpent(activeInspectCandidate, now, isTestEnded)}
-                    </strong>
+                    {(() => {
+                      const timeInfo = getCandidateInspectionTimeInfo(
+                        activeInspectCandidate,
+                        now,
+                        isTestEnded,
+                        test?.durationMinutes || test?.duration
+                      );
+                      return (
+                        <>
+                          <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                            {timeInfo.label}
+                          </span>
+                          <strong id="inspect-candidate-time-spent-val" style={{ display: 'block', fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
+                            {timeInfo.value}
+                          </strong>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
