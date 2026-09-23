@@ -417,6 +417,13 @@ const updateTest = async (req, res, next) => {
     if (req.body.instructions !== undefined && !req.body.instructions.trim()) {
       return res.status(400).json({ error: 'Instructions cannot be empty' });
     }
+    if (req.body.passingCriteria !== undefined) {
+      const parsedPassing = Number(req.body.passingCriteria);
+      if (isNaN(parsedPassing) || parsedPassing < 0) {
+        return res.status(400).json({ error: 'Passing criteria must be a non-negative number' });
+      }
+      req.body.passingCriteria = parsedPassing;
+    }
 
     const Question = require('../models/Question');
     const QuestionSet = require('../models/QuestionSet');
@@ -515,6 +522,13 @@ const updateTest = async (req, res, next) => {
       if (existing.passingCriteria > questionCount) {
         req.body.passingCriteria = questionCount;
       }
+    }
+
+    const finalTotalQuestions = req.body.totalQuestions || existing.totalQuestions;
+    if (req.body.passingCriteria !== undefined && req.body.passingCriteria > finalTotalQuestions) {
+      return res.status(400).json({
+        error: `Passing criteria (${req.body.passingCriteria}) cannot exceed total questions in the set (${finalTotalQuestions}).`,
+      });
     }
 
     const test = await Test.findByIdAndUpdate(req.params.testId, req.body, {

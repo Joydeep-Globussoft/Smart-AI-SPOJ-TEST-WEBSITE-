@@ -1268,3 +1268,49 @@ Executed automated test suite `test_bug011_seat_map_light_mode_and_total_count.j
 - Full-viewport seat map expand/collapse behavior preserved: **PASS**
 - Summary: **8 / 8 checks passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 3.15s**.
+
+---
+
+## 37. FEATURE-012: Move Passing Criteria Configuration into "Edit Test Configuration" and Remove Duplicate Criteria Panels from Manage Test Page
+
+### Problem Addressed
+Previously, the "Manage Test & Rooms" page (`AdminTestDetail.jsx`) contained two separate cards on the left column:
+1. "Passing Criteria (FR-2.2)"
+2. "Malpractice Disqualification Threshold (FR-2.3)"
+
+These separate panels created visual clutter, disconnected the passing threshold from test configuration setup, and created redundant configuration points.
+
+### Key Changes Implemented
+
+1. **Clean Rebalanced Layout on Manage Test & Rooms Page ([`AdminTestDetail.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminTestDetail.jsx))**:
+   - **Removed Duplicate Cards**: Removed the standalone "Passing Criteria (FR-2.2)" and "Malpractice Disqualification Threshold (FR-2.3)" cards from the Manage Test page.
+   - **Rebalanced 2-Column Grid**: The layout now cleanly positions:
+     - **Left Column**: `Configuration Details` card.
+     - **Right Column**: `Physical Rooms` management card.
+   - **Passing Criteria in Configuration Details**: Added a dynamic `Passing Criteria` row in the Configuration Details summary (`Passing Criteria: X Questions`).
+
+2. **Core Passing Criteria Field in "Edit Test Configuration" Modal**:
+   - Added `Passing Criteria (Minimum Questions to Pass) *` numeric input (`#edit-passing-criteria`) inside the Edit modal.
+   - Includes helper subtext: `"Candidates must solve at least this many questions to qualify for the shortlist."`
+   - Pre-populates the existing `test.passingCriteria` (defaulting to 0 if unset).
+   - Dynamically re-clamps validation max when the selected Question Folder changes.
+   - Client and server-side validation strictly enforces `0 <= passingCriteria <= totalQuestions`.
+   - Single unified update: saving configuration persists `passingCriteria` alongside title, folder, duration, languages, and instructions via `PATCH /tests/:testId`.
+
+3. **Preserved Single Source of Truth for Post-Test Malpractice & Shortlist Recalculation**:
+   - Retained backend endpoints (`PATCH /tests/:testId/passing-criteria` and `PATCH /tests/:testId/malpractice-threshold`) for automated shortlist recalculation.
+   - `AdminResults.jsx` (Results & Shortlist page) remains the authoritative location for post-test malpractice threshold adjustment (`Max Malpractice Allowed`) and shortlist filtering.
+
+### QA Verification Results
+Executed automated test suite `test_feature012_move_passing_criteria_to_edit_config.js`:
+- Passing Criteria (FR-2.2) card removed from Manage Test page: **PASS**
+- Malpractice Disqualification Threshold (FR-2.3) card removed from Manage Test page: **PASS**
+- Configuration Details card displays dynamic Passing Criteria: **PASS**
+- Edit modal renders `#edit-passing-criteria` with helper text: **PASS**
+- Edit modal pre-populates existing passingCriteria and syncs with folder changes: **PASS**
+- Client-side validation in `handleSaveConfig`: **PASS**
+- Backend `updateTest` validates and persists `passingCriteria`: **PASS**
+- Results & Shortlist page preserves post-test shortlist threshold controls: **PASS**
+- Test model schema retains `passingCriteria`: **PASS**
+- Summary: **9 / 9 checks passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 3.01s**.

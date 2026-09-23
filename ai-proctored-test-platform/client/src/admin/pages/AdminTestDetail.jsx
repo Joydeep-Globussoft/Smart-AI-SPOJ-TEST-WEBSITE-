@@ -134,12 +134,6 @@ export default function AdminTestDetail() {
     dependencies: [rooms.length, test?._id],
   });
 
-  // Dynamic Threshold States (FR-2.2, FR-2.3)
-  const [passingCriteria, setPassingCriteria] = useState(3);
-  const [updatingPassing, setUpdatingPassing] = useState(false);
-  const [malpracticeThreshold, setMalpracticeThreshold] = useState('');
-  const [updatingMalpractice, setUpdatingMalpractice] = useState(false);
-
   // Status Action Modals (Start / End Test)
   const [showStartModal, setShowStartModal] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -175,7 +169,7 @@ export default function AdminTestDetail() {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [generatingQr, setGeneratingQr] = useState(false);
 
-  // Edit Configuration Modal State (BUG-36, BUG-38)
+  // Edit Configuration Modal State (BUG-36, BUG-38, FEATURE-012)
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState(false);
   const [folders, setFolders] = useState([]);
@@ -185,6 +179,7 @@ export default function AdminTestDetail() {
     folderId: '',
     durationMinutes: 90,
     totalQuestions: 5,
+    passingCriteria: 0,
     startTestWindowMinutes: 10,
     supportedLanguages: ['python', 'java', 'cpp', 'javascript'],
     instructions: '',
@@ -202,13 +197,6 @@ export default function AdminTestDetail() {
       const fetchedTest = testRes.data.test;
       setTest(fetchedTest);
       setFolders(poolRes.data?.pools || []);
-      setPassingCriteria(fetchedTest.passingCriteria || 0);
-      setMalpracticeThreshold(
-        fetchedTest.malpracticeDisqualifyThreshold !== null &&
-          fetchedTest.malpracticeDisqualifyThreshold !== undefined
-          ? fetchedTest.malpracticeDisqualifyThreshold
-          : ''
-      );
       setRooms(roomsRes.data.rooms || []);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to load test details');
@@ -302,45 +290,6 @@ export default function AdminTestDetail() {
     }
   };
 
-  // Handle Passing Criteria Update (FR-2.2)
-  const handleUpdatePassingCriteria = async (e) => {
-    e.preventDefault();
-    if (passingCriteria < 0) {
-      return toast.error('Passing criteria cannot be negative');
-    }
-    try {
-      setUpdatingPassing(true);
-      const res = await api.updatePassingCriteria(testId, { passingCriteria: Number(passingCriteria) });
-      setTest(res.data.test);
-      toast.success('Passing criteria updated (Shortlist auto-recalculated)');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to update passing criteria');
-    } finally {
-      setUpdatingPassing(false);
-    }
-  };
-
-  // Handle Malpractice Threshold Update (FR-2.3, FR-7.5)
-  const handleUpdateMalpracticeThreshold = async (e) => {
-    e.preventDefault();
-    if (test?.status !== 'ENDED') {
-      return toast.error('Malpractice threshold can only be set after test has ENDED');
-    }
-    try {
-      setUpdatingMalpractice(true);
-      const val = malpracticeThreshold === '' ? null : Number(malpracticeThreshold);
-      const res = await api.updateMalpracticeThreshold(testId, {
-        malpracticeDisqualifyThreshold: val,
-      });
-      setTest(res.data.test);
-      toast.success('Malpractice threshold updated & shortlist re-filtered');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to update malpractice threshold');
-    } finally {
-      setUpdatingMalpractice(false);
-    }
-  };
-
   // Handle Add Room (FR-3.1)
   const handleAddRoomSubmit = async (e) => {
     e.preventDefault();
@@ -390,7 +339,7 @@ export default function AdminTestDetail() {
     }
   };
 
-  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012/013: Edit Configuration Handlers ───────────
+  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012: Edit Configuration Handlers ───────────
   const handleOpenEditModal = async () => {
     if (test?.status !== 'DRAFT') return;
     const folderId = test?.folderId?._id || test?.folderId || test?.questionSetPoolId || '';
@@ -418,6 +367,7 @@ export default function AdminTestDetail() {
       folderId: folderId,
       durationMinutes: test?.durationMinutes ?? 90,
       totalQuestions: qCount,
+      passingCriteria: test?.passingCriteria ?? 0,
       startTestWindowMinutes: test?.startTestWindowMinutes ?? 10,
       supportedLanguages: Array.isArray(test?.supportedLanguages) && test.supportedLanguages.length > 0
         ? [...test.supportedLanguages]
@@ -435,6 +385,7 @@ export default function AdminTestDetail() {
       testType: newType,
       folderId: '',
       totalQuestions: 0,
+      passingCriteria: 0,
     }));
   };
 
@@ -449,7 +400,7 @@ export default function AdminTestDetail() {
     });
   };
 
-  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012/013, BUG-92: Edit Configuration Save Handler ───
+  // ── BUG-36, BUG-38, BUG-39, BUG-60, FEATURE-012, BUG-92: Edit Configuration Save Handler ───
   const handleSaveConfig = async (e) => {
     e.preventDefault();
     if (test?.status !== 'DRAFT') {
@@ -476,6 +427,13 @@ export default function AdminTestDetail() {
     if (editFormData.totalQuestions && Number(editFormData.totalQuestions) <= 0) {
       return toast.error('Total questions must be greater than 0');
     }
+    const parsedPassingCriteria = Number(editFormData.passingCriteria ?? 0);
+    if (isNaN(parsedPassingCriteria) || parsedPassingCriteria < 0) {
+      return toast.error('Passing criteria must be a non-negative number');
+    }
+    if (parsedPassingCriteria > Number(editFormData.totalQuestions)) {
+      return toast.error(`Passing criteria (${parsedPassingCriteria}) cannot exceed total questions (${editFormData.totalQuestions}).`);
+    }
     if (!editFormData.startTestWindowMinutes || Number(editFormData.startTestWindowMinutes) <= 0) {
       return toast.error('Join window must be greater than 0');
     }
@@ -495,6 +453,7 @@ export default function AdminTestDetail() {
         questionSetPoolId: editFormData.folderId,
         durationMinutes: Number(editFormData.durationMinutes),
         totalQuestions: editFormData.totalQuestions ? Number(editFormData.totalQuestions) : 5,
+        passingCriteria: parsedPassingCriteria,
         startTestWindowMinutes: Number(editFormData.startTestWindowMinutes),
         supportedLanguages: editFormData.supportedLanguages,
         instructions: editFormData.instructions.trim(),
@@ -887,146 +846,80 @@ export default function AdminTestDetail() {
         {/* 2-Column Grid: Config / Dynamic Thresholds & Room Management */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.3fr)', gap: 24 }}>
 
-          {/* Column 1: Test Config & Dynamic Thresholds */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-            {/* Dynamic Passing Criteria Card (FR-2.2) */}
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">Passing Criteria (FR-2.2)</h3>
-                <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Editable Anytime</span>
-              </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
-                Number of questions a candidate must solve to pass. Changing this will <strong>automatically recalculate the shortlist</strong>.
-              </p>
-              <form onSubmit={handleUpdatePassingCriteria} style={{ display: 'flex', gap: 12 }}>
-                <input
-                  type="number"
-                  className="form-control"
-                  style={{ width: 100 }}
-                  min="0"
-                  max="50"
-                  value={passingCriteria}
-                  onChange={(e) => setPassingCriteria(e.target.value)}
-                  required
-                />
+          {/* Column 1: Test Configuration Details */}
+          <div className="card">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="card-title">Configuration Details</h3>
+              {test?.status === 'DRAFT' && (
                 <button
-                  type="submit"
+                  type="button"
+                  id="edit-config-btn"
+                  onClick={handleOpenEditModal}
                   className="btn btn-secondary"
-                  disabled={updatingPassing}
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontWeight: 600,
+                  }}
                 >
-                  {updatingPassing ? 'Updating...' : 'Update Criteria'}
+                  ✏️ Edit
                 </button>
-              </form>
-            </div>
-
-            {/* Dynamic Malpractice Threshold Card (FR-2.3, FR-7.5) */}
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">Malpractice Disqualification Threshold (FR-2.3)</h3>
-                <span className={`badge ${test.status === 'ENDED' ? 'badge-success' : 'badge-secondary'}`} style={{ fontSize: '0.7rem' }}>
-                  {test.status === 'ENDED' ? 'Active' : 'Post-Test Only'}
-                </span>
-              </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
-                Candidates with malpractice counts strictly exceeding this threshold will be excluded from the shortlist.
-                <em> (Can only be set after test is ENDED).</em>
-              </p>
-              <form onSubmit={handleUpdateMalpracticeThreshold} style={{ display: 'flex', gap: 12 }}>
-                <input
-                  type="number"
-                  className="form-control"
-                  style={{ width: 100 }}
-                  min="0"
-                  placeholder="None"
-                  disabled={test.status !== 'ENDED'}
-                  value={malpracticeThreshold}
-                  onChange={(e) => setMalpracticeThreshold(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="btn btn-secondary"
-                  disabled={test.status !== 'ENDED' || updatingMalpractice}
-                >
-                  {updatingMalpractice ? 'Updating...' : 'Set Threshold'}
-                </button>
-              </form>
-              {test.status !== 'ENDED' && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 8 }}>
-                  🔒 Available when test status changes to ENDED.
-                </p>
               )}
             </div>
-
-            {/* Test Configuration Summary */}
-            <div className="card">
-              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 className="card-title">Configuration Details</h3>
-                {test?.status === 'DRAFT' && (
-                  <button
-                    type="button"
-                    id="edit-config-btn"
-                    onClick={handleOpenEditModal}
-                    className="btn btn-secondary"
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '0.8rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontWeight: 600,
-                    }}
-                  >
-                    ✏️ Edit
-                  </button>
-                )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.875rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>
+                  Question Folder
+                </span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
+                  {test.questionSetPoolName || test.folderId?.name
+                    ? `📁 ${test.questionSetPoolName || test.folderId?.name} (${test.poolSetCount || 1} ${test.poolSetCount === 1 ? 'Set' : 'Sets'})`
+                    : (test.questionSetId?.name || '—')}
+                </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.875rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Duration</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.durationMinutes} Minutes</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Total Questions</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.totalQuestions}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Passing Criteria</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
+                  {test.passingCriteria ?? 0} {(test.passingCriteria ?? 0) === 1 ? 'Question' : 'Questions'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Start Window</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.startTestWindowMinutes} Minutes</span>
+              </div>
+              {test.supportedLanguages?.length > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>
-                    Question Folder
-                  </span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Languages</span>
                   <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
-                    {test.questionSetPoolName || test.folderId?.name
-                      ? `📁 ${test.questionSetPoolName || test.folderId?.name} (${test.poolSetCount || 1} ${test.poolSetCount === 1 ? 'Set' : 'Sets'})`
-                      : (test.questionSetId?.name || '—')}
+                    {test.supportedLanguages.join(', ').toUpperCase()}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>Duration</span>
-                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.durationMinutes} Minutes</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>Total Questions</span>
-                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.totalQuestions}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>Start Window</span>
-                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.startTestWindowMinutes} Minutes</span>
-                </div>
-                {test.supportedLanguages?.length > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Languages</span>
-                    <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
-                      {test.supportedLanguages.join(', ').toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Instructions:</span>
-                  <div
-                    style={{
-                      background: 'var(--color-bg-subtle)',
-                      padding: 12,
-                      borderRadius: 6,
-                      fontSize: '0.8rem',
-                      whiteSpace: 'pre-line',
-                      color: 'var(--color-text)',
-                      border: '1px solid var(--color-border)',
-                    }}
-                  >
-                    {test.instructions}
-                  </div>
+              )}
+              <div>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Instructions:</span>
+                <div
+                  style={{
+                    background: 'var(--color-bg-subtle)',
+                    padding: 12,
+                    borderRadius: 6,
+                    fontSize: '0.8rem',
+                    whiteSpace: 'pre-line',
+                    color: 'var(--color-text)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  {test.instructions}
                 </div>
               </div>
             </div>
@@ -1711,6 +1604,7 @@ export default function AdminTestDetail() {
                             ...p,
                             folderId: newFolderId,
                             totalQuestions: qCount,
+                            passingCriteria: p.passingCriteria > qCount ? qCount : p.passingCriteria,
                           }));
                         }}
                         required
@@ -1756,7 +1650,7 @@ export default function AdminTestDetail() {
                     </div>
                   </div>
 
-                  {/* Row 3: Duration (Minutes) * & Total Questions (2-column grid matching Create modal) */}
+                  {/* Row 3: Duration (Minutes) * & Total Questions */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="form-group">
                       <label className="form-label" style={{ fontWeight: 600 }}>Duration (Minutes) *</label>
@@ -1797,6 +1691,32 @@ export default function AdminTestDetail() {
                         Locked to Question Set's count ({editFormData.totalQuestions} Qs).
                       </small>
                     </div>
+                  </div>
+
+                  {/* Row 4: Passing Criteria (Minimum Questions to Pass) - FEATURE-012 */}
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Passing Criteria (Minimum Questions to Pass) *</label>
+                    <input
+                      type="number"
+                      id="edit-passing-criteria"
+                      className="form-control"
+                      min="0"
+                      max={editFormData.totalQuestions || 50}
+                      value={editFormData.passingCriteria}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setEditFormData((p) => ({ ...p, passingCriteria: val }));
+                      }}
+                      required
+                    />
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                      Candidates must solve at least this many questions to qualify for the shortlist.
+                    </small>
+                    {Number(editFormData.passingCriteria) > Number(editFormData.totalQuestions) && Number(editFormData.totalQuestions) > 0 && (
+                      <small style={{ color: '#E74C3C', fontSize: '0.75rem', display: 'block', marginTop: 2 }}>
+                        Cannot exceed Total Questions ({editFormData.totalQuestions}).
+                      </small>
+                    )}
                   </div>
 
                   {/* Row 4: Join Window / Password Validity (Minutes) with helper subtext */}

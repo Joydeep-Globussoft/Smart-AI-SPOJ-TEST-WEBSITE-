@@ -121,30 +121,33 @@ async function runTests() {
   assert(
     testDetailCode.includes('id="edit-test-title"') &&
     testDetailCode.includes('id="edit-test-type"') &&
-    testDetailCode.includes('id="edit-question-set"') &&
+    (testDetailCode.includes('id="edit-question-folder"') || testDetailCode.includes('id="edit-question-set"')) &&
     testDetailCode.includes('id="edit-duration-minutes"') &&
     testDetailCode.includes('id="edit-total-questions"') &&
+    testDetailCode.includes('id="edit-passing-criteria"') &&
     testDetailCode.includes('id="edit-start-window"') &&
     testDetailCode.includes('id="edit-instructions"'),
-    'All core assessment fields remain present and editable in the Edit modal'
+    'All core assessment fields (including passing criteria) remain present and editable in the Edit modal'
   );
   assert(
     testDetailCode.includes('handleEditTestTypeChange') &&
-    testDetailCode.includes("questionSetId: ''"),
-    'Changing Test Type in DRAFT resets questionSetId to require valid re-selection'
+    testDetailCode.includes("folderId: ''"),
+    'Changing Test Type in DRAFT resets folderId to require valid re-selection'
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TEST 5: Independent Passing Criteria & Malpractice Threshold (Criterion 6)
+  // TEST 5: Passing Criteria in Configuration Details (FEATURE-012)
   // ──────────────────────────────────────────────────────────────────────────
-  console.log('\n--- TEST 5: Passing Criteria & Malpractice Threshold Unaffected ---');
+  console.log('\n--- TEST 5: Passing Criteria in Configuration Details (FEATURE-012) ---');
   assert(
-    testDetailCode.includes('handleUpdatePassingCriteria'),
-    'Passing Criteria card remains independently editable anytime'
+    testDetailCode.includes('Passing Criteria') &&
+    testDetailCode.includes('test.passingCriteria ?? 0'),
+    'Passing Criteria is displayed in Configuration Details card (FEATURE-012)'
   );
   assert(
-    testDetailCode.includes('handleUpdateMalpracticeThreshold'),
-    'Malpractice Disqualification Threshold remains post-test editable'
+    !testDetailCode.includes('Passing Criteria (FR-2.2)') &&
+    !testDetailCode.includes('Malpractice Disqualification Threshold (FR-2.3)'),
+    'Duplicate criteria and threshold cards are removed from Manage Test page (FEATURE-012)'
   );
 
   // ──────────────────────────────────────────────────────────────────────────

@@ -66,32 +66,32 @@ async function runTests() {
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TEST 2: Cascading Question Set Reset on Test Type Change (Criterion 2)
+  // TEST 2: Cascading Folder / Pool Reset on Test Type Change (Criterion 2)
   // ──────────────────────────────────────────────────────────────────────────
-  console.log('\n--- TEST 2: Cascading Question Set Reset on Test Type Change ---');
+  console.log('\n--- TEST 2: Cascading Folder / Pool Reset on Test Type Change ---');
   assert(
     testDetailCode.includes('handleEditTestTypeChange') &&
-    testDetailCode.includes('questionSetId: \'\''),
-    'handleEditTestTypeChange resets questionSetId to empty string when Test Type changes'
+    testDetailCode.includes("folderId: ''"),
+    'handleEditTestTypeChange resets folderId to empty string when Test Type changes'
   );
   assert(
-    testDetailCode.includes('qs.testType === editFormData.testType'),
-    'Question Set dropdown in Edit modal filters by editFormData.testType'
+    testDetailCode.includes('p.testType === editFormData.testType'),
+    'Question Folder dropdown in Edit modal filters by editFormData.testType'
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TEST 3: Intentional Passing Criteria Omission (Criterion 3)
+  // TEST 3: Passing Criteria Integration (FEATURE-012)
   // ──────────────────────────────────────────────────────────────────────────
-  console.log('\n--- TEST 3: Passing Criteria Single Source of Truth ---');
-  // Check that inside showEditModal, passing criteria is NOT an editable input
-  const editModalPart = testDetailCode.slice(testDetailCode.indexOf('showEditModal &&'));
+  console.log('\n--- TEST 3: Passing Criteria Integration (FEATURE-012) ---');
   assert(
-    !editModalPart.includes('id="edit-passing-criteria"'),
-    'Passing Criteria is intentionally omitted from Edit modal by design'
+    testDetailCode.includes('id="edit-passing-criteria"') &&
+    createModalCode.includes('passingCriteria'),
+    'Both Create and Edit modals include Passing Criteria field (FEATURE-012)'
   );
   assert(
-    testDetailCode.includes('handleUpdatePassingCriteria'),
-    'Passing Criteria remains exclusively managed via its dedicated card on Test Detail'
+    testDetailCode.includes('Passing Criteria') &&
+    testDetailCode.includes('test.passingCriteria ?? 0'),
+    'Passing Criteria is displayed in Configuration Details card (FEATURE-012)'
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -104,9 +104,9 @@ async function runTests() {
     'Both Create and Edit modals use "Join Window / Password Validity (Minutes)" label'
   );
   assert(
-    testDetailCode.includes('Room passwords expire after this window from room creation (FR-3.3).') &&
-    createModalCode.includes('Room passwords expire after this window from room creation (FR-3.3).'),
-    'Both Create and Edit modals include the FR-3.3 room password expiration sub-text'
+    testDetailCode.includes('Room passwords expire after this window from room creation') &&
+    createModalCode.includes('Room passwords expire after this window from room creation'),
+    'Both Create and Edit modals include the room password expiration sub-text'
   );
 
   // ──────────────────────────────────────────────────────────────────────────

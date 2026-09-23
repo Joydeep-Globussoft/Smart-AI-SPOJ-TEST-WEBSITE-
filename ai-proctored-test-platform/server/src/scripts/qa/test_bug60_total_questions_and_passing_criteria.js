@@ -92,14 +92,21 @@ async function runTests() {
   const Question = require('../../models/Question');
   const Test = require('../../models/Test');
   const Admin = require('../../models/Admin');
+  const Folder = require('../../models/Folder');
   const { createTest, updateTest, updatePassingCriteria } = require('../../controllers/testController');
 
   const adminUser = await Admin.findOne();
+  const testFolder = await Folder.create({
+    name: 'QA BUG-60 Folder ' + Date.now(),
+    testType: 'SPOJ',
+    createdBy: adminUser._id,
+  });
 
   // Test 1: Reject createTest with 0-question QuestionSet
   const emptySet = await QuestionSet.create({
     name: 'QA Empty Set For Test Creation ' + Date.now(),
     testType: 'SPOJ',
+    folderId: testFolder._id,
     createdBy: adminUser._id,
     questionIds: [],
   });
@@ -141,6 +148,7 @@ async function runTests() {
   const oneQSet = await QuestionSet.create({
     name: 'QA 1-Question Set For Test Creation ' + Date.now(),
     testType: 'SPOJ',
+    folderId: testFolder._id,
     createdBy: adminUser._id,
     questionIds: [],
   });
