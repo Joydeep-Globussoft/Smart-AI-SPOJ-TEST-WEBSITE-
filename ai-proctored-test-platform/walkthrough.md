@@ -1412,4 +1412,27 @@ Executed automated test suite `test_feature_candidate_inspection_time_spent.js`:
 - Summary: **16 / 16 assertions passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 2.91s**.
 
+---
+
+## 40. UI TEXT UPDATE-017: Replace Success Toast Message with "Applied Successfully"
+
+### Problem Addressed
+Previously, upon saving/updating shortlist thresholds (e.g. passing criteria and malpractice threshold), the toast notification read:
+`"Thresholds updated & shortlist re-calculated (FR-10.1)"`
+This message exposed internal requirement numbers (`FR-10.1`) and technical jargon to administrators.
+
+### Key Changes Implemented
+- **Concise & Professional Copy**: Replaced the message in [`AdminResults.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminResults.jsx) with `"Applied Successfully"`.
+- **Zero Internal Requirement IDs**: Removed all user-visible `FR-*` tags from notifications.
+- **Preserved Behavior**: Kept toast styling, position, success checkmark icon, animation timing, and underlying shortlist refresh functionality completely intact.
+
+### QA Verification Results
+Executed automated test suite `test_ui_text_update017_applied_successfully.js`:
+- `AdminResults.jsx` displays `toast.success('Applied Successfully')`: **PASS**
+- Removed internal requirement ID `FR-10.1` and technical wording: **PASS**
+- Threshold update API calls and shortlist refresh workflow preserved: **PASS**
+- Summary: **3 / 3 assertions passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 3.07s**.
+
+
 

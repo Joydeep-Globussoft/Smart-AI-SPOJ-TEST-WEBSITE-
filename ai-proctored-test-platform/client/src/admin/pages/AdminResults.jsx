@@ -151,7 +151,7 @@ export default function AdminResults() {
       if (typeof res.data.totalCandidates === 'number') {
         setTotalCandidates(res.data.totalCandidates);
       }
-      toast.success('Thresholds updated & shortlist re-calculated (FR-10.1)');
+      toast.success('Applied Successfully');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update thresholds');
     } finally {
