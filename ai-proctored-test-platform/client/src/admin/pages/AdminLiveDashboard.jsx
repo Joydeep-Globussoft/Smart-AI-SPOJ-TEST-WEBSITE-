@@ -422,7 +422,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
     }
     if (isTestEnded) {
       if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
-        return 'Not started';
+        return 'Awaiting attempt';
       }
       return 'Submitted';
     }
@@ -430,7 +430,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
       return 'Submitted';
     }
     if (!candidate.candidateStartTime || candidate.status === 'NOT_STARTED' || (!isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
-      return 'Not started';
+      return 'Awaiting attempt';
     }
     if (remainingMs <= 0 && candidate.candidateEndTime) {
       return 'Time up';
@@ -441,7 +441,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
       const secs = totalSec % 60;
       return `${mins}m ${secs < 10 ? '0' : ''}${secs}s left`;
     }
-    return isCandidateInProgress ? 'In Progress' : 'Not started';
+    return isCandidateInProgress ? 'In Progress' : 'Awaiting attempt';
   }, [candidate.status, candidate.candidateStartTime, candidate.candidateEndTime, candidate.colorStatus, candidate.isDisqualified, remainingMs, isCandidateInProgress, isTestEnded]);
 
   return (
