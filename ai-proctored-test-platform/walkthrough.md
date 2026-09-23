@@ -1185,5 +1185,43 @@ Executed automated test suite `test_feature030_seat_map_expand_fullscreen.js`:
 - Summary: **10 / 10 checks passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 2.83s**.
 
+---
+
+## 35. BUG-009: "View Shortlist & Results" and General Button Text Disappearance on Hover
+
+### Problem Addressed
+When hovering over the `"View Shortlist & Results →"` button on the Live Monitoring page (and other primary navigation buttons rendered as React Router `<Link>` anchors), the text and arrow icon completely disappeared, turning the button into a blank solid block.
+
+### Root Cause
+1. `global.css` had a global rule `a:hover { color: var(--color-primary-dark); }`.
+2. `.btn-primary:hover` changed the button background to `var(--color-primary-dark)`.
+3. Because `<Link>` elements render as `<a>` anchor tags in the DOM, hovering matched `a:hover`, setting the text color to `var(--color-primary-dark)` while the button background was also `var(--color-primary-dark)`.
+4. As a result, the foreground text and background color became identical, rendering the text completely invisible on hover.
+
+### Key Changes Implemented
+1. **Scoped Link Hover Rule ([`global.css`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/styles/global.css))**:
+   - Updated `a:hover` to `a:not(.btn):not([class*="btn"]):hover { color: var(--color-primary-dark); }`.
+   - Ensures anchor link styling never bleeds into `.btn` buttons.
+
+2. **Explicit Button Text Colors Across All Pseudo-Classes**:
+   - Enhanced `.btn-primary`, `a.btn-primary`, `button.btn-primary` and their `:hover`, `:focus-visible`, and `:active` states with `color: #ffffff !important`.
+   - Enhanced `.btn-secondary`, `.btn-danger`, `.btn-success`, and `.btn-warning` across all pseudo-classes to guarantee high contrast and visible text across mouse hover, keyboard focus, and active click states.
+
+3. **Inline Defense-in-Depth ([`AdminLiveDashboard.jsx`](file:///c:/Users/GLB-BLR-112/Desktop/spoj%20test%20website/ai-proctored-test-platform/client/src/admin/pages/AdminLiveDashboard.jsx))**:
+   - Explicitly specified `color: '#ffffff'` on the `"View Shortlist & Results →"` link component.
+
+### QA Verification Results
+Executed automated test suite `test_bug009_button_hover_text_visibility.js`:
+- `a:hover` scoped to non-button anchors: **PASS**
+- `.btn-primary` & `a.btn-primary` explicit `#ffffff` on hover/focus/active: **PASS**
+- `.btn-secondary` navy text enforced on hover/focus: **PASS**
+- `.btn-danger` & `.btn-success` explicit `#ffffff` on hover/focus: **PASS**
+- `"View Shortlist & Results →"` button configuration verified: **PASS**
+- `AdminResults` action buttons preserved: **PASS**
+- `AdminTestDetail` action buttons preserved: **PASS**
+- Summary: **7 / 7 checks passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 2.96s**.
+
+
 
 
