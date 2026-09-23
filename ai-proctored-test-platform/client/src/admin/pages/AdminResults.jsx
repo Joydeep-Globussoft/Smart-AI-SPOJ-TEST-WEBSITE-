@@ -292,8 +292,16 @@ export default function AdminResults() {
               </div>
             </div>
 
-            {/* Top Actions: Export PDF & Regenerate */}
+            {/* Top Actions: Test Summary Dashboard, Export PDF & Regenerate */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Link
+                to={`/admin/tests/${testId}/live`}
+                className="btn btn-secondary"
+                title={test?.status === 'LIVE' ? 'Open Live Dashboard' : 'View test proctoring summary & candidate roster'}
+              >
+                📋 Test Summary Dashboard
+              </Link>
+
               <button
                 onClick={handleRegenerateShortlist}
                 className="btn btn-secondary"
