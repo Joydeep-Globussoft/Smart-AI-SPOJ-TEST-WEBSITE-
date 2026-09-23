@@ -342,6 +342,7 @@ const getRoomCandidates = async (req, res, next) => {
           questionsCompleted: sub.questionsCompleted || (sub.status === 'SUBMITTED' ? 1 : 0),
           submittedAt: sub.submittedAt || null,
           startedAt: sub.candidateStartTime || sub.createdAt,
+          candidateStartTime: sub.candidateStartTime || sub.createdAt || null,
           candidateEndTime: sub.candidateEndTime,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId,
@@ -354,6 +355,10 @@ const getRoomCandidates = async (req, res, next) => {
         }
         if (sub.candidateStartTime && (!candidateMap[cid].startedAt || new Date(sub.candidateStartTime) < new Date(candidateMap[cid].startedAt))) {
           candidateMap[cid].startedAt = sub.candidateStartTime;
+          candidateMap[cid].candidateStartTime = sub.candidateStartTime;
+        }
+        if (sub.submittedAt && (!candidateMap[cid].submittedAt || new Date(sub.submittedAt) > new Date(candidateMap[cid].submittedAt))) {
+          candidateMap[cid].submittedAt = sub.submittedAt;
         }
         if (assignedQuestionSetName && !candidateMap[cid].assignedQuestionSetName) {
           candidateMap[cid].assignedQuestionSetName = assignedQuestionSetName;
@@ -492,13 +497,16 @@ const getLiveCandidates = async (req, res, next) => {
       }
 
       if (!candidateTimers[cid]) {
-        candidateTimers[cid] = { startTime: null, endTime: null };
+        candidateTimers[cid] = { startTime: null, endTime: null, submittedAt: null };
       }
       if (sub.candidateStartTime && (!candidateTimers[cid].startTime || new Date(sub.candidateStartTime) < new Date(candidateTimers[cid].startTime))) {
         candidateTimers[cid].startTime = sub.candidateStartTime;
       }
       if (sub.candidateEndTime && (!candidateTimers[cid].endTime || new Date(sub.candidateEndTime) > new Date(candidateTimers[cid].endTime))) {
         candidateTimers[cid].endTime = sub.candidateEndTime;
+      }
+      if (sub.submittedAt && (!candidateTimers[cid].submittedAt || new Date(sub.submittedAt) > new Date(candidateTimers[cid].submittedAt))) {
+        candidateTimers[cid].submittedAt = sub.submittedAt;
       }
 
       if (sub.roomId && !candidateRooms[cid]) {
@@ -559,7 +567,7 @@ const getLiveCandidates = async (req, res, next) => {
         const setObj = candidateAssignedSets[cid] || j.assignedQuestionSetId;
         const { assignedQuestionSetId, assignedQuestionSetName, assignedSetIndex } = resolveSetDetails(setObj, j.joinIndex);
 
-        const timers = candidateTimers[cid] || { startTime: null, endTime: null };
+        const timers = candidateTimers[cid] || { startTime: null, endTime: null, submittedAt: null };
         const timeRemaining = timers.endTime ? Math.max(0, new Date(timers.endTime).getTime() - now) : 0;
 
         const subStatuses = candidateSubmissionStatuses[cid] || [];
@@ -587,6 +595,7 @@ const getLiveCandidates = async (req, res, next) => {
           timeRemaining,
           candidateStartTime: timers.startTime || null,
           candidateEndTime: timers.endTime || null,
+          submittedAt: timers.submittedAt || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
@@ -605,7 +614,7 @@ const getLiveCandidates = async (req, res, next) => {
       if (!candidate || !candidate._id) continue;
       const cid = candidate._id.toString();
 
-      const timers = candidateTimers[cid] || { startTime: sub.candidateStartTime, endTime: sub.candidateEndTime };
+      const timers = candidateTimers[cid] || { startTime: sub.candidateStartTime, endTime: sub.candidateEndTime, submittedAt: sub.submittedAt };
       const timeRemaining = timers.endTime ? Math.max(0, new Date(timers.endTime).getTime() - now) : 0;
 
       const subStatuses = candidateSubmissionStatuses[cid] || [sub.status];
@@ -645,6 +654,7 @@ const getLiveCandidates = async (req, res, next) => {
           timeRemaining,
           candidateStartTime: timers.startTime || sub.candidateStartTime || null,
           candidateEndTime: timers.endTime || sub.candidateEndTime || null,
+          submittedAt: timers.submittedAt || sub.submittedAt || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
@@ -660,6 +670,9 @@ const getLiveCandidates = async (req, res, next) => {
         if (timers.endTime) {
           candidateMap[cid].candidateEndTime = timers.endTime;
           candidateMap[cid].timeRemaining = timeRemaining;
+        }
+        if (timers.submittedAt || sub.submittedAt) {
+          candidateMap[cid].submittedAt = timers.submittedAt || sub.submittedAt;
         }
         if (candidate.isDisqualified) {
           candidateMap[cid].status = 'DISQUALIFIED';

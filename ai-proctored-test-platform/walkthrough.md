@@ -1361,3 +1361,55 @@ Executed automated test suite `test_uiux_improvement013_physical_rooms_ended_sta
 - Summary: **8 / 8 checks passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 3.00s**.
 
+---
+
+## 39. FEATURE: Replace "Session Status: Test Ended" with Actual Time Spent by Candidate in Candidate Inspection & Evidence
+
+### Problem Addressed
+In the **Candidate Inspection & Evidence** modal, when a candidate completed or ended the test, the 3rd column in the Key Metrics Grid showed `"Session Status: Test Ended"`. This provided little value to administrators since the candidate's completion status was already visible on the top-right status badge (e.g. `SUBMITTED`). Admins needed to know how much time the candidate actually spent taking the test.
+
+### Key Changes Implemented
+
+1. **Candidate Participation Duration (`Time Spent:`) in Key Metrics Grid**:
+   - Replaced `"Session Status: Test Ended"` / `"Time Remaining:"` with `<span id="inspect-candidate-time-spent-label">Time Spent:</span>`.
+   - Displays `<strong id="inspect-candidate-time-spent-val">{getCandidateTimeSpent(activeInspectCandidate, now, isTestEnded)}</strong>`.
+
+2. **Accurate Duration Calculation Logic (`getCandidateTimeSpent`)**:
+   - **Manual Submission**: `submittedAt - candidateStartTime` $\rightarrow$ e.g., `1h 02m` or `18m 42s`.
+   - **Auto-Submission (Timer Expired)**: `submittedAt / candidateEndTime - candidateStartTime` $\rightarrow$ e.g., `59m 59s`.
+   - **Disqualification**: `disqualifiedAt / submittedAt - candidateStartTime` $\rightarrow$ e.g., `24m 18s`.
+   - **Abandoned / Ended Session**: `endTime - candidateStartTime` $\rightarrow$ e.g., `12m 03s`.
+   - **Live In-Progress**: `currentNow - candidateStartTime` $\rightarrow$ dynamic ticker e.g., `42m 11s`.
+   - **Not Started**: Returns `—`.
+   - **Missing / Corrupt Timestamps**: Returns `Unavailable`.
+
+3. **Backend Timestamp Enrichment**:
+   - **`roomController.js`**: `getLiveCandidates` and `getRoomCandidates` now aggregate and return `submittedAt`, `candidateStartTime`, and `candidateEndTime`.
+   - **`proctoringController.js`**: `getCandidateMalpracticeLogs` includes `sessionTimestamps: { candidateStartTime, candidateEndTime, submittedAt, status }`.
+   - **`submissionController.js`**: Emits `submittedAt: now` / `autoNow` in `candidate:submitted` socket event.
+
+4. **Preserved Submission Badges & Visual Layout**:
+   - Top-right status badge (`SUBMITTED`, `SUBMITTED (TIME UP)`, `DISQUALIFIED`, `IN PROGRESS`) remains active and color-coded.
+   - Consistent typography across the Key Metrics Grid: `Questions Solved`, `Total Violations`, and `Time Spent` all share `fontSize: '1.1rem', fontWeight: 700`.
+
+### QA Verification Results
+Executed automated test suite `test_feature_candidate_inspection_time_spent.js`:
+- Key Metrics Grid renders `Time Spent:` label: **PASS**
+- Generic `Session Status: Test Ended` removed: **PASS**
+- `getCandidateTimeSpent` function implementation: **PASS**
+- Manual submission duration (`1h 02m`): **PASS**
+- Short duration format (`18m 42s`): **PASS**
+- Auto-submission duration (`59m 59s`): **PASS**
+- Disqualification duration (`24m 18s`): **PASS**
+- Abandoned session duration (`12m 03s`): **PASS**
+- Live in-progress dynamic counter (`42m 11s`): **PASS**
+- Not started candidate fallback (`—`): **PASS**
+- Missing timestamps fallback (`Unavailable`): **PASS**
+- Preserved submission status badges: **PASS**
+- Backend `proctoringController` returns `sessionTimestamps`: **PASS**
+- Backend `roomController` populates session timestamps: **PASS**
+- Backend `submissionController` emits `submittedAt`: **PASS**
+- Summary: **16 / 16 assertions passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 2.91s**.
+
+

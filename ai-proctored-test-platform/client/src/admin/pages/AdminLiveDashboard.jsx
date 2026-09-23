@@ -180,6 +180,81 @@ const getCandidateRemainingMs = (candidate, currentNow) => {
   return 0;
 };
 
+// ── Candidate Session Time Spent Helper (Actual Participation Duration) ──────
+const getCandidateTimeSpent = (candidate, currentNow, isTestEnded) => {
+  if (!candidate) return '—';
+
+  const isDisqualified = candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || candidate.colorStatus === 'RED';
+  const isSubmitted =
+    candidate.status === 'SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED_TIME_UP' ||
+    candidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+    candidate.colorStatus === 'GREEN';
+
+  // 1. If candidate never started test
+  if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !candidate.startedAt && !isSubmitted && !isDisqualified)) {
+    return '—';
+  }
+
+  // 2. Resolve session start timestamp
+  const startRaw = candidate.candidateStartTime || candidate.startedAt || candidate.sessionStartTime;
+  if (!startRaw) {
+    return 'Unavailable';
+  }
+  const startTime = new Date(startRaw).getTime();
+  if (isNaN(startTime) || startTime <= 0) {
+    return 'Unavailable';
+  }
+
+  // 3. Resolve session end timestamp
+  let endTime;
+  if (isSubmitted || candidate.submittedAt) {
+    const endRaw = candidate.submittedAt || candidate.submissionTime || candidate.candidateEndTime;
+    endTime = endRaw ? new Date(endRaw).getTime() : NaN;
+  } else if (isDisqualified) {
+    const endRaw = candidate.disqualifiedAt || candidate.submittedAt || candidate.candidateEndTime || candidate.lastMalpracticeAt;
+    endTime = endRaw ? new Date(endRaw).getTime() : (candidate.candidateEndTime ? new Date(candidate.candidateEndTime).getTime() : currentNow);
+  } else if (candidate.status === 'IN_PROGRESS' || Boolean(candidate.candidateStartTime)) {
+    if (isTestEnded) {
+      const endRaw = candidate.submittedAt || candidate.candidateEndTime;
+      endTime = endRaw ? Math.min(new Date(endRaw).getTime(), currentNow) : currentNow;
+    } else {
+      endTime = currentNow;
+      if (candidate.candidateEndTime) {
+        const maxEnd = new Date(candidate.candidateEndTime).getTime();
+        if (!isNaN(maxEnd) && endTime > maxEnd) {
+          endTime = maxEnd;
+        }
+      }
+    }
+  } else if (isTestEnded) {
+    const endRaw = candidate.submittedAt || candidate.candidateEndTime;
+    endTime = endRaw ? new Date(endRaw).getTime() : currentNow;
+  } else {
+    endTime = currentNow;
+  }
+
+  if (isNaN(endTime) || endTime <= 0) {
+    return 'Unavailable';
+  }
+
+  const durationMs = Math.max(0, endTime - startTime);
+  if (isNaN(durationMs)) {
+    return 'Unavailable';
+  }
+
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${mins < 10 ? '0' : ''}${mins}m`;
+  }
+  return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+};
+
 // ── Memoized Seat Tile (FR-7.3: Persistent Malpractice counter beside name) ────
 const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
   const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
@@ -630,7 +705,7 @@ export default function AdminLiveDashboard() {
       const next = typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn;
       try {
         localStorage.setItem('admin_voice_announcements_enabled', String(next));
-      } catch (_) {}
+      } catch (_) { }
       return next;
     });
   }, []);
@@ -855,6 +930,21 @@ export default function AdminLiveDashboard() {
         setCandidateLogs(res.data.malpracticeLogs || []);
         setHasMoreLogs(Boolean(res.data.hasMore));
         setTotalLogsCount(res.data.totalCount || res.data.malpracticeLogs?.length || 0);
+        if (res.data.sessionTimestamps) {
+          setCandidatesMap((prev) => {
+            const cur = prev[targetInspectCandidateId] || {};
+            return {
+              ...prev,
+              [targetInspectCandidateId]: {
+                ...cur,
+                ...res.data.sessionTimestamps,
+                candidateStartTime: res.data.sessionTimestamps.candidateStartTime || cur.candidateStartTime,
+                candidateEndTime: res.data.sessionTimestamps.candidateEndTime || cur.candidateEndTime,
+                submittedAt: res.data.sessionTimestamps.submittedAt || cur.submittedAt,
+              },
+            };
+          });
+        }
       })
       .catch((err) => {
         console.error('Failed to fetch candidate malpractice logs:', err);
@@ -940,6 +1030,7 @@ export default function AdminLiveDashboard() {
               candidateId: cid,
               candidateEndTime: endTime,
               candidateStartTime: cand.candidateStartTime || null,
+              submittedAt: cand.submittedAt || null,
               lastSyncedAt: initialNow,
             };
           }
@@ -980,6 +1071,7 @@ export default function AdminLiveDashboard() {
                 candidateId: cid,
                 candidateEndTime: endTime,
                 candidateStartTime: startTime,
+                submittedAt: cand.submittedAt || existing.submittedAt || null,
                 lastSyncedAt: refreshNow,
               };
             }
@@ -1202,7 +1294,7 @@ export default function AdminLiveDashboard() {
                 }
               }
             })
-            .catch(() => {});
+            .catch(() => { });
         }
 
         // Background sync to ensure all candidate details from server DB
@@ -2575,33 +2667,10 @@ export default function AdminLiveDashboard() {
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>{isTestEnded ? 'Session Status:' : 'Time Remaining:'}</span>
-                    <span style={{ display: 'block', fontFamily: isTestEnded ? 'inherit' : 'monospace', fontWeight: 700, color: 'var(--color-text)', fontSize: isTestEnded ? '0.9rem' : '0.95rem', marginTop: 2 }}>
-                      {(() => {
-                        if (isTestEnded) {
-                          return activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.isDisqualified
-                            ? 'Disqualified'
-                            : activeInspectCandidate.status === 'NOT_STARTED'
-                              ? 'Not Started'
-                              : 'Test Ended';
-                        }
-                        // BUG-24: Only candidates actively IN_PROGRESS have a live countdown.
-                        // Terminal or completed states (SUBMITTED, DISQUALIFIED, etc.) or NOT_STARTED show '—'.
-                        if (activeInspectCandidate.status !== 'IN_PROGRESS') {
-                          return '—';
-                        }
-                        const rem = getCandidateRemainingMs(activeInspectCandidate, now);
-                        if (rem > 0) {
-                          const mins = Math.floor(rem / 60000);
-                          const secs = Math.floor((rem % 60000) / 1000);
-                          return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
-                        }
-                        if (activeInspectCandidate.candidateEndTime) {
-                          return '00m 00s (Time up)';
-                        }
-                        return '—';
-                      })()}
-                    </span>
+                    <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Time Taken:</span>
+                    <strong id="inspect-candidate-time-spent-val" style={{ display: 'block', fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
+                      {getCandidateTimeSpent(activeInspectCandidate, now, isTestEnded)}
+                    </strong>
                   </div>
                 </div>
 

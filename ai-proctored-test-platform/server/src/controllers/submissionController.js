@@ -556,6 +556,7 @@ const startAttempt = async (req, res, next) => {
             io.to(`test:${testId}:admin`).emit('candidate:submitted', {
               candidateId,
               candidateName: cand?.name || 'Unknown',
+              submittedAt: autoNow,
             });
             io.to(`test:${testId}:admin`).emit('seatmap:status', {
               candidateId: candidateId.toString(),
@@ -995,6 +996,7 @@ const submitAll = async (req, res, next) => {
       io.to(`test:${testId}:admin`).emit('candidate:submitted', {
         candidateId,
         candidateName: candidate?.name || 'Unknown',
+        submittedAt: now,
       });
     }
 
