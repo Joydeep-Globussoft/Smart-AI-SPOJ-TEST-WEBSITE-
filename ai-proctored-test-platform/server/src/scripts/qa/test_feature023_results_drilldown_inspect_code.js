@@ -155,12 +155,12 @@ async function execute() {
 
   // 5. AI Feedback Scoping (Condition 3)
   runTest('AI evaluator feedback and prompt log are scoped strictly to AI_TEST test type', () => {
-    const adminResultsCode = fs.readFileSync(
-      path.resolve(__dirname, '../../../../client/src/admin/pages/AdminResults.jsx'),
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../../../../client/src/shared/CandidateDetailEvaluationModal.jsx'),
       'utf-8'
     );
     assert(
-      adminResultsCode.includes("test?.testType === 'AI_TEST' || inspectingQuestion.testType === 'AI_TEST'"),
+      modalCode.includes("testType === 'AI_TEST' || inspectingQuestion.testType === 'AI_TEST'"),
       'AI feedback/prompt log only rendered when testType is AI_TEST'
     );
   });
@@ -174,18 +174,19 @@ async function execute() {
     assert(adminResultsCode.includes('<th style={{ textAlign: \'right\' }}>Result</th>'), 'Header includes Result column');
     assert(adminResultsCode.includes('Detail Evaluation'), 'Row contains Detail Evaluation button');
     assert(adminResultsCode.includes('handleOpenCandidateDetail(c)'), 'Button triggers handleOpenCandidateDetail');
+    assert(adminResultsCode.includes('CandidateDetailEvaluationModal'), 'Uses shared CandidateDetailEvaluationModal component');
   });
 
-  runTest('AdminResults.jsx implements split-screen Inspect Code view with Monaco Editor and 10-parameter rubric', () => {
-    const adminResultsCode = fs.readFileSync(
-      path.resolve(__dirname, '../../../../client/src/admin/pages/AdminResults.jsx'),
+  runTest('CandidateDetailEvaluationModal implements split-screen Inspect Code view with Monaco Editor and 10-parameter rubric', () => {
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../../../../client/src/shared/CandidateDetailEvaluationModal.jsx'),
       'utf-8'
     );
-    assert(adminResultsCode.includes('import Editor from \'@monaco-editor/react\''), 'Monaco editor imported');
-    assert(adminResultsCode.includes('inspect-split-screen'), 'Split-screen layout used');
-    assert(adminResultsCode.includes('inspect-split-left'), 'Left pane for submitted code exists');
-    assert(adminResultsCode.includes('inspect-split-right'), 'Right pane for evaluation rubric exists');
-    assert(adminResultsCode.includes('readOnly: true'), 'Monaco editor set to read-only');
+    assert(modalCode.includes('import Editor from \'@monaco-editor/react\''), 'Monaco editor imported');
+    assert(modalCode.includes('inspect-split-screen'), 'Split-screen layout used');
+    assert(modalCode.includes('inspect-split-left'), 'Left pane for submitted code exists');
+    assert(modalCode.includes('inspect-split-right'), 'Right pane for evaluation rubric exists');
+    assert(modalCode.includes('readOnly: true'), 'Monaco editor set to read-only');
   });
 
   runTest('global.css includes responsive media query for split-screen layout (Condition 5)', () => {

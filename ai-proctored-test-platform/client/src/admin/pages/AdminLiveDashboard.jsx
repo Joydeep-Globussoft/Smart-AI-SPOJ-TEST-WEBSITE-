@@ -7,6 +7,7 @@ import { List } from 'react-window';
 import AdminNavbar from '../../shared/AdminNavbar';
 import TestStatusBadge from '../../shared/TestStatusBadge';
 import LoadingDots from '../../shared/LoadingDots';
+import CandidateDetailEvaluationModal from '../../shared/CandidateDetailEvaluationModal';
 import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import useAdminFilterState from '../../hooks/useAdminFilterState';
@@ -37,6 +38,25 @@ const STATUS_COLORS = {
   YELLOW: '#F1C40F',
   RED: '#E74C3C',
   WHITE: '#e5e7eb',
+};
+
+// ── Helper to check if a candidate has completed/submitted the test (FEATURE-024) ──
+export const isCandidateSubmitted = (candidate, isTestEnded = false) => {
+  if (!candidate) return false;
+  const status = candidate.status;
+  if (
+    status === 'SUBMITTED' ||
+    status === 'AUTO_SUBMITTED_TIME_UP' ||
+    status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+    status === 'DISQUALIFIED' ||
+    Boolean(candidate.isDisqualified)
+  ) {
+    return true;
+  }
+  if (isTestEnded && candidate.candidateStartTime && status !== 'NOT_STARTED') {
+    return true;
+  }
+  return false;
 };
 
 // ── Candidate Color Status Helper (BUG-44: GREEN = SUBMITTED, YELLOW = IN_PROGRESS, RED = DISQUALIFIED, WHITE = NOT_STARTED)
@@ -246,8 +266,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
   );
 });
 
-// ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate) ──
-const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, style, now, isTestEnded, isActive }) => {
+// ── Memoized Table Row Component (FR-7.3: Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate, FEATURE-024: View Result) ──
+const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, onOpenEvaluationDetail, style, now, isTestEnded, isActive }) => {
   const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
   const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
@@ -290,7 +310,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       style={{
         ...style,
         display: 'grid',
-        gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1.2fr 1.2fr 1.5fr',
+        gridTemplateColumns: '2fr 1.1fr 1.1fr 1fr 1.1fr 1.1fr 2fr',
         alignItems: 'center',
         padding: '8px 16px',
         borderBottom: '1px solid var(--color-border)',
@@ -426,13 +446,37 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         {formattedTimer}
       </div>
 
-      <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+      <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
         <button
           onClick={() => onSelect(candidate)}
           className="btn btn-secondary"
           style={{ padding: '3px 8px', fontSize: '0.72rem' }}
         >
           Inspect
+        </button>
+        {/* FEATURE-024: View Result button in roster Actions column */}
+        <button
+          onClick={() => onOpenEvaluationDetail && onOpenEvaluationDetail(candidate)}
+          disabled={!isCandidateSubmitted(candidate, isTestEnded)}
+          className="btn btn-primary"
+          style={{
+            background: isCandidateSubmitted(candidate, isTestEnded) ? '#0E7C86' : 'var(--color-bg-subtle)',
+            borderColor: isCandidateSubmitted(candidate, isTestEnded) ? '#0E7C86' : 'var(--color-border)',
+            color: isCandidateSubmitted(candidate, isTestEnded) ? '#ffffff' : 'var(--color-text-muted)',
+            opacity: isCandidateSubmitted(candidate, isTestEnded) ? 1 : 0.5,
+            cursor: isCandidateSubmitted(candidate, isTestEnded) ? 'pointer' : 'not-allowed',
+            padding: '3px 8px',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}
+          title={
+            isCandidateSubmitted(candidate, isTestEnded)
+              ? 'View detailed per-question test evaluation & code'
+              : 'Candidate has not yet submitted the test'
+          }
+        >
+          View Result
         </button>
         {candidate.status !== 'DISQUALIFIED' && !candidate.isDisqualified && colorStatus !== 'RED' && (
           <>
@@ -567,6 +611,18 @@ export default function AdminLiveDashboard() {
   useEffect(() => {
     inspectCandidateRef.current = inspectCandidate;
   }, [inspectCandidate]);
+
+  // FEATURE-024: Candidate Detail Evaluation Modal State & Handlers
+  const [evaluationDetailCandidate, setEvaluationDetailCandidate] = useState(null);
+
+  const handleOpenEvaluationDetail = useCallback((cand) => {
+    if (!cand) return;
+    setEvaluationDetailCandidate(cand);
+  }, []);
+
+  const handleCloseEvaluationDetail = useCallback(() => {
+    setEvaluationDetailCandidate(null);
+  }, []);
 
   // BUG-24: Derive fresh candidate state from candidatesMap to guarantee real-time updates while modal is open
   const activeInspectCandidate = useMemo(() => {
@@ -1609,13 +1665,14 @@ export default function AdminLiveDashboard() {
         onSelect={handleOpenInspectCandidate}
         onWarn={handleManualWarn}
         onDisqualify={handleManualDisqualify}
+        onOpenEvaluationDetail={handleOpenEvaluationDetail}
         style={style}
         now={now}
         isTestEnded={isTestEnded}
         isActive={candidate.candidateId === targetInspectCandidateId}
       />
     );
-  }, [candidateList, roomsById, now, isTestEnded, handleOpenInspectCandidate, targetInspectCandidateId]);
+  }, [candidateList, roomsById, now, isTestEnded, handleOpenInspectCandidate, handleManualWarn, handleManualDisqualify, handleOpenEvaluationDetail, targetInspectCandidateId]);
 
   if (loading) {
     return (
@@ -2020,7 +2077,7 @@ export default function AdminLiveDashboard() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1.2fr 1.2fr 1.5fr',
+              gridTemplateColumns: '2fr 1.1fr 1.1fr 1fr 1.1fr 1.1fr 2fr',
               padding: '10px 16px',
               background: 'var(--color-table-header-bg)',
               borderBottom: '1.5px solid var(--color-border)',
@@ -2062,6 +2119,7 @@ export default function AdminLiveDashboard() {
                   onSelect={handleOpenInspectCandidate}
                   onWarn={handleManualWarn}
                   onDisqualify={handleManualDisqualify}
+                  onOpenEvaluationDetail={handleOpenEvaluationDetail}
                   now={now}
                   isTestEnded={isTestEnded}
                   isActive={c.candidateId === targetInspectCandidateId}
@@ -2467,10 +2525,34 @@ export default function AdminLiveDashboard() {
                 </div>
               </div>
 
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-
-                </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {/* FEATURE-024: View Result button on Candidate Inspection & Evidence modal */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenEvaluationDetail(activeInspectCandidate)}
+                  disabled={!isCandidateSubmitted(activeInspectCandidate, isTestEnded)}
+                  className="btn btn-primary"
+                  style={{
+                    background: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#0E7C86' : 'var(--color-bg-subtle)',
+                    borderColor: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#0E7C86' : 'var(--color-border)',
+                    color: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#ffffff' : 'var(--color-text-muted)',
+                    opacity: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? 1 : 0.5,
+                    cursor: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? 'pointer' : 'not-allowed',
+                    padding: '6px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                  title={
+                    isCandidateSubmitted(activeInspectCandidate, isTestEnded)
+                      ? 'View detailed per-question test results and rubric evaluation'
+                      : 'Candidate has not yet submitted the test'
+                  }
+                >
+                  <span>📊</span> View Result
+                </button>
                 <button
                   type="button"
                   onClick={handleCloseInspectModal}
@@ -2864,6 +2946,16 @@ export default function AdminLiveDashboard() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* ── FEATURE-024: Candidate Detail Evaluation Modal ── */}
+        {evaluationDetailCandidate && (
+          <CandidateDetailEvaluationModal
+            testId={testId}
+            candidate={evaluationDetailCandidate}
+            testType={test?.testType}
+            onClose={handleCloseEvaluationDetail}
+          />
         )}
       </main>
     </div>
