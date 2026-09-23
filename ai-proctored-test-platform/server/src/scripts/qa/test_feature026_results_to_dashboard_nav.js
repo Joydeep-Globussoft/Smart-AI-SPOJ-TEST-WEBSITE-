@@ -83,7 +83,7 @@ async function execute() {
       path.resolve(__dirname, '../../../../client/src/admin/pages/AdminResults.jsx'),
       'utf-8'
     );
-    assert(resultsCode.includes('Regenerate Shortlist'), 'Regenerate Shortlist button preserved');
+    assert(resultsCode.includes('Apply & Recalculate Shortlist'), 'Apply & Recalculate Shortlist button preserved');
     assert(resultsCode.includes('Export Shortlist PDF'), 'Export Shortlist PDF button preserved');
     assert(resultsCode.includes('CandidateDetailEvaluationModal'), 'CandidateDetailEvaluationModal preserved');
     assert(resultsCode.includes('Detail Evaluation'), 'Detail Evaluation shortlist button preserved');

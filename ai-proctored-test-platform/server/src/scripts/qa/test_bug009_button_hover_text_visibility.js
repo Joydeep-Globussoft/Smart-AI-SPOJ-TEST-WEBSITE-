@@ -75,9 +75,9 @@ async function runBug009Tests() {
   // 5. AdminResults header buttons preserved
   assert(
     results.includes('Test Summary Dashboard') &&
-    results.includes('Regenerate Shortlist') &&
+    results.includes('Apply & Recalculate Shortlist') &&
     results.includes('Export Shortlist PDF'),
-    'AdminResults action buttons (Test Summary Dashboard, Regenerate, Export PDF) preserved'
+    'AdminResults action buttons (Test Summary Dashboard, Apply & Recalculate Shortlist, Export PDF) preserved'
   );
 
   // 6. AdminTestDetail navigation buttons preserved

@@ -292,7 +292,7 @@ export default function AdminResults() {
               </div>
             </div>
 
-            {/* Top Actions: Test Summary Dashboard, Export PDF & Regenerate */}
+            {/* Top Actions: Test Summary Dashboard & Export PDF */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <Link
                 to={`/admin/tests/${testId}/live`}
@@ -302,16 +302,7 @@ export default function AdminResults() {
                 📋 Test Summary Dashboard
               </Link>
 
-              <button
-                onClick={handleRegenerateShortlist}
-                className="btn btn-secondary"
-                disabled={updatingThresholds}
-                title="Recalculate shortlist ranking from current scores"
-              >
-                🔄 {updatingThresholds ? 'Recalculating...' : 'Regenerate Shortlist'}
-              </button>
-
-              {/* FR-10.2: PDF Export with Globussoft Letterhead */}
+              {/* PDF Export with Globussoft Letterhead */}
               <button
                 onClick={handleExportPdf}
                 className="btn btn-primary"
