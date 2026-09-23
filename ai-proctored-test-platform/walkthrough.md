@@ -1083,3 +1083,46 @@ Executed automated test suite `test_feature022_filter_bar_refinements.js`:
 - Multi-field sorting engine calculation (6 fields, asc/desc): **PASS**
 - FEATURE-029 row indexing & BUG-86 sticky table preservation: **PASS**
 - Summary: **8 / 8 checks passed (100%)**.
+
+---
+
+## 32. FEATURE-029 / BUG-86 Follow-up: Column Spacing, Truncation & Index Header Cleanup
+
+### Problem & Feedback Addressed
+1. **Index Column Header**: Had a literal `#` character; requested to be left blank while keeping position-based numbering (`1, 2, 3...`) beneath.
+2. **Column Width Imbalance**: Excessive width on TEST TITLE and TYPE pushed STATUS and action buttons (`Manage & Rooms`, `Test Summary`, `Live Monitor`, `Results`) off-screen, requiring horizontal scrolling on standard desktop viewports.
+3. **Question Set Unbounded Wrapping**: Long Question Set names expanded column widths and disrupted row alignments.
+
+### Key Changes Implemented
+1. **Blank Index Header (`AdminTests.jsx`)**:
+   - Replaced `<th ...>#</th>` with an empty `<th style={{ width: 36, minWidth: 36, textAlign: 'center' }}></th>`.
+   - Preserved dynamic row numbers `{index + 1}` across all filtered/sorted rows.
+2. **Rebalanced Column Layout**:
+   - Adjusted table wrapper to `width: '100%', minWidth: 980` (reduced from 1250px).
+   - Set proportionate column widths:
+     - Index: `width: 36, minWidth: 36`
+     - Test Title: `width: '20%', minWidth: 160`
+     - Type: `width: 95, minWidth: 85`
+     - Status: `width: 90, minWidth: 80`
+     - Duration: `width: 85, minWidth: 75`
+     - Passing Criteria: `width: 110, minWidth: 95`
+     - Question Set: `width: '18%', minWidth: 140, maxWidth: 190`
+     - Created: `width: 90, minWidth: 85`
+     - Actions: `width: 210, minWidth: 200`
+   - Fully prevents STATUS and Action buttons from being cut off or pushed off-screen.
+3. **Question Set Ellipsis Truncation & Tooltips**:
+   - Applied `maxWidth: 180`, `overflow: 'hidden'`, `textOverflow: 'ellipsis'`, and `whiteSpace: 'nowrap'`.
+   - Bound full string to `title={questionSetName}`, displaying full text cleanly on hover.
+
+### QA Verification Results
+Executed automated test suite `test_feature029_row_indexing_and_total_count.js`:
+- Blank index column header: **PASS**
+- Position-based row numbering (`index + 1`) re-flow: **PASS**
+- Always-visible total filtered count badge: **PASS**
+- Empty filtered state (`colSpan=9`): **PASS**
+- BUG-86 sticky header & balanced layout: **PASS**
+- Question Set ellipsis truncation and title tooltip: **PASS**
+- Action buttons and links intact: **PASS**
+- Summary: **7 / 7 checks passed (100%)**.
+- Client build (`npm run build`): **0 errors in 2.79s**.
+
