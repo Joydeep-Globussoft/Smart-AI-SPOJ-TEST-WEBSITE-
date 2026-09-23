@@ -1867,7 +1867,7 @@ export default function AdminLiveDashboard() {
                           : 'Tentative Time: No candidates have started yet'
                   }
                 >
-                  <span style={{ fontSize: '1rem' }}>{isTestEnded ? '🏁' : '⏱️'}</span>
+                  {!isTestEnded && <span style={{ fontSize: '1rem' }}>⏱️</span>}
                   <div>
                     <div style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', fontWeight: 700 }}>
                       {isTestEnded ? 'Test Status' : 'Tentative Time'}
