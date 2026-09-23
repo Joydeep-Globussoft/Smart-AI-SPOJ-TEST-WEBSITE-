@@ -731,20 +731,12 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         {formattedTimer}
       </div>
 
-      {/* Action Buttons (BUG-018: Crisp border, high contrast, active styling) */}
+      {/* Action Buttons (BUG/UX-XX: High contrast in light & dark modes) */}
       <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
         <button
           onClick={() => onSelect(candidate)}
-          className="btn btn-secondary"
-          style={{
-            padding: '4px 10px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            border: '1.5px solid var(--color-border)',
-            background: 'var(--color-bg-card)',
-            color: 'var(--color-navy)',
-            cursor: 'pointer',
-          }}
+          className="btn roster-action-btn roster-action-btn-inspect"
+          title="Inspect Candidate Live Status & Evidence"
         >
           Inspect
         </button>
@@ -752,18 +744,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         <button
           onClick={() => onOpenEvaluationDetail && onOpenEvaluationDetail(candidate)}
           disabled={!isCandidateSubmitted(candidate, isTestEnded)}
-          className="btn btn-primary"
-          style={{
-            background: isCandidateSubmitted(candidate, isTestEnded) ? '#0E7C86' : 'var(--color-bg-subtle)',
-            border: isCandidateSubmitted(candidate, isTestEnded) ? '1.5px solid #0E7C86' : '1.5px solid var(--color-border)',
-            color: isCandidateSubmitted(candidate, isTestEnded) ? '#ffffff' : 'var(--color-text-muted)',
-            opacity: isCandidateSubmitted(candidate, isTestEnded) ? 1 : 0.55,
-            cursor: isCandidateSubmitted(candidate, isTestEnded) ? 'pointer' : 'not-allowed',
-            padding: '4px 10px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-          }}
+          className={`btn roster-action-btn ${
+            isCandidateSubmitted(candidate, isTestEnded)
+              ? 'roster-action-btn-result-enabled'
+              : 'roster-action-btn-disabled'
+          }`}
           title={
             isCandidateSubmitted(candidate, isTestEnded)
               ? 'View detailed per-question test evaluation & code'
@@ -778,17 +763,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
               <button
                 onClick={() => onWarn(candidate)}
                 disabled={malpracticeCount < 1}
-                className="btn btn-secondary"
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: malpracticeCount > 0 ? '#b45309' : 'var(--color-text-muted)',
-                  border: malpracticeCount > 0 ? '1.5px solid #f59e0b' : '1.5px solid var(--color-border)',
-                  background: malpracticeCount > 0 ? '#fffbeb' : 'var(--color-bg-subtle)',
-                  opacity: malpracticeCount > 0 ? 1 : 0.55,
-                  cursor: malpracticeCount > 0 ? 'pointer' : 'not-allowed',
-                }}
+                className={`btn roster-action-btn ${
+                  malpracticeCount > 0
+                    ? 'roster-action-btn-warn-enabled'
+                    : 'roster-action-btn-disabled'
+                }`}
                 title={malpracticeCount > 0 ? 'Send Warning' : 'No violations recorded'}
               >
                 Warn
@@ -796,13 +775,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             )}
             <button
               onClick={() => onDisqualify(candidate)}
-              className="btn btn-danger"
-              style={{
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                border: '1.5px solid #dc2626',
-              }}
+              className="btn roster-action-btn roster-action-btn-danger"
               title={isTestEnded ? 'Retroactively Disqualify Candidate' : 'Disqualify Candidate'}
             >
               Disqualify

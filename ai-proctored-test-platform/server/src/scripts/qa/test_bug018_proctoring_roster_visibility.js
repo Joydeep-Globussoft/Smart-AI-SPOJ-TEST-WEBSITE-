@@ -120,13 +120,13 @@ assert(
 // 7. Action Button Visibility
 console.log('\n7. Verifying Action Button Visibility...');
 assert(
-  content.includes('border: \'1.5px solid var(--color-border)\'') &&
+  (content.includes('roster-action-btn-inspect') || content.includes("border: '1.5px solid var(--color-border)'")) &&
   content.includes('Inspect'),
   'Inspect button has crisp 1.5px solid border and defined styling'
 );
 assert(
   content.includes('View Result') &&
-  content.includes("border: isCandidateSubmitted(candidate, isTestEnded) ? '1.5px solid #0E7C86' : '1.5px solid var(--color-border)'"),
+  (content.includes('roster-action-btn-result-enabled') || content.includes("border: isCandidateSubmitted(candidate, isTestEnded) ? '1.5px solid #0E7C86' : '1.5px solid var(--color-border)'")),
   'View Result button has crisp border and clear enabled/disabled contrast'
 );
 
