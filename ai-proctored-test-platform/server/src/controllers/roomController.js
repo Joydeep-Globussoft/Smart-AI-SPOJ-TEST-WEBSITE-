@@ -6,6 +6,7 @@ const Test = require('../models/Test');
 const Candidate = require('../models/Candidate');
 const Submission = require('../models/Submission');
 const QuestionSet = require('../models/QuestionSet');
+const MalpracticeLog = require('../models/MalpracticeLog');
 
 /**
  * Generate a cryptographically random room code (Section 13: not guessable, not sequential)
@@ -121,11 +122,42 @@ const getRooms = async (req, res, next) => {
     }
 
     const now = Date.now();
-    const activeSubmissions = await Submission.find({
-      testId: req.params.testId,
-      status: 'IN_PROGRESS',
-      candidateEndTime: { $gt: new Date(now) },
-    }, { roomId: 1, candidateEndTime: 1 });
+    const roomIds = rooms.map((r) => r._id);
+
+    const [activeSubmissions, subStats, violStats] = await Promise.all([
+      Submission.find({
+        testId: req.params.testId,
+        status: 'IN_PROGRESS',
+        candidateEndTime: { $gt: new Date(now) },
+      }, { roomId: 1, candidateEndTime: 1 }),
+      Submission.aggregate([
+        { $match: { roomId: { $in: roomIds } } },
+        {
+          $group: {
+            _id: '$roomId',
+            totalCandidates: { $addToSet: '$candidateId' },
+            submittedCount: {
+              $sum: {
+                $cond: [
+                  { $in: ['$status', ['SUBMITTED', 'AUTO_SUBMITTED', 'AUTO_SUBMITTED_DISQUALIFIED']] },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]),
+      MalpracticeLog.aggregate([
+        { $match: { roomId: { $in: roomIds } } },
+        {
+          $group: {
+            _id: '$roomId',
+            totalViolations: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
 
     const maxRemByRoom = {};
     for (const s of activeSubmissions) {
@@ -138,11 +170,29 @@ const getRooms = async (req, res, next) => {
       }
     }
 
+    const subMap = {};
+    for (const s of subStats) {
+      if (s._id) subMap[s._id.toString()] = s;
+    }
+    const violMap = {};
+    for (const v of violStats) {
+      if (v._id) violMap[v._id.toString()] = v;
+    }
+
     const enrichedRooms = rooms.map((r) => {
       const rObj = r.toObject();
+      const rid = r._id.toString();
+      const sStat = subMap[rid];
+      const vStat = violMap[rid];
+      const joinedCount = r.joinedCandidates ? r.joinedCandidates.length : 0;
+      const distinctSubCandidates = sStat && sStat.totalCandidates ? sStat.totalCandidates.length : 0;
+
       // BUG-21: Tentative Time = MAX remaining time among candidates currently IN_PROGRESS
-      // ASSUMPTION: If no in-progress candidate in room, tentativeTime is null ("—" or "Not started" placeholder)
-      rObj.tentativeTime = maxRemByRoom[r._id.toString()] || null;
+      rObj.tentativeTime = maxRemByRoom[rid] || null;
+      // UI/UX IMPROVEMENT-013: Summary metrics per room
+      rObj.candidateCount = Math.max(joinedCount, distinctSubCandidates);
+      rObj.submittedCount = sStat ? sStat.submittedCount : 0;
+      rObj.violationCount = vStat ? vStat.totalViolations : 0;
       return rObj;
     });
 

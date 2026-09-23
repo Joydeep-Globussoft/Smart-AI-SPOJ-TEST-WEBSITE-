@@ -987,66 +987,209 @@ export default function AdminTestDetail() {
                   // BUG-22: Rooms in an ENDED test are closed by definition
                   const isClosed = room.status === 'CLOSED' || isEnded;
                   const isExpired = isLive && room.passwordValidUntil && new Date(room.passwordValidUntil) < new Date();
+                  const candidateTotal = room.candidateCount ?? (room.joinedCandidates?.length || 0);
 
                   return (
                     <div
                       key={room._id}
+                      className={`physical-room-card ${isEnded ? 'room-concluded' : isLive ? 'room-live' : 'room-draft'}`}
                       style={{
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 10,
-                        padding: 16,
-                        background: isClosed ? 'var(--color-bg-subtle)' : 'var(--color-bg-card)',
-                        opacity: isClosed ? 0.75 : 1,
+                        border: isEnded
+                          ? '1.5px solid var(--color-border, #cbd5e1)'
+                          : isLive
+                          ? '1.5px solid var(--color-primary, #0E7C86)'
+                          : '1.5px solid var(--color-border, #cbd5e1)',
+                        borderRadius: 12,
+                        padding: '18px 20px',
+                        background: 'var(--color-bg-card, #ffffff)',
+                        boxShadow: isEnded
+                          ? '0 2px 10px rgba(0, 0, 0, 0.05)'
+                          : isLive
+                          ? '0 4px 14px rgba(14, 124, 134, 0.12)'
+                          : '0 2px 8px rgba(0, 0, 0, 0.04)',
+                        transition: 'all 0.2s ease',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div>
-                          <strong style={{ fontSize: '1rem', color: 'var(--color-navy)' }}>{room.roomName}</strong>
+                      {/* Room Header & Badges */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-navy, #0f172a)' }}>
+                            {room.roomName}
+                          </span>
                           {room.capacity && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: 8 }}>
-                              (Cap: {room.capacity})
+                            <span
+                              style={{
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-muted, #475569)',
+                                background: 'var(--color-bg-subtle, #f1f5f9)',
+                                border: '1px solid var(--color-border, #cbd5e1)',
+                                padding: '2px 8px',
+                                borderRadius: 12,
+                              }}
+                            >
+                              Cap: {room.capacity}
                             </span>
                           )}
                         </div>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <span
-                            className={`badge ${isClosed ? 'badge-danger' : 'badge-success'}`}
-                            style={{ fontSize: '0.7rem' }}
-                          >
-                            {isClosed ? 'CLOSED' : room.status}
-                          </span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          {isEnded ? (
+                            <span
+                              className="room-status-badge badge-completed completed"
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                background: 'rgba(16, 185, 129, 0.12)',
+                                color: '#059669',
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                letterSpacing: '0.5px',
+                              }}
+                            >
+                              <span>✓</span> COMPLETED
+                            </span>
+                          ) : isClosed ? (
+                            <span
+                              className="room-status-badge closed"
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                color: '#dc2626',
+                                border: '1px solid rgba(239, 68, 68, 0.35)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              CLOSED
+                            </span>
+                          ) : isLive ? (
+                            <span
+                              className="room-status-badge badge-active active"
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                background: 'rgba(14, 124, 134, 0.15)',
+                                color: '#0E7C86',
+                                border: '1px solid rgba(14, 124, 134, 0.4)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0E7C86', animation: 'pulse 2s infinite' }} />
+                              ACTIVE
+                            </span>
+                          ) : (
+                            <span
+                              className="room-status-badge ready"
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                background: 'var(--color-bg-subtle, #f1f5f9)',
+                                color: 'var(--color-text-muted, #475569)',
+                                border: '1px solid var(--color-border, #cbd5e1)',
+                              }}
+                            >
+                              READY
+                            </span>
+                          )}
+
                           {isLive && isExpired && !isClosed && (
-                            <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
-                              Password Expired
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                background: 'rgba(245, 158, 11, 0.12)',
+                                color: '#d97706',
+                                border: '1px solid rgba(245, 158, 11, 0.35)',
+                              }}
+                            >
+                              ⚠️ Password Expired
                             </span>
                           )}
                         </div>
                       </div>
 
+                      {/* UI/UX IMPROVEMENT-013: Room Summary Metrics Strip */}
+                      <div
+                        className="room-metrics-strip"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          flexWrap: 'wrap',
+                          marginBottom: 12,
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          color: 'var(--color-text-muted, #475569)',
+                        }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span>👥</span>
+                          <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{candidateTotal}</strong>
+                          <span>{candidateTotal === 1 ? 'Candidate' : 'Candidates'}</span>
+                        </span>
+                        <span style={{ color: 'var(--color-border, #cbd5e1)' }}>•</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ color: '#10B981' }}>✅</span>
+                          <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{room.submittedCount ?? 0}</strong>
+                          <span>Submitted</span>
+                        </span>
+                        <span style={{ color: 'var(--color-border, #cbd5e1)' }}>•</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ color: '#E74C3C' }}>⚠️</span>
+                          <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{room.violationCount ?? 0}</strong>
+                          <span>{(room.violationCount ?? 0) === 1 ? 'Violation' : 'Violations'}</span>
+                        </span>
+                      </div>
+
                       {/* Credentials Box */}
                       <div
                         style={{
-                          background: 'var(--color-bg-subtle)',
-                          border: '1px solid var(--color-border)',
+                          background: 'var(--color-bg-subtle, #f1f5f9)',
+                          border: '1.5px solid var(--color-border, #cbd5e1)',
                           borderRadius: 8,
-                          padding: 12,
+                          padding: '12px 16px',
                           display: 'grid',
                           gridTemplateColumns: '1fr 1fr',
-                          gap: 12,
+                          gap: 16,
                           marginBottom: 12,
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
                             Room Code
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                            <code style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <code style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary, #0E7C86)', letterSpacing: '1px', fontFamily: 'monospace' }}>
                               {room.roomCode}
                             </code>
                             <button
+                              type="button"
                               onClick={() => copyToClipboard(room.roomCode, 'Room Code')}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                padding: '2px 4px',
+                                borderRadius: 4,
+                                transition: 'transform 0.15s ease',
+                              }}
                               title="Copy Code"
                             >
                               📋
@@ -1055,16 +1198,25 @@ export default function AdminTestDetail() {
                         </div>
 
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
                             Room Password
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                            <code style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-navy)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <code style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-navy, #0f172a)', letterSpacing: '1px', fontFamily: 'monospace' }}>
                               {room.roomPassword}
                             </code>
                             <button
+                              type="button"
                               onClick={() => copyToClipboard(room.roomPassword, 'Room Password')}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                padding: '2px 4px',
+                                borderRadius: 4,
+                                transition: 'transform 0.15s ease',
+                              }}
                               title="Copy Password"
                             >
                               📋
@@ -1073,26 +1225,28 @@ export default function AdminTestDetail() {
                         </div>
                       </div>
 
-                      {/* Expiry Timestamp / Window Indicator (Requirement 3) */}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 12 }}>
-                        {isLive && room.passwordValidUntil ? (
-                          <>
-                            Valid Until: {new Date(room.passwordValidUntil).toLocaleTimeString()} (
-                            {new Date(room.passwordValidUntil).toLocaleDateString()})
-                          </>
-                        ) : isEnded ? (
-                          <span>Test concluded</span>
+                      {/* Expiry Timestamp / Completion Indicator */}
+                      <div style={{ fontSize: '0.8rem', marginBottom: 14, fontWeight: 600 }}>
+                        {isEnded ? (
+                          <span style={{ color: '#059669', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <span>✓</span> Room Completed Successfully
+                          </span>
+                        ) : isLive && room.passwordValidUntil ? (
+                          <span style={{ color: 'var(--color-text-muted, #475569)' }}>
+                            ⏱️ <strong style={{ color: 'var(--color-navy, #0f172a)' }}>Valid Until:</strong> {new Date(room.passwordValidUntil).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })} ({new Date(room.passwordValidUntil).toLocaleDateString()})
+                          </span>
                         ) : (
-                          <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
-                            ⏳ Window starts when test goes LIVE
+                          <span style={{ color: 'var(--color-primary, #0E7C86)' }}>
+                            ⏳ Access window starts when test goes LIVE
                           </span>
                         )}
                       </div>
 
                       {/* Action Bar */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button
+                            type="button"
                             id={`copy-invite-btn-${room._id}`}
                             onClick={() => {
                               const inviteLink = room.inviteToken
@@ -1104,34 +1258,68 @@ export default function AdminTestDetail() {
                               copyToClipboard(details, 'Room Invite Link');
                             }}
                             className="btn btn-secondary"
-                            style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                            style={{
+                              padding: '7px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              border: '1.5px solid var(--color-border, #cbd5e1)',
+                              background: 'var(--color-bg-subtle, #f1f5f9)',
+                              color: 'var(--color-navy, #0f172a)',
+                            }}
                           >
-                            📋 Copy Full Invite
+                            <span>📋</span> Copy Full Invite
                           </button>
                           <button
+                            type="button"
                             id={`qr-code-btn-${room._id}`}
                             onClick={() => handleOpenQrModal(room)}
                             className="btn btn-secondary"
-                            style={{ padding: '6px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            style={{
+                              padding: '7px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              border: '1.5px solid var(--color-border, #cbd5e1)',
+                              background: 'var(--color-bg-subtle, #f1f5f9)',
+                              color: 'var(--color-navy, #0f172a)',
+                            }}
                             title="View & Download Room QR Code"
                           >
                             <span>📱</span> QR Code
                           </button>
                         </div>
 
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button
+                            type="button"
+                            id={`view-room-candidates-btn-${room._id}`}
                             onClick={() => handleViewRoomCandidates(room)}
                             className="btn btn-secondary"
-                            style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                            style={{
+                              padding: '7px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              border: '1.5px solid var(--color-border, #cbd5e1)',
+                              background: 'var(--color-bg-subtle, #f1f5f9)',
+                              color: 'var(--color-navy, #0f172a)',
+                            }}
                           >
-                            👥 Candidates
+                            <span>👥</span> Candidates {candidateTotal !== undefined ? `(${candidateTotal})` : ''}
                           </button>
-                          {!isClosed && (
+                          {!isClosed && !isEnded && (
                             <button
+                              type="button"
                               onClick={() => handleDeleteRoom(room._id, room.roomName)}
                               className="btn btn-danger"
-                              style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                              style={{ padding: '7px 12px', fontSize: '0.8rem', fontWeight: 600 }}
                               title="Close Room (FR-3.2)"
                             >
                               Close Room
@@ -1265,7 +1453,7 @@ export default function AdminTestDetail() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Room Capacity (Optional, max 150)</label>
+                    <label className="form-label">Room Capacity (max 150)</label>
                     <input
                       type="number"
                       className="form-control"

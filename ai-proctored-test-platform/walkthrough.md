@@ -1314,3 +1314,50 @@ Executed automated test suite `test_feature012_move_passing_criteria_to_edit_con
 - Test model schema retains `passingCriteria`: **PASS**
 - Summary: **9 / 9 checks passed (100%)**.
 - Client production bundle (`npm run build`): **0 errors in 3.01s**.
+
+---
+
+## 38. UI/UX IMPROVEMENT-013: Improve Visual Appearance of Physical Rooms After Test Completion (LIVE and ENDED States Feel Equally Premium)
+
+### Problem Addressed
+Previously, when an assessment moved to the `ENDED` state, room cards in `AdminTestDetail.jsx` suffered from reduced opacity (`opacity: 0.75`), washed-out text, passive red/gray `CLOSED` badges, and lacked room-level summary metrics. Concluded rooms felt "disabled/abandoned" rather than "successfully completed".
+
+### Key Changes Implemented
+
+1. **Dedicated Concluded Visual Styling (No Dimmed Opacity)**:
+   - Eliminated `opacity: isClosed ? 0.75 : 1`. Room cards in concluded tests retain full `1.0` opacity with rich, elegant styling.
+   - **Light Mode**: High-contrast `#ffffff` / `#f8fafc` background cards, `1.5px solid #cbd5e1` crisp border, and subtle elevation shadow.
+   - **Dark Mode**: `#131b2e` background with `rgba(148, 163, 184, 0.25)` crisp border and dark elevation shadow.
+
+2. **High-Contrast Completion Badge & Indicators**:
+   - Concluded tests render an emerald `✓ COMPLETED` badge (`#059669` text, `rgba(16, 185, 129, 0.12)` background, `1px solid rgba(16, 185, 129, 0.35)`).
+   - Live tests render an active cyan `● ACTIVE` badge with pulsing indicator.
+   - Generic "Test concluded" text replaced with an informative completion state: `✓ Room Completed Successfully`.
+
+3. **Room Summary Information Strip**:
+   - Directly on every room card, a dedicated metrics strip displays:
+     - `👥 X Candidates` (reflecting actual room participation count)
+     - `✅ Y Submitted` (submitted + auto-submitted count)
+     - `⚠️ Z Violations` (total malpractice count recorded for the room)
+   - Real-time and instant: backend controller (`getRooms`) aggregates submissions and malpractice logs in a single query pass.
+
+4. **Action Buttons Maintain Full Visual Prominence**:
+   - `Copy Full Invite`, `QR Code`, and `Candidates (X)` buttons remain visually active, high-contrast, and clickable in ended tests.
+   - Candidates button displays real-time candidate count badge `Candidates (X)` directly on the label.
+
+5. **Theme Consistency & Layout Hierarchy**:
+   - Maintained clean visual hierarchy: `Room Name (Cap: X)` → `COMPLETED Badge` → `Summary Metrics` → `Credentials Box` → `Completion Status` → `Action Buttons`.
+
+### QA Verification Results
+Executed automated test suite `test_uiux_improvement013_physical_rooms_ended_state.js`:
+- Concluded room cards retain full 1.0 opacity: **PASS**
+- High-contrast `✓ COMPLETED` badge for concluded rooms: **PASS**
+- Pulsing `● ACTIVE` badge for live rooms: **PASS**
+- Informative `✓ Room Completed Successfully` status text: **PASS**
+- Room summary metrics strip (`👥 X Candidates • ✅ Y Submitted • ⚠️ Z Violations`): **PASS**
+- Prominent action buttons with active candidate counts: **PASS**
+- Backend `roomController` aggregates submissions and malpractice stats: **PASS**
+- Preserved user label update `Room Capacity (max 150)`: **PASS**
+- Summary: **8 / 8 checks passed (100%)**.
+- Client production bundle (`npm run build`): **0 errors in 3.00s**.
+
