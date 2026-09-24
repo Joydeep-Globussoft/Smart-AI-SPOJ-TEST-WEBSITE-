@@ -1045,66 +1045,21 @@ export default function AdminQuestionBank() {
             ) : !selectedSet ? (
               /* ════════ STATE 1: FOLDER OVERVIEW & QUESTION SETS LIST ════════ */
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
-                {/* Folder Header Card */}
-                <div className="card" style={{ padding: '16px 20px', flexShrink: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: 260 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '1.4rem' }}>📁</span>
-                        <h2 style={{ fontSize: '1.35rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
-                          {selectedFolder.name}
-                        </h2>
-                        <span className="badge" style={{ fontSize: '0.72rem', ...getBadgeStyle(selectedFolder.testType) }}>
-                          {selectedFolder.testType}
-                        </span>
-                        <span className="badge badge-secondary" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
-                          {selectedFolder.setCount ?? (selectedFolder.questionSets?.length || 0)} Question Sets · {selectedFolder.totalQuestions ?? 0} Total Qs
-                        </span>
-                      </div>
-
-                      {/* FEATURE-035: Folder Created Date + Time and Creator */}
-                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                        Created: {formatDateTime(selectedFolder.createdAt)}
-                        {selectedFolder.createdBy?.name ? ` · by ${selectedFolder.createdBy.name}` : ''}
-                      </div>
-
-                      {/* FEATURE-036: Cap description to 2 lines with ellipsis + hover tooltip */}
-                      {selectedFolder.description && (
-                        <p
-                          title={selectedFolder.description}
-                          style={{
-                            color: 'var(--color-text-muted)',
-                            fontSize: '0.85rem',
-                            margin: '6px 0 0 0',
-                            lineHeight: 1.4,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {selectedFolder.description}
-                        </p>
-                      )}
-
-                      {/* Pool Readiness Banner */}
-                      {(selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 1 && (
-                        <div style={{ marginTop: 8 }}>
-                          {selectedFolder.isValidPool ? (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: 'rgba(34, 197, 94, 0.12)', color: '#15803d', padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600 }}>
-                              <span>🟢</span> Valid Pool: All sets contain {selectedFolder.questionCountPerSet} questions each.
-                            </div>
-                          ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', fontWeight: 600 }}>
-                              <span>⚠️</span> Pool Alert: {selectedFolder.poolError || 'Sets have unequal question counts. Cannot be used as round-robin pool until balanced.'}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                {/* Folder Header Card (UI/UX IMPROVEMENT-023) */}
+                <div className="card" style={{ padding: '16px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* TOP ROW: Folder Name & Language Badge (Left) + Actions (Right) */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 240, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.4rem' }}>📁</span>
+                      <h2 style={{ fontSize: '1.35rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0, wordBreak: 'break-word' }}>
+                        {selectedFolder.name}
+                      </h2>
+                      <span className="badge" style={{ fontSize: '0.72rem', ...getBadgeStyle(selectedFolder.testType) }}>
+                        {selectedFolder.testType}
+                      </span>
                     </div>
 
-                    {/* Action buttons inside folder */}
+                    {/* Action buttons inside folder (Fixed top right) */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
                       <button
                         type="button"
@@ -1148,6 +1103,94 @@ export default function AdminQuestionBank() {
                       </button>
                     </div>
                   </div>
+
+                  {/* SECOND ROW: Distributed Metadata Grid (Full Width, balanced left & right) */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', paddingTop: 2 }}>
+                    {/* Left Column / Stats */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span
+                        className="badge badge-secondary"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '4px 10px',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          background: 'var(--color-bg-subtle)',
+                          border: '1px solid var(--color-border)',
+                          color: 'var(--color-navy)',
+                        }}
+                      >
+                        <span>📑</span> {selectedFolder.setCount ?? (selectedFolder.questionSets?.length || 0)} Question Sets
+                      </span>
+                      <span
+                        className="badge badge-secondary"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '4px 10px',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          background: 'var(--color-bg-subtle)',
+                          border: '1px solid var(--color-border)',
+                          color: 'var(--color-navy)',
+                        }}
+                      >
+                        <span>📝</span> {selectedFolder.totalQuestions ?? 0} Total Questions
+                      </span>
+                    </div>
+
+                    {/* Right Column / Creation & Creator info */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.78rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <span>🕒</span> Created: <strong style={{ color: 'var(--color-navy)', fontWeight: 600 }}>{formatDateTime(selectedFolder.createdAt)}</strong>
+                      </span>
+                      {selectedFolder.createdBy?.name && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span>👤</span> by <strong style={{ color: 'var(--color-navy)', fontWeight: 600 }}>{selectedFolder.createdBy.name}</strong>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* THIRD ROW: Folder Description (Full Width with tooltip & 2-line clamp) */}
+                  {selectedFolder.description && (
+                    <p
+                      title={selectedFolder.description}
+                      style={{
+                        color: 'var(--color-text-muted)',
+                        fontSize: '0.84rem',
+                        margin: 0,
+                        lineHeight: 1.45,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {selectedFolder.description}
+                    </p>
+                  )}
+
+                  {/* FOURTH ROW: Valid Pool Banner (Prominent Standalone Full Width) */}
+                  {(selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 1 && (
+                    <div>
+                      {selectedFolder.isValidPool ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', background: 'rgba(34, 197, 94, 0.12)', color: '#15803d', padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600, width: '100%', boxSizing: 'border-box' }}>
+                          <span style={{ fontSize: '0.95rem' }}>🟢</span>
+                          <span>Valid Pool: All sets contain {selectedFolder.questionCountPerSet} questions each.</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', background: '#fee2e2', color: '#991b1b', padding: '6px 12px', borderRadius: 6, border: '1px solid #fecaca', fontWeight: 600, width: '100%', boxSizing: 'border-box' }}>
+                          <span style={{ fontSize: '0.95rem' }}>⚠️</span>
+                          <span>Pool Alert: {selectedFolder.poolError || 'Sets have unequal question counts. Cannot be used as round-robin pool until balanced.'}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Question Sets Roster / Cards Header (Fixed) */}
