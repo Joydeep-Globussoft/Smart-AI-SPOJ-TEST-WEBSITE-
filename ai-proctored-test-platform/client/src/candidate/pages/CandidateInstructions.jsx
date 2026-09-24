@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import logoLight from '../../assets/logo-light.png';
 import api from '../../services/apiClient';
 import LoadingDots from '../../shared/LoadingDots';
 import { setScreenStream, setActiveMediaStream, stopActiveMediaStream } from '../../services/mediaStreamManager';
@@ -368,7 +369,7 @@ export default function CandidateInstructions() {
       {/* Top Banner Header */}
       <div style={{ background: '#1A2B3C', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <img
-          src={globussoftLogo}
+          src={logoLight}
           alt="Globussoft Technology"
           style={{ height: 38, width: 'auto', objectFit: 'contain', display: 'block' }}
         />
