@@ -58,8 +58,8 @@ async function runTests() {
 
   assert(
     roomControllerSrc.includes("} else if (timers.startTime) {") &&
-    roomControllerSrc.includes("status = 'IN_PROGRESS';") &&
-    roomControllerSrc.includes("colorStatus = 'YELLOW';"),
+    roomControllerSrc.includes(".status = 'IN_PROGRESS';") &&
+    roomControllerSrc.includes(".colorStatus = 'YELLOW';"),
     'roomController: getLiveCandidates strictly gates IN_PROGRESS on timers.startTime'
   );
 

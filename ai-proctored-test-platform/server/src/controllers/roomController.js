@@ -289,6 +289,7 @@ const resolveInviteToken = async (req, res, next) => {
     res.json({
       valid: true,
       roomId: room._id,
+      testId: test._id,
       roomName: room.roomName,
       testTitle: test.title,
       testType: test.testType,

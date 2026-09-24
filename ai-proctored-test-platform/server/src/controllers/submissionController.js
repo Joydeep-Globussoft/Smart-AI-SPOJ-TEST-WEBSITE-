@@ -152,10 +152,24 @@ const joinRoom = async (req, res, next) => {
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
     if (test.status === 'ENDED') {
-      return res.status(403).json({ error: 'This test is no longer active' });
+      return res.status(403).json({
+        error: 'This test is no longer active',
+        code: 'TEST_ENDED',
+        roomId: room._id,
+        roomName: room.roomName,
+        testId: test._id,
+        testTitle: test.title,
+      });
     }
     if (test.status !== 'LIVE') {
-      return res.status(403).json({ error: 'This test has not started yet' });
+      return res.status(403).json({
+        error: 'This test has not started yet',
+        code: 'TEST_NOT_STARTED',
+        roomId: room._id,
+        roomName: room.roomName,
+        testId: test._id,
+        testTitle: test.title,
+      });
     }
 
     const candidateId = req.user.id;

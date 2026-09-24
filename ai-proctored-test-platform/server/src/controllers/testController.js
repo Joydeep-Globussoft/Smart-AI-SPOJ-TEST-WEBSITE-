@@ -696,11 +696,13 @@ const startTest = async (req, res, next) => {
       { $set: { passwordValidUntil, status: 'ACTIVE' } }
     );
 
-    // Broadcast to all admins watching this test
+    // Broadcast to all admins and waiting candidates
     const io = req.app.get('io');
     if (io) {
       io.to(`test:${test._id}:admin`).emit('test:started', { testId: test._id, status: 'LIVE' });
       io.to(`test:${test._id}:admin`).emit('room:updated', { testId: test._id, action: 'PASSWORD_WINDOW_STARTED' });
+      io.to(`test:${test._id}`).emit('test:started', { testId: test._id, status: 'LIVE' });
+      io.emit('test:started', { testId: test._id, status: 'LIVE' });
     }
 
     res.json({ test });

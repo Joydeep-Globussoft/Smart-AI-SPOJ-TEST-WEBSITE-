@@ -115,6 +115,9 @@ export const offCandidateDisqualified = (cb) => { socket?.off('candidate:disqual
 export const onCandidateSubmitted = (cb) => { socket?.on('candidate:submitted', cb); };
 export const offCandidateSubmitted = (cb) => { socket?.off('candidate:submitted', cb); };
 
+export const onTestStarted = (cb) => { socket?.on('test:started', cb); };
+export const offTestStarted = (cb) => { socket?.off('test:started', cb); };
+
 export const onTestEnded = (cb) => { socket?.on('test:ended', cb); };
 export const offTestEnded = (cb) => { socket?.off('test:ended', cb); };
 

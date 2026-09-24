@@ -20,21 +20,50 @@ export default function CandidateLogin() {
   const [error, setError] = useState('');
   const [inviteInfo, setInviteInfo] = useState(null);
 
-  // BUG-80 / BUG-81: On INITIAL mount only, if opened via invite link, purge stale prior candidate session
+  // BUG-80 / BUG-81 / BUG-97: On INITIAL mount only, handle invite link
   useEffect(() => {
     if (!initialMountRef.current) {
       initialMountRef.current = true;
       if (inviteToken) {
+        sessionStorage.setItem('pendingInviteToken', inviteToken);
+        localStorage.setItem('lastInviteToken', inviteToken);
+
+        // BUG-97: If candidate is already authenticated with valid session, attempt immediate auto-join
+        if (user && user.type === 'candidate' && localStorage.getItem('token')) {
+          api.joinRoom({ inviteToken })
+            .then(({ data: joinData }) => {
+              sessionStorage.removeItem('pendingInviteToken');
+              sessionStorage.setItem('joinData', JSON.stringify(joinData));
+              navigate('/candidate/instructions', { replace: true });
+            })
+            .catch((joinErr) => {
+              console.warn('[Login existing session auto-join]', joinErr);
+              const joinErrMsg = joinErr.response?.data?.error || 'Failed to auto-join test room';
+              navigate(`/candidate/join?invite=${inviteToken}`, {
+                state: {
+                  error: joinErrMsg,
+                  code: joinErr.response?.data?.code || (joinErrMsg.includes('not started') ? 'TEST_NOT_STARTED' : undefined),
+                  roomId: joinErr.response?.data?.roomId,
+                  roomName: joinErr.response?.data?.roomName,
+                  testTitle: joinErr.response?.data?.testTitle,
+                  inviteToken,
+                },
+                replace: true,
+              });
+            });
+          return;
+        }
+
+        // Fresh / unauthenticated candidate: purge stale session and load invite metadata
         if (localStorage.getItem('token') || user) {
           logout();
         }
-        sessionStorage.setItem('pendingInviteToken', inviteToken);
         api.getInviteInfo(inviteToken)
           .then(({ data }) => setInviteInfo(data))
           .catch(() => {});
       }
     }
-  }, [inviteToken, logout]);
+  }, [inviteToken, user, logout, navigate]);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -47,12 +76,12 @@ export default function CandidateLogin() {
     try {
       const { data } = await api.candidateLogin({ email: form.email });
       const candidate = { ...data.candidate, type: 'candidate' };
-      const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken');
+      const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken') || localStorage.getItem('lastInviteToken');
 
       login(candidate, data.token, data.refreshToken);
       toast.success(`Welcome back, ${data.candidate.name}!`);
 
-      // FEATURE-015 / BUG-81: Auto-join room via opaque invite token and route straight to instructions
+      // FEATURE-015 / BUG-81 / BUG-97: Auto-join room via opaque invite token and route straight to instructions
       if (activeInvite) {
         try {
           const { data: joinData } = await api.joinRoom({ inviteToken: activeInvite });
@@ -63,12 +92,15 @@ export default function CandidateLogin() {
         } catch (joinErr) {
           console.warn('[Login auto-join error]', joinErr);
           const joinErrMsg = joinErr.response?.data?.error || 'Failed to auto-join test room';
-          toast.error(joinErrMsg);
-          navigate('/candidate/join', {
+          toast(joinErrMsg, { icon: '⏳' });
+          navigate(`/candidate/join?invite=${activeInvite}`, {
             state: {
               error: joinErrMsg,
+              code: joinErr.response?.data?.code || (joinErrMsg.includes('not started') ? 'TEST_NOT_STARTED' : undefined),
               roomId: joinErr.response?.data?.roomId,
               roomName: joinErr.response?.data?.roomName,
+              testTitle: joinErr.response?.data?.testTitle || inviteInfo?.testTitle,
+              inviteToken: activeInvite,
             },
             replace: true,
           });
