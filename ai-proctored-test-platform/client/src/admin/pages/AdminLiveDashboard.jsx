@@ -389,9 +389,30 @@ const formatInspectTimestamp = (dateInput) => {
 
 const getInspectRoomJoinedText = (candidate) => {
   if (!candidate) return 'Unavailable';
-  const raw = candidate.roomJoinedAt || candidate.joinedAt || candidate.candidateJoinedAt;
-  if (!raw) return 'Unavailable';
-  return formatInspectTimestamp(raw);
+  const rawJoin = candidate.roomJoinedAt || candidate.joinedAt || candidate.candidateJoinedAt;
+  const rawCreatedAt = candidate.createdAt;
+  const rawStart = candidate.testStartedAt || candidate.candidateStartTime || candidate.startedAt;
+
+  let resolvedJoin = rawJoin || rawCreatedAt || null;
+  if (rawJoin && rawCreatedAt) {
+    const dJoin = new Date(rawJoin);
+    const dCreated = new Date(rawCreatedAt);
+    if (!isNaN(dJoin.getTime()) && !isNaN(dCreated.getTime())) {
+      resolvedJoin = dJoin.getTime() <= dCreated.getTime() ? rawJoin : rawCreatedAt;
+    }
+  }
+
+  // BUG-022 Chronological validation: Room Joined must not be after Test Start
+  if (resolvedJoin && rawStart) {
+    const dJoin = new Date(resolvedJoin);
+    const dStart = new Date(rawStart);
+    if (!isNaN(dJoin.getTime()) && !isNaN(dStart.getTime()) && dJoin.getTime() > dStart.getTime()) {
+      resolvedJoin = (rawCreatedAt && new Date(rawCreatedAt).getTime() <= dStart.getTime()) ? rawCreatedAt : rawStart;
+    }
+  }
+
+  if (!resolvedJoin) return 'Unavailable';
+  return formatInspectTimestamp(resolvedJoin);
 };
 
 const getInspectTestStartText = (candidate) => {

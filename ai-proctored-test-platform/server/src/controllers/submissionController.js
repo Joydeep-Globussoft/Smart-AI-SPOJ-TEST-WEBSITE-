@@ -232,6 +232,7 @@ const joinRoom = async (req, res, next) => {
           { new: true }
         );
 
+        const candidateJoinTime = candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date();
         if (updatedRoom) {
           joinIndex = updatedRoom.candidateJoinCounter;
           const setIndex = (joinIndex - 1) % poolSets.length;
@@ -246,7 +247,7 @@ const joinRoom = async (req, res, next) => {
               $push: {
                 joinedCandidates: {
                   candidateId,
-                  joinedAt: new Date(),
+                  joinedAt: candidateJoinTime,
                   assignedQuestionSetId,
                   joinIndex,
                 },
@@ -264,6 +265,7 @@ const joinRoom = async (req, res, next) => {
         }
       } else {
         // Single set mode
+        const candidateJoinTime = candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date();
         assignedQuestionSetId = test.questionSetId?._id || test.questionSetId;
         await Room.findOneAndUpdate(
           {
@@ -274,7 +276,7 @@ const joinRoom = async (req, res, next) => {
             $push: {
               joinedCandidates: {
                 candidateId,
-                joinedAt: new Date(),
+                joinedAt: candidateJoinTime,
                 assignedQuestionSetId,
                 joinIndex: 1,
               },
@@ -490,6 +492,7 @@ const startAttempt = async (req, res, next) => {
 
     if (targetRoomId) {
       // BUG-019: Prevent duplicate joinedCandidates entries on test attempt starts/reconnects
+      const candidateJoinTime = candidate?.createdAt && new Date(candidate.createdAt) <= new Date(now) ? candidate.createdAt : now;
       await Room.findOneAndUpdate(
         {
           _id: targetRoomId,
@@ -499,7 +502,7 @@ const startAttempt = async (req, res, next) => {
           $push: {
             joinedCandidates: {
               candidateId,
-              joinedAt: now,
+              joinedAt: candidateJoinTime,
               assignedQuestionSetId,
               joinIndex: 1,
             },

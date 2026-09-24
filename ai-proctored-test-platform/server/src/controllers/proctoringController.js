@@ -405,9 +405,24 @@ const getCandidateMalpracticeLogs = async (req, res, next) => {
 
     const hasMore = !isAll && (skip + logs.length < totalCount);
 
-    const roomJoinedAt = roomDoc?.joinedCandidates?.[0]?.joinedAt || candDoc?.createdAt || null;
-    const testStartedAt = subDoc?.candidateStartTime || null;
-    const testEndedAt = subDoc?.submittedAt || null;
+    const { resolveCandidateTimelines } = require('../utils/timelineHelper');
+    const rawJoin = roomDoc?.joinedCandidates?.[0]?.joinedAt || candDoc?.createdAt || null;
+    const rawStart = subDoc?.candidateStartTime || null;
+    const rawEnd = subDoc?.submittedAt || null;
+
+    const timelines = resolveCandidateTimelines({
+      roomJoinedAtRaw: rawJoin,
+      candidateCreatedAt: candDoc?.createdAt,
+      testStartedAtRaw: rawStart,
+      testEndedAtRaw: rawEnd,
+      candidateId,
+      testId,
+      roomId: roomDoc?._id,
+    });
+
+    const roomJoinedAt = timelines.roomJoinedAt;
+    const testStartedAt = timelines.testStartedAt;
+    const testEndedAt = timelines.testEndedAt;
 
     res.json({
       malpracticeLogs: logs,
@@ -421,10 +436,10 @@ const getCandidateMalpracticeLogs = async (req, res, next) => {
       testEndedAt,
       sessionTimestamps: {
         candidateStartTime: subDoc?.candidateStartTime || null,
-        testStartedAt: subDoc?.candidateStartTime || null,
+        testStartedAt: testStartedAt || subDoc?.candidateStartTime || null,
         candidateEndTime: subDoc?.candidateEndTime || null,
         submittedAt: subDoc?.submittedAt || null,
-        testEndedAt: subDoc?.submittedAt || null,
+        testEndedAt: testEndedAt || subDoc?.submittedAt || null,
         roomJoinedAt,
         status: subDoc?.status || (candDoc?.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED'),
         isDisqualified: Boolean(candDoc?.isDisqualified),

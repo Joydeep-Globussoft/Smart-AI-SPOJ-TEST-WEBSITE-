@@ -525,7 +525,34 @@ const getRoomCandidates = async (req, res, next) => {
 
     console.log(`[BUG-019 Diagnostics] getRoomCandidates for Room "${room.roomName}" (${roomId}) | Test ${room.testId} -> Total candidates: ${Object.keys(candidateMap).length} (IDs: ${Object.keys(candidateMap).join(', ')})`);
 
-    res.json({ candidates: Object.values(candidateMap), room });
+    // BUG-022: Canonicalize and chronologically validate candidate timelines across all rooms
+    const { resolveCandidateTimelines } = require('../utils/timelineHelper');
+    const finalCandidates = Object.values(candidateMap).map((c) => {
+      const cid = c.candidateId || c._id;
+      const joinedEntry = roomJoinedMap[cid];
+      const timelines = resolveCandidateTimelines({
+        roomJoinedAtRaw: c.roomJoinedAt || joinedEntry?.joinedAt,
+        candidateCreatedAt: c.createdAt || (typeof joinedEntry?.candidateId === 'object' ? joinedEntry?.candidateId?.createdAt : null),
+        testStartedAtRaw: c.testStartedAt || c.candidateStartTime || c.startedAt,
+        testEndedAtRaw: c.testEndedAt || c.submittedAt,
+        candidateId: cid,
+        testId: room.testId,
+        roomId: room._id,
+      });
+
+      return {
+        ...c,
+        roomJoinedAt: timelines.roomJoinedAt,
+        joinedAt: timelines.roomJoinedAt,
+        testStartedAt: timelines.testStartedAt,
+        candidateStartTime: timelines.testStartedAt,
+        startedAt: timelines.testStartedAt,
+        testEndedAt: timelines.testEndedAt,
+        submittedAt: timelines.testEndedAt,
+      };
+    });
+
+    res.json({ candidates: finalCandidates, room });
   } catch (err) {
     next(err);
   }
@@ -822,6 +849,31 @@ const getLiveCandidates = async (req, res, next) => {
           }
         }
       }
+    }
+
+    // BUG-022: Canonicalize and chronologically validate timelines for all live candidate records
+    const { resolveCandidateTimelines } = require('../utils/timelineHelper');
+    for (const [cid, c] of Object.entries(candidateMap)) {
+      const timelines = resolveCandidateTimelines({
+        roomJoinedAtRaw: c.roomJoinedAt || c.joinedAt,
+        candidateCreatedAt: c.createdAt,
+        testStartedAtRaw: c.testStartedAt || c.candidateStartTime || c.startedAt,
+        testEndedAtRaw: c.testEndedAt || c.submittedAt,
+        candidateId: cid,
+        testId,
+        roomId: c.roomId,
+      });
+
+      candidateMap[cid] = {
+        ...c,
+        roomJoinedAt: timelines.roomJoinedAt,
+        joinedAt: timelines.roomJoinedAt,
+        testStartedAt: timelines.testStartedAt,
+        candidateStartTime: timelines.testStartedAt,
+        startedAt: timelines.testStartedAt,
+        testEndedAt: timelines.testEndedAt,
+        submittedAt: timelines.testEndedAt,
+      };
     }
 
     // ASSUMPTION: If no candidates are currently in progress, tentativeTime is null ("—" or "Not started" placeholder)
