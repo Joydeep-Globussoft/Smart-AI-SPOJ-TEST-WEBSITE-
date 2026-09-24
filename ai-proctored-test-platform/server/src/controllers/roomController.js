@@ -406,8 +406,10 @@ const getRoomCandidates = async (req, res, next) => {
           status, // 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED_TIME_UP' | 'DISQUALIFIED'
           questionsCompleted: sub.questionsCompleted || (sub.status === 'SUBMITTED' ? 1 : 0),
           submittedAt: sub.submittedAt || null,
+          testEndedAt: sub.submittedAt || null,
           startedAt: sub.candidateStartTime || null,
           candidateStartTime: sub.candidateStartTime || null,
+          testStartedAt: sub.candidateStartTime || null,
           candidateEndTime: sub.candidateEndTime,
           roomJoinedAt,
           joinedAt: roomJoinedAt,
@@ -423,9 +425,11 @@ const getRoomCandidates = async (req, res, next) => {
         if (sub.candidateStartTime && (!candidateMap[cid].startedAt || new Date(sub.candidateStartTime) < new Date(candidateMap[cid].startedAt))) {
           candidateMap[cid].startedAt = sub.candidateStartTime;
           candidateMap[cid].candidateStartTime = sub.candidateStartTime;
+          candidateMap[cid].testStartedAt = sub.candidateStartTime;
         }
         if (sub.submittedAt && (!candidateMap[cid].submittedAt || new Date(sub.submittedAt) > new Date(candidateMap[cid].submittedAt))) {
           candidateMap[cid].submittedAt = sub.submittedAt;
+          candidateMap[cid].testEndedAt = sub.submittedAt;
         }
         if (roomJoinedAt && !candidateMap[cid].roomJoinedAt) {
           candidateMap[cid].roomJoinedAt = roomJoinedAt;
@@ -468,8 +472,10 @@ const getRoomCandidates = async (req, res, next) => {
             status: isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
             questionsCompleted: 0,
             submittedAt: null,
+            testEndedAt: null,
             startedAt: null,
             candidateStartTime: null,
+            testStartedAt: null,
             candidateEndTime: null,
             roomJoinedAt,
             joinedAt: roomJoinedAt,
@@ -502,8 +508,10 @@ const getRoomCandidates = async (req, res, next) => {
           status: isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED',
           questionsCompleted: 0,
           submittedAt: null,
+          testEndedAt: null,
           startedAt: null,
           candidateStartTime: null,
+          testStartedAt: null,
           candidateEndTime: null,
           roomJoinedAt,
           joinedAt: roomJoinedAt,
@@ -669,6 +677,7 @@ const getLiveCandidates = async (req, res, next) => {
           colorStatus = 'YELLOW';
         }
 
+        const roomJoinedAt = j.joinedAt || candidate?.createdAt || null;
         candidateMap[cid] = {
           candidateId: cid,
           name: candidate?.name || 'Candidate',
@@ -678,8 +687,12 @@ const getLiveCandidates = async (req, res, next) => {
           status,
           timeRemaining,
           candidateStartTime: timers.startTime || null,
+          testStartedAt: timers.startTime || null,
           candidateEndTime: timers.endTime || null,
           submittedAt: timers.submittedAt || null,
+          testEndedAt: timers.submittedAt || null,
+          roomJoinedAt,
+          joinedAt: roomJoinedAt,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
@@ -737,8 +750,12 @@ const getLiveCandidates = async (req, res, next) => {
           status,
           timeRemaining,
           candidateStartTime: timers.startTime || sub.candidateStartTime || null,
+          testStartedAt: timers.startTime || sub.candidateStartTime || null,
           candidateEndTime: timers.endTime || sub.candidateEndTime || null,
           submittedAt: timers.submittedAt || sub.submittedAt || null,
+          testEndedAt: timers.submittedAt || sub.submittedAt || null,
+          roomJoinedAt: candidate.createdAt || null,
+          joinedAt: candidate.createdAt || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
@@ -750,13 +767,17 @@ const getLiveCandidates = async (req, res, next) => {
         };
       } else {
         // Guarantee timers and status are strictly updated with authoritative submission data
-        if (timers.startTime) candidateMap[cid].candidateStartTime = timers.startTime;
+        if (timers.startTime) {
+          candidateMap[cid].candidateStartTime = timers.startTime;
+          candidateMap[cid].testStartedAt = timers.startTime;
+        }
         if (timers.endTime) {
           candidateMap[cid].candidateEndTime = timers.endTime;
           candidateMap[cid].timeRemaining = timeRemaining;
         }
         if (timers.submittedAt || sub.submittedAt) {
           candidateMap[cid].submittedAt = timers.submittedAt || sub.submittedAt;
+          candidateMap[cid].testEndedAt = timers.submittedAt || sub.submittedAt;
         }
         if (candidate.isDisqualified) {
           candidateMap[cid].status = 'DISQUALIFIED';

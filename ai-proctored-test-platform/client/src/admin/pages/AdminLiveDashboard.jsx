@@ -379,6 +379,70 @@ const getCandidateTimeSpent = (candidate, currentNow, isTestEnded) => {
   return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
 };
 
+// ── FEATURE-021: Candidate Inspection Timeline Helpers ───────────────────────
+const formatInspectTimestamp = (dateInput) => {
+  if (!dateInput) return 'Unavailable';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return 'Unavailable';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+};
+
+const getInspectRoomJoinedText = (candidate) => {
+  if (!candidate) return 'Unavailable';
+  const raw = candidate.roomJoinedAt || candidate.joinedAt || candidate.candidateJoinedAt;
+  if (!raw) return 'Unavailable';
+  return formatInspectTimestamp(raw);
+};
+
+const getInspectTestStartText = (candidate) => {
+  if (!candidate) return 'Unavailable';
+  const raw = candidate.testStartedAt || candidate.candidateStartTime || candidate.startedAt;
+  const isStarted = Boolean(raw);
+  if (candidate.status === 'NOT_STARTED' || (!isStarted && candidate.status !== 'SUBMITTED' && candidate.status !== 'IN_PROGRESS')) {
+    return 'Not Started';
+  }
+  if (!raw) return 'Unavailable';
+  return formatInspectTimestamp(raw);
+};
+
+const getInspectTestEndText = (candidate) => {
+  if (!candidate) return 'Unavailable';
+  const startRaw = candidate.testStartedAt || candidate.candidateStartTime || candidate.startedAt;
+  const isStarted = Boolean(startRaw);
+
+  if (candidate.status === 'NOT_STARTED' || (!isStarted && candidate.status !== 'SUBMITTED' && candidate.status !== 'IN_PROGRESS')) {
+    return '—';
+  }
+
+  const isSubmitted =
+    candidate.status === 'SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED_TIME_UP' ||
+    candidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+    Boolean(candidate.submittedAt) ||
+    candidate.colorStatus === 'GREEN';
+
+  const isDisqualified = candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || candidate.colorStatus === 'RED';
+
+  if (isSubmitted || candidate.submittedAt || candidate.testEndedAt) {
+    const raw = candidate.testEndedAt || candidate.submittedAt || candidate.candidateEndTime;
+    if (!raw) return 'Unavailable';
+    return formatInspectTimestamp(raw);
+  }
+
+  if (isDisqualified) {
+    const raw = candidate.testEndedAt || candidate.submittedAt || candidate.disqualifiedAt || candidate.candidateEndTime || candidate.lastMalpracticeAt;
+    if (!raw) return 'Unavailable';
+    return formatInspectTimestamp(raw);
+  }
+
+  if (candidate.status === 'IN_PROGRESS' || isStarted) {
+    return 'In Progress';
+  }
+
+  return '—';
+};
+
 // ── Candidate Status Badge Renderer for Proctoring Roster (BUG-018) ───────────
 const renderCandidateStatusBadge = (candidate, isCandidateInProgress, colorStatus, isTestEnded) => {
   let statusKey = 'NOT_STARTED';
@@ -954,16 +1018,20 @@ export default function AdminLiveDashboard() {
       dismissedCandidateIdRef.current = null;
       deepLinkHandledRef.current = String(cid);
     }
-    const isStarted = Boolean(cand.candidateStartTime || cand.startedAt);
-    const isSubmitted = cand.status === 'SUBMITTED' || cand.status === 'AUTO_SUBMITTED' || cand.status === 'AUTO_SUBMITTED_TIME_UP' || Boolean(cand.submittedAt) || cand.colorStatus === 'GREEN';
+    const isStarted = Boolean(cand.candidateStartTime || cand.startedAt || cand.testStartedAt);
+    const isSubmitted = cand.status === 'SUBMITTED' || cand.status === 'AUTO_SUBMITTED' || cand.status === 'AUTO_SUBMITTED_TIME_UP' || Boolean(cand.submittedAt) || Boolean(cand.testEndedAt) || cand.colorStatus === 'GREEN';
     const isDisqualified = cand.status === 'DISQUALIFIED' || cand.isDisqualified || cand.colorStatus === 'RED';
     const status = isDisqualified ? 'DISQUALIFIED' : isSubmitted ? (cand.status || 'SUBMITTED') : isStarted ? (cand.status || 'IN_PROGRESS') : 'NOT_STARTED';
     const normalized = {
       ...cand,
       candidateId: cid,
       status,
-      candidateStartTime: isStarted ? (cand.candidateStartTime || cand.startedAt) : null,
-      candidateEndTime: isStarted ? cand.candidateEndTime : null,
+      candidateStartTime: isStarted ? (cand.candidateStartTime || cand.startedAt || cand.testStartedAt) : null,
+      testStartedAt: isStarted ? (cand.testStartedAt || cand.candidateStartTime || cand.startedAt) : null,
+      candidateEndTime: isStarted ? (cand.candidateEndTime || cand.testEndedAt) : null,
+      submittedAt: cand.submittedAt || cand.testEndedAt || null,
+      testEndedAt: cand.testEndedAt || cand.submittedAt || null,
+      roomJoinedAt: cand.roomJoinedAt || cand.joinedAt || cand.candidateJoinedAt || null,
     };
     setInspectCandidate(normalized);
     if (cid && !routeCandidateId) {
@@ -1095,21 +1163,28 @@ export default function AdminLiveDashboard() {
         setCandidateLogs(res.data.malpracticeLogs || []);
         setHasMoreLogs(Boolean(res.data.hasMore));
         setTotalLogsCount(res.data.totalCount || res.data.malpracticeLogs?.length || 0);
-        if (res.data.sessionTimestamps) {
+        if (res.data.sessionTimestamps || res.data.roomJoinedAt || res.data.testStartedAt || res.data.testEndedAt) {
+          const session = res.data.sessionTimestamps || {};
           setCandidatesMap((prev) => {
             const cur = prev[targetInspectCandidateId] || {};
-            const startTime = res.data.sessionTimestamps.candidateStartTime || cur.candidateStartTime || null;
+            const startTime = session.candidateStartTime || res.data.testStartedAt || session.testStartedAt || cur.candidateStartTime || null;
             const hasStarted = Boolean(startTime);
-            const status = res.data.sessionTimestamps.status || (hasStarted ? (cur.status || 'IN_PROGRESS') : (cur.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED'));
+            const status = session.status || (hasStarted ? (cur.status || 'IN_PROGRESS') : (cur.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED'));
+            const roomJoinedAt = res.data.roomJoinedAt || session.roomJoinedAt || cur.roomJoinedAt || cur.joinedAt || null;
+            const testStartedAt = res.data.testStartedAt || session.testStartedAt || startTime;
+            const testEndedAt = res.data.testEndedAt || session.testEndedAt || session.submittedAt || cur.submittedAt || null;
             return {
               ...prev,
               [targetInspectCandidateId]: {
                 ...cur,
-                ...res.data.sessionTimestamps,
+                ...session,
                 status,
                 candidateStartTime: startTime,
-                candidateEndTime: hasStarted ? (res.data.sessionTimestamps.candidateEndTime || cur.candidateEndTime || null) : null,
-                submittedAt: res.data.sessionTimestamps.submittedAt || cur.submittedAt || null,
+                testStartedAt,
+                candidateEndTime: hasStarted ? (session.candidateEndTime || cur.candidateEndTime || null) : null,
+                submittedAt: testEndedAt || session.submittedAt || cur.submittedAt || null,
+                testEndedAt,
+                roomJoinedAt,
               },
             };
           });
@@ -2854,8 +2929,21 @@ export default function AdminLiveDashboard() {
                   })()}
                 </div>
 
-                {/* Key Metrics Grid */}
-                <div style={{ background: 'var(--color-bg-card)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, fontSize: '0.85rem' }}>
+                {/* Key Metrics Grid - 2 Rows (FEATURE-021) */}
+                <div
+                  id="inspect-candidate-key-metrics-grid"
+                  style={{
+                    background: 'var(--color-bg-card)',
+                    padding: '14px 16px',
+                    borderRadius: 8,
+                    border: '1px solid var(--color-border)',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '12px 16px',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  {/* Row 1 - Existing Metrics (Preserved Unchanged) */}
                   <div>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Questions Solved:</span>
                     <strong style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
@@ -2889,6 +2977,32 @@ export default function AdminLiveDashboard() {
                         </>
                       );
                     })()}
+                  </div>
+
+                  {/* Row 2 - Timeline Metrics (FEATURE-021) */}
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
+                    <span id="inspect-candidate-room-joined-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                      Room Joined:
+                    </span>
+                    <strong id="inspect-candidate-room-joined-val" style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.05rem', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                      {getInspectRoomJoinedText(activeInspectCandidate)}
+                    </strong>
+                  </div>
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
+                    <span id="inspect-candidate-test-start-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                      Test Start:
+                    </span>
+                    <strong id="inspect-candidate-test-start-val" style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.05rem', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                      {getInspectTestStartText(activeInspectCandidate)}
+                    </strong>
+                  </div>
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
+                    <span id="inspect-candidate-test-end-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                      Test End:
+                    </span>
+                    <strong id="inspect-candidate-test-end-val" style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.05rem', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                      {getInspectTestEndText(activeInspectCandidate)}
+                    </strong>
                   </div>
                 </div>
 

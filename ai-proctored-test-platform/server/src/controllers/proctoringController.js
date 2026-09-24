@@ -395,14 +395,19 @@ const getCandidateMalpracticeLogs = async (req, res, next) => {
       query = query.skip(skip).limit(limit);
     }
 
-    const [totalCount, logs, subDoc, candDoc] = await Promise.all([
+    const [totalCount, logs, subDoc, candDoc, roomDoc] = await Promise.all([
       MalpracticeLog.countDocuments(filter),
       query,
       Submission.findOne({ testId, candidateId }, { candidateStartTime: 1, candidateEndTime: 1, submittedAt: 1, status: 1 }).sort({ submittedAt: -1, candidateStartTime: 1 }),
       Candidate.findById(candidateId, 'isDisqualified createdAt'),
+      Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId }, { 'joinedCandidates.$': 1 }),
     ]);
 
     const hasMore = !isAll && (skip + logs.length < totalCount);
+
+    const roomJoinedAt = roomDoc?.joinedCandidates?.[0]?.joinedAt || candDoc?.createdAt || null;
+    const testStartedAt = subDoc?.candidateStartTime || null;
+    const testEndedAt = subDoc?.submittedAt || null;
 
     res.json({
       malpracticeLogs: logs,
@@ -411,10 +416,16 @@ const getCandidateMalpracticeLogs = async (req, res, next) => {
       limit: isAll ? totalCount : limit,
       totalPages: isAll ? 1 : (limit > 0 ? Math.ceil(totalCount / limit) : 1),
       hasMore,
+      roomJoinedAt,
+      testStartedAt,
+      testEndedAt,
       sessionTimestamps: {
         candidateStartTime: subDoc?.candidateStartTime || null,
+        testStartedAt: subDoc?.candidateStartTime || null,
         candidateEndTime: subDoc?.candidateEndTime || null,
         submittedAt: subDoc?.submittedAt || null,
+        testEndedAt: subDoc?.submittedAt || null,
+        roomJoinedAt,
         status: subDoc?.status || (candDoc?.isDisqualified ? 'DISQUALIFIED' : 'NOT_STARTED'),
         isDisqualified: Boolean(candDoc?.isDisqualified),
       },
