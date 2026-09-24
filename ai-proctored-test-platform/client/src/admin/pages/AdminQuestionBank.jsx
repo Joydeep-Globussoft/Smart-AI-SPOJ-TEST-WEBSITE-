@@ -21,6 +21,14 @@ const DEFAULT_FILTERS = {
   set: '',
 };
 
+// ── Helper to format Date + Time (FEATURE-035) ──
+export const formatDateTime = (dateVal) => {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  return `${d.toLocaleDateString()}, ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+};
+
 // ── Helper to recursively extract all File objects from Drag-and-Drop DataTransfer (BUG-77) ──
 export const extractFilesFromDataTransfer = async (dataTransfer) => {
   const files = [];
@@ -283,11 +291,17 @@ export default function AdminQuestionBank() {
     }
   }, [selectedSet, fetchQuestions]);
 
+  // FEATURE-036: Ref for sets list container to reset scroll position on folder selection
+  const setListContainerRef = useRef(null);
+
   // ── Folder Selection Handler (Switches to STATE 1: Folder Sets List) ──
   const handleSelectFolder = (folder) => {
     setSelectedFolder(folder);
     setSelectedSet(null); // Reset to STATE 1 (Folder Overview & Sets List)
     setFilters((prev) => ({ ...prev, folder: folder._id, set: '' }));
+    if (setListContainerRef.current) {
+      setListContainerRef.current.scrollTop = 0;
+    }
   };
 
   // ── Question Set Selection Handler (Switches to STATE 2) ──
@@ -300,6 +314,9 @@ export default function AdminQuestionBank() {
   const handleBackToSets = () => {
     setSelectedSet(null);
     updateFilter('set', '');
+    if (setListContainerRef.current) {
+      setListContainerRef.current.scrollTop = 0;
+    }
   };
 
   // ── Filtered Folders ──
@@ -822,11 +839,11 @@ export default function AdminQuestionBank() {
   };
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <AdminNavbar />
-      <main className="main-content" style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 20px' }}>
-        {/* Page Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+      <main className="main-content" style={{ maxWidth: 1440, width: '100%', margin: '0 auto', padding: '16px 20px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
+        {/* Page Header (Fixed) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 16, flexShrink: 0 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h1 style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
@@ -874,11 +891,11 @@ export default function AdminQuestionBank() {
         </div>
 
         {/* 2-Panel Layout: Folders Sidebar (Left) + Dynamic Content Panel (Right) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'stretch', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
           {/* ════════ LEFT PANEL: FOLDERS SIDEBAR ════════ */}
-          <div className="card" style={{ padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1.1rem' }}>📂</span>
                 <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
@@ -897,7 +914,7 @@ export default function AdminQuestionBank() {
             </div>
 
             {/* Folder Filters */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12, flexShrink: 0 }}>
               <input
                 type="text"
                 id="search-folder-input"
@@ -921,9 +938,9 @@ export default function AdminQuestionBank() {
               </select>
             </div>
 
-            {/* Folders List Container */}
+            {/* Folders List Container (scrolls independently) */}
             {loadingFolders ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24, flex: 1 }}>
                 <LoadingDots size="md" />
               </div>
             ) : filteredFolders.length === 0 ? (
@@ -938,7 +955,7 @@ export default function AdminQuestionBank() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
                 {filteredFolders.map((f) => {
                   const isSelected = selectedFolder?._id === f._id;
                   const setCount = f.setCount ?? (f.questionSets?.length || 0);
@@ -1003,6 +1020,11 @@ export default function AdminQuestionBank() {
                           </span>
                         )}
                       </div>
+
+                      {/* FEATURE-035: Folder Created Date + Time */}
+                      <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: 4, opacity: 0.85 }}>
+                        Created: {formatDateTime(f.createdAt)}
+                      </div>
                     </button>
                   );
                 })}
@@ -1011,9 +1033,9 @@ export default function AdminQuestionBank() {
           </div>
 
           {/* ════════ RIGHT PANEL: DYNAMIC CONTENT AREA (STATE 1 OR STATE 2) ════════ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
             {!selectedFolder ? (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
+              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)', flex: 1 }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
                 <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No Folder Selected</h3>
                 <p style={{ fontSize: '0.85rem' }}>
@@ -1022,9 +1044,9 @@ export default function AdminQuestionBank() {
               </div>
             ) : !selectedSet ? (
               /* ════════ STATE 1: FOLDER OVERVIEW & QUESTION SETS LIST ════════ */
-              <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 {/* Folder Header Card */}
-                <div className="card" style={{ padding: '18px 22px' }}>
+                <div className="card" style={{ padding: '16px 20px', flexShrink: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: 260 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -1040,15 +1062,35 @@ export default function AdminQuestionBank() {
                         </span>
                       </div>
 
+                      {/* FEATURE-035: Folder Created Date + Time and Creator */}
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                        Created: {formatDateTime(selectedFolder.createdAt)}
+                        {selectedFolder.createdBy?.name ? ` · by ${selectedFolder.createdBy.name}` : ''}
+                      </div>
+
+                      {/* FEATURE-036: Cap description to 2 lines with ellipsis + hover tooltip */}
                       {selectedFolder.description && (
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '8px 0 0 0', lineHeight: 1.4 }}>
+                        <p
+                          title={selectedFolder.description}
+                          style={{
+                            color: 'var(--color-text-muted)',
+                            fontSize: '0.85rem',
+                            margin: '6px 0 0 0',
+                            lineHeight: 1.4,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
                           {selectedFolder.description}
                         </p>
                       )}
 
                       {/* Pool Readiness Banner */}
                       {(selectedFolder.setCount || selectedFolder.questionSets?.length || 0) > 1 && (
-                        <div style={{ marginTop: 10 }}>
+                        <div style={{ marginTop: 8 }}>
                           {selectedFolder.isValidPool ? (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', background: 'rgba(34, 197, 94, 0.12)', color: '#15803d', padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600 }}>
                               <span>🟢</span> Valid Pool: All sets contain {selectedFolder.questionCountPerSet} questions each.
@@ -1063,7 +1105,7 @@ export default function AdminQuestionBank() {
                     </div>
 
                     {/* Action buttons inside folder */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
                       <button
                         type="button"
                         id="new-set-in-folder-btn"
@@ -1108,130 +1150,132 @@ export default function AdminQuestionBank() {
                   </div>
                 </div>
 
-                {/* Question Sets Roster / Cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-                    <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
-                      Question Sets in this Folder
-                    </h3>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                      Click any Question Set to view and manage its questions
-                    </span>
-                  </div>
+                {/* Question Sets Roster / Cards Header (Fixed) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px', flexShrink: 0 }}>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
+                    Question Sets in this Folder
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    Click any Question Set to view and manage its questions
+                  </span>
+                </div>
 
-                  {(!selectedFolder.questionSets || selectedFolder.questionSets.length === 0) ? (
-                    <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
-                      <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📄</div>
-                      <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>This folder is empty</h3>
-                      <p style={{ fontSize: '0.85rem', marginBottom: 20 }}>
-                        Create your first question set in this folder or upload a folder of PDFs.
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
-                        <button
-                          onClick={() => handleOpenNewSet(selectedFolder._id)}
-                          className="btn btn-primary"
-                          style={{ fontSize: '0.85rem' }}
-                        >
-                          + Create Question Set
-                        </button>
-                        <button
-                          onClick={() => handleOpenUploadModal(selectedFolder)}
-                          className="btn btn-secondary"
-                          style={{ fontSize: '0.85rem' }}
-                        >
-                          📁 Upload PDFs
-                        </button>
-                      </div>
+                {/* Question Sets Roster Container (Scrolls independently) */}
+                {(!selectedFolder.questionSets || selectedFolder.questionSets.length === 0) ? (
+                  <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)', flex: 1 }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📄</div>
+                    <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>This folder is empty</h3>
+                    <p style={{ fontSize: '0.85rem', marginBottom: 20 }}>
+                      Create your first question set in this folder or upload a folder of PDFs.
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+                      <button
+                        onClick={() => handleOpenNewSet(selectedFolder._id)}
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        + Create Question Set
+                      </button>
+                      <button
+                        onClick={() => handleOpenUploadModal(selectedFolder)}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        📁 Upload PDFs
+                      </button>
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {selectedFolder.questionSets.map((qs, idx) => {
-                        const qCount = qs.questionCount ?? (qs.questionIds?.length || 0);
+                  </div>
+                ) : (
+                  <div
+                    ref={setListContainerRef}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}
+                  >
+                    {selectedFolder.questionSets.map((qs, idx) => {
+                      const qCount = qs.questionCount ?? (qs.questionIds?.length || 0);
 
-                        return (
-                          <div
-                            key={qs._id}
-                            className="card"
-                            style={{
-                              padding: '16px 20px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              border: '1px solid var(--color-border)',
-                              flexWrap: 'wrap',
-                              gap: 12,
-                            }}
-                            onClick={() => handleSelectSet(qs)}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 240 }}>
-                              <span style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>📄</span>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <h4 style={{ fontSize: '1rem', color: 'var(--color-navy)', margin: 0, fontWeight: 700 }}>
-                                    {qs.name}
-                                  </h4>
-                                  <span className="badge badge-secondary" style={{ fontSize: '0.7rem', fontWeight: 600 }}>
-                                    {qCount} {qCount === 1 ? 'Question' : 'Questions'}
-                                  </span>
-                                  <span className="badge" style={{ fontSize: '0.65rem', ...getBadgeStyle(qs.testType || selectedFolder.testType) }}>
-                                    {qs.testType || selectedFolder.testType}
-                                  </span>
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                                  Created: {new Date(qs.createdAt).toLocaleDateString()}
-                                  {qs.createdBy?.name && ` · by ${qs.createdBy.name}`}
-                                </div>
+                      return (
+                        <div
+                          key={qs._id}
+                          className="card"
+                          style={{
+                            padding: '16px 20px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            border: '1px solid var(--color-border)',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                          }}
+                          onClick={() => handleSelectSet(qs)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 240 }}>
+                            <span style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>📄</span>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <h4 style={{ fontSize: '1rem', color: 'var(--color-navy)', margin: 0, fontWeight: 700 }}>
+                                  {qs.name}
+                                </h4>
+                                <span className="badge badge-secondary" style={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                                  {qCount} {qCount === 1 ? 'Question' : 'Questions'}
+                                </span>
+                                <span className="badge" style={{ fontSize: '0.65rem', ...getBadgeStyle(qs.testType || selectedFolder.testType) }}>
+                                  {qs.testType || selectedFolder.testType}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                Created: {formatDateTime(qs.createdAt)}
+                                {qs.createdBy?.name && ` · by ${qs.createdBy.name}`}
                               </div>
                             </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
-                              <button
-                                type="button"
-                                id={`edit-set-${idx}-btn`}
-                                onClick={() => {
-                                  setSelectedSet(qs);
-                                  handleOpenEditSet(qs);
-                                }}
-                                className="btn btn-secondary btn-sm"
-                                style={{ fontSize: '0.75rem', padding: '5px 10px' }}
-                              >
-                                ✏ Edit
-                              </button>
-                              <button
-                                type="button"
-                                id={`delete-set-${idx}-btn`}
-                                onClick={() => {
-                                  setSelectedSet(qs);
-                                  setShowDeleteSetModal(true);
-                                }}
-                                className="btn btn-danger btn-sm"
-                                style={{ fontSize: '0.75rem', padding: '5px 10px' }}
-                              >
-                                🗑 Delete
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSelectSet(qs)}
-                                className="btn btn-primary btn-sm"
-                                style={{ fontSize: '0.78rem', padding: '5px 14px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                              >
-                                View Questions →
-                              </button>
-                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              id={`edit-set-${idx}-btn`}
+                              onClick={() => {
+                                setSelectedSet(qs);
+                                handleOpenEditSet(qs);
+                              }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ fontSize: '0.75rem', padding: '5px 10px' }}
+                            >
+                              ✏ Edit
+                            </button>
+                            <button
+                              type="button"
+                              id={`delete-set-${idx}-btn`}
+                              onClick={() => {
+                                setSelectedSet(qs);
+                                setShowDeleteSetModal(true);
+                              }}
+                              className="btn btn-danger btn-sm"
+                              style={{ fontSize: '0.75rem', padding: '5px 10px' }}
+                            >
+                              🗑 Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectSet(qs)}
+                              className="btn btn-primary btn-sm"
+                              style={{ fontSize: '0.78rem', padding: '5px 14px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            >
+                              View Questions →
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             ) : (
               /* ════════ STATE 2: QUESTION SET DETAIL & QUESTIONS ROSTER ════════ */
-              <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 {/* Back Navigation Bar & Set Header Card */}
-                <div className="card" style={{ padding: '16px 20px' }}>
+                <div className="card" style={{ padding: '16px 20px', flexShrink: 0 }}>
                   {/* Breadcrumb / Back Button */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
                     <button
@@ -1273,7 +1317,7 @@ export default function AdminQuestionBank() {
                         </span>
                       </div>
                       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
-                        Contains <strong>{questions.length}</strong> question(s) · Created by {selectedSet.createdBy?.name || 'Admin'}
+                        Contains <strong>{questions.length}</strong> question(s) · Created: {formatDateTime(selectedSet.createdAt)}{selectedSet.createdBy?.name ? ` · by ${selectedSet.createdBy.name}` : ''}
                       </p>
                     </div>
 
@@ -1309,13 +1353,13 @@ export default function AdminQuestionBank() {
                   </div>
                 </div>
 
-                {/* Questions List */}
+                {/* Questions List (Scrolls independently) */}
                 {loadingQuestions ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 48, flex: 1 }}>
                     <LoadingDots size="md" />
                   </div>
                 ) : questions.length === 0 ? (
-                  <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flex: 1 }}>
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💡</div>
                     <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No questions in this set yet</h3>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: 20 }}>
@@ -1326,7 +1370,7 @@ export default function AdminQuestionBank() {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
                     {questions.map((q, idx) => {
                       const isExpanded = expandedQuestionId === q._id;
                       let diffBadge = 'badge-secondary';
@@ -1534,7 +1578,7 @@ export default function AdminQuestionBank() {
                     })}
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>

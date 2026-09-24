@@ -136,6 +136,8 @@ const createFolder = async (req, res, next) => {
       createdBy: req.user.id,
     });
 
+    await folder.populate('createdBy', 'name email');
+
     res.status(201).json({ folder });
   } catch (err) {
     next(err);
@@ -228,6 +230,7 @@ const updateFolder = async (req, res, next) => {
     }
 
     await folder.save();
+    await folder.populate('createdBy', 'name email');
     res.json({ folder });
   } catch (err) {
     next(err);

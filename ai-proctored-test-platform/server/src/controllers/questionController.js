@@ -25,6 +25,14 @@ const createQuestionSet = async (req, res, next) => {
       return res.status(400).json({ error: 'Question Set name cannot be empty' });
     }
 
+    // BUG-98: Duplicate name check scoped strictly to the target folder
+    const existingInFolder = await QuestionSet.findOne({ folderId: folder._id, name: trimmedName });
+    if (existingInFolder) {
+      return res.status(400).json({
+        error: `A Question Set named "${trimmedName}" already exists in folder "${folder.name}".`,
+      });
+    }
+
     const questionSet = await QuestionSet.create({
       folderId: folder._id,
       testType: folder.testType, // Inherits testType strictly from parent folder
@@ -107,14 +115,16 @@ const updateQuestionSet = async (req, res, next) => {
     }
 
     // 1. Validate and update name if provided
+    let newName = questionSet.name;
     if (name !== undefined) {
       if (typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ error: 'Question Set name cannot be empty' });
       }
-      questionSet.name = name.trim();
+      newName = name.trim();
     }
 
     // 2. Validate and move to a different folder if provided
+    let targetFolderId = questionSet.folderId;
     if (folderId !== undefined && folderId.toString() !== questionSet.folderId?.toString()) {
       const targetFolder = await Folder.findById(folderId);
       if (!targetFolder) {
@@ -125,8 +135,25 @@ const updateQuestionSet = async (req, res, next) => {
           error: `Cannot move Question Set (${questionSet.testType}) into a ${targetFolder.testType} folder. Test types must match.`,
         });
       }
-      questionSet.folderId = targetFolder._id;
+      targetFolderId = targetFolder._id;
     }
+
+    // BUG-98: Check for duplicate name in target folder
+    if (name !== undefined || (folderId !== undefined && folderId.toString() !== questionSet.folderId?.toString())) {
+      const duplicateInFolder = await QuestionSet.findOne({
+        folderId: targetFolderId,
+        name: newName,
+        _id: { $ne: questionSet._id },
+      });
+      if (duplicateInFolder) {
+        return res.status(400).json({
+          error: `A Question Set named "${newName}" already exists in the target folder.`,
+        });
+      }
+    }
+
+    questionSet.name = newName;
+    questionSet.folderId = targetFolderId;
 
     // 3. Validate and update testType if changed
     if (testType !== undefined && testType !== questionSet.testType) {
@@ -493,11 +520,15 @@ const uploadPdfBatch = async (req, res, next) => {
       const uniqueFileName = `${Date.now()}_${uuidv4().slice(0, 8)}_${safeOriginalBase}`;
       await pdfStorageService.savePdfAsset(uniqueFileName, originalName, file.buffer, req.user?.id);
 
-      // Derive distinct Question Set name with collision handling
+      // Derive distinct Question Set name with folder-scoped collision handling (BUG-98)
       const baseSetName = sanitizeQuestionSetName(originalName);
       let setName = baseSetName;
       let collisionSuffix = 1;
-      while (await QuestionSet.findOne({ name: setName })) {
+      const batchNames = summary.createdSets.map((s) => s.name);
+      while (
+        batchNames.includes(setName) ||
+        (await QuestionSet.findOne({ folderId: targetFolder._id, name: setName }))
+      ) {
         setName = `${baseSetName} (${collisionSuffix++})`;
       }
 

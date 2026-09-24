@@ -19,4 +19,6 @@ const questionSetSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+questionSetSchema.index({ folderId: 1, name: 1 });
+
 module.exports = mongoose.model('QuestionSet', questionSetSchema);
