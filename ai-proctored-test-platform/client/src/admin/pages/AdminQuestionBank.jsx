@@ -29,6 +29,30 @@ export const formatDateTime = (dateVal) => {
   return `${d.toLocaleDateString()}, ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}`;
 };
 
+// ── Helper to format Question Title (UI RESTRUCTURE-025: Question Name | Problem X) ──
+export const formatQuestionTitle = (q, idx = 0) => {
+  if (!q) return `Problem ${idx + 1}`;
+
+  // If question has an explicit title string
+  if (q.title && typeof q.title === 'string' && q.title.trim()) {
+    const trimmed = q.title.trim();
+    const match = trimmed.match(/^(.*?)\s*[\(\[]\s*(?:Problem|Question)\s*(\d+)\s*[\)\]]$/i);
+    if (match) {
+      const base = match[1].replace(/[\s:\-–—|]+$/, '').trim();
+      return base ? `${base} | Problem ${match[2]}` : `Problem ${match[2]}`;
+    }
+    return trimmed;
+  }
+
+  // If question is PDF-imported
+  if (q.isPdfImported) {
+    const baseName = q.pdfOriginalName || q.pdfFileName || 'Problem';
+    return `${baseName} | Problem ${idx + 1}`;
+  }
+
+  return `Problem ${idx + 1}`;
+};
+
 // ── Helper to recursively extract all File objects from Drag-and-Drop DataTransfer (BUG-77) ──
 export const extractFilesFromDataTransfer = async (dataTransfer) => {
   const files = [];
@@ -1458,38 +1482,22 @@ export default function AdminQuestionBank() {
                           key={q._id}
                           className="card"
                           style={{
-                            padding: 18,
+                            padding: '14px 18px',
                             borderLeft: isExpanded ? '4px solid var(--color-primary)' : '1px solid var(--color-border)',
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: 260 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.9rem' }}>
                                   Q{idx + 1}.
                                 </span>
                                 <h4 style={{ fontSize: '1.02rem', color: 'var(--color-navy)', margin: 0 }}>
-                                  {q.title || (q.isPdfImported ? `${q.pdfOriginalName || q.pdfFileName} (Problem ${idx + 1})` : 'Untitled Question')}
+                                  {formatQuestionTitle(q, idx)}
                                 </h4>
                                 {q.difficulty && (
                                   <span className={`badge ${diffBadge}`} style={{ fontSize: '0.65rem' }}>
                                     {q.difficulty}
-                                  </span>
-                                )}
-                                {q.isPdfImported && (
-                                  <span
-                                    className="badge badge-secondary"
-                                    style={{
-                                      fontSize: '0.68rem',
-                                      background: 'rgba(13, 148, 136, 0.1)',
-                                      color: 'var(--color-primary)',
-                                      border: '1px solid rgba(13, 148, 136, 0.25)',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                    }}
-                                  >
-                                    📄 PDF: {q.pdfFileName} (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1})
                                   </span>
                                 )}
                                 {q.exampleParsingStatus && q.exampleParsingStatus !== 'SUCCESS' && (
@@ -1512,6 +1520,7 @@ export default function AdminQuestionBank() {
                                     color: 'var(--color-text)',
                                     fontSize: '0.85rem',
                                     lineHeight: 1.5,
+                                    margin: '8px 0 0 0',
                                     display: isExpanded ? 'block' : '-webkit-box',
                                     WebkitLineClamp: isExpanded ? 'none' : 2,
                                     WebkitBoxOrient: 'vertical',
@@ -1520,10 +1529,6 @@ export default function AdminQuestionBank() {
                                   }}
                                 >
                                   {q.description}
-                                </p>
-                              ) : q.isPdfImported ? (
-                                <p style={{ color: 'var(--color-primary)', fontSize: '0.82rem', fontStyle: 'italic', margin: '4px 0 0 0' }}>
-                                  Rendered directly from original PDF (pp. {q.pdfPageRange?.startPage || 1}–{q.pdfPageRange?.endPage || 1})
                                 </p>
                               ) : null}
                             </div>
@@ -2117,7 +2122,7 @@ export default function AdminQuestionBank() {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder={questionForm.isPdfImported ? "e.g. Problem 1 (or leave blank to use PDF name)" : "e.g. Reverse Linked List II"}
+                        placeholder={questionForm.isPdfImported ? "e.g. set_1.pdf | Problem 1 (or leave blank for default)" : "e.g. Reverse Linked List II"}
                         value={questionForm.title}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, title: e.target.value }))}
                         required={!questionForm.isPdfImported}
