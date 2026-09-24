@@ -47,13 +47,18 @@ const formatLiveDuration = (startDateStr, endDateStr) => {
   const end = new Date(endDateStr);
   const diffMs = end - start;
   if (diffMs <= 0 || isNaN(diffMs)) return null;
-  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const totalMinutes = Math.floor(totalSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h`;
-  if (minutes > 0) return `${minutes}m`;
-  return '< 1m';
+  const seconds = totalSeconds % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'Hour' : 'Hours'}`);
+  if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'Minute' : 'Minutes'}`);
+  if (parts.length > 0) return parts.join(' ');
+  if (seconds > 0) return `${seconds} ${seconds === 1 ? 'Second' : 'Seconds'}`;
+  return '< 1 Second';
 };
 
 // BUG-35 / UX-XX: Date-deduplication, day names, and exact time formatting helpers
@@ -115,7 +120,9 @@ const getLiveSessionText = (test) => {
     ? !isSameCalendarDay(startDate, createdDate)
     : false;
 
-  const dayPrefix = isDifferentDayFromCreation ? `${getDayName(startDate)}, ` : '';
+  const differentDaySuffix = isDifferentDayFromCreation
+    ? ` | ${getDayName(startDate)} | ${formatFullDate(startDate)}`
+    : '';
 
   if (isEnded) {
     if (!test.endedAt) return null;
@@ -125,14 +132,14 @@ const getLiveSessionText = (test) => {
     const sameDayLive = isSameCalendarDay(startDate, endDate);
 
     if (sameDayLive) {
-      return `Live: ${dayPrefix}${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
+      return `Live: ${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}${differentDaySuffix}`;
     } else {
-      return `Live: ${getDayName(startDate)}, ${formatTimeOnly(startDate)} – ${getDayName(endDate)}, ${formatTimeOnly(endDate)}`;
+      return `Live: ${formatTimeOnly(startDate)} | ${getDayName(startDate)} | ${formatFullDate(startDate)} – ${formatTimeOnly(endDate)} | ${getDayName(endDate)} | ${formatFullDate(endDate)}`;
     }
   }
 
   if (isLive) {
-    return `Live: ${dayPrefix}${formatTimeOnly(startDate)} – now`;
+    return `Live: ${formatTimeOnly(startDate)} – now${differentDaySuffix}`;
   }
 
   return null;

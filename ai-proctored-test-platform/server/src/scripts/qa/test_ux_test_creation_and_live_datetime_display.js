@@ -7,21 +7,24 @@
  *    - Displays creator name, day name, full date (DD/MM/YYYY), and exact creation time on ONE LINE.
  *    - Expected format: "Created by Super Admin on Wednesday, 24/09/2026 at 11:20 AM"
  *    - Uses actual test creation timestamp (createdAt).
- * 2. LIVE INFORMATION (Same-day creation & live):
- *    - Day name appears on creation line.
- *    - Day name is NOT repeated on the Live line.
+ * 2. LIVE INFORMATION (CASE A — Same-day creation & live):
+ *    - Day name and date appear on creation line.
+ *    - Live line contains only the time range.
  *    - Expected: "Live: 11:31 AM – 11:52 AM"
- * 3. LIVE INFORMATION (Different-day creation & live):
- *    - Creation line shows creation day name.
- *    - Live line explicitly shows live day name.
- *    - Expected: "Live: Thursday, 11:31 AM – 11:52 AM"
+ * 3. LIVE INFORMATION (CASE B — Different-day creation & live):
+ *    - Creation line shows creation day name and date.
+ *    - Live line explicitly shows time range | Live day | Live date.
+ *    - Expected: "Live: 11:31 AM – 11:52 AM | Thursday | 25/09/2026"
  * 4. Currently LIVE session:
  *    - Same day as creation: "Live: 11:31 AM – now"
- *    - Different day from creation: "Live: Thursday, 11:31 AM – now"
+ *    - Different day from creation: "Live: 11:31 AM – now | Thursday | 25/09/2026"
  * 5. Midnight-spanning test session:
- *    - Shows start day and end day: "Live: Thursday, 11:45 PM – Friday, 12:15 AM"
- * 6. Live for duration pill badge:
- *    - Preserved completely intact: "⏱️ Live for 20m"
+ *    - Shows start time | start day | start date – end time | end day | end date
+ *    - Example: "Live: 11:45 PM | Thursday | 24/09/2026 – 12:15 AM | Friday | 25/09/2026"
+ * 6. Live for duration badge:
+ *    - Shows Hours, Minutes, Seconds instead of H, M, S
+ *    - E.g.: "20 Minutes", "1 Hour 23 Minutes", "2 Hours", "45 Seconds"
+ *    - Badge renders: "⏱️ Live for 20 Minutes"
  * 7. Draft / Unstarted test:
  *    - Creation line shows full date & time.
  *    - Live session line is not rendered.
@@ -108,6 +111,26 @@ async function runTests() {
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n--- TEST 2: Functional Logic Verification ---');
 
+  const formatLiveDuration = (startDateStr, endDateStr) => {
+    if (!startDateStr || !endDateStr) return null;
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+    const diffMs = end - start;
+    if (diffMs <= 0 || isNaN(diffMs)) return null;
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const seconds = totalSeconds % 60;
+
+    const parts = [];
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'Hour' : 'Hours'}`);
+    if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'Minute' : 'Minutes'}`);
+    if (parts.length > 0) return parts.join(' ');
+    if (seconds > 0) return `${seconds} ${seconds === 1 ? 'Second' : 'Seconds'}`;
+    return '< 1 Second';
+  };
+
   const getDayName = (dateObj) => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[dateObj.getDay()];
@@ -161,7 +184,9 @@ async function runTests() {
       ? !isSameCalendarDay(startDate, createdDate)
       : false;
 
-    const dayPrefix = isDifferentDayFromCreation ? `${getDayName(startDate)}, ` : '';
+    const differentDaySuffix = isDifferentDayFromCreation
+      ? ` | ${getDayName(startDate)} | ${formatFullDate(startDate)}`
+      : '';
 
     if (isEnded) {
       if (!test.endedAt) return null;
@@ -171,20 +196,20 @@ async function runTests() {
       const sameDayLive = isSameCalendarDay(startDate, endDate);
 
       if (sameDayLive) {
-        return `Live: ${dayPrefix}${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
+        return `Live: ${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}${differentDaySuffix}`;
       } else {
-        return `Live: ${getDayName(startDate)}, ${formatTimeOnly(startDate)} – ${getDayName(endDate)}, ${formatTimeOnly(endDate)}`;
+        return `Live: ${formatTimeOnly(startDate)} | ${getDayName(startDate)} | ${formatFullDate(startDate)} – ${formatTimeOnly(endDate)} | ${getDayName(endDate)} | ${formatFullDate(endDate)}`;
       }
     }
 
     if (isLive) {
-      return `Live: ${dayPrefix}${formatTimeOnly(startDate)} – now`;
+      return `Live: ${formatTimeOnly(startDate)} – now${differentDaySuffix}`;
     }
 
     return null;
   };
 
-  // Case 1: Same day creation and live session
+  // Case A: Same day creation and live session
   // Test created on 2026-09-24 at 11:20 AM local, live from 11:31 AM to 11:52 AM
   const date2026_09_24 = new Date(2026, 8, 24, 11, 20); // 24 Sept 2026
   const liveStart_09_24 = new Date(2026, 8, 24, 11, 31);
@@ -200,12 +225,14 @@ async function runTests() {
 
   const creationText1 = `Created by ${testSameDay.createdBy.name} on ${formatCreationDateText(testSameDay.createdAt)}`;
   const liveText1 = getLiveSessionText(testSameDay);
+  const durationText1 = formatLiveDuration(testSameDay.liveStartedAt, testSameDay.endedAt);
 
-  console.log(`Same-Day Creation Output: "${creationText1}"`);
-  console.log(`Same-Day Live Output:     "${liveText1}"`);
+  console.log(`Case A (Same-Day) Creation: "${creationText1}"`);
+  console.log(`Case A (Same-Day) Live:     "${liveText1}"`);
+  console.log(`Case A (Same-Day) Duration: "${durationText1}"`);
 
   assert(
-    creationText1.includes('Thursday, 24/09/2026 at 11:20 AM') || creationText1.includes('24/09/2026 at 11:20 AM'),
+    creationText1.includes('Thursday, 24/09/2026 at 11:20 AM'),
     'Creation line format matches "<DayName>, DD/MM/YYYY at hh:mm AM/PM"'
   );
   assert(
@@ -214,33 +241,38 @@ async function runTests() {
   );
   assert(
     liveText1 === 'Live: 11:31 AM – 11:52 AM',
-    `Same-day live line does NOT repeat day name ("Live: 11:31 AM – 11:52 AM"), got: "${liveText1}"`
+    `Case A live line contains only time range ("Live: 11:31 AM – 11:52 AM"), got: "${liveText1}"`
+  );
+  assert(
+    durationText1 === '21 Minutes',
+    `Duration formats with "Minutes" ("21 Minutes"), got: "${durationText1}"`
   );
 
-  // Case 2: Different day creation and live session
-  // Created on 2026-09-23 (Wednesday) at 11:20 AM, live on 2026-09-24 (Thursday) from 11:31 AM to 11:52 AM
-  const date2026_09_23 = new Date(2026, 8, 23, 11, 20);
+  // Case B: Different day creation and live session
+  // Created on 2026-09-24 (Thursday) at 11:20 AM, live on 2026-09-25 (Friday) from 11:31 AM to 11:52 AM
+  const date2026_09_25_start = new Date(2026, 8, 25, 11, 31);
+  const date2026_09_25_end = new Date(2026, 8, 25, 11, 52);
   const testDifferentDay = {
     status: 'ENDED',
-    createdAt: date2026_09_23.toISOString(),
-    liveStartedAt: liveStart_09_24.toISOString(),
-    endedAt: liveEnd_09_24.toISOString(),
+    createdAt: date2026_09_24.toISOString(),
+    liveStartedAt: date2026_09_25_start.toISOString(),
+    endedAt: date2026_09_25_end.toISOString(),
     createdBy: { name: 'Super Admin' }
   };
 
   const creationText2 = `Created by ${testDifferentDay.createdBy.name} on ${formatCreationDateText(testDifferentDay.createdAt)}`;
   const liveText2 = getLiveSessionText(testDifferentDay);
 
-  console.log(`\nDifferent-Day Creation Output: "${creationText2}"`);
-  console.log(`Different-Day Live Output:     "${liveText2}"`);
+  console.log(`\nCase B (Different-Day) Creation: "${creationText2}"`);
+  console.log(`Case B (Different-Day) Live:     "${liveText2}"`);
 
   assert(
-    creationText2.includes('Wednesday, 23/09/2026 at 11:20 AM'),
-    'Different-day creation line contains "Wednesday, 23/09/2026 at 11:20 AM"'
+    creationText2.includes('Thursday, 24/09/2026 at 11:20 AM'),
+    'Case B creation line contains "Thursday, 24/09/2026 at 11:20 AM"'
   );
   assert(
-    liveText2 === 'Live: Thursday, 11:31 AM – 11:52 AM',
-    `Different-day live line includes live day name ("Live: Thursday, 11:31 AM – 11:52 AM"), got: "${liveText2}"`
+    liveText2 === 'Live: 11:31 AM – 11:52 AM | Friday | 25/09/2026',
+    `Case B live line formats as "Live: 11:31 AM – 11:52 AM | Friday | 25/09/2026", got: "${liveText2}"`
   );
 
   // Case 3: Live in-progress test
@@ -251,8 +283,8 @@ async function runTests() {
   };
   const testInProgressDiffDay = {
     status: 'LIVE',
-    createdAt: date2026_09_23.toISOString(),
-    liveStartedAt: liveStart_09_24.toISOString(),
+    createdAt: date2026_09_24.toISOString(),
+    liveStartedAt: date2026_09_25_start.toISOString(),
   };
 
   const liveInProgress1 = getLiveSessionText(testInProgressSameDay);
@@ -263,8 +295,8 @@ async function runTests() {
     `In-progress same-day test returns "Live: 11:31 AM – now", got: "${liveInProgress1}"`
   );
   assert(
-    liveInProgress2 === 'Live: Thursday, 11:31 AM – now',
-    `In-progress different-day test returns "Live: Thursday, 11:31 AM – now", got: "${liveInProgress2}"`
+    liveInProgress2 === 'Live: 11:31 AM – now | Friday | 25/09/2026',
+    `In-progress different-day test returns "Live: 11:31 AM – now | Friday | 25/09/2026", got: "${liveInProgress2}"`
   );
 
   // Case 4: Midnight spanning test (e.g. starts Thursday 11:45 PM, ends Friday 12:15 AM)
@@ -280,11 +312,39 @@ async function runTests() {
   const liveMidnightText = getLiveSessionText(testMidnight);
   console.log(`\nMidnight Spanning Output: "${liveMidnightText}"`);
   assert(
-    liveMidnightText === 'Live: Thursday, 11:45 PM – Friday, 12:15 AM',
-    `Midnight spanning test displays both start and end days ("Live: Thursday, 11:45 PM – Friday, 12:15 AM"), got: "${liveMidnightText}"`
+    liveMidnightText === 'Live: 11:45 PM | Thursday | 24/09/2026 – 12:15 AM | Friday | 25/09/2026',
+    `Midnight spanning test displays both start and end dates/times, got: "${liveMidnightText}"`
   );
 
-  // Case 5: Draft / Unstarted test
+  // Case 5: Duration formatting unit tests (Hours, Minutes, Seconds)
+  console.log('\n--- TEST 3: Duration Units (Hours, Minutes, Seconds) ---');
+  const baseTime = new Date('2026-09-24T10:00:00.000Z').getTime();
+  assert(
+    formatLiveDuration(new Date(baseTime).toISOString(), new Date(baseTime + 20 * 60 * 1000).toISOString()) === '20 Minutes',
+    '20 minutes formats as "20 Minutes"'
+  );
+  assert(
+    formatLiveDuration(new Date(baseTime).toISOString(), new Date(baseTime + 60 * 1000).toISOString()) === '1 Minute',
+    '1 minute formats as "1 Minute"'
+  );
+  assert(
+    formatLiveDuration(new Date(baseTime).toISOString(), new Date(baseTime + 2 * 60 * 60 * 1000).toISOString()) === '2 Hours',
+    '2 hours formats as "2 Hours"'
+  );
+  assert(
+    formatLiveDuration(new Date(baseTime).toISOString(), new Date(baseTime + (1 * 60 * 60 + 23 * 60) * 1000).toISOString()) === '1 Hour 23 Minutes',
+    '1h 23m formats as "1 Hour 23 Minutes"'
+  );
+  assert(
+    formatLiveDuration(new Date(baseTime).toISOString(), new Date(baseTime + 45 * 1000).toISOString()) === '45 Seconds',
+    '45 seconds formats as "45 Seconds"'
+  );
+  assert(
+    formatLiveDuration(new Date(baseTime).toISOString(), new Date(baseTime + 1 * 1000).toISOString()) === '1 Second',
+    '1 second formats as "1 Second"'
+  );
+
+  // Case 6: Draft / Unstarted test
   const testDraft = {
     status: 'DRAFT',
     createdAt: date2026_09_24.toISOString(),
