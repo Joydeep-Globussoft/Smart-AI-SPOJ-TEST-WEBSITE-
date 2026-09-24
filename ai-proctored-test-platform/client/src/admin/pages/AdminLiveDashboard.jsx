@@ -56,6 +56,28 @@ const formatLiveDuration = (startDateStr, endDateStr) => {
   return '< 1m';
 };
 
+// BUG-35 / UX-XX: Date-deduplication, day names, and exact time formatting helpers
+const getDayName = (dateObj) => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[dateObj.getDay()];
+};
+
+const formatFullDate = (dateObj) => {
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const year = dateObj.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatTimeOnly = (dateObj) => {
+  let hours = dateObj.getHours();
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${hours}:${minutes} ${ampm}`;
+};
+
 const isSameCalendarDay = (d1, d2) => {
   if (!d1 || !d2) return false;
   return (
@@ -65,49 +87,52 @@ const isSameCalendarDay = (d1, d2) => {
   );
 };
 
-const formatTimeOnly = (dateObj) => {
-  return dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+const formatDateOnly = (dateObj) => {
+  return formatFullDate(dateObj);
 };
 
-const formatDateOnly = (dateObj) => {
-  return dateObj.toLocaleDateString();
+const formatCreationDateText = (dateInput) => {
+  if (!dateInput) return '—';
+  const dateObj = new Date(dateInput);
+  if (isNaN(dateObj.getTime())) return '—';
+  return `${getDayName(dateObj)}, ${formatFullDate(dateObj)} at ${formatTimeOnly(dateObj)}`;
 };
 
 const getLiveSessionText = (test) => {
   if (!test?.liveStartedAt) return null;
 
   const startDate = new Date(test.liveStartedAt);
-  const createdDate = new Date(test.createdAt);
+  if (isNaN(startDate.getTime())) return null;
+
+  const createdDate = test.createdAt ? new Date(test.createdAt) : null;
   const isLive = test.status === 'LIVE';
   const isEnded = test.status === 'ENDED';
 
   if (!isLive && !isEnded) return null;
 
+  // Check if live start date is on a different calendar day than creation date
+  const isDifferentDayFromCreation = createdDate && !isNaN(createdDate.getTime())
+    ? !isSameCalendarDay(startDate, createdDate)
+    : false;
+
+  const dayPrefix = isDifferentDayFromCreation ? `${getDayName(startDate)}, ` : '';
+
   if (isEnded) {
     if (!test.endedAt) return null;
     const endDate = new Date(test.endedAt);
+    if (isNaN(endDate.getTime())) return null;
 
     const sameDayLive = isSameCalendarDay(startDate, endDate);
-    const sameDayCreated = isSameCalendarDay(startDate, createdDate);
 
     if (sameDayLive) {
-      if (sameDayCreated) {
-        return `Live: ${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
-      } else {
-        return `Live: ${formatDateOnly(startDate)} | ${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
-      }
+      return `Live: ${dayPrefix}${formatTimeOnly(startDate)} – ${formatTimeOnly(endDate)}`;
     } else {
-      return `Live: ${formatDateOnly(startDate)} | ${formatTimeOnly(startDate)} – ${formatDateOnly(endDate)} | ${formatTimeOnly(endDate)}`;
+      return `Live: ${getDayName(startDate)}, ${formatTimeOnly(startDate)} – ${getDayName(endDate)}, ${formatTimeOnly(endDate)}`;
     }
   }
 
   if (isLive) {
-    const sameDayCreated = isSameCalendarDay(startDate, createdDate);
-    if (sameDayCreated) {
-      return `Live: ${formatTimeOnly(startDate)} – now`;
-    } else {
-      return `Live: ${formatDateOnly(startDate)} | ${formatTimeOnly(startDate)} – now`;
-    }
+    return `Live: ${dayPrefix}${formatTimeOnly(startDate)} – now`;
   }
 
   return null;
@@ -2328,10 +2353,10 @@ export default function AdminLiveDashboard() {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}
-                title={`Created by ${test?.createdBy?.name || 'Admin'} on ${test?.createdAt ? new Date(test.createdAt).toLocaleDateString() : '—'}`}
+                title={`Created by ${test?.createdBy?.name || 'Admin'} on ${formatCreationDateText(test?.createdAt)}`}
               >
                 {test?.createdAt
-                  ? `By ${test?.createdBy?.name || 'Admin'} on ${new Date(test.createdAt).toLocaleDateString()}`
+                  ? `By ${test?.createdBy?.name || 'Admin'} on ${formatCreationDateText(test.createdAt)}`
                   : '—'}
               </div>
             </div>
