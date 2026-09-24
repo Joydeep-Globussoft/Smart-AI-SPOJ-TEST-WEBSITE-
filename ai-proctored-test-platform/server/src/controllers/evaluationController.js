@@ -112,7 +112,7 @@ const exportShortlistPdf = async (req, res, next) => {
     // Clean letterhead banner with official Globussoft logo
     doc
       .rect(0, 0, doc.page.width, 105)
-      .fill('#ffffff');
+      .fill('#1A2B3C');
 
     doc
       .rect(0, 102, doc.page.width, 3)
@@ -126,7 +126,7 @@ const exportShortlistPdf = async (req, res, next) => {
       doc.image(logoPath, 50, 18, { height: 68, fit: [180, 68] });
     } else {
       doc
-        .fillColor('#0E7C86')
+        .fillColor('#38bdf8')
         .font('Helvetica-Bold')
         .fontSize(22)
         .text('Globussoft Technology', 50, 25);
@@ -138,7 +138,7 @@ const exportShortlistPdf = async (req, res, next) => {
     }
 
     doc
-      .fillColor('#4b5563')
+      .fillColor('#cbd5e1')
       .font('Helvetica')
       .fontSize(9)
       .text(

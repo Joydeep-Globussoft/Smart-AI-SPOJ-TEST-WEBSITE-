@@ -952,14 +952,18 @@ tbody td {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .auth-logo img {
-  height: 52px;
+  height: 44px;
   width: auto;
   object-fit: contain;
   display: block;
+  background: #1A2B3C;
+  padding: 8px 22px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(26, 43, 60, 0.15);
 }
 
 .auth-title {

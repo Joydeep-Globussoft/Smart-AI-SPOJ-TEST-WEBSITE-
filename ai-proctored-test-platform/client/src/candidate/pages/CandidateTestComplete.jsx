@@ -61,11 +61,13 @@ export default function CandidateTestComplete() {
         background: 'white', borderRadius: 24, padding: 48, maxWidth: 520,
         width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
       }}>
-        <img
-          src={logoLight}
-          alt="Globussoft Technology"
-          style={{ height: 44, width: 'auto', objectFit: 'contain', margin: '0 auto 20px auto', display: 'block' }}
-        />
+        <div style={{ display: 'inline-flex', background: '#1A2B3C', padding: '8px 24px', borderRadius: 12, margin: '0 auto 20px auto', boxShadow: '0 4px 12px rgba(26,43,60,0.15)' }}>
+          <img
+            src={logoLight}
+            alt="Globussoft Technology"
+            style={{ height: 40, width: 'auto', objectFit: 'contain', display: 'block' }}
+          />
+        </div>
         <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
         <h1 style={{ fontSize: '1.8rem', color: '#1A2B3C', marginBottom: 12 }}>
           Test Submitted!
