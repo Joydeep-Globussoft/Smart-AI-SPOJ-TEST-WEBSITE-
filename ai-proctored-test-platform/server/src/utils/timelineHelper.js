@@ -16,9 +16,9 @@ function parseDate(val) {
 /**
  * Resolves the canonical timeline timestamps for a candidate.
  * Guarantees that:
- * 1. roomJoinedAt is the earliest valid room-entry / registration / login event.
+ * 1. roomJoinedAt is the primary room-specific join timestamp (room.joinedCandidates[].joinedAt).
  * 2. roomJoinedAt <= testStartedAt <= testEndedAt.
- * 3. Any timeline violation is logged with candidateId, testId, and roomId.
+ * 3. Never falls back to multi-day-old candidate account creation timestamps for modern test attempts.
  *
  * @param {Object} params
  * @param {Date|string|number} [params.roomJoinedAtRaw] - Timestamp from room.joinedCandidates[].joinedAt
@@ -43,30 +43,46 @@ function resolveCandidateTimelines({
   testId,
   roomId,
 }) {
-  const dates = [
-    parseDate(roomJoinedAtRaw),
-    parseDate(candidateRoomJoinedAt),
-    parseDate(candidateLastLoginAt),
-    parseDate(candidateCreatedAt),
-  ].filter(Boolean);
-
+  const rawJoin = parseDate(roomJoinedAtRaw);
   const rawStart = parseDate(testStartedAtRaw);
   const rawEnd = parseDate(testEndedAtRaw);
+  const rawRoomJoinCand = parseDate(candidateRoomJoinedAt);
+  const rawLastLogin = parseDate(candidateLastLoginAt);
+  const rawCreated = parseDate(candidateCreatedAt);
 
-  // 1. Establish canonical roomJoinedAt from earliest recorded entry/registration/login event
-  let canonicalRoomJoin = null;
-  if (dates.length > 0) {
-    canonicalRoomJoin = dates.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), dates[0]);
+  // 1. Establish canonical roomJoinedAt:
+  // Primary preference is the authoritative room join timestamp (room.joinedCandidates[].joinedAt)
+  let canonicalRoomJoin = rawJoin;
+
+  // If no room-specific joinedAt recorded, resolve from session login/registration timestamps
+  if (!canonicalRoomJoin) {
+    if (rawStart) {
+      // Pick the closest login/roomJoin timestamp that is before or equal to testStartedAt (within 12h session window)
+      const twelveHoursMs = 12 * 60 * 60 * 1000;
+      const sessionCandidates = [rawRoomJoinCand, rawLastLogin, rawCreated].filter(
+        (d) => d && d.getTime() <= rawStart.getTime() && (rawStart.getTime() - d.getTime()) <= twelveHoursMs
+      );
+      if (sessionCandidates.length > 0) {
+        // Pick the earliest within this session window
+        canonicalRoomJoin = sessionCandidates.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), sessionCandidates[0]);
+      }
+    } else {
+      // Unstarted candidate
+      canonicalRoomJoin = rawRoomJoinCand || rawLastLogin || rawCreated || null;
+    }
   }
 
   // 2. Validate chronological order: roomJoinedAt must NOT be after testStartedAt
   if (canonicalRoomJoin && rawStart && canonicalRoomJoin.getTime() > rawStart.getTime()) {
     console.warn(
-      `[BUG-022 Data Inconsistency] Candidate ${candidateId || 'unknown'} in Test ${testId || 'unknown'} (Room: ${roomId || 'unknown'}) has roomJoinedAt (${canonicalRoomJoin.toISOString()}) > testStartedAt (${rawStart.toISOString()}). Correcting to earliest valid timestamp.`
+      `[BUG-022 Data Inconsistency] Candidate ${candidateId || 'unknown'} in Test ${testId || 'unknown'} (Room: ${roomId || 'unknown'}) has roomJoinedAt (${canonicalRoomJoin.toISOString()}) > testStartedAt (${rawStart.toISOString()}). Correcting to earliest valid session timestamp.`
     );
-    const validEarlier = dates.filter((d) => d.getTime() <= rawStart.getTime());
-    if (validEarlier.length > 0) {
-      canonicalRoomJoin = validEarlier.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), validEarlier[0]);
+    const twelveHoursMs = 12 * 60 * 60 * 1000;
+    const sessionCandidates = [rawRoomJoinCand, rawLastLogin, rawCreated].filter(
+      (d) => d && d.getTime() <= rawStart.getTime() && (rawStart.getTime() - d.getTime()) <= twelveHoursMs
+    );
+    if (sessionCandidates.length > 0) {
+      canonicalRoomJoin = sessionCandidates.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), sessionCandidates[0]);
     } else {
       canonicalRoomJoin = rawStart;
     }

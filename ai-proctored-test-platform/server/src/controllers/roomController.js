@@ -361,14 +361,22 @@ const getRoomCandidates = async (req, res, next) => {
       }
     });
 
-    // 3. Map room join entries for fast lookup of assigned Question Set & index
+    // 3. Map room join entries for fast lookup of assigned Question Set & index (preserving earliest join time)
     const roomJoinedMap = {};
     if (room.joinedCandidates && room.joinedCandidates.length > 0) {
       for (const entry of room.joinedCandidates) {
         const candidate = entry.candidateId;
         if (!candidate) continue;
         const cid = candidate._id ? candidate._id.toString() : entry.candidateId.toString();
-        roomJoinedMap[cid] = entry;
+        if (!roomJoinedMap[cid]) {
+          roomJoinedMap[cid] = entry;
+        } else {
+          const existingTime = new Date(roomJoinedMap[cid].joinedAt).getTime();
+          const entryTime = new Date(entry.joinedAt).getTime();
+          if (!isNaN(entryTime) && (isNaN(existingTime) || entryTime < existingTime)) {
+            roomJoinedMap[cid] = entry;
+          }
+        }
       }
     }
 
