@@ -1024,30 +1024,32 @@ export default function AdminQuestionBank() {
                         </p>
                       )}
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                        <span style={{ fontWeight: 600 }}>
-                          {setCount} {setCount === 1 ? 'Set' : 'Sets'} · {totalQ} Qs
-                        </span>
-                        {setCount > 1 && (
-                          <span
-                            style={{
-                              fontSize: '0.65rem',
-                              padding: '1px 5px 2px',
-                              borderRadius: 4,
-                              background: f.isValidPool ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
-                              color: f.isValidPool ? '#15803d' : '#b45309',
-                              fontWeight: 600,
-                            }}
-                            title={f.isValidPool ? `Valid Pool (${f.questionCountPerSet} Qs/set)` : (f.poolError || 'Sets have unequal question counts')}
-                          >
-                            {f.isValidPool ? '🟢 Pool Ready' : '⚠️ Pool Alert'}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 4, flexWrap: 'wrap', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 600 }}>
+                            {setCount} {setCount === 1 ? 'Set' : 'Sets'} · {totalQ} Qs
                           </span>
-                        )}
-                      </div>
+                          {setCount > 1 && (
+                            <span
+                              style={{
+                                fontSize: '0.65rem',
+                                padding: '1px 5px 2px',
+                                borderRadius: 4,
+                                background: f.isValidPool ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                                color: f.isValidPool ? '#15803d' : '#b45309',
+                                fontWeight: 600,
+                              }}
+                              title={f.isValidPool ? `Valid Pool (${f.questionCountPerSet} Qs/set)` : (f.poolError || 'Sets have unequal question counts')}
+                            >
+                              {f.isValidPool ? '🟢 Pool Ready' : '⚠️ Pool Alert'}
+                            </span>
+                          )}
+                        </div>
 
-                      {/* FEATURE-035: Folder Created Date + Time */}
-                      <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: 4, opacity: 0.85 }}>
-                        Created: {formatDateTime(f.createdAt)}
+                        {/* FEATURE-035: Folder Created Date + Time */}
+                        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', opacity: 0.85, whiteSpace: 'nowrap' }}>
+                          Created: {formatDateTime(f.createdAt)}
+                        </div>
                       </div>
                     </button>
                   );
