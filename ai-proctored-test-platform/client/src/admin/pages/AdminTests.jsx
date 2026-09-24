@@ -25,6 +25,7 @@ const SORT_FIELDS = [
   { id: 'type', label: 'Type' },
   { id: 'status', label: 'Status' },
   { id: 'passing', label: 'Passing Criteria' },
+  { id: 'participants', label: 'Total Participants' },
 ];
 
 const SORT_DIRS = [
@@ -95,6 +96,7 @@ export default function AdminTests() {
     if (s === 'type_asc' || s === 'type_desc') return 'type';
     if (s === 'status_asc' || s === 'status_desc') return 'status';
     if (s === 'passing_asc' || s === 'passing_desc') return 'passing';
+    if (s === 'participants_asc' || s === 'participants_desc') return 'participants';
     return 'date';
   }, [filters.sortField, filters.sort]);
 
@@ -173,6 +175,9 @@ export default function AdminTests() {
     }
     if (activeSortField === 'passing') {
       return `Passing Criteria (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
+    }
+    if (activeSortField === 'participants') {
+      return `Total Participants (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     return `${fieldName} (${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`;
   }, [activeSortField, activeSortDir]);
@@ -389,7 +394,10 @@ export default function AdminTests() {
           comparison = (a.status || '').localeCompare(b.status || '', undefined, { sensitivity: 'base' });
           break;
         case 'passing':
-          comparison = (Number(a.passingCriteriaQuestions) || 0) - (Number(b.passingCriteriaQuestions) || 0);
+          comparison = (Number(a.passingCriteriaQuestions || a.passingCriteria) || 0) - (Number(b.passingCriteriaQuestions || b.passingCriteria) || 0);
+          break;
+        case 'participants':
+          comparison = (Number(a.totalParticipants ?? a.candidateCount) || 0) - (Number(b.totalParticipants ?? b.candidateCount) || 0);
           break;
         default:
           comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
@@ -1134,13 +1142,13 @@ export default function AdminTests() {
             className="table-container test-table-scroll-container"
             style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
           >
-            <table className="table" style={{ width: '100%', minWidth: 980 }}>
+            <table className="table" style={{ width: '100%', minWidth: 1060 }}>
               <thead>
                 <tr>
                   {/* FEATURE-029 & FOLLOW-UP: Position-based row index column (blank header) */}
                   <th style={{ width: 36, minWidth: 36, textAlign: 'center' }}></th>
                   {/* FEATURE-029: Sticky column header with live filtered count */}
-                  <th style={{ width: '20%', minWidth: 160 }}>
+                  <th style={{ width: '18%', minWidth: 150 }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <span>Test Title</span>
                       <span
@@ -1163,7 +1171,8 @@ export default function AdminTests() {
                   <th style={{ width: 95, minWidth: 85 }}>Type</th>
                   <th style={{ width: 90, minWidth: 80 }}>Status</th>
                   <th style={{ width: 85, minWidth: 75 }}>Duration</th>
-                  <th style={{ width: 110, minWidth: 95 }}>Passing Criteria</th>
+                  <th style={{ width: 105, minWidth: 95 }}>Passing Criteria</th>
+                  <th style={{ width: 120, minWidth: 110 }}>Total Participants</th>
                   <th style={{ width: '18%', minWidth: 140, maxWidth: 190 }}>Question Set</th>
                   <th style={{ width: 90, minWidth: 85 }}>Created</th>
                   <th style={{ width: 210, minWidth: 200, textAlign: 'right' }}>Actions</th>
@@ -1172,7 +1181,7 @@ export default function AdminTests() {
               <tbody>
                 {filteredTests.length === 0 ? (
                   <tr>
-                    <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
@@ -1235,6 +1244,9 @@ export default function AdminTests() {
                         </td>
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                           ≥ {test.passingCriteria} Qs
+                        </td>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          {test.totalParticipants ?? test.candidateCount ?? 0}
                         </td>
                         {/* BUG-87 & FOLLOW-UP: Truncate long question sets with ellipsis and hover tooltip */}
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', maxWidth: 180 }}>

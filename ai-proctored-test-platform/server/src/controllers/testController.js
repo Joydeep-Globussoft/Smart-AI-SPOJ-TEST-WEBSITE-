@@ -231,6 +231,31 @@ const getTests = async (req, res, next) => {
       if (v._id) violMap[v._id.toString()] = v;
     }
 
+    // FEATURE-034: Verify all participant candidate IDs against Candidate collection
+    const Candidate = require('../models/Candidate');
+    const allCandidateIds = new Set();
+    for (const r of roomStats) {
+      (r.allJoinedCandidateArrays || []).flat().forEach((c) => {
+        const cid = (c?._id || c)?.toString();
+        if (cid) allCandidateIds.add(cid);
+      });
+    }
+    for (const s of submissionStats) {
+      (s.distinctCandidates || []).forEach((c) => {
+        const cid = (c?._id || c)?.toString();
+        if (cid) allCandidateIds.add(cid);
+      });
+    }
+
+    let existingCandidateSet = new Set();
+    if (allCandidateIds.size > 0) {
+      const candidateDocs = await Candidate.find(
+        { _id: { $in: Array.from(allCandidateIds) } },
+        '_id'
+      ).lean();
+      existingCandidateSet = new Set(candidateDocs.map((c) => c._id.toString()));
+    }
+
     // Hydrate pool information for pool-based tests (FEATURE-012 & FEATURE-013)
     const QuestionSet = require('../models/QuestionSet');
     const Folder = require('../models/Folder');
@@ -271,12 +296,13 @@ const getTests = async (req, res, next) => {
       const joinedIds = (rStat?.allJoinedCandidateArrays || [])
         .flat()
         .map((c) => (c?._id ? c._id.toString() : c?.toString()))
-        .filter(Boolean);
+        .filter((cid) => cid && existingCandidateSet.has(cid));
       const subIds = (sStat?.distinctCandidates || [])
         .map((c) => (c?._id ? c._id.toString() : c?.toString()))
-        .filter(Boolean);
+        .filter((cid) => cid && existingCandidateSet.has(cid));
       const distinctTestCandidates = new Set([...joinedIds, ...subIds]);
       const candidateCount = distinctTestCandidates.size;
+      const totalParticipants = candidateCount;
 
       const violCount = vStat ? vStat.totalViolations : 0;
       const disqSubCount = sStat ? sStat.disqualifiedCount : 0;
@@ -288,6 +314,7 @@ const getTests = async (req, res, next) => {
         activeRoomsCount: activeRooms,
         hasActiveRooms: activeRooms > 0,
         candidateCount,
+        totalParticipants,
         hasCandidates: candidateCount > 0,
         violationsCount: totalViolations,
         hasViolations: totalViolations > 0,
