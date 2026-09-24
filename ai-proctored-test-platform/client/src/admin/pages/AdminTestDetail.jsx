@@ -144,6 +144,80 @@ const getLiveSessionText = (test) => {
   return null;
 };
 
+// ── FEATURE/UX-XX: Room Candidates Timeline formatting & duration helpers ────
+const formatTimelineTime = (dateInput) => {
+  if (!dateInput) return '—';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+};
+
+const calculateCandidateTimeTaken = (candidate, isTestEnded) => {
+  if (!candidate) return '—';
+
+  // If candidate is NOT_STARTED or never started
+  const startRaw = candidate.candidateStartTime || candidate.startedAt;
+  if (!startRaw || candidate.status === 'NOT_STARTED') {
+    return '—';
+  }
+
+  const startTime = new Date(startRaw).getTime();
+  if (isNaN(startTime) || startTime <= 0) {
+    return '—';
+  }
+
+  const isSubmitted =
+    candidate.status === 'SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED' ||
+    candidate.status === 'AUTO_SUBMITTED_TIME_UP' ||
+    candidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+    Boolean(candidate.submittedAt);
+
+  const isDisqualified = candidate.status === 'DISQUALIFIED' || candidate.isDisqualified;
+
+  let endTime;
+  if (candidate.submittedAt) {
+    endTime = new Date(candidate.submittedAt).getTime();
+  } else if (isSubmitted && candidate.candidateEndTime) {
+    endTime = new Date(candidate.candidateEndTime).getTime();
+  } else if (isDisqualified) {
+    const endRaw = candidate.submittedAt || candidate.candidateEndTime;
+    endTime = endRaw ? new Date(endRaw).getTime() : Date.now();
+  } else if (candidate.status === 'IN_PROGRESS') {
+    if (isTestEnded && candidate.candidateEndTime) {
+      endTime = new Date(candidate.candidateEndTime).getTime();
+    } else {
+      endTime = Date.now();
+      if (candidate.candidateEndTime) {
+        const maxEnd = new Date(candidate.candidateEndTime).getTime();
+        if (!isNaN(maxEnd) && endTime > maxEnd) {
+          endTime = maxEnd;
+        }
+      }
+    }
+  } else {
+    return '—';
+  }
+
+  if (isNaN(endTime) || endTime <= startTime) {
+    return '0s';
+  }
+
+  const durationMs = Math.max(0, endTime - startTime);
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${mins < 10 ? '0' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  }
+  if (mins > 0) {
+    return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  }
+  return `${secs}s`;
+};
+
 export default function AdminTestDetail() {
   const { testId } = useParams();
   const navigate = useNavigate();
@@ -1520,7 +1594,7 @@ export default function AdminTestDetail() {
           </div>
         )}
 
-        {/* ── Room Candidates Modal with Real-time Status Sync (FR-3.3, FR-8.3, FEATURE-007, FEATURE-008) ── */}
+        {/* ── Room Candidates Modal with Real-time Status Sync & Timeline Details (FEATURE/UX-XX) ── */}
         {selectedRoomCandidates && (
           <div
             className="modal-backdrop"
@@ -1529,10 +1603,11 @@ export default function AdminTestDetail() {
               setCandidateSearchQuery('');
             }}
           >
-            <div className="modal-container" style={{ maxWidth: 820 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-container" style={{ maxWidth: 1060, width: '95%' }} onClick={(e) => e.stopPropagation()}>
               <div
                 className="modal-header"
                 style={{
+                  padding: '16px 20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -1541,17 +1616,19 @@ export default function AdminTestDetail() {
                 }}
               >
                 <div>
-                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0, fontSize: '1.1rem' }}>
                     Candidates in Room {selectedRoomCandidates.room.roomName || selectedRoomCandidates.room.roomCode}
                   </h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                     <span className="badge badge-teal" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
                       Code: {selectedRoomCandidates.room.roomCode}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                      Live Sync Active
-                    </span>
+                    {test?.status === 'LIVE' && (
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                        Live Sync Active
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1624,7 +1701,7 @@ export default function AdminTestDetail() {
                 </div>
               </div>
 
-              <div className="modal-body" style={{ maxHeight: 420, overflowY: 'auto' }}>
+              <div className="modal-body" style={{ maxHeight: 460, overflowY: 'auto', overflowX: 'auto', padding: '12px 16px' }}>
                 {loadingCandidates ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
                     <LoadingDots size="md" />
@@ -1638,90 +1715,136 @@ export default function AdminTestDetail() {
                     No candidates found.
                   </p>
                 ) : (
-                  <table className="table" style={{ fontSize: '0.85rem' }}>
+                  <table className="table" style={{ fontSize: '0.82rem', width: '100%', minWidth: 920, borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th>Candidate Name</th>
-                        <th>Email</th>
-                        <th>Questions</th>
-                        <th>Violations</th>
-                        <th>Status</th>
-                        <th>Submitted At</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center' }}></th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Candidate Name</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Email</th>
+                        <th style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>Questions</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Violations</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Status</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Room Joined</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Test Start</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Submitted At</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Time taken</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRoomCandidates.map((c) => (
-                        <tr key={c._id || c.candidateId}>
-                          <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{c.email}</td>
-                          <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
-                            {c.questionsCompleted ?? 0}
-                          </td>
-                          <td>
-                            {(c.malpracticeCount || 0) > 0 ? (
-                              <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
-                                ⚠️ {c.malpracticeCount}
-                              </span>
-                            ) : (
-                              <span style={{ color: '#2ECC71', fontSize: '0.75rem' }}>✓ Clean</span>
-                            )}
-                          </td>
-                          <td>
-                            {c.isDisqualified || c.status === 'DISQUALIFIED' ? (
-                              <span
-                                className="badge badge-danger"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                              >
-                                <span style={{ fontSize: '0.85em', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>🚫</span>
-                                <span>Disqualified</span>
-                              </span>
-                            ) : c.status === 'SUBMITTED' ? (
-                              <span
-                                className="badge badge-success"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                              >
-                                <span style={{ fontSize: '0.9em', lineHeight: 1, fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>✓</span>
-                                <span>Submitted</span>
-                              </span>
-                            ) : c.status === 'AUTO_SUBMITTED_TIME_UP' ? (
-                              <span
-                                className="badge badge-teal"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                              >
-                                <span style={{ fontSize: '0.85em', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>⏱</span>
-                                <span>Auto-Submitted</span>
-                              </span>
-                            ) : (
-                              <span
-                                className="badge badge-primary"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                              >
-                                <span style={{ fontSize: '0.85em', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>⏳</span>
-                                <span>In Progress</span>
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
-                            {c.submittedAt ? new Date(c.submittedAt).toLocaleTimeString() : '—'}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleInspectCandidate(c)}
-                              className="btn btn-secondary"
-                              style={{ padding: '3px 10px', fontSize: '0.75rem', fontWeight: 600 }}
-                            >
-                              Inspect
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredRoomCandidates.map((c, idx) => {
+                        const isTestEnded = test?.status === 'ENDED';
+                        const timeTaken = calculateCandidateTimeTaken(c, isTestEnded);
+                        const testStartTime = (c.status === 'NOT_STARTED' || (!c.candidateStartTime && !c.startedAt))
+                          ? '—'
+                          : formatTimelineTime(c.candidateStartTime || c.startedAt);
+                        const submittedAtTime = c.submittedAt
+                          ? formatTimelineTime(c.submittedAt)
+                          : '—';
+                        const roomJoinedTime = (c.roomJoinedAt || c.joinedAt)
+                          ? formatTimelineTime(c.roomJoinedAt || c.joinedAt)
+                          : '—';
+
+                        return (
+                          <tr
+                            key={c._id || c.candidateId}
+                            onClick={() => handleInspectCandidate(c)}
+                            className="room-candidate-table-row"
+                            title="Click anywhere on row to inspect candidate"
+                          >
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', fontWeight: 600, textAlign: 'center', width: 36, paddingLeft: 10, paddingRight: 4 }}>
+                              {idx + 1}
+                            </td>
+                            <td style={{ fontWeight: 600, color: 'var(--color-navy)', whiteSpace: 'nowrap' }}>
+                              {c.name}
+                            </td>
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                              {c.email}
+                            </td>
+                            <td style={{ fontWeight: 600, color: 'var(--color-primary)', textAlign: 'center' }}>
+                              {c.questionsCompleted ?? 0}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              {(c.malpracticeCount || 0) > 0 ? (
+                                <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                                  ⚠️ {c.malpracticeCount}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#2ECC71', fontSize: '0.75rem', fontWeight: 600 }}>✓ Clean</span>
+                              )}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              {c.isDisqualified || c.status === 'DISQUALIFIED' ? (
+                                <span
+                                  className="badge badge-danger"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '2px 8px' }}
+                                >
+                                  <span style={{ fontSize: '0.85em', lineHeight: 1 }}>🚫</span>
+                                  <span>Disqualified</span>
+                                </span>
+                              ) : c.status === 'SUBMITTED' ? (
+                                <span
+                                  className="badge badge-success"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '2px 8px' }}
+                                >
+                                  <span style={{ fontSize: '0.9em', lineHeight: 1, fontWeight: 700 }}>✓</span>
+                                  <span>Submitted</span>
+                                </span>
+                              ) : c.status === 'AUTO_SUBMITTED_TIME_UP' ? (
+                                <span
+                                  className="badge badge-teal"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '2px 8px' }}
+                                >
+                                  <span style={{ fontSize: '0.85em', lineHeight: 1 }}>⏱</span>
+                                  <span>Auto-Submitted</span>
+                                </span>
+                              ) : c.status === 'IN_PROGRESS' || c.candidateStartTime || c.startedAt ? (
+                                <span
+                                  className="badge badge-primary"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '2px 8px' }}
+                                >
+                                  <span style={{ fontSize: '0.85em', lineHeight: 1 }}>⏳</span>
+                                  <span>In Progress</span>
+                                </span>
+                              ) : (
+                                <span
+                                  className="badge"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '0.72rem',
+                                    padding: '2px 8px',
+                                    background: 'var(--color-bg-subtle, #F1F5F9)',
+                                    color: 'var(--color-text-muted, #64748B)',
+                                    border: '1px solid var(--color-border, #CBD5E1)',
+                                  }}
+                                >
+                                  <span>⚪</span>
+                                  <span>Not Started</span>
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                              {roomJoinedTime}
+                            </td>
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                              {testStartTime}
+                            </td>
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                              {submittedAtTime}
+                            </td>
+                            <td style={{ color: 'var(--color-navy)', fontWeight: 600, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                              {timeTaken}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
               </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="modal-footer" style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                   {candidateSearchQuery.trim() ? (
                     <>

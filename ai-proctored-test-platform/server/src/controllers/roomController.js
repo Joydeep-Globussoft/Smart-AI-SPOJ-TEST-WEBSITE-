@@ -387,6 +387,8 @@ const getRoomCandidates = async (req, res, next) => {
       const assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
       const assignedSetIndex = joinedEntry?.joinIndex || null;
 
+      const roomJoinedAt = joinedEntry?.joinedAt || candidate.createdAt || null;
+
       if (!candidateMap[cid]) {
         const isDisqualified = candidate.isDisqualified || sub.status === 'AUTO_SUBMITTED_DISQUALIFIED';
         let status = sub.status || 'IN_PROGRESS';
@@ -407,6 +409,8 @@ const getRoomCandidates = async (req, res, next) => {
           startedAt: sub.candidateStartTime || null,
           candidateStartTime: sub.candidateStartTime || null,
           candidateEndTime: sub.candidateEndTime,
+          roomJoinedAt,
+          joinedAt: roomJoinedAt,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId,
           assignedQuestionSetName,
@@ -422,6 +426,10 @@ const getRoomCandidates = async (req, res, next) => {
         }
         if (sub.submittedAt && (!candidateMap[cid].submittedAt || new Date(sub.submittedAt) > new Date(candidateMap[cid].submittedAt))) {
           candidateMap[cid].submittedAt = sub.submittedAt;
+        }
+        if (roomJoinedAt && !candidateMap[cid].roomJoinedAt) {
+          candidateMap[cid].roomJoinedAt = roomJoinedAt;
+          candidateMap[cid].joinedAt = roomJoinedAt;
         }
         if (assignedQuestionSetName && !candidateMap[cid].assignedQuestionSetName) {
           candidateMap[cid].assignedQuestionSetName = assignedQuestionSetName;
@@ -441,6 +449,7 @@ const getRoomCandidates = async (req, res, next) => {
         const candidate = entry.candidateId;
         if (!candidate) continue;
         const cid = candidate._id ? candidate._id.toString() : entry.candidateId.toString();
+        const roomJoinedAt = entry.joinedAt || candidate.createdAt || null;
 
         if (!candidateMap[cid]) {
           const isDisqualified = candidate.isDisqualified || false;
@@ -460,12 +469,18 @@ const getRoomCandidates = async (req, res, next) => {
             questionsCompleted: 0,
             submittedAt: null,
             startedAt: null,
+            candidateStartTime: null,
             candidateEndTime: null,
+            roomJoinedAt,
+            joinedAt: roomJoinedAt,
             malpracticeCount: malpracticeCounts[cid] || 0,
             assignedQuestionSetId,
             assignedQuestionSetName,
             assignedSetIndex,
           };
+        } else if (roomJoinedAt && !candidateMap[cid].roomJoinedAt) {
+          candidateMap[cid].roomJoinedAt = roomJoinedAt;
+          candidateMap[cid].joinedAt = roomJoinedAt;
         }
       }
     }
@@ -474,6 +489,7 @@ const getRoomCandidates = async (req, res, next) => {
     for (const item of malpracticeCandidates) {
       const candidate = item.candidate;
       const cid = candidate._id.toString();
+      const roomJoinedAt = item.detectedAt || candidate.createdAt || null;
       if (!candidateMap[cid]) {
         const isDisqualified = candidate.isDisqualified || item.action === 'DISQUALIFIED';
         candidateMap[cid] = {
@@ -487,7 +503,10 @@ const getRoomCandidates = async (req, res, next) => {
           questionsCompleted: 0,
           submittedAt: null,
           startedAt: null,
+          candidateStartTime: null,
           candidateEndTime: null,
+          roomJoinedAt,
+          joinedAt: roomJoinedAt,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId: null,
           assignedQuestionSetName: null,
