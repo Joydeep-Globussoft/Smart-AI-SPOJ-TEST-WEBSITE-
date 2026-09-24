@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuthContext';
-import globussoftLogo from '../../assets/globussoft-logo.png';
+import logoLight from '../../assets/logo-light.png';
 import { stopScreenStream, stopAllCandidateMediaStreams } from '../../services/mediaStreamManager';
 import { disconnectSocket } from '../../services/socketClient';
 
@@ -62,7 +62,7 @@ export default function CandidateTestComplete() {
         width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
       }}>
         <img
-          src={globussoftLogo}
+          src={logoLight}
           alt="Globussoft Technology"
           style={{ height: 44, width: 'auto', objectFit: 'contain', margin: '0 auto 20px auto', display: 'block' }}
         />

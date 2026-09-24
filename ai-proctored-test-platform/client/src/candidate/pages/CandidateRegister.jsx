@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-do
 import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
-import globussoftLogo from '../../assets/globussoft-logo.png';
+import logoLight from '../../assets/logo-light.png';
 import LoadingDots from '../../shared/LoadingDots';
 
 export default function CandidateRegister() {
@@ -140,7 +140,7 @@ export default function CandidateRegister() {
       <div className="auth-card">
         <div className="auth-logo">
           <img
-            src={globussoftLogo}
+            src={logoLight}
             alt="Globussoft Technology"
             style={{ height: 46, width: 'auto', objectFit: 'contain', display: 'block' }}
           />

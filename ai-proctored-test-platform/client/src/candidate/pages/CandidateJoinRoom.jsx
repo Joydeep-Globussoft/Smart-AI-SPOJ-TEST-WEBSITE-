@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuthContext';
-import globussoftLogo from '../../assets/globussoft-logo.png';
+import logoLight from '../../assets/logo-light.png';
 import LoadingDots from '../../shared/LoadingDots';
 import {
   onLateJoinApproved,
@@ -350,7 +350,7 @@ export default function CandidateJoinRoom() {
       <div className="auth-card">
         <div className="auth-logo">
           <img
-            src={globussoftLogo}
+            src={logoLight}
             alt="Globussoft Technology"
             style={{ height: 46, width: 'auto', objectFit: 'contain', display: 'block' }}
           />

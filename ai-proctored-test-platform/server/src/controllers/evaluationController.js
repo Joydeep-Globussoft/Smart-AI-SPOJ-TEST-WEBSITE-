@@ -118,7 +118,10 @@ const exportShortlistPdf = async (req, res, next) => {
       .rect(0, 102, doc.page.width, 3)
       .fill('#0E7C86');
 
-    const logoPath = path.join(__dirname, '../assets/globussoft-logo.png');
+    let logoPath = path.join(__dirname, '../assets/logo-light.png');
+    if (!fs.existsSync(logoPath)) {
+      logoPath = path.join(__dirname, '../assets/globussoft-logo.png');
+    }
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, 50, 18, { height: 68, fit: [180, 68] });
     } else {

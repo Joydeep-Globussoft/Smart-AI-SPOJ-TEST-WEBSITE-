@@ -6,7 +6,8 @@ import { useTheme } from '../hooks/useTheme';
 import toast from 'react-hot-toast';
 import api from '../services/apiClient';
 
-import globussoftLogo from '../assets/globussoft-logo.png';
+import logoLight from '../assets/logo-light.png';
+import logoDark from '../assets/logo-dark.png';
 
 export default function AdminNavbar() {
   const { user, logout, isSuperAdmin } = useAuth();
@@ -50,10 +51,10 @@ export default function AdminNavbar() {
   return (
     <>
       <nav className="navbar">
-        {/* Globussoft Logo (Section 14) */}
+        {/* Globussoft Logo (FEATURE-033: Theme-aware logo swap) */}
         <div className="navbar-brand">
           <img
-            src={globussoftLogo}
+            src={isDark ? logoDark : logoLight}
             alt="Globussoft Technology"
             style={{ height: 38, width: 'auto', objectFit: 'contain', display: 'block' }}
           />

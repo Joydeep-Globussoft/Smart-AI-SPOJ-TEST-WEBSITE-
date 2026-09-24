@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuthContext';
 import api from '../../services/apiClient';
 import toast from 'react-hot-toast';
-import globussoftLogo from '../../assets/globussoft-logo.png';
+import logoLight from '../../assets/logo-light.png';
+import logoDark from '../../assets/logo-dark.png';
+import { useTheme } from '../../hooks/useTheme';
 import PasswordInput from '../../shared/PasswordInput';
 import LoadingDots from '../../shared/LoadingDots';
 
 export default function AdminLogin() {
   const { user, login } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -43,7 +46,7 @@ export default function AdminLogin() {
       <div className="auth-card">
         <div className="auth-logo">
           <img
-            src={globussoftLogo}
+            src={isDark ? logoDark : logoLight}
             alt="Globussoft Technology"
             style={{ height: 46, width: 'auto', objectFit: 'contain', display: 'block' }}
           />

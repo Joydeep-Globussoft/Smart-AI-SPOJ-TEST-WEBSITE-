@@ -28,7 +28,7 @@ import ProctorWarningModal from '../components/ProctorWarningModal';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
 import TestFooter from '../components/TestFooter';
 import EmbeddedPdfViewer from '../components/EmbeddedPdfViewer';
-import globussoftLogo from '../../assets/globussoft-logo.png';
+import logoLight from '../../assets/logo-light.png';
 
 // ── Monaco Editor (lazy-loaded to avoid bundle bloat) ─────────────────────────
 import Editor from '@monaco-editor/react';
@@ -1056,7 +1056,7 @@ export default function CandidateTestScreen() {
         <div className="test-header-top-row">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <img
-              src={globussoftLogo}
+              src={logoLight}
               alt="Globussoft Technology"
               style={{ height: 28, width: 'auto', objectFit: 'contain', display: 'block' }}
             />
