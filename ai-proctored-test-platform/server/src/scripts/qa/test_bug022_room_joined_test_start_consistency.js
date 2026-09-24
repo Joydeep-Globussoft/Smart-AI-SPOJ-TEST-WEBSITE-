@@ -118,7 +118,33 @@ runTest('Backend Source Code Audit: roomController, proctoringController, submis
   assert.ok(subSrc.includes('candidateJoinTime'), 'submissionController must compute candidateJoinTime to avoid later overwrite');
 });
 
-// ── TEST 5: Frontend Source Code Audit ───────────────────────────────────────
+// ── TEST 5: Separate Room Joined (1:40 PM) vs Test Start (1:48 PM) ─────────
+runTest('Candidate login at 1:40 PM and Test Start at 1:48 PM preserves distinct timestamps', () => {
+  const candidateCreatedAt = new Date('2026-09-24T13:40:36Z');
+  const candidateLastLoginAt = new Date('2026-09-24T13:40:36Z');
+  const candidateRoomJoinedAt = new Date('2026-09-24T13:40:36Z');
+  const testStartedAt = new Date('2026-09-24T13:48:15Z'); // 7m 39s later after instructions & permissions
+  const testEndedAt = new Date('2026-09-24T14:03:32Z');
+
+  const resolved = resolveCandidateTimelines({
+    roomJoinedAtRaw: candidateRoomJoinedAt,
+    candidateCreatedAt,
+    candidateLastLoginAt,
+    candidateRoomJoinedAt,
+    testStartedAtRaw: testStartedAt,
+    testEndedAtRaw: testEndedAt,
+    candidateId: 'cand_distinct_test',
+    testId: 'test_distinct',
+    roomId: 'room_distinct',
+  });
+
+  assert.strictEqual(new Date(resolved.roomJoinedAt).getTime(), candidateRoomJoinedAt.getTime(), 'roomJoinedAt must be 13:40:36Z');
+  assert.strictEqual(new Date(resolved.testStartedAt).getTime(), testStartedAt.getTime(), 'testStartedAt must be 13:48:15Z');
+  assert.strictEqual(new Date(resolved.testEndedAt).getTime(), testEndedAt.getTime(), 'testEndedAt must be 14:03:32Z');
+  assert.notStrictEqual(new Date(resolved.roomJoinedAt).getTime(), new Date(resolved.testStartedAt).getTime(), 'roomJoinedAt and testStartedAt must NOT be equal when candidate joined earlier');
+});
+
+// ── TEST 6: Frontend Source Code Audit ───────────────────────────────────────
 runTest('Frontend Source Code Audit: AdminTestDetail.jsx and AdminLiveDashboard.jsx enforce canonical room joined consistency', () => {
   const testDetailPath = path.resolve(__dirname, '../../../../client/src/admin/pages/AdminTestDetail.jsx');
   const liveDashboardPath = path.resolve(__dirname, '../../../../client/src/admin/pages/AdminLiveDashboard.jsx');
@@ -128,7 +154,7 @@ runTest('Frontend Source Code Audit: AdminTestDetail.jsx and AdminLiveDashboard.
 
   assert.ok(testDetailSrc.includes('getCanonicalRoomJoinedTime'), 'AdminTestDetail.jsx must define and use getCanonicalRoomJoinedTime');
   assert.ok(liveDashboardSrc.includes('getInspectRoomJoinedText'), 'AdminLiveDashboard.jsx must define getInspectRoomJoinedText');
-  assert.ok(liveDashboardSrc.includes('dJoin.getTime() > dStart.getTime()'), 'AdminLiveDashboard.jsx must validate room joined against test start');
+  assert.ok(liveDashboardSrc.includes('resolvedJoin.getTime() > validStart.getTime()') || liveDashboardSrc.includes('dJoin.getTime() > dStart.getTime()'), 'AdminLiveDashboard.jsx must validate room joined against test start');
 });
 
 console.log('\n================================================================');

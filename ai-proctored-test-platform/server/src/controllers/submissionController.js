@@ -232,7 +232,7 @@ const joinRoom = async (req, res, next) => {
           { new: true }
         );
 
-        const candidateJoinTime = candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date();
+        const candidateJoinTime = candidate?.roomJoinedAt || candidate?.lastLoginAt || (candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date());
         if (updatedRoom) {
           joinIndex = updatedRoom.candidateJoinCounter;
           const setIndex = (joinIndex - 1) % poolSets.length;
@@ -265,7 +265,7 @@ const joinRoom = async (req, res, next) => {
         }
       } else {
         // Single set mode
-        const candidateJoinTime = candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date();
+        const candidateJoinTime = candidate?.roomJoinedAt || candidate?.lastLoginAt || (candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date());
         assignedQuestionSetId = test.questionSetId?._id || test.questionSetId;
         await Room.findOneAndUpdate(
           {
@@ -379,6 +379,7 @@ const startAttempt = async (req, res, next) => {
     const now = new Date();
     const crypto = require('crypto');
     const submissionSessionId = crypto.randomUUID();
+    const candidate = await Candidate.findById(candidateId);
 
     // Check if candidate already has active attempt for this test (BUG-53 Single-Session Enforcement)
     const existingSubmissions = await Submission.find({ candidateId, testId });
@@ -492,7 +493,7 @@ const startAttempt = async (req, res, next) => {
 
     if (targetRoomId) {
       // BUG-019: Prevent duplicate joinedCandidates entries on test attempt starts/reconnects
-      const candidateJoinTime = candidate?.createdAt && new Date(candidate.createdAt) <= new Date(now) ? candidate.createdAt : now;
+      const candidateJoinTime = candidate?.roomJoinedAt || candidate?.lastLoginAt || (candidate?.createdAt && new Date(candidate.createdAt) <= new Date(now) ? candidate.createdAt : now);
       await Room.findOneAndUpdate(
         {
           _id: targetRoomId,

@@ -13,6 +13,8 @@ const candidateSchema = new mongoose.Schema({
   address: { type: String, trim: true, default: '' },
   passwordHash: { type: String, required: false }, // FEATURE-031: Password removed, retained for backwards compatibility
   createdAt: { type: Date, default: Date.now },
+  lastLoginAt: { type: Date, default: Date.now },
+  roomJoinedAt: { type: Date, default: Date.now },
   // Account expiration timestamp — login check enforces 401 after this time (FR-1.2)
   expiresAt: { type: Date },
   isDisqualified: { type: Boolean, default: false },

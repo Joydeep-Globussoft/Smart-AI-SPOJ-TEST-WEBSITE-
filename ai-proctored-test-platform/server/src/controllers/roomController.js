@@ -336,19 +336,19 @@ const getRoomCandidates = async (req, res, next) => {
   try {
     const { roomId } = req.params;
     const room = await Room.findById(roomId)
-      .populate('joinedCandidates.candidateId', 'name email phone isDisqualified')
+      .populate('joinedCandidates.candidateId', 'name email phone isDisqualified createdAt lastLoginAt roomJoinedAt')
       .populate('joinedCandidates.assignedQuestionSetId', 'name testType');
     if (!room) return res.status(404).json({ error: 'Room not found' });
 
     // 1. Fetch all submissions for this room & test, sorted newest first
     const submissions = await Submission.find({ roomId, testId: room.testId })
-      .populate('candidateId', 'name email phone isDisqualified')
+      .populate('candidateId', 'name email phone isDisqualified createdAt lastLoginAt roomJoinedAt')
       .populate('assignedQuestionSetId', 'name testType')
       .sort({ createdAt: -1 });
 
     // 2. Fetch malpractice incident logs for this room & test
     const MalpracticeLog = require('../models/MalpracticeLog');
-    const malpracticeLogs = await MalpracticeLog.find({ roomId, testId: room.testId }).populate('candidateId', 'name email phone isDisqualified');
+    const malpracticeLogs = await MalpracticeLog.find({ roomId, testId: room.testId }).populate('candidateId', 'name email phone isDisqualified createdAt lastLoginAt roomJoinedAt');
     const malpracticeCounts = {};
     const malpracticeCandidates = [];
     malpracticeLogs.forEach((log) => {
@@ -387,7 +387,7 @@ const getRoomCandidates = async (req, res, next) => {
       const assignedQuestionSetId = assignedSetObj?._id || (typeof assignedSetObj === 'string' ? assignedSetObj : null);
       const assignedSetIndex = joinedEntry?.joinIndex || null;
 
-      const roomJoinedAt = joinedEntry?.joinedAt || candidate.createdAt || null;
+      const roomJoinedAt = joinedEntry?.joinedAt || candidate.roomJoinedAt || candidate.lastLoginAt || candidate.createdAt || null;
 
       if (!candidateMap[cid]) {
         const isDisqualified = candidate.isDisqualified || sub.status === 'AUTO_SUBMITTED_DISQUALIFIED';
@@ -413,6 +413,8 @@ const getRoomCandidates = async (req, res, next) => {
           candidateEndTime: sub.candidateEndTime,
           roomJoinedAt,
           joinedAt: roomJoinedAt,
+          createdAt: candidate.createdAt || null,
+          lastLoginAt: candidate.lastLoginAt || null,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId,
           assignedQuestionSetName,
@@ -435,6 +437,12 @@ const getRoomCandidates = async (req, res, next) => {
           candidateMap[cid].roomJoinedAt = roomJoinedAt;
           candidateMap[cid].joinedAt = roomJoinedAt;
         }
+        if (candidate.createdAt && !candidateMap[cid].createdAt) {
+          candidateMap[cid].createdAt = candidate.createdAt;
+        }
+        if (candidate.lastLoginAt && !candidateMap[cid].lastLoginAt) {
+          candidateMap[cid].lastLoginAt = candidate.lastLoginAt;
+        }
         if (assignedQuestionSetName && !candidateMap[cid].assignedQuestionSetName) {
           candidateMap[cid].assignedQuestionSetName = assignedQuestionSetName;
         }
@@ -453,7 +461,7 @@ const getRoomCandidates = async (req, res, next) => {
         const candidate = entry.candidateId;
         if (!candidate) continue;
         const cid = candidate._id ? candidate._id.toString() : entry.candidateId.toString();
-        const roomJoinedAt = entry.joinedAt || candidate.createdAt || null;
+        const roomJoinedAt = entry.joinedAt || candidate.roomJoinedAt || candidate.lastLoginAt || candidate.createdAt || null;
 
         if (!candidateMap[cid]) {
           const isDisqualified = candidate.isDisqualified || false;
@@ -479,6 +487,8 @@ const getRoomCandidates = async (req, res, next) => {
             candidateEndTime: null,
             roomJoinedAt,
             joinedAt: roomJoinedAt,
+            createdAt: candidate.createdAt || null,
+            lastLoginAt: candidate.lastLoginAt || null,
             malpracticeCount: malpracticeCounts[cid] || 0,
             assignedQuestionSetId,
             assignedQuestionSetName,
@@ -495,7 +505,7 @@ const getRoomCandidates = async (req, res, next) => {
     for (const item of malpracticeCandidates) {
       const candidate = item.candidate;
       const cid = candidate._id.toString();
-      const roomJoinedAt = item.detectedAt || candidate.createdAt || null;
+      const roomJoinedAt = item.detectedAt || candidate.roomJoinedAt || candidate.lastLoginAt || candidate.createdAt || null;
       if (!candidateMap[cid]) {
         const isDisqualified = candidate.isDisqualified || item.action === 'DISQUALIFIED';
         candidateMap[cid] = {
@@ -515,6 +525,8 @@ const getRoomCandidates = async (req, res, next) => {
           candidateEndTime: null,
           roomJoinedAt,
           joinedAt: roomJoinedAt,
+          createdAt: candidate.createdAt || null,
+          lastLoginAt: candidate.lastLoginAt || null,
           malpracticeCount: malpracticeCounts[cid] || 0,
           assignedQuestionSetId: null,
           assignedQuestionSetName: null,
@@ -530,9 +542,16 @@ const getRoomCandidates = async (req, res, next) => {
     const finalCandidates = Object.values(candidateMap).map((c) => {
       const cid = c.candidateId || c._id;
       const joinedEntry = roomJoinedMap[cid];
+      const candObj = (typeof joinedEntry?.candidateId === 'object' ? joinedEntry?.candidateId : null) || (typeof c.candidateId === 'object' ? c.candidateId : null);
+      const candidateCreationTime = c.createdAt || candObj?.createdAt || null;
+      const candidateLastLogin = c.lastLoginAt || candObj?.lastLoginAt || null;
+      const candidateRoomJoin = c.roomJoinedAt || candObj?.roomJoinedAt || null;
+
       const timelines = resolveCandidateTimelines({
         roomJoinedAtRaw: c.roomJoinedAt || joinedEntry?.joinedAt,
-        candidateCreatedAt: c.createdAt || (typeof joinedEntry?.candidateId === 'object' ? joinedEntry?.candidateId?.createdAt : null),
+        candidateCreatedAt: candidateCreationTime,
+        candidateLastLoginAt: candidateLastLogin,
+        candidateRoomJoinedAt: candidateRoomJoin,
         testStartedAtRaw: c.testStartedAt || c.candidateStartTime || c.startedAt,
         testEndedAtRaw: c.testEndedAt || c.submittedAt,
         candidateId: cid,
@@ -573,13 +592,13 @@ const getLiveCandidates = async (req, res, next) => {
 
     // Fetch all submissions for this test
     const submissions = await Submission.find({ testId })
-      .populate('candidateId', 'name email isDisqualified')
+      .populate('candidateId', 'name email isDisqualified createdAt lastLoginAt roomJoinedAt')
       .populate('roomId', 'roomName roomCode')
       .populate('assignedQuestionSetId', 'name testType');
 
     // Fetch all rooms for this test to also capture candidates who joined a room but haven't started yet
     const rooms = await Room.find({ testId })
-      .populate('joinedCandidates.candidateId', 'name email isDisqualified')
+      .populate('joinedCandidates.candidateId', 'name email isDisqualified createdAt lastLoginAt roomJoinedAt')
       .populate('joinedCandidates.assignedQuestionSetId', 'name testType');
 
     // Fetch all malpractice logs for this test
@@ -704,7 +723,7 @@ const getLiveCandidates = async (req, res, next) => {
           colorStatus = 'YELLOW';
         }
 
-        const roomJoinedAt = j.joinedAt || candidate?.createdAt || null;
+        const roomJoinedAt = j.joinedAt || candidate?.roomJoinedAt || candidate?.lastLoginAt || candidate?.createdAt || null;
         candidateMap[cid] = {
           candidateId: cid,
           name: candidate?.name || 'Candidate',
@@ -720,6 +739,8 @@ const getLiveCandidates = async (req, res, next) => {
           testEndedAt: timers.submittedAt || null,
           roomJoinedAt,
           joinedAt: roomJoinedAt,
+          createdAt: candidate?.createdAt || null,
+          lastLoginAt: candidate?.lastLoginAt || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
@@ -768,6 +789,7 @@ const getLiveCandidates = async (req, res, next) => {
       const rName = rDoc?.roomName || existing?.roomName || 'Assigned Room';
 
       if (!existing) {
+        const roomJoinedAt = candidate.roomJoinedAt || candidate.lastLoginAt || candidate.createdAt || null;
         candidateMap[cid] = {
           candidateId: cid,
           name: candidate.name || 'Candidate',
@@ -781,8 +803,10 @@ const getLiveCandidates = async (req, res, next) => {
           candidateEndTime: timers.endTime || sub.candidateEndTime || null,
           submittedAt: timers.submittedAt || sub.submittedAt || null,
           testEndedAt: timers.submittedAt || sub.submittedAt || null,
-          roomJoinedAt: candidate.createdAt || null,
-          joinedAt: candidate.createdAt || null,
+          roomJoinedAt,
+          joinedAt: roomJoinedAt,
+          createdAt: candidate.createdAt || null,
+          lastLoginAt: candidate.lastLoginAt || null,
           questionsAttempted: attemptedCounts[cid] || 0,
           totalQuestions,
           questionsCompleted: completedCounts[cid] || 0,
@@ -805,6 +829,16 @@ const getLiveCandidates = async (req, res, next) => {
         if (timers.submittedAt || sub.submittedAt) {
           candidateMap[cid].submittedAt = timers.submittedAt || sub.submittedAt;
           candidateMap[cid].testEndedAt = timers.submittedAt || sub.submittedAt;
+        }
+        if (candidate.createdAt && !candidateMap[cid].createdAt) {
+          candidateMap[cid].createdAt = candidate.createdAt;
+        }
+        if (candidate.lastLoginAt && !candidateMap[cid].lastLoginAt) {
+          candidateMap[cid].lastLoginAt = candidate.lastLoginAt;
+        }
+        if (candidate.roomJoinedAt && !candidateMap[cid].roomJoinedAt) {
+          candidateMap[cid].roomJoinedAt = candidate.roomJoinedAt;
+          candidateMap[cid].joinedAt = candidate.roomJoinedAt;
         }
         if (candidate.isDisqualified) {
           candidateMap[cid].status = 'DISQUALIFIED';
@@ -857,6 +891,8 @@ const getLiveCandidates = async (req, res, next) => {
       const timelines = resolveCandidateTimelines({
         roomJoinedAtRaw: c.roomJoinedAt || c.joinedAt,
         candidateCreatedAt: c.createdAt,
+        candidateLastLoginAt: c.lastLoginAt,
+        candidateRoomJoinedAt: c.roomJoinedAt,
         testStartedAtRaw: c.testStartedAt || c.candidateStartTime || c.startedAt,
         testEndedAtRaw: c.testEndedAt || c.submittedAt,
         candidateId: cid,

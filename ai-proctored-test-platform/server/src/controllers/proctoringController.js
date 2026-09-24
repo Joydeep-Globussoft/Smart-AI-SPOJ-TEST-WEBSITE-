@@ -399,20 +399,22 @@ const getCandidateMalpracticeLogs = async (req, res, next) => {
       MalpracticeLog.countDocuments(filter),
       query,
       Submission.findOne({ testId, candidateId }, { candidateStartTime: 1, candidateEndTime: 1, submittedAt: 1, status: 1 }).sort({ submittedAt: -1, candidateStartTime: 1 }),
-      Candidate.findById(candidateId, 'isDisqualified createdAt'),
+      Candidate.findById(candidateId, 'isDisqualified createdAt lastLoginAt roomJoinedAt'),
       Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId }, { 'joinedCandidates.$': 1 }),
     ]);
 
     const hasMore = !isAll && (skip + logs.length < totalCount);
 
     const { resolveCandidateTimelines } = require('../utils/timelineHelper');
-    const rawJoin = roomDoc?.joinedCandidates?.[0]?.joinedAt || candDoc?.createdAt || null;
+    const rawJoin = roomDoc?.joinedCandidates?.[0]?.joinedAt || candDoc?.roomJoinedAt || candDoc?.lastLoginAt || candDoc?.createdAt || null;
     const rawStart = subDoc?.candidateStartTime || null;
     const rawEnd = subDoc?.submittedAt || null;
 
     const timelines = resolveCandidateTimelines({
       roomJoinedAtRaw: rawJoin,
       candidateCreatedAt: candDoc?.createdAt,
+      candidateLastLoginAt: candDoc?.lastLoginAt,
+      candidateRoomJoinedAt: candDoc?.roomJoinedAt,
       testStartedAtRaw: rawStart,
       testEndedAtRaw: rawEnd,
       candidateId,

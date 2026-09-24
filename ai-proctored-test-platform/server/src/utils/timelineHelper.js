@@ -23,6 +23,8 @@ function parseDate(val) {
  * @param {Object} params
  * @param {Date|string|number} [params.roomJoinedAtRaw] - Timestamp from room.joinedCandidates[].joinedAt
  * @param {Date|string|number} [params.candidateCreatedAt] - Candidate account creation / registration timestamp
+ * @param {Date|string|number} [params.candidateLastLoginAt] - Candidate login timestamp
+ * @param {Date|string|number} [params.candidateRoomJoinedAt] - Candidate room joined timestamp
  * @param {Date|string|number} [params.testStartedAtRaw] - Timestamp of candidate clicking Start Test / Enter Fullscreen (candidateStartTime)
  * @param {Date|string|number} [params.testEndedAtRaw] - Timestamp of submission / auto-submission / disqualification (submittedAt)
  * @param {string} [params.candidateId] - Identifier for diagnostic logging
@@ -33,23 +35,28 @@ function parseDate(val) {
 function resolveCandidateTimelines({
   roomJoinedAtRaw,
   candidateCreatedAt,
+  candidateLastLoginAt,
+  candidateRoomJoinedAt,
   testStartedAtRaw,
   testEndedAtRaw,
   candidateId,
   testId,
   roomId,
 }) {
-  const cCreatedAt = parseDate(candidateCreatedAt);
-  const rawJoin = parseDate(roomJoinedAtRaw);
+  const dates = [
+    parseDate(roomJoinedAtRaw),
+    parseDate(candidateRoomJoinedAt),
+    parseDate(candidateLastLoginAt),
+    parseDate(candidateCreatedAt),
+  ].filter(Boolean);
+
   const rawStart = parseDate(testStartedAtRaw);
   const rawEnd = parseDate(testEndedAtRaw);
 
-  // 1. Establish canonical roomJoinedAt from earliest recorded entry/registration event
+  // 1. Establish canonical roomJoinedAt from earliest recorded entry/registration/login event
   let canonicalRoomJoin = null;
-  if (rawJoin && cCreatedAt) {
-    canonicalRoomJoin = rawJoin.getTime() <= cCreatedAt.getTime() ? rawJoin : cCreatedAt;
-  } else {
-    canonicalRoomJoin = rawJoin || cCreatedAt || null;
+  if (dates.length > 0) {
+    canonicalRoomJoin = dates.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), dates[0]);
   }
 
   // 2. Validate chronological order: roomJoinedAt must NOT be after testStartedAt
@@ -57,17 +64,17 @@ function resolveCandidateTimelines({
     console.warn(
       `[BUG-022 Data Inconsistency] Candidate ${candidateId || 'unknown'} in Test ${testId || 'unknown'} (Room: ${roomId || 'unknown'}) has roomJoinedAt (${canonicalRoomJoin.toISOString()}) > testStartedAt (${rawStart.toISOString()}). Correcting to earliest valid timestamp.`
     );
-    if (cCreatedAt && cCreatedAt.getTime() <= rawStart.getTime()) {
-      canonicalRoomJoin = cCreatedAt;
+    const validEarlier = dates.filter((d) => d.getTime() <= rawStart.getTime());
+    if (validEarlier.length > 0) {
+      canonicalRoomJoin = validEarlier.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), validEarlier[0]);
     } else {
       canonicalRoomJoin = rawStart;
     }
   }
 
-  // If candidate has started test but had no roomJoinedAt recorded at all, fallback to candidate.createdAt or testStartedAt
+  // If candidate has started test but had no roomJoinedAt recorded at all, fallback to testStartedAt
   if (!canonicalRoomJoin) {
-    if (cCreatedAt) canonicalRoomJoin = cCreatedAt;
-    else if (rawStart) canonicalRoomJoin = rawStart;
+    canonicalRoomJoin = rawStart || null;
   }
 
   // 3. Validate chronological order: testStartedAt must NOT be after testEndedAt

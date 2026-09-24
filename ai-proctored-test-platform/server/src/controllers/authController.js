@@ -145,6 +145,8 @@ const candidateRegister = async (req, res, next) => {
       if (stream !== undefined) candidate.stream = stream ? stream.trim() : '';
       if (instituteName !== undefined) candidate.instituteName = instituteName ? instituteName.trim() : '';
       if (address !== undefined) candidate.address = address ? address.trim() : '';
+      candidate.roomJoinedAt = now;
+      candidate.lastLoginAt = now;
       candidate.expiresAt = expiresAt;
       await candidate.save();
     } else {
@@ -158,6 +160,8 @@ const candidateRegister = async (req, res, next) => {
         instituteName: instituteName ? instituteName.trim() : '',
         address: address ? address.trim() : '',
         createdAt: now,
+        lastLoginAt: now,
+        roomJoinedAt: now,
         expiresAt,
       });
     }
@@ -225,6 +229,11 @@ const candidateLogin = async (req, res, next) => {
     if (candidate.isDisqualified) {
       return res.status(403).json({ error: 'Account has been disqualified' });
     }
+
+    const loginNow = new Date();
+    candidate.lastLoginAt = loginNow;
+    candidate.roomJoinedAt = loginNow;
+    await candidate.save();
 
     const payload = { id: candidate._id.toString(), type: 'candidate' };
     const token = generateAccessToken(payload);

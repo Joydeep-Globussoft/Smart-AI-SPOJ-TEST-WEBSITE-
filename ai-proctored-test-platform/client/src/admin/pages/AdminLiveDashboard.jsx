@@ -389,26 +389,32 @@ const formatInspectTimestamp = (dateInput) => {
 
 const getInspectRoomJoinedText = (candidate) => {
   if (!candidate) return 'Unavailable';
-  const rawJoin = candidate.roomJoinedAt || candidate.joinedAt || candidate.candidateJoinedAt;
-  const rawCreatedAt = candidate.createdAt;
-  const rawStart = candidate.testStartedAt || candidate.candidateStartTime || candidate.startedAt;
+  const dates = [
+    candidate.roomJoinedAt,
+    candidate.joinedAt,
+    candidate.candidateJoinedAt,
+    candidate.lastLoginAt,
+    candidate.createdAt,
+  ].filter(Boolean).map((d) => new Date(d)).filter((d) => !isNaN(d.getTime()));
 
-  let resolvedJoin = rawJoin || rawCreatedAt || null;
-  if (rawJoin && rawCreatedAt) {
-    const dJoin = new Date(rawJoin);
-    const dCreated = new Date(rawCreatedAt);
-    if (!isNaN(dJoin.getTime()) && !isNaN(dCreated.getTime())) {
-      resolvedJoin = dJoin.getTime() <= dCreated.getTime() ? rawJoin : rawCreatedAt;
-    }
-  }
+  const rawStart = candidate.testStartedAt || candidate.candidateStartTime || candidate.startedAt;
+  const dStart = rawStart ? new Date(rawStart) : null;
+  const validStart = dStart && !isNaN(dStart.getTime()) ? dStart : null;
+
+  let resolvedJoin = dates.length > 0
+    ? dates.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), dates[0])
+    : null;
 
   // BUG-022 Chronological validation: Room Joined must not be after Test Start
-  if (resolvedJoin && rawStart) {
-    const dJoin = new Date(resolvedJoin);
-    const dStart = new Date(rawStart);
-    if (!isNaN(dJoin.getTime()) && !isNaN(dStart.getTime()) && dJoin.getTime() > dStart.getTime()) {
-      resolvedJoin = (rawCreatedAt && new Date(rawCreatedAt).getTime() <= dStart.getTime()) ? rawCreatedAt : rawStart;
-    }
+  if (resolvedJoin && validStart && resolvedJoin.getTime() > validStart.getTime()) {
+    const validEarlier = dates.filter((d) => d.getTime() <= validStart.getTime());
+    resolvedJoin = validEarlier.length > 0
+      ? validEarlier.reduce((earliest, d) => (d.getTime() < earliest.getTime() ? d : earliest), validEarlier[0])
+      : validStart;
+  }
+
+  if (!resolvedJoin) {
+    resolvedJoin = validStart || null;
   }
 
   if (!resolvedJoin) return 'Unavailable';
