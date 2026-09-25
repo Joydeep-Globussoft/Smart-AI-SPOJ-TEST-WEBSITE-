@@ -1,16 +1,9 @@
 {
   "rewrites": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "https://smart-ai-spoj-test-website.onrender.com/api/v1/:path*"
-    },
-    {
-      "source": "/health",
-      "destination": "https://smart-ai-spoj-test-website.onrender.com/health"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
 }
+
