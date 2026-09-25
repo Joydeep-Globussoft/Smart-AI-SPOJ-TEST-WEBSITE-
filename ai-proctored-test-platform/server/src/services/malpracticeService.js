@@ -41,7 +41,12 @@ const getEffectiveYoloUrl = () => {
  * Synchronous getter for current YOLO health status (used by API endpoints)
  */
 const getYoloHealthStatus = () => {
-  return { ...yoloHealthStatus, restartAttempts: restartAttemptsCount, maxRestartAttempts: MAX_RESTART_ATTEMPTS };
+  return {
+    ...yoloHealthStatus,
+    restartAttempts: restartAttemptsCount,
+    maxRestartAttempts: MAX_RESTART_ATTEMPTS,
+    recentLogs: [...recentYoloLogs],
+  };
 };
 
 /**
@@ -208,7 +213,19 @@ const startLocalYoloService = () => {
   recordYoloLog('[HOST]', `Starting YOLO daemon via: ${pythonCmd}`);
 
   try {
-    const yoloEnv = { ...process.env, PORT: '8001', YOLO_PORT: '8001' };
+    const pythonPathEntries = [
+      process.env.PYTHONPATH,
+      path.resolve(process.env.HOME || '/root', '.local/lib/python3.10/site-packages'),
+      path.resolve(process.env.HOME || '/root', '.local/lib/python3.11/site-packages'),
+      path.resolve(process.env.HOME || '/root', '.local/lib/python3.12/site-packages'),
+    ].filter(Boolean);
+
+    const yoloEnv = {
+      ...process.env,
+      PORT: '8001',
+      YOLO_PORT: '8001',
+      PYTHONPATH: pythonPathEntries.join(process.platform === 'win32' ? ';' : ':'),
+    };
     yoloProcess = spawn(pythonCmd, ['app.py'], {
       cwd: yoloDir,
       env: yoloEnv,

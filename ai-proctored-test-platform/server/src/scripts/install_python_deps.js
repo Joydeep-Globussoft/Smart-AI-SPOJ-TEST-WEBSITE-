@@ -68,10 +68,20 @@ const venvPip = process.platform === 'win32' ? venvPipWin : venvPipLinux;
 
 if (!fs.existsSync(venvPip)) {
   console.log(`[YOLO-Build] Creating virtual environment at: ${venvDir}...`);
+  let venvSuccess = false;
   try {
     execSync(`${pythonCmd} -m venv "${venvDir}"`, { stdio: 'inherit' });
-  } catch (venvErr) {
-    console.warn(`[YOLO-Build] Notice: venv module not available or failed (${venvErr.message}). Using system pip.`);
+    venvSuccess = fs.existsSync(venvPip);
+  } catch (_) {}
+
+  if (!venvSuccess) {
+    console.log('[YOLO-Build] Trying virtualenv package fallback...');
+    try {
+      execSync(`${pythonCmd} -m pip install --no-cache-dir virtualenv`, { stdio: 'ignore' });
+      execSync(`${pythonCmd} -m virtualenv "${venvDir}"`, { stdio: 'inherit' });
+    } catch (vErr) {
+      console.warn(`[YOLO-Build] Notice: virtualenv creation failed (${vErr.message}). Falling back to system pip.`);
+    }
   }
 }
 
