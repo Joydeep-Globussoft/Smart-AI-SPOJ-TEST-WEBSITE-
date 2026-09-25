@@ -69,8 +69,9 @@ export default function CandidateTestComplete() {
       }}>
         <div style={{
           background: '#1A2B3C',
-          margin: '0 -40px 28px -40px',
-          padding: '18px 20px',
+          margin: '0 -40px 20px -40px',
+          height: 52,
+          padding: '0 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -81,7 +82,7 @@ export default function CandidateTestComplete() {
           <img
             src={logoLight}
             alt="Globussoft Technology"
-            style={{ height: 42, width: 'auto', objectFit: 'contain', display: 'block' }}
+            style={{ height: 32, maxHeight: 32, width: 'auto', objectFit: 'contain', display: 'block' }}
           />
         </div>
         <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>

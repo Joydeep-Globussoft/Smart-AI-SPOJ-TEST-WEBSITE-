@@ -151,7 +151,7 @@ export default function CandidateLogin() {
           <img
             src={logoLight}
             alt="Globussoft Technology"
-            style={{ height: 46, width: 'auto', objectFit: 'contain', display: 'block' }}
+            style={{ height: 32, width: 'auto', objectFit: 'contain', display: 'block' }}
           />
         </div>
 
