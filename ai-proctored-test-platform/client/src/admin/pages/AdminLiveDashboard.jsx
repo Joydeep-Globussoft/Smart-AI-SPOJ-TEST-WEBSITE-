@@ -1306,6 +1306,22 @@ export default function AdminLiveDashboard() {
 
   // YOLO AI Phone Detection Status State (BUG-108)
   const [yoloStatus, setYoloStatus] = useState({ status: 'starting', online: false });
+  const [isRestartingYolo, setIsRestartingYolo] = useState(false);
+
+  const handleRestartYolo = async () => {
+    setIsRestartingYolo(true);
+    try {
+      const res = await api.restartYolo();
+      toast.success('YOLO phone detection restart triggered');
+      if (res.data?.yolo) {
+        setYoloStatus(res.data.yolo);
+      }
+    } catch (err) {
+      toast.error('Failed to trigger YOLO restart: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsRestartingYolo(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -2389,7 +2405,7 @@ export default function AdminLiveDashboard() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 8,
                   padding: '6px 12px',
                   borderRadius: 6,
                   fontSize: '0.78rem',
@@ -2409,7 +2425,9 @@ export default function AdminLiveDashboard() {
                     ? 'YOLOv8 Phone Detection microservice is ONLINE and actively monitoring candidate webcams.'
                     : (yoloStatus.status === 'starting'
                       ? 'YOLOv8 daemon is initializing or loading model checkpoint...'
-                      : `YOLO daemon offline: ${yoloStatus.error || 'Check server logs'}`)
+                      : (yoloStatus.permanentFailure
+                        ? `PERMANENT FAILURE: Max restart ceiling reached (${yoloStatus.restartAttempts || 5}/${yoloStatus.maxRestartAttempts || 5}). Click Restart to retry.`
+                        : `YOLO daemon offline: ${yoloStatus.error || 'Check server logs'}`))
                 }
               >
                 <span style={{ fontSize: '0.75rem' }}>
@@ -2420,8 +2438,35 @@ export default function AdminLiveDashboard() {
                     ? 'AI Phone Detection: Active'
                     : (yoloStatus.status === 'starting'
                       ? 'AI Phone Detection: Starting...'
-                      : 'AI Phone Detection: Offline [CRITICAL]')}
+                      : (yoloStatus.permanentFailure
+                        ? 'AI Phone Detection: Permanent Failure'
+                        : 'AI Phone Detection: Offline [CRITICAL]'))}
                 </span>
+                {(yoloStatus.status !== 'online' || yoloStatus.permanentFailure) && (
+                  <button
+                    id="btn-restart-yolo"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRestartYolo();
+                    }}
+                    disabled={isRestartingYolo || yoloStatus.status === 'starting'}
+                    style={{
+                      marginLeft: 4,
+                      padding: '2px 6px',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      borderRadius: 4,
+                      border: '1px solid currentColor',
+                      background: 'transparent',
+                      color: 'inherit',
+                      cursor: isRestartingYolo || yoloStatus.status === 'starting' ? 'not-allowed' : 'pointer',
+                      opacity: isRestartingYolo || yoloStatus.status === 'starting' ? 0.6 : 1,
+                    }}
+                    title="Manually trigger YOLO microservice restart"
+                  >
+                    {isRestartingYolo ? 'Restarting...' : 'Restart'}
+                  </button>
+                )}
               </div>
 
               {/* Voice Announcement Toggle (FR-8.3, removed post-test per FEATURE-008) */}

@@ -30,6 +30,13 @@ router.get('/admin/yolo-status', verifyToken, requireAdmin, (req, res) => {
   res.json({ yolo: getYoloHealthStatus() });
 });
 
+// POST /api/v1/admin/yolo-restart (Manual admin intervention / circuit-breaker reset)
+router.post('/admin/yolo-restart', verifyToken, requireAdmin, (req, res) => {
+  const { manualResetYoloService } = require('../services/malpracticeService');
+  const yolo = manualResetYoloService();
+  res.json({ message: 'YOLO daemon reset triggered successfully', yolo });
+});
+
 // ── Profile routes for logged-in Admin (accessible to both ADMIN and SUPER_ADMIN) ──
 // GET /api/v1/admins/me & /api/v1/me
 router.get('/admins/me', verifyToken, requireAdmin, getMe);

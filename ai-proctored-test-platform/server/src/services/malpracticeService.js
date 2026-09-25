@@ -12,11 +12,19 @@ let isStartingYolo = false;
 let periodicHealthTimer = null;
 let lastRestartAttempt = 0;
 
+// Retry ceiling & Circuit-breaker configuration
+const MAX_RESTART_ATTEMPTS = 5;
+let restartAttemptsCount = 0;
+let isPermanentFailure = false;
+
 // Internal health tracking state
 let yoloHealthStatus = {
   status: 'starting', // 'online' | 'starting' | 'critical'
   online: false,
   modelLoaded: false,
+  permanentFailure: false,
+  restartAttempts: 0,
+  maxRestartAttempts: MAX_RESTART_ATTEMPTS,
   url: null,
   lastChecked: null,
   error: null,
@@ -33,7 +41,29 @@ const getEffectiveYoloUrl = () => {
  * Synchronous getter for current YOLO health status (used by API endpoints)
  */
 const getYoloHealthStatus = () => {
-  return { ...yoloHealthStatus };
+  return { ...yoloHealthStatus, restartAttempts: restartAttemptsCount, maxRestartAttempts: MAX_RESTART_ATTEMPTS };
+};
+
+/**
+ * Compute exponential backoff delay in ms based on restart attempt count
+ */
+const getBackoffDelayMs = (attempts) => {
+  // Attempt 1: 30s, Attempt 2: 60s, Attempt 3: 120s, Attempt 4: 240s, Attempt 5: 300s
+  return Math.min(300000, 30000 * Math.pow(2, Math.max(0, attempts - 1)));
+};
+
+/**
+ * Reset retry counters and clear permanent failure state (manual admin intervention)
+ */
+const manualResetYoloService = () => {
+  console.log('[YOLO] Manual reset triggered by Admin. Resetting restart counter and attempting startup...');
+  restartAttemptsCount = 0;
+  isPermanentFailure = false;
+  lastRestartAttempt = 0;
+  yoloHealthStatus.permanentFailure = false;
+  yoloHealthStatus.error = null;
+  startLocalYoloService();
+  return getYoloHealthStatus();
 };
 
 /**
@@ -51,6 +81,9 @@ const checkYoloHealth = async () => {
         status: data.model_loaded === true ? 'online' : 'starting',
         online: true,
         modelLoaded: data.model_loaded === true,
+        permanentFailure: false,
+        restartAttempts: 0,
+        maxRestartAttempts: MAX_RESTART_ATTEMPTS,
         url,
         lastChecked: new Date().toISOString(),
         error: data.model_loaded === true ? null : 'Model checkpoint is currently loading...',
@@ -61,6 +94,9 @@ const checkYoloHealth = async () => {
 
   try {
     yoloHealthStatus = await tryPing(baseUrl);
+    // On verified success, reset error count
+    restartAttemptsCount = 0;
+    isPermanentFailure = false;
     if (previousStatus !== 'online' && yoloHealthStatus.status === 'online') {
       console.log(`[YOLO] ✓ YOLO phone detection service is ONLINE and healthy at ${baseUrl}/health (model_loaded: true)`);
     }
@@ -70,6 +106,8 @@ const checkYoloHealth = async () => {
     if (!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
       try {
         yoloHealthStatus = await tryPing('http://localhost:8001');
+        restartAttemptsCount = 0;
+        isPermanentFailure = false;
         if (previousStatus !== 'online' && yoloHealthStatus.status === 'online') {
           console.log(`[YOLO] ✓ YOLO phone detection service is ONLINE and healthy at http://localhost:8001/health (model_loaded: true)`);
         }
@@ -78,12 +116,17 @@ const checkYoloHealth = async () => {
     }
 
     yoloHealthStatus = {
-      status: isStartingYolo ? 'starting' : 'critical',
+      status: isPermanentFailure ? 'critical' : (isStartingYolo ? 'starting' : 'critical'),
       online: false,
       modelLoaded: false,
+      permanentFailure: isPermanentFailure,
+      restartAttempts: restartAttemptsCount,
+      maxRestartAttempts: MAX_RESTART_ATTEMPTS,
       url: baseUrl,
       lastChecked: new Date().toISOString(),
-      error: primaryErr.message,
+      error: isPermanentFailure
+        ? `PERMANENT FAILURE: Max restart attempts (${MAX_RESTART_ATTEMPTS}) exceeded. Manual intervention required.`
+        : primaryErr.message,
     };
     return yoloHealthStatus;
   }
@@ -98,12 +141,30 @@ const startPeriodicHealthMonitor = () => {
   periodicHealthTimer = setInterval(async () => {
     const health = await checkYoloHealth();
 
-    // If offline and using local daemon, attempt auto-restart with a 60s cooldown
-    if (!health.online && !getEffectiveYoloUrl().includes('https://')) {
+    // If offline and not in permanent failure state, attempt bounded auto-restart with exponential backoff
+    if (!health.online && !getEffectiveYoloUrl().includes('https://') && !isPermanentFailure) {
       const now = Date.now();
-      if (now - lastRestartAttempt > 60000 && !isStartingYolo) {
+      const requiredDelay = getBackoffDelayMs(restartAttemptsCount);
+
+      if (now - lastRestartAttempt >= requiredDelay && !isStartingYolo) {
+        if (restartAttemptsCount >= MAX_RESTART_ATTEMPTS) {
+          isPermanentFailure = true;
+          console.error(
+            `\n🚨 [CRITICAL FATAL] [YOLO] Daemon reached maximum auto-restart attempts (${MAX_RESTART_ATTEMPTS}/${MAX_RESTART_ATTEMPTS}).` +
+            `\n   Halting automatic retry loop to prevent resource thrashing.` +
+            `\n   Service is in PERMANENT FAILURE state. Manual Admin intervention required.\n`
+          );
+          yoloHealthStatus.status = 'critical';
+          yoloHealthStatus.permanentFailure = true;
+          yoloHealthStatus.error = `PERMANENT FAILURE: Max restart attempts (${MAX_RESTART_ATTEMPTS}) exceeded. Manual intervention required.`;
+          return;
+        }
+
+        restartAttemptsCount++;
         lastRestartAttempt = now;
-        console.warn('[YOLO] Periodic check detected daemon offline. Attempting auto-restart...');
+        console.warn(
+          `[YOLO] Auto-restart attempt ${restartAttemptsCount}/${MAX_RESTART_ATTEMPTS} (next backoff: ${Math.round(getBackoffDelayMs(restartAttemptsCount) / 1000)}s)...`
+        );
         startLocalYoloService();
       }
     }
@@ -114,7 +175,7 @@ const startPeriodicHealthMonitor = () => {
  * Asynchronously spawn the local YOLO microservice daemon
  */
 const startLocalYoloService = () => {
-  if (yoloProcess || isStartingYolo) return;
+  if (yoloProcess || isStartingYolo || isPermanentFailure) return;
   isStartingYolo = true;
   yoloHealthStatus.status = 'starting';
   yoloHealthStatus.error = 'Daemon is starting...';
@@ -294,5 +355,6 @@ module.exports = {
   startLocalYoloService,
   checkYoloHealth,
   getYoloHealthStatus,
+  manualResetYoloService,
 };
 
