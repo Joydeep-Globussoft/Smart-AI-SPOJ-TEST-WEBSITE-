@@ -45,7 +45,7 @@ async function runFeature034Tests() {
   check(adminTestsSrc.includes("case 'participants':"), 'filteredTests sort switch implements participants sorting');
   check(adminTestsSrc.includes("<th style={{ width: 120, minWidth: 110 }}>Total Participants</th>"), 'Table header includes Total Participants column');
   check(adminTestsSrc.includes("test.totalParticipants ?? test.candidateCount ?? 0"), 'Table row renders test.totalParticipants accurately');
-  check(adminTestsSrc.includes("colSpan={10}") || adminTestsSrc.includes("colSpan={11}"), 'Empty state updated with colSpan=10/11 for new column');
+  check(adminTestsSrc.includes("colSpan={10}") || adminTestsSrc.includes("colSpan={11}") || adminTestsSrc.includes("colSpan={12}"), 'Empty state updated with colSpan for new column');
 
   // Verify column ordering: Passing Criteria -> Total Participants -> Question Set
   const passingIndex = adminTestsSrc.indexOf('Passing Criteria</th>');

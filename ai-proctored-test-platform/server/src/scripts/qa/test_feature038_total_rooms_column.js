@@ -46,7 +46,7 @@ async function runFeature038Tests() {
   check(adminTestsSrc.includes("case 'rooms':"), 'filteredTests sort switch implements rooms sorting');
   check(adminTestsSrc.includes("<th style={{ width: 95, minWidth: 90 }}>Total Rooms</th>"), 'Table header includes Total Rooms column');
   check(adminTestsSrc.includes("test.totalRooms ?? test.roomCount ?? 0"), 'Table row renders test.totalRooms accurately');
-  check(adminTestsSrc.includes("colSpan={11}"), 'Empty state updated with colSpan=11 for new column');
+  check(adminTestsSrc.includes('colSpan={11}') || adminTestsSrc.includes('colSpan={12}'), 'Empty state updated with colSpan for new column');
 
   // Verify column ordering: Question Set -> Total Rooms -> Created
   const questionSetIndex = adminTestsSrc.indexOf('Question Set</th>');

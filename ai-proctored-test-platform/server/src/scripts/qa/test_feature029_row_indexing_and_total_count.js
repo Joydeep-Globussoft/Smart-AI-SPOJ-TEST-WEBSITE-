@@ -62,7 +62,7 @@ async function runFeature029Tests() {
 
   // 4. Empty filtered state renders inside table with colSpan
   assert(
-    (adminTestsCode.includes('colSpan={9}') || adminTestsCode.includes('colSpan={10}') || adminTestsCode.includes('colSpan={11}')) &&
+    (adminTestsCode.includes('colSpan={9}') || adminTestsCode.includes('colSpan={10}') || adminTestsCode.includes('colSpan={11}') || adminTestsCode.includes('colSpan={12}')) &&
     adminTestsCode.includes('No tests match your filter criteria'),
     'Empty state is handled gracefully with colSpan when filters yield 0 results'
   );
@@ -70,7 +70,7 @@ async function runFeature029Tests() {
   // 5. BUG-86 sticky header & balanced layout preservation
   assert(
     adminTestsCode.includes('className="table-container test-table-scroll-container"') &&
-    (adminTestsCode.includes('minWidth: 1140') || adminTestsCode.includes('minWidth: 1060') || adminTestsCode.includes('minWidth: 980') || adminTestsCode.includes('minWidth: 960')) &&
+    (adminTestsCode.includes('minWidth: 1240') || adminTestsCode.includes('minWidth: 1140') || adminTestsCode.includes('minWidth: 1060') || adminTestsCode.includes('minWidth: 980') || adminTestsCode.includes('minWidth: 960')) &&
     globalCssCode.includes('.test-table-scroll-container thead th {') &&
     globalCssCode.includes('position: sticky;'),
     'BUG-86 sticky header container and balanced column width rules are preserved'

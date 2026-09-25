@@ -53,6 +53,35 @@ const DEFAULT_FILTERS = {
   violations: 'ALL',
 };
 
+// FEATURE-039 / FEATURE-027: Format Live-For duration matching Test Summary Dashboard header
+export const formatLiveFor = (test, currentNow = Date.now()) => {
+  if (!test) return '—';
+  if (test.status === 'DRAFT' || !test.liveStartedAt) {
+    return '—';
+  }
+  const start = new Date(test.liveStartedAt);
+  if (isNaN(start.getTime())) return '—';
+
+  const end = test.status === 'ENDED' && test.endedAt ? new Date(test.endedAt) : new Date(currentNow);
+  if (isNaN(end.getTime())) return '—';
+
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs <= 0) return '< 1 Second';
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const seconds = totalSeconds % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'Hour' : 'Hours'}`);
+  if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'Minute' : 'Minutes'}`);
+  if (parts.length > 0) return parts.join(' ');
+  if (seconds > 0) return `${seconds} ${seconds === 1 ? 'Second' : 'Seconds'}`;
+  return '< 1 Second';
+};
+
 export default function AdminTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
@@ -60,6 +89,13 @@ export default function AdminTests() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  // Real-time 1s ticker for live-updating elapsed duration on LIVE tests
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // FEATURE-021 & FEATURE-022: Preserved Filters & Search via URL parameters
   const [filters, updateFilter, setFilters] = useAdminFilterState(DEFAULT_FILTERS);
@@ -1150,7 +1186,7 @@ export default function AdminTests() {
             className="table-container test-table-scroll-container"
             style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
           >
-            <table className="table" style={{ width: '100%', minWidth: 1140 }}>
+            <table className="table" style={{ width: '100%', minWidth: 1250 }}>
               <thead>
                 <tr>
                   {/* FEATURE-029 & FOLLOW-UP: Position-based row index column (blank header) */}
@@ -1179,6 +1215,8 @@ export default function AdminTests() {
                   <th style={{ width: 95, minWidth: 85 }}>Type</th>
                   <th style={{ width: 90, minWidth: 80 }}>Status</th>
                   <th style={{ width: 85, minWidth: 75 }}>Duration</th>
+                  {/* FEATURE-039: Live For Column */}
+                  <th style={{ width: 120, minWidth: 105 }}>Live For</th>
                   <th style={{ width: 105, minWidth: 95 }}>Passing Criteria</th>
                   <th style={{ width: 120, minWidth: 110 }}>Total Participants</th>
                   <th style={{ width: '18%', minWidth: 140, maxWidth: 190 }}>Question Set</th>
@@ -1191,7 +1229,7 @@ export default function AdminTests() {
               <tbody>
                 {filteredTests.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
+                    <td colSpan={12} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
@@ -1251,6 +1289,10 @@ export default function AdminTests() {
                         </td>
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                           {test.durationMinutes} mins
+                        </td>
+                        {/* FEATURE-039: Live For Column */}
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          {formatLiveFor(test, now)}
                         </td>
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                           ≥ {test.passingCriteria} Qs
