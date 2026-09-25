@@ -39,6 +39,21 @@ const submitFrame = [
           const candidateRoom = await Room.findOne({ testId, 'joinedCandidates.candidateId': candidateId });
           resolvedRoomId = candidateRoom?._id;
         }
+        if (!resolvedRoomId) {
+          const defaultRoom = await Room.findOne({ testId });
+          resolvedRoomId = defaultRoom?._id;
+        }
+        if (!resolvedRoomId) {
+          const crypto = require('crypto');
+          const fallbackRoom = await Room.create({
+            testId,
+            roomName: 'Default Proctoring Room',
+            roomCode: `ROOM-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+            roomPassword: crypto.randomBytes(4).toString('hex'),
+            status: 'ACTIVE'
+          }).catch(() => null);
+          resolvedRoomId = fallbackRoom?._id;
+        }
 
         const candidate = await Candidate.findById(candidateId, 'name email');
         const roomDoc = resolvedRoomId ? await Room.findById(resolvedRoomId, 'roomName') : null;
