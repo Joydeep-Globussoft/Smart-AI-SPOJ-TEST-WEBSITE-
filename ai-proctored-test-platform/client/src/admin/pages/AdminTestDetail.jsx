@@ -1804,19 +1804,29 @@ export default function AdminTestDetail() {
                     No candidates found.
                   </p>
                 ) : (
-                  <table className="table" style={{ fontSize: '0.82rem', width: '100%', minWidth: 920, borderCollapse: 'collapse' }}>
+                  <table className="table" style={{ fontSize: '0.82rem', width: '100%', minWidth: 780, borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr>
-                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center' }}></th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Candidate Name</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Email</th>
-                        <th style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>Questions</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Violations</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Status</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Room Joined</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Test Start</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Submitted At</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>Time taken</th>
+                      <tr style={{ verticalAlign: 'bottom' }}>
+                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center' }}>#</th>
+                        <th style={{ lineHeight: 1.25 }}>
+                          Candidate<br />Name
+                        </th>
+                        <th>Email</th>
+                        <th style={{ textAlign: 'center' }}>Questions</th>
+                        <th>Violations</th>
+                        <th>Status</th>
+                        <th style={{ lineHeight: 1.25 }}>
+                          Room<br />Joined
+                        </th>
+                        <th style={{ lineHeight: 1.25 }}>
+                          Test<br />Start
+                        </th>
+                        <th style={{ lineHeight: 1.25 }}>
+                          Submitted<br />At
+                        </th>
+                        <th style={{ lineHeight: 1.25 }}>
+                          Time<br />Taken
+                        </th>
                       </tr>
                     </thead>
                     <tbody>

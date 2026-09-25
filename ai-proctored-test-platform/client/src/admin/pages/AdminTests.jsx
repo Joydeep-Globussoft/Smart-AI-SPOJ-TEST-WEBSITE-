@@ -25,7 +25,7 @@ const SORT_FIELDS = [
   { id: 'type', label: 'Type' },
   { id: 'status', label: 'Status' },
   { id: 'passing', label: 'Passing Criteria' },
-  { id: 'participants', label: 'Total Participants' },
+  { id: 'participants', label: 'Total Candidates' },
 ];
 
 const SORT_DIRS = [
@@ -690,8 +690,8 @@ export default function AdminTests() {
               >
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary, #0E7C86)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M7 15l5 5 5-5"/>
-                    <path d="M7 9l5-5 5 5"/>
+                    <path d="M7 15l5 5 5-5" />
+                    <path d="M7 9l5-5 5 5" />
                   </svg>
                   <span>{currentSortSummaryLabel}</span>
                 </span>
@@ -1267,56 +1267,56 @@ export default function AdminTests() {
                         </td>
                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
-                          <Link
-                            to={`/admin/tests/${test._id}`}
-                            className="btn btn-secondary"
-                            style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                          >
-                            Manage &amp; Rooms
-                          </Link>
-                          {test.status === 'LIVE' && (
                             <Link
-                              to={`/admin/tests/${test._id}/live`}
-                              className="btn btn-primary"
-                              style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#2ECC71' }}
+                              to={`/admin/tests/${test._id}`}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 12px', fontSize: '0.78rem' }}
                             >
-                              Live Monitor
+                              Manage &amp; Rooms
                             </Link>
-                          )}
-                          {test.status === 'ENDED' && (
-                            <>
+                            {test.status === 'LIVE' && (
                               <Link
                                 to={`/admin/tests/${test._id}/live`}
-                                className="btn btn-secondary"
-                                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                                title="View frozen post-test operational summary"
-                              >
-                                Test Summary
-                              </Link>
-                              <Link
-                                to={`/admin/tests/${test._id}/results`}
                                 className="btn btn-primary"
-                                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#2ECC71' }}
                               >
-                                Results
+                                Live Monitor
                               </Link>
-                            </>
-                          )}
-                          {test.status === 'DRAFT' && (
-                            <button
-                              onClick={() => setDeleteTarget(test)}
-                              className="btn btn-danger"
-                              style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                              title="Delete Test"
-                            >
-                              🗑️
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }))}
+                            )}
+                            {test.status === 'ENDED' && (
+                              <>
+                                <Link
+                                  to={`/admin/tests/${test._id}/live`}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                  title="View frozen post-test operational summary"
+                                >
+                                  Test Summary
+                                </Link>
+                                <Link
+                                  to={`/admin/tests/${test._id}/results`}
+                                  className="btn btn-primary"
+                                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                >
+                                  Results
+                                </Link>
+                              </>
+                            )}
+                            {test.status === 'DRAFT' && (
+                              <button
+                                onClick={() => setDeleteTarget(test)}
+                                className="btn btn-danger"
+                                style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                                title="Delete Test"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }))}
               </tbody>
             </table>
           </div>
