@@ -351,7 +351,7 @@ const detectPhone = async (imageBuffer) => {
         method: 'POST',
         body: primaryForm,
         headers: primaryForm.getHeaders(),
-        timeout: 15000,
+        timeout: 30000,
       });
     } catch (netErr) {
       if (!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
@@ -362,7 +362,7 @@ const detectPhone = async (imageBuffer) => {
             method: 'POST',
             body: fallbackForm,
             headers: fallbackForm.getHeaders(),
-            timeout: 15000,
+            timeout: 30000,
           });
         } catch (fallbackErr) {
           startLocalYoloService();
