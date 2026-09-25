@@ -1194,16 +1194,16 @@ export default function AdminTestDetail() {
                         border: isEnded
                           ? '1.5px solid var(--color-border, #cbd5e1)'
                           : isLive
-                          ? '1.5px solid var(--color-primary, #0E7C86)'
-                          : '1.5px solid var(--color-border, #cbd5e1)',
+                            ? '1.5px solid var(--color-primary, #0E7C86)'
+                            : '1.5px solid var(--color-border, #cbd5e1)',
                         borderRadius: 12,
                         padding: '18px 20px',
                         background: 'var(--color-bg-card, #ffffff)',
                         boxShadow: isEnded
                           ? '0 2px 10px rgba(0, 0, 0, 0.05)'
                           : isLive
-                          ? '0 4px 14px rgba(14, 124, 134, 0.12)'
-                          : '0 2px 8px rgba(0, 0, 0, 0.04)',
+                            ? '0 4px 14px rgba(14, 124, 134, 0.12)'
+                            : '0 2px 8px rgba(0, 0, 0, 0.04)',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -1807,7 +1807,7 @@ export default function AdminTestDetail() {
                   <table className="table" style={{ fontSize: '0.82rem', width: '100%', minWidth: 780, borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ verticalAlign: 'bottom' }}>
-                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center' }}>#</th>
+                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center' }}> </th>
                         <th style={{ lineHeight: 1.25 }}>
                           Candidate<br />Name
                         </th>

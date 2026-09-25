@@ -20,7 +20,7 @@ export default function CandidateLogin() {
   const [error, setError] = useState('');
   const [inviteInfo, setInviteInfo] = useState(null);
 
-  // BUG-80 / BUG-81 / BUG-97: On INITIAL mount only, handle invite link
+  // BUG-80 / BUG-81 / BUG-97 / BUG-100: On INITIAL mount only, handle invite link
   useEffect(() => {
     if (!initialMountRef.current) {
       initialMountRef.current = true;
@@ -28,39 +28,65 @@ export default function CandidateLogin() {
         sessionStorage.setItem('pendingInviteToken', inviteToken);
         localStorage.setItem('lastInviteToken', inviteToken);
 
-        // BUG-97: If candidate is already authenticated with valid session, attempt immediate auto-join
-        if (user && user.type === 'candidate' && localStorage.getItem('token')) {
-          api.joinRoom({ inviteToken })
-            .then(({ data: joinData }) => {
-              sessionStorage.removeItem('pendingInviteToken');
-              sessionStorage.setItem('joinData', JSON.stringify(joinData));
-              navigate('/candidate/instructions', { replace: true });
-            })
-            .catch((joinErr) => {
-              console.warn('[Login existing session auto-join]', joinErr);
-              const joinErrMsg = joinErr.response?.data?.error || 'Failed to auto-join test room';
-              navigate(`/candidate/join?invite=${inviteToken}`, {
-                state: {
-                  error: joinErrMsg,
-                  code: joinErr.response?.data?.code || (joinErrMsg.includes('not started') ? 'TEST_NOT_STARTED' : undefined),
-                  roomId: joinErr.response?.data?.roomId,
-                  roomName: joinErr.response?.data?.roomName,
-                  testTitle: joinErr.response?.data?.testTitle,
-                  inviteToken,
-                },
-                replace: true,
-              });
-            });
-          return;
-        }
-
-        // Fresh / unauthenticated candidate: purge stale session and load invite metadata
-        if (localStorage.getItem('token') || user) {
-          logout();
-        }
+        // Fetch invite metadata first to identify target testId and room details
         api.getInviteInfo(inviteToken)
-          .then(({ data }) => setInviteInfo(data))
-          .catch(() => {});
+          .then(({ data: inviteData }) => {
+            setInviteInfo(inviteData);
+
+            // BUG-100: Check if stored session belongs to THIS EXACT test
+            let storedTestId = null;
+            try {
+              const rawJoin = sessionStorage.getItem('joinData');
+              if (rawJoin) {
+                const parsedJoin = JSON.parse(rawJoin);
+                storedTestId = parsedJoin?.test?._id || parsedJoin?.testId;
+              }
+              if (!storedTestId) {
+                const rawActive = sessionStorage.getItem('activeSession');
+                if (rawActive) {
+                  const parsedActive = JSON.parse(rawActive);
+                  storedTestId = parsedActive?.testId;
+                }
+              }
+            } catch (e) {
+              console.warn('[Session check parse error]', e);
+            }
+
+            const isMatchingTestSession =
+              storedTestId && inviteData?.testId && String(storedTestId) === String(inviteData.testId);
+
+            // BUG-97 / BUG-100: ONLY auto-join if already authenticated AND the session matches this exact test
+            if (user && user.type === 'candidate' && localStorage.getItem('token') && isMatchingTestSession) {
+              api.joinRoom({ inviteToken })
+                .then(({ data: joinData }) => {
+                  sessionStorage.removeItem('pendingInviteToken');
+                  sessionStorage.setItem('joinData', JSON.stringify(joinData));
+                  navigate('/candidate/instructions', { replace: true });
+                })
+                .catch((joinErr) => {
+                  console.warn('[Login existing session auto-join]', joinErr);
+                  const joinErrMsg = joinErr.response?.data?.error || 'Failed to auto-join test room';
+                  navigate(`/candidate/join?invite=${inviteToken}`, {
+                    state: {
+                      error: joinErrMsg,
+                      code: joinErr.response?.data?.code || (joinErrMsg.includes('not started') ? 'TEST_NOT_STARTED' : undefined),
+                      roomId: joinErr.response?.data?.roomId || inviteData.roomId,
+                      roomName: joinErr.response?.data?.roomName || inviteData.roomName,
+                      testTitle: joinErr.response?.data?.testTitle || inviteData.testTitle,
+                      inviteToken,
+                    },
+                    replace: true,
+                  });
+                });
+            }
+            // Fresh / unauthenticated candidate or stale invalid token cleanup
+            if (!user && localStorage.getItem('token')) {
+              logout();
+            }
+          })
+          .catch((err) => {
+            console.warn('[Invite info fetch error]', err);
+          });
       }
     }
   }, [inviteToken, user, logout, navigate]);

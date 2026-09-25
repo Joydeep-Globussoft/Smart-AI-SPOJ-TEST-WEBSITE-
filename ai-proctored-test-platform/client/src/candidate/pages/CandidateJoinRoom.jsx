@@ -21,12 +21,11 @@ export default function CandidateJoinRoom() {
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('invite');
 
-  // BUG-97: Persistent invite token context across session, query params, and navigation state
+  // BUG-97 / BUG-100: Scoped invite token context across query params, navigation state, or active pending token
   const activeInviteToken =
     inviteToken ||
     location.state?.inviteToken ||
     sessionStorage.getItem('pendingInviteToken') ||
-    localStorage.getItem('lastInviteToken') ||
     '';
 
   const [form, setForm] = useState({ roomCode: '', roomPassword: '' });
@@ -50,7 +49,7 @@ export default function CandidateJoinRoom() {
     }
   }, [inviteToken, user, navigate]);
 
-  // Sync active invite token into persistent storage whenever available
+  // Sync active invite token into session storage whenever available
   useEffect(() => {
     if (activeInviteToken) {
       sessionStorage.setItem('pendingInviteToken', activeInviteToken);
@@ -71,24 +70,23 @@ export default function CandidateJoinRoom() {
     }
   }, [location.state]);
 
-  // BUG-82 / BUG-97: Auto-join helper executed upon approval event, test:started event, polling, or on-mount
+  // BUG-82 / BUG-97 / BUG-100: Auto-join helper executed upon approval event, test:started event, polling, or on-mount
   const performAutoJoin = useCallback(async (approvedData = {}) => {
     if (autoJoinLockRef.current) return;
     const activeInvite =
       inviteToken ||
       sessionStorage.getItem('pendingInviteToken') ||
-      localStorage.getItem('lastInviteToken') ||
       approvedData?.inviteToken ||
       location.state?.inviteToken;
     const roomIdToUse = approvedData?.roomId || targetRoomId;
 
     let payload = null;
-    if (activeInvite) {
-      payload = { inviteToken: activeInvite };
-    } else if (roomIdToUse) {
-      payload = { roomId: roomIdToUse, roomCode: form.roomCode, roomPassword: form.roomPassword };
-    } else if (form.roomCode && form.roomPassword) {
+    if (form.roomCode && form.roomPassword) {
       payload = { roomCode: form.roomCode, roomPassword: form.roomPassword };
+    } else if (activeInvite) {
+      payload = { inviteToken: activeInvite };
+    } else if (roomIdToUse && form.roomCode && form.roomPassword) {
+      payload = { roomId: roomIdToUse, roomCode: form.roomCode, roomPassword: form.roomPassword };
     } else if (approvedData?.roomCode) {
       payload = { roomCode: approvedData.roomCode };
     }
@@ -141,6 +139,29 @@ export default function CandidateJoinRoom() {
         if (data.roomId) setTargetRoomId(data.roomId);
         if (data.testId) setTargetTestId(data.testId);
 
+        // BUG-100: Check if candidate's stored session matches this test
+        let storedTestId = null;
+        try {
+          const rawJoin = sessionStorage.getItem('joinData');
+          if (rawJoin) {
+            const parsedJoin = JSON.parse(rawJoin);
+            storedTestId = parsedJoin?.test?._id || parsedJoin?.testId;
+          }
+          if (!storedTestId) {
+            const rawActive = sessionStorage.getItem('activeSession');
+            if (rawActive) {
+              const parsedActive = JSON.parse(rawActive);
+              storedTestId = parsedActive?.testId;
+            }
+          }
+        } catch (e) {}
+
+        // If candidate has a stored session for a DIFFERENT test, forward to register for this test
+        if (storedTestId && data.testId && String(storedTestId) !== String(data.testId)) {
+          navigate(`/candidate/register?invite=${activeInviteToken}`, { replace: true });
+          return;
+        }
+
         if (data.isLive) {
           performAutoJoin({ inviteToken: activeInviteToken });
         } else if (data.isExpired) {
@@ -157,7 +178,7 @@ export default function CandidateJoinRoom() {
     return () => {
       isCancelled = true;
     };
-  }, [activeInviteToken, user, performAutoJoin]);
+  }, [activeInviteToken, user, performAutoJoin, navigate]);
 
   // BUG-97: Polling mechanism while waiting for test to start with preserved invite token
   useEffect(() => {
@@ -258,7 +279,7 @@ export default function CandidateJoinRoom() {
     e.preventDefault();
     setLoading(true);
     try {
-      const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken') || localStorage.getItem('lastInviteToken');
+      const activeInvite = inviteToken || sessionStorage.getItem('pendingInviteToken');
       const payload = (form.roomCode && form.roomPassword)
         ? form
         : (activeInvite ? { inviteToken: activeInvite } : (targetRoomId ? { roomId: targetRoomId } : form));
