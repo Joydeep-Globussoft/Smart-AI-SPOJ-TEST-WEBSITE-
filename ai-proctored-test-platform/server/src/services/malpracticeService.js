@@ -171,6 +171,17 @@ const startPeriodicHealthMonitor = () => {
   }, 30000);
 };
 
+let recentYoloLogs = [];
+
+/**
+ * Helper to record logs in ring buffer
+ */
+const recordYoloLog = (prefix, msg) => {
+  if (!msg) return;
+  recentYoloLogs.push(`[${new Date().toISOString()}] ${prefix} ${msg}`);
+  if (recentYoloLogs.length > 25) recentYoloLogs.shift();
+};
+
 /**
  * Asynchronously spawn the local YOLO microservice daemon
  */
@@ -184,13 +195,18 @@ const startLocalYoloService = () => {
   const venvPythonWin = path.resolve(yoloDir, '.venv', 'Scripts', 'python.exe');
   const venvPythonLinux = path.resolve(yoloDir, '.venv', 'bin', 'python');
 
-  const pythonCmd = fs.existsSync(venvPythonWin)
-    ? venvPythonWin
-    : (fs.existsSync(venvPythonLinux)
-      ? venvPythonLinux
-      : (process.platform === 'win32' ? 'python' : 'python3'));
+  let pythonCmd = 'python3';
+  if (fs.existsSync(venvPythonLinux)) {
+    pythonCmd = venvPythonLinux;
+  } else if (fs.existsSync(venvPythonWin)) {
+    pythonCmd = venvPythonWin;
+  } else if (process.platform === 'win32') {
+    pythonCmd = 'python';
+  }
 
   console.log(`[YOLO] Attempting to auto-start YOLO microservice daemon using: ${pythonCmd}`);
+  recordYoloLog('[HOST]', `Starting YOLO daemon via: ${pythonCmd}`);
+
   try {
     const yoloEnv = { ...process.env, PORT: '8001', YOLO_PORT: '8001' };
     yoloProcess = spawn(pythonCmd, ['app.py'], {
@@ -202,30 +218,40 @@ const startLocalYoloService = () => {
 
     yoloProcess.stdout.on('data', (d) => {
       const msg = d.toString().trim();
-      if (msg) console.log(`[YOLO-Service] ${msg}`);
+      if (msg) {
+        console.log(`[YOLO-Service] ${msg}`);
+        recordYoloLog('[stdout]', msg);
+      }
     });
 
     yoloProcess.stderr.on('data', (d) => {
       const msg = d.toString().trim();
-      if (msg) console.debug(`[YOLO-Service] ${msg}`);
+      if (msg) {
+        console.error(`[YOLO-Service stderr] ${msg}`);
+        recordYoloLog('[stderr]', msg);
+      }
     });
 
     yoloProcess.on('exit', (code) => {
       console.warn(`[YOLO-Service] Process exited with code ${code}`);
+      recordYoloLog('[HOST]', `Process exited with code ${code}`);
       yoloProcess = null;
       isStartingYolo = false;
+      const lastErr = recentYoloLogs.slice(-3).map(l => l.replace(/^\[.*?\]\s*/, '')).join(' | ');
       yoloHealthStatus = {
         status: 'critical',
         online: false,
         modelLoaded: false,
         url: getEffectiveYoloUrl(),
         lastChecked: new Date().toISOString(),
-        error: `Process exited with code ${code}`,
+        error: `Process exited with code ${code}${lastErr ? `: ${lastErr}` : ''}`,
+        recentLogs: [...recentYoloLogs],
       };
     });
 
     yoloProcess.on('error', (err) => {
       console.error(`[CRITICAL] [YOLO] Failed to spawn YOLO service: ${err.message}`);
+      recordYoloLog('[HOST]', `Spawn error: ${err.message}`);
       yoloProcess = null;
       isStartingYolo = false;
       yoloHealthStatus = {
@@ -235,6 +261,7 @@ const startLocalYoloService = () => {
         url: getEffectiveYoloUrl(),
         lastChecked: new Date().toISOString(),
         error: err.message,
+        recentLogs: [...recentYoloLogs],
       };
     });
 
@@ -260,6 +287,7 @@ const startLocalYoloService = () => {
 
   } catch (err) {
     console.error(`[CRITICAL] [YOLO] Error launching YOLO process:`, err);
+    recordYoloLog('[HOST]', `Launch exception: ${err.message}`);
     isStartingYolo = false;
     yoloHealthStatus = {
       status: 'critical',
@@ -268,6 +296,7 @@ const startLocalYoloService = () => {
       url: getEffectiveYoloUrl(),
       lastChecked: new Date().toISOString(),
       error: err.message,
+      recentLogs: [...recentYoloLogs],
     };
   }
 };

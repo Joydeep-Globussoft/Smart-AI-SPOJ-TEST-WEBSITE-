@@ -38,19 +38,15 @@ function canRunCommand(cmd) {
   }
 }
 
-// Detect python & pip executables
-let pipCmd = null;
-if (canRunCommand('pip3')) {
-  pipCmd = 'pip3';
-} else if (canRunCommand('pip')) {
-  pipCmd = 'pip';
-} else if (canRunCommand('python3 -m pip')) {
-  pipCmd = 'python3 -m pip';
-} else if (canRunCommand('python -m pip')) {
-  pipCmd = 'python -m pip';
+// Detect python executable
+let pythonCmd = null;
+if (canRunCommand('python3')) {
+  pythonCmd = 'python3';
+} else if (canRunCommand('python')) {
+  pythonCmd = 'python';
 }
 
-if (!pipCmd) {
+if (!pythonCmd) {
   const noPythonMsg =
     'Python/pip is not installed or not in system PATH. YOLO microservice dependencies cannot be installed.';
   if (isProduction) {
@@ -64,20 +60,54 @@ if (!pipCmd) {
   }
 }
 
-console.log(`[YOLO-Build] Using pip installer: "${pipCmd}"`);
+// Create virtual environment in yoloDir/.venv if possible
+const venvDir = path.resolve(yoloDir, '.venv');
+const venvPipLinux = path.resolve(venvDir, 'bin', 'pip');
+const venvPipWin = path.resolve(venvDir, 'Scripts', 'pip.exe');
+const venvPip = process.platform === 'win32' ? venvPipWin : venvPipLinux;
+
+if (!fs.existsSync(venvPip)) {
+  console.log(`[YOLO-Build] Creating virtual environment at: ${venvDir}...`);
+  try {
+    execSync(`${pythonCmd} -m venv "${venvDir}"`, { stdio: 'inherit' });
+  } catch (venvErr) {
+    console.warn(`[YOLO-Build] Notice: venv module not available or failed (${venvErr.message}). Using system pip.`);
+  }
+}
+
+let pipExec = null;
+let extraFlags = '';
+if (fs.existsSync(venvPip)) {
+  pipExec = `"${venvPip}"`;
+  console.log(`[YOLO-Build] Using isolated virtual environment pip: ${pipExec}`);
+} else {
+  if (canRunCommand('pip3')) pipExec = 'pip3';
+  else if (canRunCommand('pip')) pipExec = 'pip';
+  else pipExec = `${pythonCmd} -m pip`;
+
+  // Check if --break-system-packages is supported for modern Debian/Ubuntu
+  try {
+    const helpOutput = execSync(`${pipExec} help install`, { stdio: 'pipe' }).toString();
+    if (helpOutput.includes('--break-system-packages')) {
+      extraFlags = ' --break-system-packages';
+    }
+  } catch (_) {}
+  console.log(`[YOLO-Build] Using system pip: "${pipExec}" with flags: "${extraFlags}"`);
+}
+
 console.log('[YOLO-Build] Installing CPU-optimized PyTorch and requirements...');
 
 try {
   // 1. Install CPU-only PyTorch first to prevent downloading 2.5GB CUDA GPU wheels on Render
   console.log('[YOLO-Build] Step 1/2: Installing PyTorch CPU wheel...');
   execSync(
-    `${pipCmd} install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu`,
+    `${pipExec} install --no-cache-dir${extraFlags} torch torchvision --index-url https://download.pytorch.org/whl/cpu`,
     { stdio: 'inherit' }
   );
 
   // 2. Install remaining requirements (fastapi, uvicorn, ultralytics, pillow, numpy, python-multipart)
   console.log('[YOLO-Build] Step 2/2: Installing YOLO service requirements...');
-  execSync(`${pipCmd} install --no-cache-dir -r "${reqFile}"`, { stdio: 'inherit' });
+  execSync(`${pipExec} install --no-cache-dir${extraFlags} -r "${reqFile}"`, { stdio: 'inherit' });
 
   console.log('✅ [YOLO-Build] All Python YOLO microservice dependencies installed successfully!\n');
   process.exit(0);
