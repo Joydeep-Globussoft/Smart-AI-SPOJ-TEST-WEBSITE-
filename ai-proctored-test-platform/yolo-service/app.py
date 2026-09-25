@@ -43,12 +43,6 @@ async def lifespan(app: FastAPI):
             model_path = "yolov8n.pt"
         model = YOLO(model_path)
         print(f"[YOLO] Model loaded successfully: {model_path}")
-
-        # Warm up model with a dummy frame so initial inference JIT compilation is instant
-        print("[YOLO] Warming up model forward pass...")
-        dummy_img = np.zeros((320, 320, 3), dtype=np.uint8)
-        model(dummy_img, verbose=False)
-        print("[YOLO] ✓ Model warm-up complete! Instant inference ready.")
     except Exception as e:
         print(f"[YOLO] WARNING: Model failed to load: {e}")
         print("[YOLO] Service will return phoneDetected=false for all frames.")

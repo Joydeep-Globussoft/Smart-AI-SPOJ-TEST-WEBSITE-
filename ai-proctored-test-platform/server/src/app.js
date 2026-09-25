@@ -106,7 +106,7 @@ app.get('/health', (req, res) => {
   const yolo = getYoloHealthStatus();
   res.json({
     status: 'ok',
-    version: '1.0.9-yolo-inference-verified',
+    version: '1.1.0-yolo-inference-verified',
     timestamp: new Date().toISOString(),
     services: {
       mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
