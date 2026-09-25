@@ -98,7 +98,7 @@ export const api = {
   getRooms: (testId) => axios.get(`/tests/${testId}/rooms`),
   getLiveCandidates: (testId) => axios.get(`/tests/${testId}/live-candidates`),
   deleteRoom: (roomId) => axios.delete(`/rooms/${roomId}`),
-  getRoomCandidates: (roomId) => axios.get(`/rooms/${roomId}/candidates`),
+  getRoomCandidates: (roomId, config = {}) => axios.get(`/rooms/${roomId}/candidates`, config),
   requestLateJoin: (roomId, candidateId) => axios.post(`/rooms/${roomId}/candidates/${candidateId}/late-join-request`),
   allowLateJoin: (roomId, candidateId) => axios.post(`/rooms/${roomId}/candidates/${candidateId}/allow-late-entry`),
   dismissLateJoin: (roomId, candidateId) => axios.post(`/rooms/${roomId}/candidates/${candidateId}/dismiss-late-join`),

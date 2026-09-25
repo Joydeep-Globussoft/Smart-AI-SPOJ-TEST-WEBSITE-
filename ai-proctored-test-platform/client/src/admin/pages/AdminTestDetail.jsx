@@ -278,10 +278,22 @@ export default function AdminTestDetail() {
     capacity: 50,
   });
 
-  // Room Candidates View Modal
+  // Room Candidates View Modal (BUG-99: In-flight abort & guarded lifecycle)
   const [selectedRoomCandidates, setSelectedRoomCandidates] = useState(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [candidateSearchQuery, setCandidateSearchQuery] = useState('');
+  const candidatesAbortControllerRef = useRef(null);
+  const candidatesFetchIdRef = useRef(0);
+
+  // Clean up in-flight candidates fetch on unmount
+  useEffect(() => {
+    return () => {
+      if (candidatesAbortControllerRef.current) {
+        candidatesAbortControllerRef.current.abort();
+        candidatesAbortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   // FEATURE-008: Real-time case-insensitive candidate name filtering for room candidates modal
   const filteredRoomCandidates = useMemo(() => {
@@ -601,20 +613,76 @@ export default function AdminTestDetail() {
   };
   const handleEditSave = handleSaveConfig;
 
-  // View Candidates in Room
+  // ── BUG-99: Close Room Candidates Modal and cancel any active in-flight request ──
+  const handleCloseRoomCandidatesModal = useCallback(() => {
+    if (candidatesAbortControllerRef.current) {
+      candidatesAbortControllerRef.current.abort();
+      candidatesAbortControllerRef.current = null;
+    }
+    candidatesFetchIdRef.current++;
+    setSelectedRoomCandidates(null);
+    setLoadingCandidates(false);
+    setCandidateSearchQuery('');
+  }, []);
+
+  // View Candidates in Room (BUG-99: with in-flight abort, request-id tracking, & guarded state update)
   const handleViewRoomCandidates = async (room, initialQuery = '') => {
+    if (!room) return;
+
+    // 1. Abort any previous pending fetch
+    if (candidatesAbortControllerRef.current) {
+      candidatesAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    candidatesAbortControllerRef.current = controller;
+    const currentFetchId = ++candidatesFetchIdRef.current;
+
+    // 2. Open modal immediately with loading indicator
+    setSelectedRoomCandidates({ room, list: [] });
+    setCandidateSearchQuery(initialQuery);
+    setLoadingCandidates(true);
+
     try {
-      setSelectedRoomCandidates({ room, list: [] });
-      setCandidateSearchQuery(initialQuery);
-      setLoadingCandidates(true);
-      const res = await api.getRoomCandidates(room._id);
-      setSelectedRoomCandidates({ room, list: res.data.candidates || [] });
+      const res = await api.getRoomCandidates(room._id || room.id, { signal: controller.signal });
+
+      // 3. Guard against stale responses or closed modal
+      if (controller.signal.aborted || currentFetchId !== candidatesFetchIdRef.current) {
+        return;
+      }
+
+      setSelectedRoomCandidates((prev) => {
+        // If modal was closed in the meantime, do NOT reopen it
+        if (!prev) return null;
+        const targetId = (room._id || room.id)?.toString();
+        const currentOpenId = (prev.room?._id || prev.room?.id)?.toString();
+        if (targetId !== currentOpenId) {
+          return prev; // Different room is now open
+        }
+        return { room, list: res.data?.candidates || [] };
+      });
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to fetch candidates');
-      setSelectedRoomCandidates(null);
-      setCandidateSearchQuery('');
+      const isCanceled =
+        err?.name === 'CanceledError' ||
+        err?.name === 'AbortError' ||
+        err?.code === 'ERR_CANCELED' ||
+        controller.signal.aborted ||
+        currentFetchId !== candidatesFetchIdRef.current;
+
+      // Only display toast and clear state if this was an actual network error and not user cancellation
+      if (!isCanceled) {
+        toast.error(err.response?.data?.error || 'Failed to fetch candidates');
+        setSelectedRoomCandidates((prev) => {
+          if (!prev) return null;
+          const targetId = (room._id || room.id)?.toString();
+          const currentOpenId = (prev.room?._id || prev.room?.id)?.toString();
+          return targetId === currentOpenId ? null : prev;
+        });
+        setCandidateSearchQuery('');
+      }
     } finally {
-      setLoadingCandidates(false);
+      if (currentFetchId === candidatesFetchIdRef.current && !controller.signal.aborted) {
+        setLoadingCandidates(false);
+      }
     }
   };
 
@@ -624,8 +692,7 @@ export default function AdminTestDetail() {
     if (!cid) return;
     const roomId = selectedRoomCandidates?.room?._id || selectedRoomCandidates?.room?.id;
     const currentQ = candidateSearchQuery ? candidateSearchQuery.trim() : '';
-    setSelectedRoomCandidates(null);
-    setCandidateSearchQuery('');
+    handleCloseRoomCandidatesModal();
     navigate(
       `/admin/tests/${testId}/live?candidateId=${cid}${roomId ? `&roomId=${roomId}&from=roomCandidates` : ''}${currentQ ? `&q=${encodeURIComponent(currentQ)}` : ''}`,
       { state: { fromRoomCandidates: true, roomId, q: currentQ } }
@@ -1626,10 +1693,7 @@ export default function AdminTestDetail() {
         {selectedRoomCandidates && (
           <div
             className="modal-backdrop"
-            onClick={() => {
-              setSelectedRoomCandidates(null);
-              setCandidateSearchQuery('');
-            }}
+            onClick={handleCloseRoomCandidatesModal}
           >
             <div className="modal-container" style={{ maxWidth: 1060, width: '95%' }} onClick={(e) => e.stopPropagation()}>
               <div
@@ -1718,10 +1782,7 @@ export default function AdminTestDetail() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedRoomCandidates(null);
-                      setCandidateSearchQuery('');
-                    }}
+                    onClick={handleCloseRoomCandidatesModal}
                     style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                   >
                     ✕
@@ -1884,10 +1945,7 @@ export default function AdminTestDetail() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedRoomCandidates(null);
-                    setCandidateSearchQuery('');
-                  }}
+                  onClick={handleCloseRoomCandidatesModal}
                   className="btn btn-secondary"
                 >
                   Close
