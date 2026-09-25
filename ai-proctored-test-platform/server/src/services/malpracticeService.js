@@ -224,6 +224,7 @@ const startLocalYoloService = () => {
       ...process.env,
       PORT: '8001',
       YOLO_PORT: '8001',
+      PYTHONUNBUFFERED: '1',
       PYTHONPATH: pythonPathEntries.join(process.platform === 'win32' ? ';' : ':'),
     };
     yoloProcess = spawn(pythonCmd, ['app.py'], {
