@@ -178,12 +178,12 @@ async function main() {
     });
   }
 
-  // 4. Non-regression: Candidate join logic does NOT gate on capacity
-  runTest('Non-regression: submissionController.js joinRoom does NOT compare capacity', () => {
+  // 4. Verification: Candidate join logic properly enforces room capacity (BUG-101)
+  runTest('Verification: submissionController.js joinRoom enforces capacity (BUG-101)', () => {
     const submissionControllerPath = path.join(__dirname, '../../controllers/submissionController.js');
     const submissionContent = fs.readFileSync(submissionControllerPath, 'utf8');
-    assert(!submissionContent.includes('room.capacity') || !submissionContent.includes('joinedCandidates.length >= room.capacity'),
-      'joinRoom must not gate joins based on capacity');
+    assert(submissionContent.includes('room.capacity') && submissionContent.includes('ROOM_CAPACITY_FULL'),
+      'joinRoom must enforce capacity');
   });
 
   await mongoose.disconnect();

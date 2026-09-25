@@ -285,6 +285,7 @@ const resolveInviteToken = async (req, res, next) => {
 
     const isExpired = Boolean(room.passwordValidUntil && new Date() > room.passwordValidUntil);
     const isLive = test.status === 'LIVE';
+    const isFull = Boolean(room.capacity && room.joinedCandidates && room.joinedCandidates.length >= room.capacity);
 
     res.json({
       valid: true,
@@ -295,6 +296,8 @@ const resolveInviteToken = async (req, res, next) => {
       testType: test.testType,
       testStatus: test.status,
       durationMinutes: test.durationMinutes,
+      capacity: room.capacity || null,
+      isFull,
       isLive,
       isExpired,
       roomStatus: room.status,

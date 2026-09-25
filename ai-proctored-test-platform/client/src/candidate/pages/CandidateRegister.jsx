@@ -183,7 +183,11 @@ export default function CandidateRegister() {
 
         {error && (
           <div className="alert alert-danger">
-            {error.includes('take another test yet') ? `⏳ ${error}` : error}
+            {error.includes('take another test yet')
+              ? `⏳ ${error}`
+              : (error.toLowerCase().includes('full') || error.includes('Capacity')
+                  ? `🔒 ${error}`
+                  : error)}
           </div>
         )}
 

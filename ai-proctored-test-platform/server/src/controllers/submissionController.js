@@ -193,6 +193,21 @@ const joinRoom = async (req, res, next) => {
       });
     }
 
+    // BUG-101: Enforce Room Capacity limit (if configured)
+    if (!isAlreadyJoined && room.capacity && room.joinedCandidates) {
+      if (room.joinedCandidates.length >= room.capacity) {
+        return res.status(403).json({
+          error: `This room is full (Capacity: ${room.capacity}). Please contact your administrator.`,
+          code: 'ROOM_CAPACITY_FULL',
+          roomId: room._id,
+          roomName: room.roomName,
+          testId: test._id,
+          testTitle: test.title,
+          capacity: room.capacity,
+        });
+      }
+    }
+
     // Associate candidate with the room in DB and assign Question Set (FEATURE-012)
     let assignedQuestionSetId = null;
     let joinIndex = null;
@@ -220,11 +235,16 @@ const joinRoom = async (req, res, next) => {
           return res.status(500).json({ error: 'Assigned Question Set Pool is invalid or empty.' });
         }
 
-        // Atomically increment candidateJoinCounter for new joins in this room
+        const capacityCondition = room.capacity
+          ? { $expr: { $lt: [{ $size: { $ifNull: ['$joinedCandidates', []] } }, room.capacity] } }
+          : {};
+
+        // Atomically increment candidateJoinCounter for new joins in this room (BUG-101: bounded by room capacity)
         const updatedRoom = await Room.findOneAndUpdate(
           {
             _id: room._id,
             'joinedCandidates.candidateId': { $ne: candidateId },
+            ...capacityCondition,
           },
           {
             $inc: { candidateJoinCounter: 1 },
@@ -255,22 +275,43 @@ const joinRoom = async (req, res, next) => {
             }
           );
         } else {
-          // Re-fetch in case of concurrent join
+          // Re-fetch in case of concurrent join or room reaching capacity
           const reloadedRoom = await Room.findById(room._id);
           const found = reloadedRoom?.joinedCandidates?.find(
             (j) => j.candidateId && j.candidateId.toString() === candidateId.toString()
           );
-          assignedQuestionSetId = found?.assignedQuestionSetId || poolSets[0]._id;
-          joinIndex = found?.joinIndex || 1;
+          if (found) {
+            assignedQuestionSetId = found?.assignedQuestionSetId || poolSets[0]._id;
+            joinIndex = found?.joinIndex || 1;
+          } else if (reloadedRoom?.capacity && (reloadedRoom?.joinedCandidates?.length || 0) >= reloadedRoom.capacity) {
+            return res.status(403).json({
+              error: `This room is full (Capacity: ${reloadedRoom.capacity}). Please contact your administrator.`,
+              code: 'ROOM_CAPACITY_FULL',
+              roomId: room._id,
+              roomName: room.roomName,
+              testId: test._id,
+              testTitle: test.title,
+              capacity: reloadedRoom.capacity,
+            });
+          } else {
+            assignedQuestionSetId = poolSets[0]._id;
+            joinIndex = 1;
+          }
         }
       } else {
-        // Single set mode
+        // Single set mode (BUG-101: bounded by room capacity)
+        const capacityCondition = room.capacity
+          ? { $expr: { $lt: [{ $size: { $ifNull: ['$joinedCandidates', []] } }, room.capacity] } }
+          : {};
+
         const candidateJoinTime = candidate?.roomJoinedAt || candidate?.lastLoginAt || (candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date());
         assignedQuestionSetId = test.questionSetId?._id || test.questionSetId;
-        await Room.findOneAndUpdate(
+
+        const updatedRoom = await Room.findOneAndUpdate(
           {
             _id: room._id,
             'joinedCandidates.candidateId': { $ne: candidateId },
+            ...capacityCondition,
           },
           {
             $push: {
@@ -281,8 +322,27 @@ const joinRoom = async (req, res, next) => {
                 joinIndex: 1,
               },
             },
-          }
+          },
+          { new: true }
         );
+
+        if (!updatedRoom) {
+          const reloadedRoom = await Room.findById(room._id);
+          const found = reloadedRoom?.joinedCandidates?.find(
+            (j) => j.candidateId && j.candidateId.toString() === candidateId.toString()
+          );
+          if (!found && reloadedRoom?.capacity && (reloadedRoom?.joinedCandidates?.length || 0) >= reloadedRoom.capacity) {
+            return res.status(403).json({
+              error: `This room is full (Capacity: ${reloadedRoom.capacity}). Please contact your administrator.`,
+              code: 'ROOM_CAPACITY_FULL',
+              roomId: room._id,
+              roomName: room.roomName,
+              testId: test._id,
+              testTitle: test.title,
+              capacity: reloadedRoom.capacity,
+            });
+          }
+        }
       }
     }
 

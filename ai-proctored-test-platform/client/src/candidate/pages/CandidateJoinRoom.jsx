@@ -361,6 +361,8 @@ export default function CandidateJoinRoom() {
     !manualOverrideGranted &&
     !isAutoJoining &&
     !error?.toLowerCase().includes('expired') &&
+    !error?.toLowerCase().includes('full') &&
+    location.state?.code !== 'ROOM_CAPACITY_FULL' &&
     !isLateJoinRequested &&
     (error?.toLowerCase().includes('not started') ||
       location.state?.code === 'TEST_NOT_STARTED' ||
@@ -406,7 +408,9 @@ export default function CandidateJoinRoom() {
               ? `⚠️ ${error}`
               : (error.includes('expired') || error.includes('Expired')
                   ? '🔒 Room access window has closed. Contact your proctor for assistance.'
-                  : error)}
+                  : (error.toLowerCase().includes('full') || location.state?.code === 'ROOM_CAPACITY_FULL'
+                      ? `🔒 ${error}`
+                      : error))}
           </div>
         ) : null}
 

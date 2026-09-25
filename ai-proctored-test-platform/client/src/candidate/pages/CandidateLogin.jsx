@@ -170,6 +170,8 @@ export default function CandidateLogin() {
               ? '⏰ Your account has expired (3-day window). Please register again.'
               : error.includes('take another test yet')
               ? `⏳ ${error}`
+              : error.toLowerCase().includes('full') || error.includes('Capacity')
+              ? `🔒 ${error}`
               : error}
           </div>
         )}
