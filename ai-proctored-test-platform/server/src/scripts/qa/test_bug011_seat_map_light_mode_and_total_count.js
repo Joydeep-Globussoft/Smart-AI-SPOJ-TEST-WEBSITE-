@@ -33,15 +33,16 @@ async function runBug011Tests() {
   // 1. Total Candidate Count Badge in Embedded Header
   assert(
     liveDashboard.includes('id="seat-map-total-count-badge"') &&
-    liveDashboard.includes('Total Candidates: ${Object.keys(candidatesMap).length}') &&
-    liveDashboard.includes('Showing ${candidateList.length} of ${Object.keys(candidatesMap).length} Candidates'),
+    (liveDashboard.includes('Total Candidates: ${Object.keys(candidatesMap).length}') ||
+     liveDashboard.includes('Showing ${seatMapCandidates.length} of ${Object.keys(candidatesMap).length} Candidates')),
     'Embedded seat map card header renders dynamic #seat-map-total-count-badge with filtered subset support'
   );
 
   // 2. Total Candidate Count Badge in Expanded Overlay Header
   assert(
     liveDashboard.includes('id="expanded-seat-map-total-count-badge"') &&
-    liveDashboard.includes('Total Candidates: ${Object.keys(candidatesMap).length}'),
+    (liveDashboard.includes('Total Candidates: ${Object.keys(candidatesMap).length}') ||
+     liveDashboard.includes('Showing ${seatMapCandidates.length} of ${Object.keys(candidatesMap).length} Candidates')),
     'Expanded full-viewport overlay renders dynamic #expanded-seat-map-total-count-badge'
   );
 

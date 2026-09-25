@@ -2022,7 +2022,30 @@ export default function AdminLiveDashboard() {
     return map;
   }, [rooms]);
 
-  // Filter candidates
+  // FEATURE-028: Dynamic candidate counts per room for room filter pills
+  const roomCandidateCounts = useMemo(() => {
+    const counts = {};
+    rooms.forEach((r) => {
+      counts[String(r._id)] = 0;
+    });
+    Object.values(candidatesMap).forEach((c) => {
+      const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
+      if (cRoomId) {
+        counts[String(cRoomId)] = (counts[String(cRoomId)] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [rooms, candidatesMap]);
+
+  // FEATURE-028: Candidates displayed in Physical Seat Map (filtered by selectedRoomId)
+  const seatMapCandidates = useMemo(() => {
+    return Object.values(candidatesMap).filter((c) => {
+      const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
+      return selectedRoomId === 'ALL' || String(cRoomId) === String(selectedRoomId);
+    });
+  }, [candidatesMap, selectedRoomId]);
+
+  // Filter candidates for table
   const candidateList = useMemo(() => {
     return Object.values(candidatesMap).filter((c) => {
       const cRoomId = typeof c.roomId === 'object' ? (c.roomId?._id || c.roomId?.id) : c.roomId;
@@ -2693,14 +2716,14 @@ export default function AdminLiveDashboard() {
           </div>
         </div>
 
-        {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter, FEATURE-008 Post-Test Summary) ── */}
+        {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter, FEATURE-008 Post-Test Summary, FEATURE-028 Room Filter) ── */}
         <div className="card" style={{ marginBottom: 24 }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <h3 className="card-title" style={{ margin: 0 }}>
                 {isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}
               </h3>
-              {/* BUG-011: Total Candidate Count Badge */}
+              {/* BUG-011 & FEATURE-028: Total Candidate Count Badge with Active Room Filter Counter */}
               <span
                 id="seat-map-total-count-badge"
                 style={{
@@ -2718,9 +2741,7 @@ export default function AdminLiveDashboard() {
               >
                 <span>👥</span>
                 <span>
-                  {selectedRoomId && selectedRoomId !== 'ALL'
-                    ? `Showing ${candidateList.length} of ${Object.keys(candidatesMap).length} Candidates`
-                    : `Total Candidates: ${Object.keys(candidatesMap).length}`}
+                  {`Showing ${seatMapCandidates.length} of ${Object.keys(candidatesMap).length} Candidates`}
                 </span>
               </span>
             </div>
@@ -2789,14 +2810,118 @@ export default function AdminLiveDashboard() {
             </div>
           </div>
 
-          {candidateList.length === 0 ? (
+          {/* FEATURE-028: Room Filter Bar */}
+          {rooms.length > 0 && (
+            <div
+              id="seat-map-room-filter-bar"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap',
+                padding: '10px 16px',
+                background: 'var(--color-bg-subtle, #f8fafc)',
+                borderBottom: '1px solid var(--color-border, #e2e8f0)',
+              }}
+            >
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted, #64748b)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Room:
+              </span>
+              <button
+                type="button"
+                id="room-filter-chip-all"
+                onClick={() => setSelectedRoomId('ALL')}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 20,
+                  fontSize: '0.78rem',
+                  fontWeight: selectedRoomId === 'ALL' ? 700 : 500,
+                  cursor: 'pointer',
+                  border: selectedRoomId === 'ALL' ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
+                  background: selectedRoomId === 'ALL' ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
+                  color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-navy, #0f172a)',
+                  boxShadow: selectedRoomId === 'ALL' ? '0 1px 3px rgba(14, 124, 134, 0.2)' : 'none',
+                  transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>All Rooms</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    background: selectedRoomId === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
+                    color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {Object.keys(candidatesMap).length}
+                </span>
+              </button>
+              {rooms.map((r) => {
+                const isSelected = String(selectedRoomId) === String(r._id);
+                const count = roomCandidateCounts[String(r._id)] || 0;
+                return (
+                  <button
+                    key={`filter-${r._id}`}
+                    type="button"
+                    id={`room-filter-chip-${r._id}`}
+                    onClick={() => setSelectedRoomId(isSelected ? 'ALL' : String(r._id))}
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: '0.78rem',
+                      fontWeight: isSelected ? 700 : 500,
+                      cursor: 'pointer',
+                      border: isSelected ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
+                      background: isSelected ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
+                      color: isSelected ? '#ffffff' : 'var(--color-navy, #0f172a)',
+                      boxShadow: isSelected ? '0 1px 3px rgba(14, 124, 134, 0.2)' : 'none',
+                      transition: 'all 0.15s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <span>{r.roomName || `Room ${r.roomCode || ''}`}</span>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        padding: '1px 6px',
+                        borderRadius: 10,
+                        background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
+                        color: isSelected ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {seatMapCandidates.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📡</div>
               <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>
-                {isTestEnded ? 'No candidates recorded for this test.' : 'Waiting for candidates to connect...'}
+                {selectedRoomId !== 'ALL'
+                  ? 'No candidates found in the selected room.'
+                  : isTestEnded
+                  ? 'No candidates recorded for this test.'
+                  : 'Waiting for candidates to connect...'}
               </h4>
               <p style={{ fontSize: '0.85rem' }}>
-                {isTestEnded
+                {selectedRoomId !== 'ALL'
+                  ? 'Try selecting a different room or "All Rooms" to view other candidates.'
+                  : isTestEnded
                   ? 'Candidate records will appear here once candidates have taken the test.'
                   : 'As candidates join physical rooms and send heartbeats, their seats will appear here in real time.'}
               </p>
@@ -2810,7 +2935,7 @@ export default function AdminLiveDashboard() {
                 padding: '8px 0',
               }}
             >
-              {candidateList.map((c) => (
+              {seatMapCandidates.map((c) => (
                 <SeatTile
                   key={c.candidateId}
                   candidate={c}
@@ -3881,7 +4006,7 @@ export default function AdminLiveDashboard() {
                     · {test.testTitle}
                   </span>
                 )}
-                {/* BUG-011: Total Candidates Badge */}
+                {/* BUG-011 & FEATURE-028: Total Candidates Badge with Active Room Filter Counter */}
                 <span
                   id="expanded-seat-map-total-count-badge"
                   style={{
@@ -3899,9 +4024,7 @@ export default function AdminLiveDashboard() {
                 >
                   <span>👥</span>
                   <span>
-                    {selectedRoomId && selectedRoomId !== 'ALL'
-                      ? `Showing ${candidateList.length} of ${Object.keys(candidatesMap).length} Candidates`
-                      : `Total Candidates: ${Object.keys(candidatesMap).length}`}
+                    {`Showing ${seatMapCandidates.length} of ${Object.keys(candidatesMap).length} Candidates`}
                   </span>
                 </span>
               </div>
@@ -3970,6 +4093,105 @@ export default function AdminLiveDashboard() {
               </div>
             </div>
 
+            {/* FEATURE-028: Expanded Seat Map Room Filter Bar */}
+            {rooms.length > 0 && (
+              <div
+                id="expanded-seat-map-room-filter-bar"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                  padding: '12px 28px',
+                  background: 'var(--color-bg-subtle, #f8fafc)',
+                  borderBottom: '1px solid var(--color-border, #cbd5e1)',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-muted, #64748b)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                  Filter Room:
+                </span>
+                <button
+                  type="button"
+                  id="expanded-room-filter-chip-all"
+                  onClick={() => setSelectedRoomId('ALL')}
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: 20,
+                    fontSize: '0.8rem',
+                    fontWeight: selectedRoomId === 'ALL' ? 700 : 500,
+                    cursor: 'pointer',
+                    border: selectedRoomId === 'ALL' ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
+                    background: selectedRoomId === 'ALL' ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
+                    color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-navy, #0f172a)',
+                    boxShadow: selectedRoomId === 'ALL' ? '0 2px 4px rgba(14, 124, 134, 0.25)' : 'none',
+                    transition: 'all 0.15s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>All Rooms</span>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '1px 6px',
+                      borderRadius: 10,
+                      background: selectedRoomId === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
+                      color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {Object.keys(candidatesMap).length}
+                  </span>
+                </button>
+                {rooms.map((r) => {
+                  const isSelected = String(selectedRoomId) === String(r._id);
+                  const count = roomCandidateCounts[String(r._id)] || 0;
+                  return (
+                    <button
+                      key={`expanded-filter-${r._id}`}
+                      type="button"
+                      id={`expanded-room-filter-chip-${r._id}`}
+                      onClick={() => setSelectedRoomId(isSelected ? 'ALL' : String(r._id))}
+                      style={{
+                        padding: '5px 14px',
+                        borderRadius: 20,
+                        fontSize: '0.8rem',
+                        fontWeight: isSelected ? 700 : 500,
+                        cursor: 'pointer',
+                        border: isSelected ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
+                        background: isSelected ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
+                        color: isSelected ? '#ffffff' : 'var(--color-navy, #0f172a)',
+                        boxShadow: isSelected ? '0 2px 4px rgba(14, 124, 134, 0.25)' : 'none',
+                        transition: 'all 0.15s ease',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <span>{r.roomName || `Room ${r.roomCode || ''}`}</span>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '1px 6px',
+                          borderRadius: 10,
+                          background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
+                          color: isSelected ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Scrollable Grid of Seats */}
             <div
               style={{
@@ -3979,14 +4201,20 @@ export default function AdminLiveDashboard() {
                 boxSizing: 'border-box',
               }}
             >
-              {candidateList.length === 0 ? (
+              {seatMapCandidates.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--color-text-muted)' }}>
                   <div style={{ fontSize: '3rem', marginBottom: 12 }}>📡</div>
                   <h4 style={{ color: 'var(--color-navy)', marginBottom: 6, fontSize: '1.2rem' }}>
-                    {isTestEnded ? 'No candidates recorded for this test.' : 'Waiting for candidates to connect...'}
+                    {selectedRoomId !== 'ALL'
+                      ? 'No candidates found in the selected room.'
+                      : isTestEnded
+                      ? 'No candidates recorded for this test.'
+                      : 'Waiting for candidates to connect...'}
                   </h4>
                   <p style={{ fontSize: '0.9rem' }}>
-                    {isTestEnded
+                    {selectedRoomId !== 'ALL'
+                      ? 'Try selecting a different room or "All Rooms" to view other candidates.'
+                      : isTestEnded
                       ? 'Candidate records will appear here once candidates have taken the test.'
                       : 'As candidates join physical rooms and send heartbeats, their seats will appear here in real time.'}
                   </p>
@@ -4000,7 +4228,7 @@ export default function AdminLiveDashboard() {
                     paddingBottom: 40,
                   }}
                 >
-                  {candidateList.map((c) => (
+                  {seatMapCandidates.map((c) => (
                     <SeatTile
                       key={`expanded-${c.candidateId}`}
                       candidate={c}
