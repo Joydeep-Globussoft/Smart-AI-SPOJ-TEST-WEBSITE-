@@ -37,6 +37,20 @@ router.post('/admin/yolo-restart', verifyToken, requireAdmin, (req, res) => {
   res.json({ message: 'YOLO daemon reset triggered successfully', yolo });
 });
 
+// POST /api/v1/admin/yolo-detect (Direct frame detection diagnostic endpoint)
+const multer = require('multer');
+const uploadYolo = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+router.post('/admin/yolo-detect', verifyToken, requireAdmin, uploadYolo.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'image file is required' });
+    const { detectPhone } = require('../services/malpracticeService');
+    const result = await detectPhone(req.file.buffer);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Profile routes for logged-in Admin (accessible to both ADMIN and SUPER_ADMIN) ──
 // GET /api/v1/admins/me & /api/v1/me
 router.get('/admins/me', verifyToken, requireAdmin, getMe);
