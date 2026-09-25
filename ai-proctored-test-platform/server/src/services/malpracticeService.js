@@ -330,7 +330,8 @@ process.on('exit', () => {
  * @returns {{ phoneDetected: boolean, confidence?: number, detections?: Array }}
  */
 const detectPhone = async (imageBuffer) => {
-  const baseUrl = getEffectiveYoloUrl();
+  const isLocalRunning = yoloProcess !== null || yoloHealthStatus.online;
+  const baseUrl = isLocalRunning ? 'http://localhost:8001' : getEffectiveYoloUrl();
 
   const createForm = () => {
     const form = new FormData();
@@ -349,10 +350,9 @@ const detectPhone = async (imageBuffer) => {
         method: 'POST',
         body: primaryForm,
         headers: primaryForm.getHeaders(),
-        timeout: 5000,
+        timeout: 15000,
       });
     } catch (netErr) {
-      // If primary URL failed and wasn't localhost, try localhost:8001 fallback
       if (!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
         console.debug('[YOLO] Primary URL failed (' + netErr.message + '), trying localhost:8001 fallback...');
         const fallbackForm = createForm();
@@ -361,7 +361,7 @@ const detectPhone = async (imageBuffer) => {
             method: 'POST',
             body: fallbackForm,
             headers: fallbackForm.getHeaders(),
-            timeout: 5000,
+            timeout: 15000,
           });
         } catch (fallbackErr) {
           startLocalYoloService();
