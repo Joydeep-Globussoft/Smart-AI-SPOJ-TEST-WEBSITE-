@@ -377,7 +377,13 @@ const getCandidateEvaluationDetail = async (req, res, next) => {
         ? 'SUBMITTED'
         : 'NOT_ATTEMPTED';
 
-      const questionTitle = q.title && q.title.trim() ? q.title.trim() : `Question ${idx + 1}`;
+      let questionTitle = q.title && q.title.trim() ? q.title.trim() : '';
+      if (questionTitle) {
+        questionTitle = questionTitle.replace(/^.*?\.pdf\s*[\|\:\-–—]\s*/i, '').trim();
+      }
+      if (!questionTitle) {
+        questionTitle = `Problem ${idx + 1}`;
+      }
 
       return {
         questionIndex: idx + 1,

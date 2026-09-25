@@ -29,27 +29,35 @@ export const formatDateTime = (dateVal) => {
   return `${d.toLocaleDateString()}, ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}`;
 };
 
-// ── Helper to format Question Title (UI RESTRUCTURE-025: Question Name | Problem X) ──
+// ── Helper to format Question Title (FEATURE-041: Problem X / Custom Title without redundant PDF prefix) ──
 export const formatQuestionTitle = (q, idx = 0) => {
   if (!q) return `Problem ${idx + 1}`;
 
   // If question has an explicit title string
   if (q.title && typeof q.title === 'string' && q.title.trim()) {
-    const trimmed = q.title.trim();
-    const match = trimmed.match(/^(.*?)\s*[\(\[]\s*(?:Problem|Question)\s*(\d+)\s*[\)\]]$/i);
-    if (match) {
-      const base = match[1].replace(/[\s:\-–—|]+$/, '').trim();
-      return base ? `${base} | Problem ${match[2]}` : `Problem ${match[2]}`;
+    let trimmed = q.title.trim();
+
+    // 1. Legacy parenthesis/bracket format e.g. "set_1.pdf (Problem 1)" or "(Problem 1)" or "set_2.pdf (Question 3)"
+    const bracketMatch = trimmed.match(/^(?:.*\.pdf\s*)?[\(\[]\s*(?:Problem|Question)\s*(\d+)\s*[\)\]]$/i);
+    if (bracketMatch) {
+      return `Problem ${bracketMatch[1]}`;
     }
-    return trimmed;
+
+    // 2. Strip redundant PDF filename prefix e.g. "set_6.pdf | Problem 1" -> "Problem 1" or "sample.pdf | Two Sum" -> "Two Sum"
+    trimmed = trimmed.replace(/^.*?\.pdf\s*[\|\:\-–—]\s*/i, '').trim();
+
+    // 3. Normalize "Question N" to "Problem N" if matched
+    const qMatch = trimmed.match(/^Question\s+(\d+)$/i);
+    if (qMatch) {
+      return `Problem ${qMatch[1]}`;
+    }
+
+    if (trimmed) {
+      return trimmed;
+    }
   }
 
-  // If question is PDF-imported
-  if (q.isPdfImported) {
-    const baseName = q.pdfOriginalName || q.pdfFileName || 'Problem';
-    return `${baseName} | Problem ${idx + 1}`;
-  }
-
+  // For PDF-imported questions or questions without an explicit title, default to Problem {idx + 1}
   return `Problem ${idx + 1}`;
 };
 
@@ -2124,7 +2132,7 @@ export default function AdminQuestionBank() {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder={questionForm.isPdfImported ? "e.g. set_1.pdf | Problem 1 (or leave blank for default)" : "e.g. Reverse Linked List II"}
+                        placeholder={questionForm.isPdfImported ? "e.g. Problem 1 (or leave blank for default)" : "e.g. Reverse Linked List II"}
                         value={questionForm.title}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, title: e.target.value }))}
                         required={!questionForm.isPdfImported}

@@ -1,10 +1,9 @@
-// CandidateDetailEvaluationModal.jsx — Single Source of Truth for Candidate Detail Evaluation & Code Inspection
-// Implements FEATURE-023 and FEATURE-024 (works for any submitted candidate from Shortlist, Test Summary Roster, or Inspection Modal)
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Editor from '@monaco-editor/react';
 import LoadingDots from './LoadingDots';
 import api from '../services/apiClient';
+import { formatQuestionTitle } from '../admin/pages/AdminQuestionBank';
 
 export default function CandidateDetailEvaluationModal({ testId, candidate, onClose, testType: fallbackTestType }) {
   const [candidateDetail, setCandidateDetail] = useState(null);
@@ -200,7 +199,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                       </tr>
                     </thead>
                     <tbody>
-                      {candidateDetail.questions.map((q) => {
+                      {candidateDetail.questions.map((q, qIdx) => {
                         const ev = q.evaluation;
                         const breakdown = ev?.scoreBreakdown || {};
                         const hasEval = Boolean(ev);
@@ -217,7 +216,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                           <tr key={q.questionId || q.questionIndex}>
                             <td>
                               <strong style={{ color: 'var(--color-navy)', display: 'block' }}>
-                                {q.title}
+                                {formatQuestionTitle(q, (q.questionIndex || (qIdx + 1)) - 1)}
                               </strong>
                               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                                 {q.testType} · {q.difficulty}
@@ -320,7 +319,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                   ← Back to Question List
                 </button>
                 <h3 className="modal-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                  Submission Report — {inspectingQuestion.title}
+                  Submission Report — {formatQuestionTitle(inspectingQuestion, (inspectingQuestion.questionIndex || 1) - 1)}
                 </h3>
                 <span
                   className="badge badge-primary"
