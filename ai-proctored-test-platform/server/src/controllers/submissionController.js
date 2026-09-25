@@ -472,17 +472,27 @@ const startAttempt = async (req, res, next) => {
       candidateEndTime = new Date(now.getTime() + test.durationMinutes * 60 * 1000);
     }
 
-    // Find the room for this candidate (from req.body or fallback to room where candidate joined)
+    // Find the room for this candidate (from req.body or fallback to room where candidate joined or test room)
     let targetRoomId = req.body?.roomId;
     let candidateRoom = null;
     if (targetRoomId) {
       candidateRoom = await Room.findById(targetRoomId);
-    } else {
+    }
+    if (!candidateRoom) {
       candidateRoom = await Room.findOne({
         testId,
         'joinedCandidates.candidateId': candidateId,
-      });
+      }) || await Room.findOne({ testId });
       if (candidateRoom) targetRoomId = candidateRoom._id;
+    }
+    if (!candidateRoom) {
+      candidateRoom = await Room.create({
+        testId,
+        roomCode: 'ROOM-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+        status: 'ACTIVE',
+        joinedCandidates: [{ candidateId, joinedAt: now }],
+      });
+      targetRoomId = candidateRoom._id;
     }
 
     // Resolve assignedQuestionSetId for this candidate (FEATURE-012)
@@ -845,30 +855,60 @@ const runCode = async (req, res, next) => {
       if (!targetTestId) {
         const activeSub = await Submission.findOne({
           candidateId,
-          questionId,
           status: 'IN_PROGRESS',
         }).sort({ candidateStartTime: -1 });
         targetTestId = activeSub?.testId;
+      }
+      if (!targetTestId) {
+        const anySub = await Submission.findOne({
+          candidateId,
+        }).sort({ candidateStartTime: -1 });
+        targetTestId = anySub?.testId;
       }
 
       if (targetTestId) {
         let submission = await Submission.findOne({ candidateId, testId: targetTestId, questionId });
         if (!submission) {
           const Room = require('../models/Room');
-          const roomDoc = await Room.findOne({
+          let roomDoc = await Room.findOne({
             testId: targetTestId,
             'joinedCandidates.candidateId': candidateId,
           }) || await Room.findOne({ testId: targetTestId });
 
+          if (!roomDoc) {
+            roomDoc = await Room.create({
+              testId: targetTestId,
+              roomCode: 'ROOM-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+              status: 'ACTIVE',
+              joinedCandidates: [{ candidateId, joinedAt: new Date() }],
+            });
+          }
+
           submission = new Submission({
             candidateId,
             testId: targetTestId,
-            roomId: roomDoc?._id || new (require('mongoose').Types.ObjectId)(),
+            roomId: roomDoc._id,
             questionId,
             assignedQuestionSetId: question.questionSetId || null,
             status: 'IN_PROGRESS',
             visibleTestCasesTotal: totalCount,
           });
+        } else if (!submission.roomId) {
+          const Room = require('../models/Room');
+          let roomDoc = await Room.findOne({
+            testId: targetTestId,
+            'joinedCandidates.candidateId': candidateId,
+          }) || await Room.findOne({ testId: targetTestId });
+
+          if (!roomDoc) {
+            roomDoc = await Room.create({
+              testId: targetTestId,
+              roomCode: 'ROOM-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+              status: 'ACTIVE',
+              joinedCandidates: [{ candidateId, joinedAt: new Date() }],
+            });
+          }
+          submission.roomId = roomDoc._id;
         }
         submission.code = code;
         submission.language = language;
@@ -945,10 +985,15 @@ const saveCode = async (req, res, next) => {
     if (!targetTestId) {
       const activeSub = await Submission.findOne({
         candidateId,
-        questionId,
         status: 'IN_PROGRESS',
       }).sort({ candidateStartTime: -1 });
       targetTestId = activeSub?.testId;
+    }
+    if (!targetTestId) {
+      const anySub = await Submission.findOne({
+        candidateId,
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = anySub?.testId;
     }
 
     if (!targetTestId) {
@@ -957,18 +1002,38 @@ const saveCode = async (req, res, next) => {
 
     const savedAt = new Date();
     const lang = language || 'python';
-    // ASSUMPTION: Update both active code/language and per-language savedCodeByLanguage map
-    const update = {
-      code: code ?? '',
-      language: lang,
-      [`savedCodeByLanguage.${lang}`]: code ?? '',
-    };
-
     const existingSub = await Submission.findOne({
       candidateId,
       testId: targetTestId,
       candidateStartTime: { $exists: true, $ne: null },
     });
+
+    // Resolve roomId: use existing submission's roomId, or look up from Room collection
+    let resolvedRoomId = existingSub?.roomId || null;
+    if (!resolvedRoomId) {
+      const Room = require('../models/Room');
+      let roomDoc = await Room.findOne({
+        testId: targetTestId,
+        'joinedCandidates.candidateId': candidateId,
+      }) || await Room.findOne({ testId: targetTestId });
+
+      if (!roomDoc) {
+        roomDoc = await Room.create({
+          testId: targetTestId,
+          roomCode: 'ROOM-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+          status: 'ACTIVE',
+          joinedCandidates: [{ candidateId, joinedAt: new Date() }],
+        });
+      }
+      resolvedRoomId = roomDoc._id;
+    }
+
+    const update = {
+      code: code ?? '',
+      language: lang,
+      [`savedCodeByLanguage.${lang}`]: code ?? '',
+      roomId: resolvedRoomId,
+    };
 
     const submission = await Submission.findOneAndUpdate(
       { candidateId, testId: targetTestId, questionId },
@@ -978,7 +1043,7 @@ const saveCode = async (req, res, next) => {
           status: 'IN_PROGRESS',
           candidateStartTime: existingSub?.candidateStartTime || null,
           candidateEndTime: existingSub?.candidateEndTime || null,
-          roomId: existingSub?.roomId || null,
+          roomId: resolvedRoomId,
           assignedQuestionSetId: existingSub?.assignedQuestionSetId || null,
         },
       },
@@ -1013,10 +1078,15 @@ const submitCode = async (req, res, next) => {
     if (!targetTestId) {
       const activeSub = await Submission.findOne({
         candidateId,
-        questionId,
         status: 'IN_PROGRESS',
       }).sort({ candidateStartTime: -1 });
       targetTestId = activeSub?.testId;
+    }
+    if (!targetTestId) {
+      const anySub = await Submission.findOne({
+        candidateId,
+      }).sort({ candidateStartTime: -1 });
+      targetTestId = anySub?.testId;
     }
 
     if (!targetTestId) {

@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const malpracticeLogSchema = new mongoose.Schema({
   candidateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Candidate', required: true },
   testId: { type: mongoose.Schema.Types.ObjectId, ref: 'Test', required: true },
-  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room' },
   violationType: {
     type: String,
     enum: ['PHONE_DETECTED', 'MULTIPLE_FACES', 'NO_FACE_15MIN', 'TAB_SWITCH', 'FULLSCREEN_EXIT', 'CAMERA_DISCONNECTED', 'OTHER'],

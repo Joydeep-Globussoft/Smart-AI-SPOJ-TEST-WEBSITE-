@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const submissionSchema = new mongoose.Schema({
   candidateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Candidate', required: true },
   testId: { type: mongoose.Schema.Types.ObjectId, ref: 'Test', required: true },
-  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room' },
   questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Question', required: true },
   assignedQuestionSetId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionSet', default: null }, // FEATURE-012
   code: { type: String }, // final submitted code (or file map JSON for AI Test)

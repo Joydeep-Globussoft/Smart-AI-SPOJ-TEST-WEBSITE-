@@ -789,6 +789,7 @@ export default function CandidateTestScreen() {
       const payload = {
         code,
         language,
+        testId: session?.test?._id,
         ...(customInputString !== null ? { customInput: customInputString } : {}),
       };
 
