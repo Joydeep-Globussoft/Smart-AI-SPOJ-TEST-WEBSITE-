@@ -1312,10 +1312,12 @@ export default function AdminLiveDashboard() {
     setIsRestartingYolo(true);
     try {
       const res = await api.restartYolo();
-      toast.success('YOLO phone detection restart triggered');
+      toast.success('AI phone detection restart signal sent');
       if (res.data?.yolo) {
         setYoloStatus(res.data.yolo);
       }
+      setTimeout(fetchYoloHealth, 3000);
+      setTimeout(fetchYoloHealth, 8000);
     } catch (err) {
       toast.error('Failed to trigger YOLO restart: ' + (err.response?.data?.message || err.message));
     } finally {
@@ -1323,28 +1325,27 @@ export default function AdminLiveDashboard() {
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchYoloHealth = async () => {
-      try {
-        const res = await api.getYoloStatus();
-        if (isMounted && res.data?.yolo) {
-          setYoloStatus(res.data.yolo);
-        }
-      } catch (_) {
-        if (isMounted) {
-          setYoloStatus({ status: 'critical', online: false, error: 'Could not reach YOLO service' });
-        }
+  const fetchYoloHealth = useCallback(async () => {
+    try {
+      const res = await api.getYoloStatus();
+      if (res.data?.yolo) {
+        setYoloStatus(res.data.yolo);
       }
-    };
+    } catch (_) {
+      setYoloStatus((prev) => ({
+        ...prev,
+        online: false,
+        status: prev.status === 'online' ? 'starting' : prev.status,
+        error: 'Connecting to AI detection service...',
+      }));
+    }
+  }, []);
 
+  useEffect(() => {
     fetchYoloHealth();
     const interval = setInterval(fetchYoloHealth, 30000); // 30s periodic auto-refresh & self-healing
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
+    return () => clearInterval(interval);
+  }, [fetchYoloHealth]);
 
   // Close expanded seat map on Escape key
   useEffect(() => {

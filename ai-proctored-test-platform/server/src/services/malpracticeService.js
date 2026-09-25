@@ -62,11 +62,19 @@ const getBackoffDelayMs = (attempts) => {
  */
 const manualResetYoloService = () => {
   console.log('[YOLO] Manual reset triggered by Admin. Resetting restart counter and attempting startup...');
+  if (yoloProcess) {
+    try {
+      yoloProcess.kill('SIGTERM');
+    } catch (_) {}
+    yoloProcess = null;
+  }
+  isStartingYolo = false;
   restartAttemptsCount = 0;
   isPermanentFailure = false;
   lastRestartAttempt = 0;
+  yoloHealthStatus.status = 'starting';
   yoloHealthStatus.permanentFailure = false;
-  yoloHealthStatus.error = null;
+  yoloHealthStatus.error = 'Daemon is restarting...';
   startLocalYoloService();
   return getYoloHealthStatus();
 };
