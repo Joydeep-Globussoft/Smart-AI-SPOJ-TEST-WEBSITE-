@@ -374,8 +374,9 @@ const detectPhone = async (imageBuffer) => {
     }
 
     if (!response || !response.ok) {
-      console.error('[YOLO] Service response not OK:', response ? response.status : 'no response');
-      return { phoneDetected: false };
+      const statusText = response ? `HTTP ${response.status}` : 'no response';
+      console.error('[YOLO] Service response not OK:', statusText);
+      return { phoneDetected: false, error: `Service response not OK: ${statusText}` };
     }
 
     const data = await response.json();
@@ -387,12 +388,12 @@ const detectPhone = async (imageBuffer) => {
 
     return {
       phoneDetected: data.phoneDetected === true,
-      confidence: data.confidence,
+      confidence: data.confidence ?? 0,
       detections: data.detections || [],
     };
   } catch (err) {
     console.error('[YOLO] Detection error:', err.message);
-    return { phoneDetected: false };
+    return { phoneDetected: false, error: err.message };
   }
 };
 
