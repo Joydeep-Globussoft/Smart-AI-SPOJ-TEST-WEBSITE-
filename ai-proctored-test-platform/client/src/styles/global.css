@@ -989,7 +989,7 @@ tbody td {
   transform: none !important;
 }
 
-/* ── Auth Pages (FEATURE-042 & BUG-105: Thin full-width logo header ribbon) ── */
+/* ── Auth Pages (FEATURE-042 & BUG-105/106: Edge-to-edge logo bar with original top space) ── */
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -1004,9 +1004,10 @@ tbody td {
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
-  padding: 0 40px 36px 40px;
+  padding: 40px;
   width: 100%;
   max-width: 440px;
+  margin: auto 0;
   animation: slideUp 0.3s ease;
   overflow: hidden;
 }
@@ -1016,12 +1017,10 @@ tbody td {
   align-items: center;
   justify-content: center;
   background: #1A2B3C;
-  margin: 0 -40px 18px -40px;
+  margin: 0 -40px 20px -40px;
   height: 52px;
   padding: 0 16px;
-  border-top-left-radius: var(--radius-xl);
-  border-top-right-radius: var(--radius-xl);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
 }
 
 .auth-logo img {
@@ -1299,8 +1298,8 @@ tbody td {
   .main-content { padding: 16px; }
   .navbar { padding: 0 16px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .auth-card { padding: 0 20px 28px 20px; }
-  .auth-logo { margin: 0 -20px 16px -20px; height: 48px; }
+  .auth-card { padding: 28px 20px; }
+  .auth-logo { margin: 0 -20px 18px -20px; height: 48px; border-radius: 0; }
   .auth-logo img { height: 28px; max-height: 28px; }
 }
 

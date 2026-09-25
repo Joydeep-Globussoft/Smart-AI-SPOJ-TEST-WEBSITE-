@@ -51,38 +51,12 @@ export default function CandidateTestComplete() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1A2B3C 0%, #0E7C86 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 32,
-    }}>
-      <div style={{
-        background: 'var(--color-bg-card, #ffffff)',
-        borderRadius: 24,
-        padding: '0 40px 40px 40px',
-        maxWidth: 520,
-        width: '100%',
-        textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          background: '#1A2B3C',
-          margin: '0 -40px 20px -40px',
-          height: 52,
-          padding: '0 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        }}>
+    <div className="auth-page">
+      <div className="auth-card" style={{ maxWidth: 500, textAlign: 'center' }}>
+        <div className="auth-logo">
           <img
             src={logoLight}
             alt="Globussoft Technology"
-            style={{ height: 32, maxHeight: 32, width: 'auto', objectFit: 'contain', display: 'block' }}
           />
         </div>
         <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
