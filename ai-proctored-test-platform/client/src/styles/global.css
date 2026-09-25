@@ -36,7 +36,7 @@
   --color-modal-footer-bg: #f8fafc;
   --color-table-header-bg: #1A2B3C;
   --color-table-header-text: #ffffff;
-  --color-table-row-hover: rgba(14, 124, 134, 0.04);
+  --color-table-row-hover: #f1f7f8;
   --color-input-bg: #ffffff;
   --color-input-text: #1A2B3C;
   --color-input-border: #e2e8f0;
@@ -106,7 +106,7 @@
   --color-modal-footer-bg: #19243d;
   --color-table-header-bg: #19243d;
   --color-table-header-text: #f8fafc;
-  --color-table-row-hover: rgba(20, 184, 166, 0.08);
+  --color-table-row-hover: #16243d;
   --color-input-bg: #0f1626;
   --color-input-text: #f8fafc;
   --color-input-border: #2a3a5e;

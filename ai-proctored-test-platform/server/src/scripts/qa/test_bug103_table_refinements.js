@@ -64,14 +64,14 @@ runTest('All data columns have proportional, uniform widths and center alignment
   assert(globalCssContent.includes('.test-table-scroll-container thead th {') && globalCssContent.includes('padding: 10px 8px;'), 'Global table padding is uniform');
 });
 
-// 4. Fixed Button Slots in Actions Column (Item F)
-runTest('Actions column implements 4-slot fixed CSS grid (Manage & Rooms | Live Monitor/Test Summary | Results | Delete)', () => {
-  assert(adminTestsContent.includes('gridTemplateColumns: \'112px 94px 66px 32px\''), 'Actions column uses fixed 4-slot grid');
+// 4. Fixed Button Slots in Actions Column (Item F & BUG-104)
+runTest('Actions column implements 3-slot fixed CSS grid (Manage & Rooms | Live Monitor/Test Summary | Results/Delete)', () => {
+  assert(adminTestsContent.includes('gridTemplateColumns: \'112px 94px 66px\''), 'Actions column uses fixed 3-slot grid');
   assert(adminTestsContent.includes('Manage &amp; Rooms'), 'Slot 1: Manage & Rooms');
   assert(adminTestsContent.includes('Live Monitor'), 'Slot 2: Live Monitor for LIVE tests');
   assert(adminTestsContent.includes('Test Summary'), 'Slot 2: Test Summary for ENDED tests');
   assert(adminTestsContent.includes('Results'), 'Slot 3: Results for ENDED tests');
-  assert(adminTestsContent.includes('🗑️'), 'Slot 4: Delete for DRAFT tests');
+  assert(adminTestsContent.includes('🗑️'), 'Slot 3: Delete for DRAFT tests');
 });
 
 // 5. Approved Column Order & Total Candidates Label Consistency (Items A & B)

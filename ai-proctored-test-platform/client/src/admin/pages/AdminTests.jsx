@@ -1233,8 +1233,8 @@ export default function AdminTests() {
                   {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Total Candidates */}
                   <th style={{ width: 75, minWidth: 70, textAlign: 'center' }}>Total Rooms</th>
                   <th style={{ width: 140, minWidth: 125, maxWidth: 160, textAlign: 'center' }}>Question Set</th>
-                  {/* BUG-103: Fixed Actions column width with 4-button slot support */}
-                  <th style={{ width: 334, minWidth: 330, textAlign: 'center' }}>Actions</th>
+                  {/* BUG-104 / BUG-103: Fixed Actions column width with 3-button slot grid */}
+                  <th style={{ width: 290, minWidth: 285, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1345,12 +1345,12 @@ export default function AdminTests() {
                             {questionSetName}
                           </div>
                         </td>
-                        {/* BUG-103: Deterministic 4-slot fixed button grid for Actions column */}
+                        {/* BUG-104 / BUG-103: Deterministic 3-slot fixed button grid for Actions column */}
                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                           <div
                             style={{
                               display: 'grid',
-                              gridTemplateColumns: '112px 94px 66px 32px',
+                              gridTemplateColumns: '112px 94px 66px',
                               gap: 6,
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1387,7 +1387,7 @@ export default function AdminTests() {
                               <div />
                             )}
 
-                            {/* Slot 3: Results (ENDED) OR Empty (LIVE / DRAFT) */}
+                            {/* Slot 3: Results (ENDED) OR Delete 🗑️ (DRAFT) OR Empty (LIVE) */}
                             {test.status === 'ENDED' ? (
                               <Link
                                 to={`/admin/tests/${test._id}/results`}
@@ -1396,16 +1396,11 @@ export default function AdminTests() {
                               >
                                 Results
                               </Link>
-                            ) : (
-                              <div />
-                            )}
-
-                            {/* Slot 4: Delete 🗑️ (DRAFT) OR Empty (LIVE / ENDED) */}
-                            {test.status === 'DRAFT' ? (
+                            ) : test.status === 'DRAFT' ? (
                               <button
                                 onClick={() => setDeleteTarget(test)}
                                 className="btn btn-danger"
-                                style={{ padding: '5px 6px', fontSize: '0.78rem', textAlign: 'center' }}
+                                style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                                 title="Delete Test"
                               >
                                 🗑️

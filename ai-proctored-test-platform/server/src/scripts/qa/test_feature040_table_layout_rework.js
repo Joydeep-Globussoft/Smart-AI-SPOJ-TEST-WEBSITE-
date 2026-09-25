@@ -122,7 +122,7 @@ runTest('Non-frozen columns are center-aligned and Actions column uses fixed but
   assert(adminTestsContent.includes('textAlign: \'center\' }}>Total Rooms</th>'), 'Total Rooms header must be center-aligned');
   assert(adminTestsContent.includes('textAlign: \'center\' }}>Question Set</th>'), 'Question Set header must be center-aligned');
   assert(adminTestsContent.includes('textAlign: \'center\' }}>Actions</th>'), 'Actions header must be center-aligned');
-  assert(adminTestsContent.includes('gridTemplateColumns: \'112px 94px 66px 32px\''), 'Actions column must use fixed 4-slot grid');
+  assert(adminTestsContent.includes('gridTemplateColumns: \'112px 94px 66px\''), 'Actions column must use fixed 3-slot grid');
 });
 
 // 7. Non-regression of empty state & sticky scroll
