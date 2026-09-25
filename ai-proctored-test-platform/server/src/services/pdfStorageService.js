@@ -7,6 +7,28 @@ const PdfAsset = require('../models/PdfAsset');
 const uploadDir = path.resolve(__dirname, '../../uploads/pdf_questions');
 
 /**
+ * Convert any MongoDB BSON Binary, TypedArray, or Buffer representation to a native Node.js Buffer
+ * @param {Buffer|Object|Uint8Array} data
+ * @returns {Buffer|null}
+ */
+function toBuffer(data) {
+  if (!data) return null;
+  if (Buffer.isBuffer(data)) return data;
+  if (data._bsontype === 'Binary' || data.constructor?.name === 'Binary') {
+    if (typeof data.value === 'function') {
+      return Buffer.from(data.value(true));
+    }
+    if (data.buffer) {
+      return Buffer.from(data.buffer);
+    }
+  }
+  if (data.buffer instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+  }
+  return Buffer.from(data);
+}
+
+/**
  * Ensure the local upload directory exists
  */
 function ensureUploadDir() {
@@ -26,9 +48,10 @@ async function savePdfAsset(fileName, originalName, buffer, uploadedBy = null) {
   ensureUploadDir();
   const safeFilename = path.basename(fileName);
   const filePath = path.join(uploadDir, safeFilename);
+  const fileBuffer = toBuffer(buffer);
 
   // 1. Write to local disk cache for high-throughput streaming
-  fs.writeFileSync(filePath, buffer);
+  fs.writeFileSync(filePath, fileBuffer);
 
   // 2. Persist to MongoDB Atlas for cloud container persistence across restarts
   const asset = await PdfAsset.findOneAndUpdate(
@@ -36,8 +59,8 @@ async function savePdfAsset(fileName, originalName, buffer, uploadedBy = null) {
     {
       fileName: safeFilename,
       originalName: originalName || safeFilename,
-      data: buffer,
-      size: buffer.length,
+      data: fileBuffer,
+      size: fileBuffer.length,
       mimeType: 'application/pdf',
       uploadedBy,
     },
@@ -92,18 +115,21 @@ async function getPdfAsset(fileName) {
     }
 
     if (asset && asset.data) {
-      // Re-hydrate local disk cache
-      try {
-        fs.writeFileSync(filePath, asset.data);
-      } catch (writeErr) {
-        console.warn(`[PdfStorage] Failed writing disk cache for ${safeFilename}:`, writeErr.message);
-      }
+      const fileBuffer = toBuffer(asset.data);
+      if (fileBuffer) {
+        // Re-hydrate local disk cache
+        try {
+          fs.writeFileSync(filePath, fileBuffer);
+        } catch (writeErr) {
+          console.warn(`[PdfStorage] Failed writing disk cache for ${safeFilename}:`, writeErr.message);
+        }
 
-      return {
-        filePath,
-        buffer: asset.data,
-        originalName: asset.originalName || safeFilename,
-      };
+        return {
+          filePath,
+          buffer: fileBuffer,
+          originalName: asset.originalName || safeFilename,
+        };
+      }
     }
   } catch (dbErr) {
     console.error(`[PdfStorage] MongoDB retrieval error for ${safeFilename}:`, dbErr.message);
@@ -182,8 +208,11 @@ async function syncAllPdfAssets() {
         const targetPath = path.join(uploadDir, asset.fileName);
         if (!fs.existsSync(targetPath)) {
           try {
-            fs.writeFileSync(targetPath, asset.data);
-            hydratedToDisk++;
+            const fileBuffer = toBuffer(asset.data);
+            if (fileBuffer) {
+              fs.writeFileSync(targetPath, fileBuffer);
+              hydratedToDisk++;
+            }
           } catch (e) {
             console.warn(`[PdfStorage Sync] Error hydrating ${asset.fileName} to disk:`, e.message);
           }
@@ -232,4 +261,5 @@ module.exports = {
   validateQuestionPdfExists,
   syncAllPdfAssets,
   deletePdfAsset,
+  toBuffer,
 };

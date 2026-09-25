@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "postinstall": "node src/scripts/install_python_deps.js",
     "test": "jest"
   },
   "dependencies": {

@@ -23,6 +23,13 @@ router.post('/candidates/:candidateId/disqualify', verifyToken, requireAdmin, di
 // POST /api/v1/candidates/:candidateId/warn
 router.post('/candidates/:candidateId/warn', verifyToken, requireAdmin, warnCandidate);
 
+// ── System & Proctoring Status ───────────────────────────────────────────────
+// GET /api/v1/admin/yolo-status
+router.get('/admin/yolo-status', verifyToken, requireAdmin, (req, res) => {
+  const { getYoloHealthStatus } = require('../services/malpracticeService');
+  res.json({ yolo: getYoloHealthStatus() });
+});
+
 // ── Profile routes for logged-in Admin (accessible to both ADMIN and SUPER_ADMIN) ──
 // GET /api/v1/admins/me & /api/v1/me
 router.get('/admins/me', verifyToken, requireAdmin, getMe);

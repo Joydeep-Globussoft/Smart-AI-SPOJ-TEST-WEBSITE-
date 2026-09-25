@@ -101,7 +101,18 @@ app.use('/api/v1', adminRoutes);
 app.use('/api/v1', folderRoutes);
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', (req, res) => {
+  const { getYoloHealthStatus } = require('./services/malpracticeService');
+  const yolo = getYoloHealthStatus();
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    services: {
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      yolo,
+    },
+  });
+});
 
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, req, res, next) => {

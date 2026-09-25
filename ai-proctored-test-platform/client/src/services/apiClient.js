@@ -164,6 +164,7 @@ export const api = {
     axios.get(`/tests/${testId}/candidates/${candidateId}/malpractice-logs`, { params }),
   getTestMalpracticeLogs: (testId, params) =>
     axios.get(`/tests/${testId}/malpractice-logs`, { params }),
+  getYoloStatus: () => axios.get('/admin/yolo-status'),
 
   // Evaluation / Reports
   getResults: (testId) => axios.get(`/tests/${testId}/results`),
