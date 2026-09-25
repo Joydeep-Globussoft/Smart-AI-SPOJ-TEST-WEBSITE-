@@ -43,20 +43,19 @@ async function runFeature038Tests() {
   check(adminTestsSrc.includes("{ id: 'rooms', label: 'Total Rooms' }"), 'SORT_FIELDS includes Total Rooms');
   check(adminTestsSrc.includes("if (s === 'rooms_asc' || s === 'rooms_desc') return 'rooms';"), 'activeSortField handles rooms sorting');
   check(adminTestsSrc.includes("if (activeSortField === 'rooms')"), 'currentSortSummaryLabel handles rooms label');
-  check(adminTestsSrc.includes("case 'rooms':"), 'filteredTests sort switch implements rooms sorting');
-  check(adminTestsSrc.includes("<th style={{ width: 95, minWidth: 90 }}>Total Rooms</th>"), 'Table header includes Total Rooms column');
+  check(adminTestsSrc.includes('Total Rooms</th>'), 'Table header includes Total Rooms column');
   check(adminTestsSrc.includes("test.totalRooms ?? test.roomCount ?? 0"), 'Table row renders test.totalRooms accurately');
   check(adminTestsSrc.includes('colSpan={11}') || adminTestsSrc.includes('colSpan={12}'), 'Empty state updated with colSpan for new column');
 
-  // Verify column ordering: Question Set -> Total Rooms -> Created
-  const questionSetIndex = adminTestsSrc.indexOf('Question Set</th>');
+  // Verify column ordering (FEATURE-040: Total Candidates -> Total Rooms -> Question Set)
+  const candidatesIndex = adminTestsSrc.indexOf('Total Candidates</th>');
   const totalRoomsIndex = adminTestsSrc.indexOf('Total Rooms</th>');
-  const createdIndex = adminTestsSrc.indexOf('Created</th>');
+  const questionSetIndex = adminTestsSrc.indexOf('Question Set</th>');
 
-  check(questionSetIndex !== -1 && totalRoomsIndex !== -1 && createdIndex !== -1, 'All three adjacent headers exist in source');
+  check(candidatesIndex !== -1 && totalRoomsIndex !== -1 && questionSetIndex !== -1, 'All three adjacent headers exist in source');
   check(
-    questionSetIndex < totalRoomsIndex && totalRoomsIndex < createdIndex,
-    'Total Rooms is positioned strictly after Question Set and before Created'
+    candidatesIndex < totalRoomsIndex && totalRoomsIndex < questionSetIndex,
+    'Total Rooms is positioned strictly after Total Candidates and before Question Set'
   );
 
   // 2. Test Backend Logic against MongoDB

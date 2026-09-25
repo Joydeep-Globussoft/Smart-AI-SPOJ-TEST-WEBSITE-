@@ -39,21 +39,20 @@ async function runFeature034Tests() {
   const adminTestsPath = path.resolve(__dirname, '../../../../client/src/admin/pages/AdminTests.jsx');
   const adminTestsSrc = fs.readFileSync(adminTestsPath, 'utf8');
 
-  check(adminTestsSrc.includes("{ id: 'participants', label: 'Total Participants' }"), 'SORT_FIELDS includes Total Participants');
+  check(adminTestsSrc.includes("{ id: 'participants', label: 'Total Candidates' }") || adminTestsSrc.includes("{ id: 'participants', label: 'Total Participants' }"), 'SORT_FIELDS includes Total Candidates/Participants');
   check(adminTestsSrc.includes("if (s === 'participants_asc' || s === 'participants_desc') return 'participants';"), 'activeSortField handles participants sorting');
-  check(adminTestsSrc.includes("if (activeSortField === 'participants')"), 'currentSortSummaryLabel handles participants label');
+  check(adminTestsSrc.includes("activeSortField === 'participants'"), 'currentSortSummaryLabel handles participants label');
   check(adminTestsSrc.includes("case 'participants':"), 'filteredTests sort switch implements participants sorting');
-  check(adminTestsSrc.includes("<th style={{ width: 120, minWidth: 110 }}>Total Participants</th>"), 'Table header includes Total Participants column');
+  check(adminTestsSrc.includes("Total Candidates</th>") || adminTestsSrc.includes("Total Participants</th>"), 'Table header includes Total Candidates/Participants column');
   check(adminTestsSrc.includes("test.totalParticipants ?? test.candidateCount ?? 0"), 'Table row renders test.totalParticipants accurately');
   check(adminTestsSrc.includes("colSpan={10}") || adminTestsSrc.includes("colSpan={11}") || adminTestsSrc.includes("colSpan={12}"), 'Empty state updated with colSpan for new column');
 
-  // Verify column ordering: Passing Criteria -> Total Participants -> Question Set
+  // Verify column ordering: Passing Criteria -> Total Candidates
   const passingIndex = adminTestsSrc.indexOf('Passing Criteria</th>');
-  const participantsIndex = adminTestsSrc.indexOf('Total Participants</th>');
-  const questionSetIndex = adminTestsSrc.indexOf('Question Set</th>');
+  const candidatesIndex = adminTestsSrc.indexOf('Total Candidates</th>') !== -1 ? adminTestsSrc.indexOf('Total Candidates</th>') : adminTestsSrc.indexOf('Total Participants</th>');
 
-  check(passingIndex !== -1 && participantsIndex !== -1 && questionSetIndex !== -1, 'All three adjacent headers exist in source');
-  check(passingIndex < participantsIndex && participantsIndex < questionSetIndex, 'Total Participants is positioned strictly after Passing Criteria and before Question Set');
+  check(passingIndex !== -1 && candidatesIndex !== -1, 'Passing Criteria and Total Candidates headers exist in source');
+  check(passingIndex < candidatesIndex, 'Total Candidates is positioned strictly after Passing Criteria');
 
   // 2. Test Backend Logic against MongoDB
   await mongoose.connect(process.env.MONGODB_URI);

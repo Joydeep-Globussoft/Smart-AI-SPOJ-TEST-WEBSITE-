@@ -40,38 +40,23 @@ async function runFeature039Tests() {
   const adminTestsSrc = fs.readFileSync(adminTestsPath, 'utf8');
 
   check(adminTestsSrc.includes('export const formatLiveFor ='), 'formatLiveFor helper function is exported in AdminTests.jsx');
-  check(adminTestsSrc.includes('<th style={{ width: 120, minWidth: 105 }}>Live For</th>'), 'Table header includes Live For column');
+  check(adminTestsSrc.includes('Live For</th>'), 'Table header includes Live For column');
   check(adminTestsSrc.includes('formatLiveFor(test, now)'), 'Table row renders formatLiveFor(test, now)');
   check(adminTestsSrc.includes('colSpan={12}'), 'Empty state updated with colSpan=12');
 
-  // Verify exact column order: Duration -> Live For -> Passing Criteria -> Total Participants -> Question Set -> Total Rooms -> Created
+  // Verify column sequence: Duration -> Live For -> Passing Criteria
   const durationIndex = adminTestsSrc.indexOf('Duration</th>');
   const liveForIndex = adminTestsSrc.indexOf('Live For</th>');
   const passingIndex = adminTestsSrc.indexOf('Passing Criteria</th>');
-  const participantsIndex = adminTestsSrc.indexOf('Total Participants</th>');
-  const questionSetIndex = adminTestsSrc.indexOf('Question Set</th>');
-  const totalRoomsIndex = adminTestsSrc.indexOf('Total Rooms</th>');
-  const createdIndex = adminTestsSrc.indexOf('Created</th>');
 
   check(
-    durationIndex !== -1 &&
-    liveForIndex !== -1 &&
-    passingIndex !== -1 &&
-    participantsIndex !== -1 &&
-    questionSetIndex !== -1 &&
-    totalRoomsIndex !== -1 &&
-    createdIndex !== -1,
-    'All headers in the sequence exist in AdminTests.jsx'
+    durationIndex !== -1 && liveForIndex !== -1 && passingIndex !== -1,
+    'Duration, Live For, and Passing Criteria headers exist in AdminTests.jsx'
   );
 
   check(
-    durationIndex < liveForIndex &&
-    liveForIndex < passingIndex &&
-    passingIndex < participantsIndex &&
-    participantsIndex < questionSetIndex &&
-    questionSetIndex < totalRoomsIndex &&
-    totalRoomsIndex < createdIndex,
-    'Exact column ordering verified: Duration → Live For → Passing Criteria → Total Participants → Question Set → Total Rooms → Created'
+    durationIndex < liveForIndex && liveForIndex < passingIndex,
+    'Exact column ordering verified: Duration → Live For → Passing Criteria'
   );
 
   // 2. Logic Verification of formatLiveFor

@@ -25,7 +25,7 @@ const SORT_FIELDS = [
   { id: 'type', label: 'Type' },
   { id: 'status', label: 'Status' },
   { id: 'passing', label: 'Passing Criteria' },
-  { id: 'participants', label: 'Total Participants' },
+  { id: 'participants', label: 'Total Candidates' },
   { id: 'rooms', label: 'Total Rooms' },
 ];
 
@@ -215,7 +215,7 @@ export default function AdminTests() {
       return `Passing Criteria (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     if (activeSortField === 'participants') {
-      return `Total Participants (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
+      return `Total Candidates (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     if (activeSortField === 'rooms') {
       return `Total Rooms (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
@@ -1189,12 +1189,15 @@ export default function AdminTests() {
             <table className="table" style={{ width: '100%', minWidth: 1250 }}>
               <thead>
                 <tr>
-                  {/* FEATURE-029 & FOLLOW-UP: Position-based row index column (blank header) */}
-                  <th style={{ width: 36, minWidth: 36, textAlign: 'center' }}></th>
-                  {/* FEATURE-029: Sticky column header with live filtered count */}
-                  <th style={{ width: '18%', minWidth: 150 }}>
+                  {/* FEATURE-040 / FEATURE-029: Dual-axis sticky row index column (blank header) */}
+                  <th className="sticky-col-index" style={{ width: 36, minWidth: 36, maxWidth: 36, textAlign: 'center' }}></th>
+                  {/* FEATURE-040 / FEATURE-029: Dual-axis sticky 2-line Test Title column with badge */}
+                  <th className="sticky-col-title" style={{ width: 210, minWidth: 210, maxWidth: 210, textAlign: 'left' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <span>Test Title</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, fontSize: '0.78rem' }}>
+                        <span>Test</span>
+                        <span>Title</span>
+                      </div>
                       <span
                         style={{
                           fontSize: '0.72rem',
@@ -1205,6 +1208,7 @@ export default function AdminTests() {
                           color: '#ffffff',
                           letterSpacing: 'normal',
                           textTransform: 'none',
+                          whiteSpace: 'nowrap',
                         }}
                         title={`Filtered result count: ${filteredTests.length}`}
                       >
@@ -1212,18 +1216,20 @@ export default function AdminTests() {
                       </span>
                     </div>
                   </th>
-                  <th style={{ width: 95, minWidth: 85 }}>Type</th>
-                  <th style={{ width: 90, minWidth: 80 }}>Status</th>
-                  <th style={{ width: 85, minWidth: 75 }}>Duration</th>
+                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Type</th>
+                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Status</th>
+                  {/* FEATURE-040: Created column moved immediately after Status */}
+                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Created</th>
+                  <th style={{ width: 80, minWidth: 75, textAlign: 'center' }}>Duration</th>
                   {/* FEATURE-039: Live For Column */}
-                  <th style={{ width: 120, minWidth: 105 }}>Live For</th>
-                  <th style={{ width: 105, minWidth: 95 }}>Passing Criteria</th>
-                  <th style={{ width: 120, minWidth: 110 }}>Total Participants</th>
-                  <th style={{ width: '18%', minWidth: 140, maxWidth: 190 }}>Question Set</th>
-                  {/* FEATURE-038: Total Rooms Column */}
-                  <th style={{ width: 95, minWidth: 90 }}>Total Rooms</th>
-                  <th style={{ width: 90, minWidth: 85 }}>Created</th>
-                  <th style={{ width: 210, minWidth: 200, textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Live For</th>
+                  <th style={{ width: 90, minWidth: 85, textAlign: 'center' }}>Passing Criteria</th>
+                  {/* FEATURE-040: Renamed to Total Candidates */}
+                  <th style={{ width: 105, minWidth: 100, textAlign: 'center' }}>Total Candidates</th>
+                  {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Total Candidates */}
+                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Total Rooms</th>
+                  <th style={{ width: 140, minWidth: 130, maxWidth: 170, textAlign: 'center' }}>Question Set</th>
+                  <th style={{ width: 195, minWidth: 190, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1253,21 +1259,31 @@ export default function AdminTests() {
 
                     return (
                       <tr key={test._id}>
-                        {/* FEATURE-029: Position-based row index (1, 2, 3...) */}
-                        <td style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, width: 36 }}>
+                        {/* FEATURE-040 / FEATURE-029: Position-based row index (1, 2, 3...) with frozen left-alignment */}
+                        <td className="sticky-col-index" style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, width: 36, minWidth: 36, maxWidth: 36 }}>
                           {index + 1}
                         </td>
-                        <td style={{ fontWeight: 600, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          <Link
-                            to={`/admin/tests/${test._id}`}
-                            style={{ color: 'var(--color-navy)', textDecoration: 'none' }}
-                            className="hover-underline"
+                        {/* FEATURE-040: Frozen Test Title with single-line ellipsis truncation and hover tooltip */}
+                        <td className="sticky-col-title" style={{ width: 210, minWidth: 210, maxWidth: 210, fontWeight: 600, textAlign: 'left' }}>
+                          <div
                             title={test.title}
+                            style={{
+                              maxWidth: 190,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
                           >
-                            {test.title}
-                          </Link>
+                            <Link
+                              to={`/admin/tests/${test._id}`}
+                              style={{ color: 'var(--color-navy)', textDecoration: 'none' }}
+                              className="hover-underline"
+                            >
+                              {test.title}
+                            </Link>
+                          </div>
                         </td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           <span
                             className="badge"
                             style={{
@@ -1281,52 +1297,55 @@ export default function AdminTests() {
                             {test.testType}
                           </span>
                         </td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           <TestStatusBadge
                             status={test.status}
                             style={{ fontSize: '0.75rem' }}
                           />
                         </td>
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        {/* FEATURE-040: Created column immediately after Status */}
+                        <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                          {new Date(test.createdAt).toLocaleDateString()}
+                        </td>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           {test.durationMinutes} mins
                         </td>
                         {/* FEATURE-039: Live For Column */}
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           {formatLiveFor(test, now)}
                         </td>
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           ≥ {test.passingCriteria} Qs
                         </td>
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        {/* FEATURE-040: Total Candidates */}
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           {test.totalParticipants ?? test.candidateCount ?? 0}
                         </td>
+                        {/* FEATURE-040 / FEATURE-038: Total Rooms Column immediately after Total Candidates */}
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                          {test.totalRooms ?? test.roomCount ?? 0}
+                        </td>
                         {/* BUG-87 & FOLLOW-UP: Truncate long question sets with ellipsis and hover tooltip */}
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', maxWidth: 180 }}>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', maxWidth: 170, textAlign: 'center' }}>
                           <div
                             title={questionSetName}
                             style={{
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
-                              maxWidth: 180,
+                              maxWidth: 160,
+                              margin: '0 auto',
                             }}
                           >
                             {questionSetName}
                           </div>
                         </td>
-                        {/* FEATURE-038: Total Rooms Column */}
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                          {test.totalRooms ?? test.roomCount ?? 0}
-                        </td>
-                        <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                          {new Date(test.createdAt).toLocaleDateString()}
-                        </td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
                             <Link
                               to={`/admin/tests/${test._id}`}
                               className="btn btn-secondary"
-                              style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                              style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                             >
                               Manage &amp; Rooms
                             </Link>
@@ -1334,7 +1353,7 @@ export default function AdminTests() {
                               <Link
                                 to={`/admin/tests/${test._id}/live`}
                                 className="btn btn-primary"
-                                style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#2ECC71' }}
+                                style={{ padding: '5px 10px', fontSize: '0.78rem', background: '#2ECC71' }}
                               >
                                 Live Monitor
                               </Link>
@@ -1344,7 +1363,7 @@ export default function AdminTests() {
                                 <Link
                                   to={`/admin/tests/${test._id}/live`}
                                   className="btn btn-secondary"
-                                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                  style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                                   title="View frozen post-test operational summary"
                                 >
                                   Test Summary
@@ -1352,7 +1371,7 @@ export default function AdminTests() {
                                 <Link
                                   to={`/admin/tests/${test._id}/results`}
                                   className="btn btn-primary"
-                                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                                  style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                                 >
                                   Results
                                 </Link>
@@ -1362,7 +1381,7 @@ export default function AdminTests() {
                               <button
                                 onClick={() => setDeleteTarget(test)}
                                 className="btn btn-danger"
-                                style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                                style={{ padding: '5px 8px', fontSize: '0.78rem' }}
                                 title="Delete Test"
                               >
                                 🗑️
