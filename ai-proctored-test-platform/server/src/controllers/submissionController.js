@@ -221,6 +221,7 @@ const joinRoom = async (req, res, next) => {
       assignedQuestionSetId = existingJoinedEntry.assignedQuestionSetId;
       joinIndex = existingJoinedEntry.joinIndex;
     } else {
+      const candidateJoinTime = candidate?.roomJoinedAt || candidate?.lastLoginAt || (candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date());
       const poolContainerId = test.folderId || test.questionSetPoolId;
       if (poolContainerId) {
         // Pool mode: deterministic round-robin per room
@@ -291,7 +292,6 @@ const joinRoom = async (req, res, next) => {
           ? { $expr: { $lt: [{ $size: { $ifNull: ['$joinedCandidates', []] } }, room.capacity] } }
           : {};
 
-        const candidateJoinTime = candidate?.roomJoinedAt || candidate?.lastLoginAt || (candidate?.createdAt && new Date(candidate.createdAt) <= new Date() ? candidate.createdAt : new Date());
         assignedQuestionSetId = test.questionSetId?._id || test.questionSetId;
 
         const updatedRoom = await Room.findOneAndUpdate(
