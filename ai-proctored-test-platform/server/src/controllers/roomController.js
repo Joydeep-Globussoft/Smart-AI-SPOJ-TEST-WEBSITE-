@@ -431,7 +431,18 @@ const getRoomCandidates = async (req, res, next) => {
           assignedQuestionSetName,
           assignedSetIndex,
         };
-      } else {
+        if (sub.status === 'AUTO_SUBMITTED_DISQUALIFIED' || candidate.isDisqualified) {
+          candidateMap[cid].status = 'DISQUALIFIED';
+          candidateMap[cid].isDisqualified = true;
+        } else if (sub.status === 'AUTO_SUBMITTED_TIME_UP') {
+          if (candidateMap[cid].status !== 'DISQUALIFIED') {
+            candidateMap[cid].status = 'AUTO_SUBMITTED_TIME_UP';
+          }
+        } else if (sub.status === 'SUBMITTED') {
+          if (candidateMap[cid].status !== 'DISQUALIFIED' && candidateMap[cid].status !== 'AUTO_SUBMITTED_TIME_UP') {
+            candidateMap[cid].status = 'SUBMITTED';
+          }
+        }
         if (sub.candidateEndTime && (!candidateMap[cid].candidateEndTime || new Date(sub.candidateEndTime) > new Date(candidateMap[cid].candidateEndTime))) {
           candidateMap[cid].candidateEndTime = sub.candidateEndTime;
         }
@@ -777,10 +788,13 @@ const getLiveCandidates = async (req, res, next) => {
       let status = 'NOT_STARTED';
       let colorStatus = 'WHITE';
 
-      if (candidate.isDisqualified) {
+      if (candidate.isDisqualified || subStatuses.some((st) => st === 'AUTO_SUBMITTED_DISQUALIFIED' || st === 'DISQUALIFIED')) {
         status = 'DISQUALIFIED';
         colorStatus = 'RED';
-      } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
+      } else if (subStatuses.length > 0 && subStatuses.some((st) => st === 'AUTO_SUBMITTED_TIME_UP')) {
+        status = 'AUTO_SUBMITTED_TIME_UP';
+        colorStatus = 'GREEN';
+      } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED')) {
         status = 'SUBMITTED';
         colorStatus = 'GREEN';
       } else if (timers.startTime) {
@@ -851,10 +865,13 @@ const getLiveCandidates = async (req, res, next) => {
           candidateMap[cid].roomJoinedAt = candidate.roomJoinedAt;
           candidateMap[cid].joinedAt = candidate.roomJoinedAt;
         }
-        if (candidate.isDisqualified) {
+        if (candidate.isDisqualified || subStatuses.some((st) => st === 'AUTO_SUBMITTED_DISQUALIFIED' || st === 'DISQUALIFIED')) {
           candidateMap[cid].status = 'DISQUALIFIED';
           candidateMap[cid].colorStatus = 'RED';
-        } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED' || st === 'AUTO_SUBMITTED_TIME_UP')) {
+        } else if (subStatuses.length > 0 && subStatuses.some((st) => st === 'AUTO_SUBMITTED_TIME_UP')) {
+          candidateMap[cid].status = 'AUTO_SUBMITTED_TIME_UP';
+          candidateMap[cid].colorStatus = 'GREEN';
+        } else if (subStatuses.length > 0 && subStatuses.every((st) => st === 'SUBMITTED')) {
           candidateMap[cid].status = 'SUBMITTED';
           candidateMap[cid].colorStatus = 'GREEN';
         } else if (timers.startTime) {

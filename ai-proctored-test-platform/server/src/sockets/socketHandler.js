@@ -108,10 +108,13 @@ const registerSocketHandlers = (io) => {
         let colorStatus = 'WHITE';
         let candidateStatus = 'NOT_STARTED';
 
-        if (candidate?.isDisqualified) {
+        if (candidate?.isDisqualified || sub?.status === 'AUTO_SUBMITTED_DISQUALIFIED' || sub?.status === 'DISQUALIFIED') {
           colorStatus = 'RED';
           candidateStatus = 'DISQUALIFIED';
-        } else if (sub?.status === 'SUBMITTED' || sub?.status === 'AUTO_SUBMITTED_TIME_UP') {
+        } else if (sub?.status === 'AUTO_SUBMITTED_TIME_UP') {
+          colorStatus = 'GREEN';
+          candidateStatus = 'AUTO_SUBMITTED_TIME_UP';
+        } else if (sub?.status === 'SUBMITTED') {
           colorStatus = 'GREEN';
           candidateStatus = 'SUBMITTED';
         } else if (sub?.candidateStartTime) {

@@ -1016,12 +1016,27 @@ export default function AdminLiveDashboard() {
     setEvaluationDetailCandidate(null);
   }, []);
 
-  // BUG-24: Derive fresh candidate state from candidatesMap to guarantee real-time updates while modal is open
+  // BUG-24 & BUG-102: Derive fresh candidate state from candidatesMap to guarantee real-time updates while preserving submit reason
   const activeInspectCandidate = useMemo(() => {
     if (!inspectCandidate) return null;
     const cid = inspectCandidate.candidateId || inspectCandidate.id || inspectCandidate._id;
     const fromMap = cid ? candidatesMap[cid] : null;
-    return fromMap ? { ...inspectCandidate, ...fromMap } : inspectCandidate;
+    if (!fromMap) return inspectCandidate;
+    const merged = { ...inspectCandidate, ...fromMap };
+    // BUG-102: Prevent background polling or generic map status from overwriting specific terminal/submit reasons
+    if (
+      (inspectCandidate.status === 'AUTO_SUBMITTED_TIME_UP' || inspectCandidate.status === 'AUTO_SUBMITTED') &&
+      fromMap.status === 'SUBMITTED'
+    ) {
+      merged.status = 'AUTO_SUBMITTED_TIME_UP';
+    } else if (
+      (inspectCandidate.status === 'DISQUALIFIED' || inspectCandidate.isDisqualified) &&
+      fromMap.status === 'SUBMITTED'
+    ) {
+      merged.status = 'DISQUALIFIED';
+      merged.isDisqualified = true;
+    }
+    return merged;
   }, [inspectCandidate, candidatesMap]);
 
   // BUG-91: Target candidate ID stabilized to avoid re-fetch loops on live status updates
@@ -1330,9 +1345,17 @@ export default function AdminLiveDashboard() {
               const startTime = cand.candidateStartTime || existing.candidateStartTime || null;
               const hasStarted = Boolean(startTime);
               const endTime = hasStarted ? (cand.candidateEndTime || existing.candidateEndTime || (cand.timeRemaining ? new Date(refreshNow + cand.timeRemaining).toISOString() : null)) : null;
+              let nextStatus = cand.status || existing.status;
+              if (
+                (existing.status === 'AUTO_SUBMITTED_TIME_UP' || existing.status === 'AUTO_SUBMITTED') &&
+                cand.status === 'SUBMITTED'
+              ) {
+                nextStatus = 'AUTO_SUBMITTED_TIME_UP';
+              }
               updated[cid] = {
                 ...existing,
                 ...cand,
+                status: nextStatus,
                 candidateId: cid,
                 candidateEndTime: endTime,
                 candidateStartTime: startTime,
@@ -2920,9 +2943,9 @@ export default function AdminLiveDashboard() {
                     const inspectColor = STATUS_COLORS[inspectColorStatus] || '#9ca3af';
 
                     let displayStatus = activeInspectCandidate.status;
-                    if (activeInspectCandidate.status === 'AUTO_SUBMITTED_TIME_UP') {
+                    if (activeInspectCandidate.status === 'AUTO_SUBMITTED_TIME_UP' || activeInspectCandidate.status === 'AUTO_SUBMITTED') {
                       displayStatus = 'SUBMITTED (TIME UP)';
-                    } else if (activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.isDisqualified || inspectColorStatus === 'RED') {
+                    } else if (activeInspectCandidate.status === 'DISQUALIFIED' || activeInspectCandidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' || activeInspectCandidate.isDisqualified || inspectColorStatus === 'RED') {
                       displayStatus = 'DISQUALIFIED';
                     } else if (activeInspectCandidate.status === 'SUBMITTED' || inspectColorStatus === 'GREEN') {
                       displayStatus = 'SUBMITTED';

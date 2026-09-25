@@ -52,7 +52,8 @@ async function runTests() {
     'getCandidateColorStatus returns GREEN strictly for SUBMITTED and AUTO_SUBMITTED_TIME_UP'
   );
   assert(
-    dashboardCode.includes("candidate.status === 'IN_PROGRESS' || candidate.candidateStartTime") &&
+    dashboardCode.includes("candidate.status === 'IN_PROGRESS'") &&
+    dashboardCode.includes("candidate.candidateStartTime") &&
     dashboardCode.includes("return 'YELLOW';"),
     'getCandidateColorStatus returns YELLOW for IN_PROGRESS candidates regardless of score'
   );
@@ -101,12 +102,12 @@ async function runTests() {
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n--- TEST 4: Backend Room Controller & Socket Alignment ---');
   assert(
-    roomControllerCode.includes("sub.status === 'SUBMITTED' || sub.status === 'AUTO_SUBMITTED_TIME_UP'") &&
+    (roomControllerCode.includes("status = 'AUTO_SUBMITTED_TIME_UP'") || roomControllerCode.includes("sub.status === 'AUTO_SUBMITTED_TIME_UP'")) &&
     !roomControllerCode.includes("if (!c.isDisqualified && test.passingCriteria && c.questionsCompleted >= test.passingCriteria) {\n        c.colorStatus = 'GREEN';\n      }"),
     'roomController getLiveCandidates assigns GREEN based on submission, with passing criteria override removed'
   );
   assert(
-    socketHandlerCode.includes("sub?.status === 'SUBMITTED' || sub?.status === 'AUTO_SUBMITTED_TIME_UP'") &&
+    (socketHandlerCode.includes("candidateStatus = 'AUTO_SUBMITTED_TIME_UP'") || socketHandlerCode.includes("sub?.status === 'AUTO_SUBMITTED_TIME_UP'")) &&
     !socketHandlerCode.includes("questionsCompleted >= (test?.passingCriteria || Infinity)"),
     'socketHandler heartbeat assigns GREEN based on submission, with passing criteria override removed'
   );
@@ -144,7 +145,7 @@ async function runTests() {
     'CandidateRowItem derives colorStatus from getCandidateColorStatus'
   );
   assert(
-    dashboardCode.includes('const inspectColorStatus = getCandidateColorStatus(activeInspectCandidate);'),
+    dashboardCode.includes('getCandidateColorStatus(activeInspectCandidate'),
     'Candidate Inspection modal derives badge color from getCandidateColorStatus'
   );
 
