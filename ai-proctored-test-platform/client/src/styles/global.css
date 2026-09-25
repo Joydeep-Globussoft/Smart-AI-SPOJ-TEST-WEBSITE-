@@ -989,7 +989,7 @@ tbody td {
   transform: none !important;
 }
 
-/* ── Auth Pages ──────────────────────────────────────────────────────────────── */
+/* ── Auth Pages (FEATURE-042: Full-width logo header ribbon on candidate card-style pages) ── */
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -1000,32 +1000,38 @@ tbody td {
 }
 
 .auth-card {
-  background: var(--color-bg-card, #131b2e);
-  border: 1px solid var(--color-border, #23314f);
+  background: var(--color-bg-card, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
-  padding: 40px;
+  padding: 0 40px 40px 40px;
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   animation: slideUp 0.3s ease;
+  overflow: hidden;
 }
 
 .auth-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  background: #1A2B3C;
+  margin: 0 -40px 24px -40px;
+  padding: 16px 20px;
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .auth-logo img {
-  height: 44px;
+  height: 42px;
   width: auto;
   object-fit: contain;
   display: block;
-  background: #1A2B3C;
-  padding: 8px 22px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(26, 43, 60, 0.15);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .auth-title {
@@ -1291,7 +1297,8 @@ tbody td {
   .main-content { padding: 16px; }
   .navbar { padding: 0 16px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .auth-card { padding: 28px 20px; }
+  .auth-card { padding: 0 20px 28px 20px; }
+  .auth-logo { margin: 0 -20px 20px -20px; padding: 14px 16px; }
 }
 
 /* ── Candidate Test Screen ───────────────────────────────────────────────────── */

@@ -58,14 +58,30 @@ export default function CandidateTestComplete() {
       padding: 32,
     }}>
       <div style={{
-        background: 'white', borderRadius: 24, padding: 48, maxWidth: 520,
-        width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        background: 'var(--color-bg-card, #ffffff)',
+        borderRadius: 24,
+        padding: '0 40px 40px 40px',
+        maxWidth: 520,
+        width: '100%',
+        textAlign: 'center',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'inline-flex', background: '#1A2B3C', padding: '8px 24px', borderRadius: 12, margin: '0 auto 20px auto', boxShadow: '0 4px 12px rgba(26,43,60,0.15)' }}>
+        <div style={{
+          background: '#1A2B3C',
+          margin: '0 -40px 28px -40px',
+          padding: '18px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        }}>
           <img
             src={logoLight}
             alt="Globussoft Technology"
-            style={{ height: 40, width: 'auto', objectFit: 'contain', display: 'block' }}
+            style={{ height: 42, width: 'auto', objectFit: 'contain', display: 'block' }}
           />
         </div>
         <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
