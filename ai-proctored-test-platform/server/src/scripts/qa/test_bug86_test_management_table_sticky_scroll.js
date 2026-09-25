@@ -58,7 +58,7 @@ runTest('AdminTests.jsx has fixed/non-scrolling page header and filter card prev
 runTest('AdminTests.jsx has single table scroll container with sticky header and bottom scrollbar', () => {
   assert(adminTestsContent.includes('className="table-container test-table-scroll-container"'), 'Table must use test-table-scroll-container');
   assert(!adminTestsContent.includes('persistent-horizontal-scrollbar'), 'Must not render secondary duplicate scrollbar track');
-  assert(adminTestsContent.includes('minWidth: 1250') || adminTestsContent.includes('minWidth: 980') || adminTestsContent.includes('minWidth: 960'), 'Table must have minWidth to prevent column crushing');
+  assert(adminTestsContent.includes('minWidth: 1250') || adminTestsContent.includes('minWidth: 1140') || adminTestsContent.includes('minWidth: 1060') || adminTestsContent.includes('minWidth: 980') || adminTestsContent.includes('minWidth: 960'), 'Table must have minWidth to prevent column crushing');
 });
 
 // 3. BUG-87 Verification: Question Set plain text

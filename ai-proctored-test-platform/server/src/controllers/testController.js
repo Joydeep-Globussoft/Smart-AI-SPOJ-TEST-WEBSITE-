@@ -311,6 +311,7 @@ const getTests = async (req, res, next) => {
       const base = {
         ...t,
         roomCount: totalRooms,
+        totalRooms,
         activeRoomsCount: activeRooms,
         hasActiveRooms: activeRooms > 0,
         candidateCount,

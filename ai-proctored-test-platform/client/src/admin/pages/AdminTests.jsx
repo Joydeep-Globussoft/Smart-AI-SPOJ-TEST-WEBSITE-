@@ -25,7 +25,8 @@ const SORT_FIELDS = [
   { id: 'type', label: 'Type' },
   { id: 'status', label: 'Status' },
   { id: 'passing', label: 'Passing Criteria' },
-  { id: 'participants', label: 'Total Candidates' },
+  { id: 'participants', label: 'Total Participants' },
+  { id: 'rooms', label: 'Total Rooms' },
 ];
 
 const SORT_DIRS = [
@@ -97,6 +98,7 @@ export default function AdminTests() {
     if (s === 'status_asc' || s === 'status_desc') return 'status';
     if (s === 'passing_asc' || s === 'passing_desc') return 'passing';
     if (s === 'participants_asc' || s === 'participants_desc') return 'participants';
+    if (s === 'rooms_asc' || s === 'rooms_desc') return 'rooms';
     return 'date';
   }, [filters.sortField, filters.sort]);
 
@@ -178,6 +180,9 @@ export default function AdminTests() {
     }
     if (activeSortField === 'participants') {
       return `Total Participants (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
+    }
+    if (activeSortField === 'rooms') {
+      return `Total Rooms (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     return `${fieldName} (${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`;
   }, [activeSortField, activeSortDir]);
@@ -398,6 +403,9 @@ export default function AdminTests() {
           break;
         case 'participants':
           comparison = (Number(a.totalParticipants ?? a.candidateCount) || 0) - (Number(b.totalParticipants ?? b.candidateCount) || 0);
+          break;
+        case 'rooms':
+          comparison = (Number(a.totalRooms ?? a.roomCount) || 0) - (Number(b.totalRooms ?? b.roomCount) || 0);
           break;
         default:
           comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
@@ -1142,7 +1150,7 @@ export default function AdminTests() {
             className="table-container test-table-scroll-container"
             style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
           >
-            <table className="table" style={{ width: '100%', minWidth: 1060 }}>
+            <table className="table" style={{ width: '100%', minWidth: 1140 }}>
               <thead>
                 <tr>
                   {/* FEATURE-029 & FOLLOW-UP: Position-based row index column (blank header) */}
@@ -1174,6 +1182,8 @@ export default function AdminTests() {
                   <th style={{ width: 105, minWidth: 95 }}>Passing Criteria</th>
                   <th style={{ width: 120, minWidth: 110 }}>Total Participants</th>
                   <th style={{ width: '18%', minWidth: 140, maxWidth: 190 }}>Question Set</th>
+                  {/* FEATURE-038: Total Rooms Column */}
+                  <th style={{ width: 95, minWidth: 90 }}>Total Rooms</th>
                   <th style={{ width: 90, minWidth: 85 }}>Created</th>
                   <th style={{ width: 210, minWidth: 200, textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -1181,7 +1191,7 @@ export default function AdminTests() {
               <tbody>
                 {filteredTests.length === 0 ? (
                   <tr>
-                    <td colSpan={10} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
+                    <td colSpan={11} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
@@ -1261,6 +1271,10 @@ export default function AdminTests() {
                           >
                             {questionSetName}
                           </div>
+                        </td>
+                        {/* FEATURE-038: Total Rooms Column */}
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          {test.totalRooms ?? test.roomCount ?? 0}
                         </td>
                         <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                           {new Date(test.createdAt).toLocaleDateString()}
