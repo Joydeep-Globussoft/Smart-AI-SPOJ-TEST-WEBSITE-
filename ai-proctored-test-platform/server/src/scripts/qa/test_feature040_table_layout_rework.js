@@ -86,10 +86,9 @@ runTest('Display label renamed to "Total Candidates" in table header, sort dropd
   assert(adminTestsContent.includes("return `Total Candidates (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`"), 'Sort summary must read Total Candidates');
 });
 
-// 3. "Test Title" 2-line header & badge layout
-runTest('"Test Title" header renders on two lines with result count badge', () => {
-  assert(adminTestsContent.includes('<span>Test</span>'), 'Header must contain "Test" on first line');
-  assert(adminTestsContent.includes('<span>Title</span>'), 'Header must contain "Title" on second line');
+// 3. "Test Title" 1-line header & badge layout (BUG-103)
+runTest('"Test Title" header renders on a single line with result count badge', () => {
+  assert(adminTestsContent.includes('<span>Test Title</span>'), 'Header must contain "Test Title" on single line');
   assert(adminTestsContent.includes('title={`Filtered result count: ${filteredTests.length}`}'), 'Results count badge is present in title header');
 });
 
@@ -101,35 +100,36 @@ runTest('Test Title cell truncates with ellipsis and renders hover tooltip', () 
   assert(adminTestsContent.includes('title={test.title}'), 'Title must provide hover tooltip');
 });
 
-// 5. Dual-Axis Sticky Frozen Columns CSS
-runTest('global.css defines dual-axis sticky frozen columns for Index and Test Title', () => {
+// 5. Dual-Axis Sticky Frozen Columns CSS (BUG-103: Dynamic scroll shadow, no static line)
+runTest('global.css defines dual-axis sticky frozen columns for Index and Test Title with dynamic scroll shadow', () => {
   assert(globalCssContent.includes('.test-table-scroll-container thead th.sticky-col-index {'), 'Must define th.sticky-col-index');
   assert(globalCssContent.includes('.test-table-scroll-container tbody td.sticky-col-index {'), 'Must define td.sticky-col-index');
   assert(globalCssContent.includes('.test-table-scroll-container thead th.sticky-col-title {'), 'Must define th.sticky-col-title');
   assert(globalCssContent.includes('.test-table-scroll-container tbody td.sticky-col-title {'), 'Must define td.sticky-col-title');
   assert(globalCssContent.includes('left: 36px;'), 'Title sticky left offset must be 36px');
-  assert(globalCssContent.includes('box-shadow: 3px 0 6px -2px'), 'Title sticky column must have separation box-shadow');
+  assert(globalCssContent.includes('.test-table-scroll-container.is-scrolled-x'), 'Must define is-scrolled-x modifier for scroll indicator');
 });
 
-// 6. Center Alignment
-runTest('Non-frozen columns are center-aligned in both header and body', () => {
-  assert(adminTestsContent.includes('<th style={{ width: 85, minWidth: 80, textAlign: \'center\' }}>Type</th>'), 'Type header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 85, minWidth: 80, textAlign: \'center\' }}>Status</th>'), 'Status header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 85, minWidth: 80, textAlign: \'center\' }}>Created</th>'), 'Created header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 80, minWidth: 75, textAlign: \'center\' }}>Duration</th>'), 'Duration header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 95, minWidth: 90, textAlign: \'center\' }}>Live For</th>'), 'Live For header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 90, minWidth: 85, textAlign: \'center\' }}>Passing Criteria</th>'), 'Passing Criteria header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 105, minWidth: 100, textAlign: \'center\' }}>Total Candidates</th>'), 'Total Candidates header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 85, minWidth: 80, textAlign: \'center\' }}>Total Rooms</th>'), 'Total Rooms header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 140, minWidth: 130, maxWidth: 170, textAlign: \'center\' }}>Question Set</th>'), 'Question Set header must be center-aligned');
-  assert(adminTestsContent.includes('<th style={{ width: 195, minWidth: 190, textAlign: \'center\' }}>Actions</th>'), 'Actions header must be center-aligned');
+// 6. Center Alignment & Actions Fixed Grid
+runTest('Non-frozen columns are center-aligned and Actions column uses fixed button slots', () => {
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Type</th>'), 'Type header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Status</th>'), 'Status header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Created</th>'), 'Created header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Duration</th>'), 'Duration header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Live For</th>'), 'Live For header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Passing Criteria</th>'), 'Passing Criteria header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Total Candidates</th>'), 'Total Candidates header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Total Rooms</th>'), 'Total Rooms header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Question Set</th>'), 'Question Set header must be center-aligned');
+  assert(adminTestsContent.includes('textAlign: \'center\' }}>Actions</th>'), 'Actions header must be center-aligned');
+  assert(adminTestsContent.includes('gridTemplateColumns: \'112px 94px 66px 32px\''), 'Actions column must use fixed 4-slot grid');
 });
 
 // 7. Non-regression of empty state & sticky scroll
 runTest('Preserves colSpan=12 empty state and sticky scroll container', () => {
   assert(adminTestsContent.includes('colSpan={12}'), 'Empty state colSpan must be 12');
-  assert(adminTestsContent.includes('className="table-container test-table-scroll-container"'), 'Scroll container class must be preserved');
-  assert(adminTestsContent.includes('minWidth: 1250'), 'Table must have minWidth to prevent crushing');
+  assert(adminTestsContent.includes('className={`table-container test-table-scroll-container ${isScrolledLeft ? \'is-scrolled-x\' : \'\'}`}'), 'Scroll container class must support dynamic scroll state');
+  assert(adminTestsContent.includes('minWidth: 1400') || adminTestsContent.includes('minWidth: 1250'), 'Table must have minWidth to prevent crushing');
 });
 
 console.log(`\n======================================================`);

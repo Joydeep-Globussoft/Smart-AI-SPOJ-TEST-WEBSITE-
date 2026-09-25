@@ -90,12 +90,18 @@ export default function AdminTests() {
   const [loading, setLoading] = useState(true);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [isScrolledLeft, setIsScrolledLeft] = useState(false);
 
   // Real-time 1s ticker for live-updating elapsed duration on LIVE tests
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleTableScroll = (e) => {
+    const scrolled = e.target.scrollLeft > 2;
+    setIsScrolledLeft((prev) => (prev !== scrolled ? scrolled : prev));
+  };
 
   // FEATURE-021 & FEATURE-022: Preserved Filters & Search via URL parameters
   const [filters, updateFilter, setFilters] = useAdminFilterState(DEFAULT_FILTERS);
@@ -1183,21 +1189,19 @@ export default function AdminTests() {
         ) : (
           <div
             ref={tableContainerRef}
-            className="table-container test-table-scroll-container"
+            className={`table-container test-table-scroll-container ${isScrolledLeft ? 'is-scrolled-x' : ''}`}
+            onScroll={handleTableScroll}
             style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
           >
-            <table className="table" style={{ width: '100%', minWidth: 1250 }}>
+            <table className="table" style={{ width: '100%', minWidth: 1400 }}>
               <thead>
                 <tr>
                   {/* FEATURE-040 / FEATURE-029: Dual-axis sticky row index column (blank header) */}
                   <th className="sticky-col-index" style={{ width: 36, minWidth: 36, maxWidth: 36, textAlign: 'center' }}></th>
-                  {/* FEATURE-040 / FEATURE-029: Dual-axis sticky 2-line Test Title column with badge */}
-                  <th className="sticky-col-title" style={{ width: 210, minWidth: 210, maxWidth: 210, textAlign: 'left' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, fontSize: '0.78rem' }}>
-                        <span>Test</span>
-                        <span>Title</span>
-                      </div>
+                  {/* BUG-103 / FEATURE-040: Dual-axis sticky 1-line Test Title column with badge */}
+                  <th className="sticky-col-title" style={{ width: 215, minWidth: 210, maxWidth: 225, textAlign: 'left' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                      <span>Test Title</span>
                       <span
                         style={{
                           fontSize: '0.72rem',
@@ -1217,19 +1221,20 @@ export default function AdminTests() {
                     </div>
                   </th>
                   <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Type</th>
-                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Status</th>
+                  <th style={{ width: 80, minWidth: 75, textAlign: 'center' }}>Status</th>
                   {/* FEATURE-040: Created column moved immediately after Status */}
                   <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Created</th>
-                  <th style={{ width: 80, minWidth: 75, textAlign: 'center' }}>Duration</th>
+                  <th style={{ width: 75, minWidth: 70, textAlign: 'center' }}>Duration</th>
                   {/* FEATURE-039: Live For Column */}
                   <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Live For</th>
-                  <th style={{ width: 90, minWidth: 85, textAlign: 'center' }}>Passing Criteria</th>
+                  <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Passing Criteria</th>
                   {/* FEATURE-040: Renamed to Total Candidates */}
-                  <th style={{ width: 105, minWidth: 100, textAlign: 'center' }}>Total Candidates</th>
+                  <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Total Candidates</th>
                   {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Total Candidates */}
-                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Total Rooms</th>
-                  <th style={{ width: 140, minWidth: 130, maxWidth: 170, textAlign: 'center' }}>Question Set</th>
-                  <th style={{ width: 195, minWidth: 190, textAlign: 'center' }}>Actions</th>
+                  <th style={{ width: 75, minWidth: 70, textAlign: 'center' }}>Total Rooms</th>
+                  <th style={{ width: 140, minWidth: 125, maxWidth: 160, textAlign: 'center' }}>Question Set</th>
+                  {/* BUG-103: Fixed Actions column width with 4-button slot support */}
+                  <th style={{ width: 334, minWidth: 330, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1264,11 +1269,11 @@ export default function AdminTests() {
                           {index + 1}
                         </td>
                         {/* FEATURE-040: Frozen Test Title with single-line ellipsis truncation and hover tooltip */}
-                        <td className="sticky-col-title" style={{ width: 210, minWidth: 210, maxWidth: 210, fontWeight: 600, textAlign: 'left' }}>
+                        <td className="sticky-col-title" style={{ width: 215, minWidth: 210, maxWidth: 225, fontWeight: 600, textAlign: 'left' }}>
                           <div
                             title={test.title}
                             style={{
-                              maxWidth: 190,
+                              maxWidth: 195,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -1326,66 +1331,87 @@ export default function AdminTests() {
                           {test.totalRooms ?? test.roomCount ?? 0}
                         </td>
                         {/* BUG-87 & FOLLOW-UP: Truncate long question sets with ellipsis and hover tooltip */}
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', maxWidth: 170, textAlign: 'center' }}>
+                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', maxWidth: 160, textAlign: 'center' }}>
                           <div
                             title={questionSetName}
                             style={{
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
-                              maxWidth: 160,
+                              maxWidth: 150,
                               margin: '0 auto',
                             }}
                           >
                             {questionSetName}
                           </div>
                         </td>
+                        {/* BUG-103: Deterministic 4-slot fixed button grid for Actions column */}
                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '112px 94px 66px 32px',
+                              gap: 6,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {/* Slot 1: Manage & Rooms (Always Present) */}
                             <Link
                               to={`/admin/tests/${test._id}`}
                               className="btn btn-secondary"
-                              style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                              style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', whiteSpace: 'nowrap' }}
                             >
                               Manage &amp; Rooms
                             </Link>
-                            {test.status === 'LIVE' && (
+
+                            {/* Slot 2: Live Monitor (LIVE) OR Test Summary (ENDED) OR Empty (DRAFT) */}
+                            {test.status === 'LIVE' ? (
                               <Link
                                 to={`/admin/tests/${test._id}/live`}
                                 className="btn btn-primary"
-                                style={{ padding: '5px 10px', fontSize: '0.78rem', background: '#2ECC71' }}
+                                style={{ padding: '5px 8px', fontSize: '0.78rem', background: '#2ECC71', textAlign: 'center', whiteSpace: 'nowrap' }}
                               >
                                 Live Monitor
                               </Link>
+                            ) : test.status === 'ENDED' ? (
+                              <Link
+                                to={`/admin/tests/${test._id}/live`}
+                                className="btn btn-secondary"
+                                style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', whiteSpace: 'nowrap' }}
+                                title="View frozen post-test operational summary"
+                              >
+                                Test Summary
+                              </Link>
+                            ) : (
+                              <div />
                             )}
-                            {test.status === 'ENDED' && (
-                              <>
-                                <Link
-                                  to={`/admin/tests/${test._id}/live`}
-                                  className="btn btn-secondary"
-                                  style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                                  title="View frozen post-test operational summary"
-                                >
-                                  Test Summary
-                                </Link>
-                                <Link
-                                  to={`/admin/tests/${test._id}/results`}
-                                  className="btn btn-primary"
-                                  style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                                >
-                                  Results
-                                </Link>
-                              </>
+
+                            {/* Slot 3: Results (ENDED) OR Empty (LIVE / DRAFT) */}
+                            {test.status === 'ENDED' ? (
+                              <Link
+                                to={`/admin/tests/${test._id}/results`}
+                                className="btn btn-primary"
+                                style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', whiteSpace: 'nowrap' }}
+                              >
+                                Results
+                              </Link>
+                            ) : (
+                              <div />
                             )}
-                            {test.status === 'DRAFT' && (
+
+                            {/* Slot 4: Delete 🗑️ (DRAFT) OR Empty (LIVE / ENDED) */}
+                            {test.status === 'DRAFT' ? (
                               <button
                                 onClick={() => setDeleteTarget(test)}
                                 className="btn btn-danger"
-                                style={{ padding: '5px 8px', fontSize: '0.78rem' }}
+                                style={{ padding: '5px 6px', fontSize: '0.78rem', textAlign: 'center' }}
                                 title="Delete Test"
                               >
                                 🗑️
                               </button>
+                            ) : (
+                              <div />
                             )}
                           </div>
                         </td>

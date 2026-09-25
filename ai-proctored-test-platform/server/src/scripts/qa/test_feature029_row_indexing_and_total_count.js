@@ -69,8 +69,8 @@ async function runFeature029Tests() {
 
   // 5. BUG-86 sticky header & balanced layout preservation
   assert(
-    adminTestsCode.includes('className="table-container test-table-scroll-container"') &&
-    (adminTestsCode.includes('minWidth: 1250') || adminTestsCode.includes('minWidth: 1240') || adminTestsCode.includes('minWidth: 1140') || adminTestsCode.includes('minWidth: 1060') || adminTestsCode.includes('minWidth: 980') || adminTestsCode.includes('minWidth: 960')) &&
+    adminTestsCode.includes('test-table-scroll-container') &&
+    (adminTestsCode.includes('minWidth: 1400') || adminTestsCode.includes('minWidth: 1250') || adminTestsCode.includes('minWidth: 1240') || adminTestsCode.includes('minWidth: 1140') || adminTestsCode.includes('minWidth: 1060') || adminTestsCode.includes('minWidth: 980') || adminTestsCode.includes('minWidth: 960')) &&
     globalCssCode.includes('.test-table-scroll-container thead th {') &&
     globalCssCode.includes('position: sticky;'),
     'BUG-86 sticky header container and balanced column width rules are preserved'

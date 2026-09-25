@@ -99,7 +99,7 @@ async function runFilterBarRefinementsTests() {
 
   // 7. Non-regression of FEATURE-029 and BUG-86
   assert(
-    adminTestsCode.includes('className="table-container test-table-scroll-container"') &&
+    adminTestsCode.includes('test-table-scroll-container') &&
     adminTestsCode.includes('{index + 1}') &&
     adminTestsCode.includes('{filteredTests.length} {filteredTests.length === 1 ? \'result\' : \'results\'}'),
     'Preserves FEATURE-029 row indexing, sticky count badge, and BUG-86 sticky table container'
