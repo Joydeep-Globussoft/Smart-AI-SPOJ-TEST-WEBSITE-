@@ -109,12 +109,12 @@ assert(
   'Question set badge is grouped with Room column with clear borders and styling'
 );
 
-// 6. Status / Time Column Visibility
-console.log('\n6. Verifying Status / Time Column Visibility...');
+// 6. Time Column Visibility
+console.log('\n6. Verifying Time Column Visibility...');
 assert(
-  content.includes("color: formattedTimer === 'Not started'") &&
+  (content.includes("color: formattedTimer === '—'") || content.includes("color: formattedTimer === 'Not started'")) &&
   content.includes("'var(--color-navy, #334155)'"),
-  'Status / Time column renders with strong high-contrast color (#334155 / #059669 / #dc2626) instead of faded muted text'
+  'Time column renders with strong high-contrast color (#334155 / #059669 / #dc2626) instead of faded muted text'
 );
 
 // 7. Action Button Visibility

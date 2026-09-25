@@ -117,7 +117,7 @@ async function runFeature030Tests() {
     code.includes('id="candidate-inspection-modal"') &&
     code.includes('CandidateDetailEvaluationModal') &&
     code.includes('zoomScreenshotUrl') &&
-    code.includes('Candidate Live Proctoring Roster') || code.includes('Candidate Proctoring Summary Roster'),
+    (code.includes('Candidate Live Proctoring') || code.includes('Candidate Proctoring Summary')),
     'Candidate Inspection modal, Evaluation modal, zoom frame, and Proctoring Roster are all preserved'
   );
 

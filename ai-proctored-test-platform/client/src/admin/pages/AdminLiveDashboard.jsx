@@ -689,8 +689,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
   );
 });
 
-// ── Memoized Table Row Component (Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate, FEATURE-024: View Result) ──
-const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, onOpenEvaluationDetail, style, now, isTestEnded, isActive }) => {
+// ── Memoized Table Row Component (Persistent Malpractice counter beside name, FEATURE-007: Highlight inspected candidate, FEATURE-024: View Result, FEATURE-037: Time Remaining / Spent) ──
+const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqualify, onOpenEvaluationDetail, style, now, isTestEnded, isActive, testDurationMinutes = 30 }) => {
   const isCandidateInProgress = !isTestEnded && candidate.status === 'IN_PROGRESS' && Boolean(candidate.candidateStartTime);
   const colorStatus = getCandidateColorStatus(candidate, isTestEnded);
   const color = STATUS_COLORS[colorStatus];
@@ -698,34 +698,74 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
   const isYellowDot = !isTestEnded && colorStatus === 'YELLOW';
   const malpracticeCount = candidate.malpracticeCount || 0;
 
-  const remainingMs = getCandidateRemainingMs(candidate, now);
+  // FEATURE-037: Time column value calculation
   const formattedTimer = useMemo(() => {
-    if (candidate.status === 'DISQUALIFIED' || candidate.isDisqualified || candidate.colorStatus === 'RED') {
-      return 'Disqualified';
-    }
+    // 1. When test has ended (isTestEnded === true): Show Time Spent (exact match with Inspection modal)
     if (isTestEnded) {
-      if (candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
-        return 'Not started';
+      return getCandidateTimeSpent(candidate, now, isTestEnded);
+    }
+
+    // 2. When test is live (!isTestEnded): Show Time Remaining
+    const isDisqualified =
+      candidate.status === 'DISQUALIFIED' ||
+      candidate.status === 'AUTO_SUBMITTED_DISQUALIFIED' ||
+      candidate.isDisqualified ||
+      candidate.colorStatus === 'RED';
+
+    const isSubmitted =
+      candidate.status === 'SUBMITTED' ||
+      candidate.status === 'AUTO_SUBMITTED' ||
+      candidate.status === 'AUTO_SUBMITTED_TIME_UP' ||
+      Boolean(candidate.submittedAt) ||
+      candidate.colorStatus === 'GREEN';
+
+    // Candidate already SUBMITTED or DISQUALIFIED (finished early, while test overall is live): show "0m 0s"
+    if (isSubmitted || isDisqualified) {
+      return '0m 0s';
+    }
+
+    const startRaw = candidate.candidateStartTime || candidate.startedAt || candidate.sessionStartTime;
+    // Candidate joined room but hasn't started the test yet (no start timestamp): show full test duration
+    if (!startRaw || candidate.status === 'NOT_STARTED') {
+      const durMins = typeof testDurationMinutes === 'number' && testDurationMinutes > 0 ? testDurationMinutes : 30;
+      const hours = Math.floor(durMins / 60);
+      const mins = durMins % 60;
+      if (hours > 0) {
+        return `${hours}h ${mins}m 0s`;
       }
-      return 'Test Ended';
+      return `${mins}m 0s`;
     }
-    if (candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP') {
-      return 'Submitted';
+
+    // Candidate is IN PROGRESS: countdown from server-authoritative timestamps
+    const remainingMs = getCandidateRemainingMs(candidate, now, testDurationMinutes);
+    if (remainingMs <= 0) {
+      return '0m 0s';
     }
-    if (!candidate.candidateStartTime || candidate.status === 'NOT_STARTED' || (!isCandidateInProgress && (candidate.colorStatus === 'WHITE' || !candidate.colorStatus))) {
-      return 'Not started';
+
+    const totalSec = Math.floor(remainingMs / 1000);
+    const hours = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${mins}m ${secs}s`;
     }
-    if (remainingMs <= 0 && candidate.candidateEndTime) {
-      return '00m 00s (Time up)';
-    }
-    if (remainingMs > 0) {
-      const totalSec = Math.floor(remainingMs / 1000);
-      const mins = Math.floor(totalSec / 60);
-      const secs = totalSec % 60;
-      return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
-    }
-    return isCandidateInProgress ? 'In Progress' : 'Not started';
-  }, [candidate.status, candidate.candidateStartTime, candidate.candidateEndTime, candidate.colorStatus, candidate.isDisqualified, remainingMs, isCandidateInProgress, isTestEnded]);
+    return `${mins}m ${secs}s`;
+  }, [
+    candidate.status,
+    candidate.candidateStartTime,
+    candidate.startedAt,
+    candidate.sessionStartTime,
+    candidate.candidateEndTime,
+    candidate.submittedAt,
+    candidate.submissionTime,
+    candidate.disqualifiedAt,
+    candidate.colorStatus,
+    candidate.isDisqualified,
+    now,
+    isTestEnded,
+    testDurationMinutes,
+  ]);
 
   return (
     <div
@@ -834,15 +874,13 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         )}
       </div>
 
-      {/* Countdown timer / Status for roster (BUG-018: High contrast & readability) */}
+      {/* Time column (FEATURE-037: Time Remaining / Time Spent) */}
       <div style={{
-        color: formattedTimer === 'Not started'
+        color: formattedTimer === '—'
           ? 'var(--color-navy, #334155)'
-          : formattedTimer === 'Submitted'
-            ? '#059669'
-            : formattedTimer === 'Disqualified'
-              ? '#dc2626'
-              : 'var(--color-navy, #0f172a)',
+          : formattedTimer === '0m 0s'
+            ? 'var(--color-text-muted, #64748b)'
+            : 'var(--color-navy, #0f172a)',
         fontFamily: formattedTimer.includes('m') || formattedTimer.includes('s') ? 'monospace' : 'inherit',
         fontSize: '0.82rem',
         fontWeight: 600,
@@ -2144,9 +2182,10 @@ export default function AdminLiveDashboard() {
         now={now}
         isTestEnded={isTestEnded}
         isActive={candidate.candidateId === targetInspectCandidateId}
+        testDurationMinutes={test?.durationMinutes || test?.duration || 30}
       />
     );
-  }, [candidateList, roomsById, now, isTestEnded, handleOpenInspectCandidate, handleManualWarn, handleManualDisqualify, handleOpenEvaluationDetail, targetInspectCandidateId]);
+  }, [candidateList, roomsById, now, isTestEnded, handleOpenInspectCandidate, handleManualWarn, handleManualDisqualify, handleOpenEvaluationDetail, targetInspectCandidateId, test?.durationMinutes, test?.duration]);
 
   if (loading) {
     return (
@@ -2790,7 +2829,7 @@ export default function AdminLiveDashboard() {
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <h3 className="card-title">
-                {isTestEnded ? 'Candidate Proctoring Summary Roster' : 'Candidate Live Proctoring Roster'}
+                {isTestEnded ? 'Candidate Proctoring Summary' : 'Candidate Live Proctoring'}
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                 {candidateList.length > 50
@@ -2824,7 +2863,7 @@ export default function AdminLiveDashboard() {
             </div>
           </div>
 
-          {/* Table Header Bar (BUG-018: Clean label "Candidate Name") */}
+          {/* Table Header Bar (BUG-018 & FEATURE-037: Clean labels and dynamic Time column header) */}
           <div
             style={{
               display: 'grid',
@@ -2842,7 +2881,7 @@ export default function AdminLiveDashboard() {
             <div>Status</div>
             <div>Qs Solved</div>
             <div>Malpractice</div>
-            <div>{isTestEnded ? 'Status / Time' : 'Time Left'}</div>
+            <div>{isTestEnded ? 'Time Spent' : 'Time Remaining'}</div>
             <div style={{ textAlign: 'right' }}>Actions</div>
           </div>
 
@@ -2869,6 +2908,7 @@ export default function AdminLiveDashboard() {
                     now={now}
                     isTestEnded={isTestEnded}
                     isActive={c.candidateId === targetInspectCandidateId}
+                    testDurationMinutes={test?.durationMinutes || test?.duration || 30}
                   />
                 );
               }}
@@ -2891,6 +2931,7 @@ export default function AdminLiveDashboard() {
                   now={now}
                   isTestEnded={isTestEnded}
                   isActive={c.candidateId === targetInspectCandidateId}
+                  testDurationMinutes={test?.durationMinutes || test?.duration || 30}
                 />
               ))}
             </div>
