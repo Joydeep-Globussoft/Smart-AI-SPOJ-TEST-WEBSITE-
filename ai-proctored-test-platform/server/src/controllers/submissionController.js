@@ -1043,7 +1043,6 @@ const saveCode = async (req, res, next) => {
           status: 'IN_PROGRESS',
           candidateStartTime: existingSub?.candidateStartTime || null,
           candidateEndTime: existingSub?.candidateEndTime || null,
-          roomId: resolvedRoomId,
           assignedQuestionSetId: existingSub?.assignedQuestionSetId || null,
         },
       },
