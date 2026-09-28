@@ -181,7 +181,9 @@ a {
   text-decoration: none;
   transition: color var(--transition);
 }
-a:not(.btn):not([class*="btn"]):hover { color: var(--color-primary-dark); }
+a:not(.btn):not([class*="btn"]):not(.navbar a):not(.navbar-nav a):not(.nav-item-link):not(.dropdown-menu-item):hover {
+  color: var(--color-primary-dark);
+}
 
 /* ── Utility classes ─────────────────────────────────────────────────────────── */
 .sr-only {
@@ -232,7 +234,7 @@ a:not(.btn):not([class*="btn"]):hover { color: var(--color-primary-dark); }
   background: rgba(107, 114, 128, 0.55);
 }
 
-/* ── Header / Navbar ─────────────────────────────────────────────────────────── */
+/* ── Header / Navbar (BUG-030: Accessible High-Contrast Navigation Links) ─────── */
 .navbar {
   background: var(--color-navbar-bg);
   padding: 0 32px;
@@ -273,8 +275,10 @@ a:not(.btn):not([class*="btn"]):hover { color: var(--color-primary-dark); }
   gap: 8px;
 }
 
-.navbar-nav a, .navbar-nav button {
-  color: rgba(255, 255, 255, 0.85);
+.navbar-nav a,
+.navbar-nav button,
+.nav-item-link {
+  color: rgba(255, 255, 255, 0.90) !important;
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -284,16 +288,69 @@ a:not(.btn):not([class*="btn"]):hover { color: var(--color-primary-dark); }
   border: none;
   cursor: pointer;
   font-family: var(--font-family);
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1.2;
 }
 
-.navbar-nav a:hover, .navbar-nav button:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.12);
+.navbar-nav a:hover,
+.navbar-nav button:hover,
+.nav-item-link:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  text-decoration: none !important;
 }
 
-.navbar-nav a.active {
-  color: white;
-  background: var(--color-primary);
+.navbar-nav a:focus-visible,
+.navbar-nav button:focus-visible,
+.nav-item-link:focus-visible {
+  color: #ffffff !important;
+  outline: 2px solid var(--color-primary-light, #2dd4bf);
+  outline-offset: 2px;
+}
+
+.navbar-nav a.active,
+.nav-item-link.active {
+  color: #ffffff !important;
+  background: var(--color-primary) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.navbar-nav a.active:hover,
+.nav-item-link.active:hover {
+  color: #ffffff !important;
+  background: var(--color-primary-dark, #0a5f67) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Dropdown Menu Links (BUG-030 Accessibility Fix) */
+.dropdown-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: var(--color-text) !important;
+  font-size: 0.85rem;
+  text-decoration: none !important;
+  font-weight: 500;
+  transition: all var(--transition);
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-menu-item:hover,
+.dropdown-menu-item:focus-visible {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-navy) !important;
+  text-decoration: none !important;
 }
 
 /* ── Cards ───────────────────────────────────────────────────────────────────── */

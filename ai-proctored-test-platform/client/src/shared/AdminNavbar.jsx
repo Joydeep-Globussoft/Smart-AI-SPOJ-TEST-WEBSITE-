@@ -73,17 +73,33 @@ export default function AdminNavbar() {
         </div>
 
         <div className="navbar-nav">
-          <Link to="/admin" className={isActive('/admin') && location.pathname === '/admin' ? 'active' : ''}>
+          <Link
+            to="/admin"
+            className={`nav-item-link ${isActive('/admin') && location.pathname === '/admin' ? 'active' : ''}`}
+            aria-current={location.pathname === '/admin' ? 'page' : undefined}
+          >
             Dashboard
           </Link>
-          <Link to="/admin/tests" className={isActive('/admin/tests')}>
+          <Link
+            to="/admin/tests"
+            className={`nav-item-link ${isActive('/admin/tests') ? 'active' : ''}`}
+            aria-current={location.pathname.startsWith('/admin/tests') ? 'page' : undefined}
+          >
             Tests
           </Link>
-          <Link to="/admin/question-bank" className={isActive('/admin/question-bank')}>
+          <Link
+            to="/admin/question-bank"
+            className={`nav-item-link ${isActive('/admin/question-bank') ? 'active' : ''}`}
+            aria-current={location.pathname.startsWith('/admin/question-bank') ? 'page' : undefined}
+          >
             Question Bank
           </Link>
           {isSuperAdmin && (
-            <Link to="/admin/create-admin" className={isActive('/admin/create-admin')}>
+            <Link
+              to="/admin/create-admin"
+              className={`nav-item-link ${isActive('/admin/create-admin') ? 'active' : ''}`}
+              aria-current={location.pathname.startsWith('/admin/create-admin') ? 'page' : undefined}
+            >
               Manage Admins
             </Link>
           )}
@@ -237,19 +253,7 @@ export default function AdminNavbar() {
                   <Link
                     to="/admin/profile"
                     onClick={() => setDropdownOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 16px',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
-                      textDecoration: 'none',
-                      fontWeight: 500,
-                      transition: 'background 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    className="dropdown-menu-item"
                   >
                     <span style={{ fontSize: '1rem' }}>👤</span>
                     <span>Profile</span>
@@ -259,19 +263,7 @@ export default function AdminNavbar() {
                   <Link
                     to="/admin/settings"
                     onClick={() => setDropdownOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 16px',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
-                      textDecoration: 'none',
-                      fontWeight: 500,
-                      transition: 'background 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    className="dropdown-menu-item"
                   >
                     <span style={{ fontSize: '1rem' }}>⚙️</span>
                     <span>Settings</span>
@@ -281,19 +273,7 @@ export default function AdminNavbar() {
                   <Link
                     to="/admin/help"
                     onClick={() => setDropdownOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 16px',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
-                      textDecoration: 'none',
-                      fontWeight: 500,
-                      transition: 'background 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    className="dropdown-menu-item"
                   >
                     <span style={{ fontSize: '1rem' }}>❓</span>
                     <span>Help</span>
@@ -308,23 +288,12 @@ export default function AdminNavbar() {
                       setDropdownOpen(false);
                       setShowLogoutConfirm(true);
                     }}
+                    className="dropdown-menu-item"
                     style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 16px',
-                      background: 'none',
-                      border: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
                       color: '#DC2626',
-                      fontWeight: 500,
-                      transition: 'background 0.1s ease',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
                     <span style={{ fontSize: '1rem' }}>🚪</span>
                     <span>Logout</span>
