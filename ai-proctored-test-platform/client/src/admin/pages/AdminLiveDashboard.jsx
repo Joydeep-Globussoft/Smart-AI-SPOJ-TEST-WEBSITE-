@@ -806,9 +806,9 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         </strong>
       </div>
 
-      {/* Room and Question Set Grouping (BUG-018) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <strong style={{ color: 'var(--color-navy)', fontSize: '0.84rem' }}>
+      {/* Room and Question Set Grouping (BUG-018, FEATURE-045: Center aligned) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0 }}>
+        <strong style={{ color: 'var(--color-navy)', fontSize: '0.84rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
           {roomName || candidate.roomName || 'Room'}
         </strong>
         {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
@@ -825,6 +825,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
               display: 'inline-flex',
               alignItems: 'center',
               gap: 3,
+              flexShrink: 0,
             }}
             title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
           >
@@ -833,12 +834,13 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         )}
       </div>
 
-      {/* Candidate Status Badge (BUG-018) */}
-      <div>
+      {/* Candidate Status Badge (BUG-018, FEATURE-045: Center aligned) */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {renderCandidateStatusBadge(candidate, isCandidateInProgress, colorStatus, isTestEnded)}
       </div>
 
-      <div style={{ color: 'var(--color-navy)', fontWeight: 600 }}>
+      {/* Qs Solved (FEATURE-045: Center aligned) */}
+      <div style={{ color: 'var(--color-navy)', fontWeight: 600, textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
           ? '—'
           : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
@@ -848,7 +850,8 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
               : `${candidate.questionsCompleted ?? 0} Qs Solved`}
       </div>
 
-      <div>
+      {/* Malpractice (FEATURE-045: Center aligned) */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {malpracticeCount > 0 ? (
           <button
             type="button"
@@ -864,17 +867,19 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
               border: 'none',
               padding: '3px 8px',
               borderRadius: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
             }}
             title="Click to view violation proof screenshots"
           >
             ⚠️ {malpracticeCount} Violations
           </button>
         ) : (
-          <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem' }}>✓ Clean (0)</span>
+          <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center' }}>✓ Clean (0)</span>
         )}
       </div>
 
-      {/* Time column (FEATURE-037: Time Remaining / Time Spent) */}
+      {/* Time column (FEATURE-037, FEATURE-045: Center aligned with tabular numerals) */}
       <div style={{
         color: formattedTimer === '—'
           ? 'var(--color-navy, #334155)'
@@ -884,12 +889,17 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         fontFamily: formattedTimer.includes('m') || formattedTimer.includes('s') ? 'monospace' : 'inherit',
         fontSize: '0.82rem',
         fontWeight: 600,
+        textAlign: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontVariantNumeric: 'tabular-nums',
       }}>
         {formattedTimer}
       </div>
 
-      {/* Action Buttons (BUG/UX-XX: High contrast in light & dark modes) */}
-      <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+      {/* Action Buttons (FEATURE-045: Center aligned button group) */}
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }}>
         <button
           onClick={() => onSelect(candidate)}
           className="btn roster-action-btn roster-action-btn-inspect"
@@ -2992,26 +3002,28 @@ export default function AdminLiveDashboard() {
             </div>
           </div>
 
-          {/* Table Header Bar (BUG-018 & FEATURE-037: Clean labels and dynamic Time column header) */}
+          {/* Table Header Bar (BUG-018, FEATURE-037 & FEATURE-045: Center-aligned headers matching body) */}
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: '2fr 1.1fr 1.1fr 1fr 1.1fr 1.1fr 2fr',
               padding: '10px 16px',
+              borderLeft: '4px solid transparent',
               background: 'var(--color-table-header-bg)',
               borderBottom: '1.5px solid var(--color-border)',
               fontWeight: 700,
               fontSize: '0.8rem',
               color: 'var(--color-table-header-text)',
+              alignItems: 'center',
             }}
           >
             <div>Candidate Name</div>
-            <div>Room</div>
-            <div>Status</div>
-            <div>Qs Solved</div>
-            <div>Malpractice</div>
-            <div>{isTestEnded ? 'Time Spent' : 'Time Remaining'}</div>
-            <div style={{ textAlign: 'right' }}>Actions</div>
+            <div style={{ textAlign: 'center' }}>Room</div>
+            <div style={{ textAlign: 'center' }}>Status</div>
+            <div style={{ textAlign: 'center' }}>Qs Solved</div>
+            <div style={{ textAlign: 'center' }}>Malpractice</div>
+            <div style={{ textAlign: 'center' }}>{isTestEnded ? 'Time Spent' : 'Time Remaining'}</div>
+            <div style={{ textAlign: 'center' }}>Actions</div>
           </div>
 
           {/* Table Body: Virtualized with react-window when > 50 candidates, standard when <= 50 */}
