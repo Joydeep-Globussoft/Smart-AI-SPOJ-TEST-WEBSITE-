@@ -1304,48 +1304,7 @@ export default function AdminLiveDashboard() {
   // FEATURE-030: Expand/Fullscreen Seat Map View State
   const [isSeatMapExpanded, setIsSeatMapExpanded] = useState(false);
 
-  // YOLO AI Phone Detection Status State (BUG-108)
-  const [yoloStatus, setYoloStatus] = useState({ status: 'starting', online: false });
-  const [isRestartingYolo, setIsRestartingYolo] = useState(false);
 
-  const handleRestartYolo = async () => {
-    setIsRestartingYolo(true);
-    try {
-      const res = await api.restartYolo();
-      toast.success('AI phone detection restart signal sent');
-      if (res.data?.yolo) {
-        setYoloStatus(res.data.yolo);
-      }
-      setTimeout(fetchYoloHealth, 3000);
-      setTimeout(fetchYoloHealth, 8000);
-    } catch (err) {
-      toast.error('Failed to trigger YOLO restart: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setIsRestartingYolo(false);
-    }
-  };
-
-  const fetchYoloHealth = useCallback(async () => {
-    try {
-      const res = await api.getYoloStatus();
-      if (res.data?.yolo) {
-        setYoloStatus(res.data.yolo);
-      }
-    } catch (_) {
-      setYoloStatus((prev) => ({
-        ...prev,
-        online: false,
-        status: prev.status === 'online' ? 'starting' : prev.status,
-        error: 'Connecting to AI detection service...',
-      }));
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchYoloHealth();
-    const interval = setInterval(fetchYoloHealth, 30000); // 30s periodic auto-refresh & self-healing
-    return () => clearInterval(interval);
-  }, [fetchYoloHealth]);
 
   // Close expanded seat map on Escape key
   useEffect(() => {
@@ -2400,85 +2359,7 @@ export default function AdminLiveDashboard() {
 
             {/* Header Controls: Room Filter, Voice TTS, Links */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              {/* YOLO AI Phone Detection Status Badge (BUG-108, BUG-110) */}
-              <div
-                id="yolo-live-health-badge"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  border: yoloStatus.status === 'disabled'
-                    ? '1px solid #6b7280'
-                    : (yoloStatus.status === 'online'
-                      ? '1px solid #86efac'
-                      : (yoloStatus.status === 'starting' ? '1px solid #fde047' : '1px solid #fca5a5')),
-                  background: yoloStatus.status === 'disabled'
-                    ? 'rgba(107, 114, 128, 0.1)'
-                    : (yoloStatus.status === 'online'
-                      ? 'rgba(34, 197, 94, 0.1)'
-                      : (yoloStatus.status === 'starting' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)')),
-                  color: yoloStatus.status === 'disabled'
-                    ? '#9ca3af'
-                    : (yoloStatus.status === 'online'
-                      ? '#16a34a'
-                      : (yoloStatus.status === 'starting' ? '#ca8a04' : '#dc2626')),
-                }}
-                title={
-                  yoloStatus.status === 'disabled'
-                    ? 'AI Phone Detection is disabled on this instance. Set YOLO_ENABLED=true in Render Environment to enable.'
-                    : (yoloStatus.status === 'online'
-                      ? 'YOLOv8 Phone Detection microservice is ONLINE and actively monitoring candidate webcams.'
-                      : (yoloStatus.status === 'starting'
-                        ? 'YOLOv8 daemon is initializing or loading model checkpoint...'
-                        : (yoloStatus.permanentFailure
-                          ? `PERMANENT FAILURE: Max restart ceiling reached (${yoloStatus.restartAttempts || 5}/${yoloStatus.maxRestartAttempts || 5}). Click Restart to retry.`
-                          : `YOLO daemon offline: ${yoloStatus.error || 'Check server logs'}`)))
-                }
-              >
-                <span style={{ fontSize: '0.75rem' }}>
-                  {yoloStatus.status === 'disabled' ? '⚪' : (yoloStatus.status === 'online' ? '🟢' : (yoloStatus.status === 'starting' ? '🟡' : '🔴'))}
-                </span>
-                <span>
-                  {yoloStatus.status === 'disabled'
-                    ? 'AI Phone Detection: Disabled'
-                    : (yoloStatus.status === 'online'
-                      ? 'AI Phone Detection: Active'
-                      : (yoloStatus.status === 'starting'
-                        ? 'AI Phone Detection: Starting...'
-                        : (yoloStatus.permanentFailure
-                          ? 'AI Phone Detection: Permanent Failure'
-                          : 'AI Phone Detection: Offline [CRITICAL]')))}
-                </span>
-                {yoloStatus.status !== 'disabled' && (yoloStatus.status !== 'online' || yoloStatus.permanentFailure) && (
-                  <button
-                    id="btn-restart-yolo"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRestartYolo();
-                    }}
-                    disabled={isRestartingYolo || yoloStatus.status === 'starting'}
-                    style={{
-                      marginLeft: 4,
-                      padding: '2px 6px',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      borderRadius: 4,
-                      border: '1px solid currentColor',
-                      background: 'transparent',
-                      color: 'inherit',
-                      cursor: isRestartingYolo || yoloStatus.status === 'starting' ? 'not-allowed' : 'pointer',
-                      opacity: isRestartingYolo || yoloStatus.status === 'starting' ? 0.6 : 1,
-                    }}
-                    title="Manually trigger YOLO microservice restart"
-                  >
-                    {isRestartingYolo ? 'Restarting...' : 'Restart'}
-                  </button>
-                )}
-              </div>
+
 
               {/* Voice Announcement Toggle (FR-8.3, removed post-test per FEATURE-008) */}
               {!isTestEnded && (

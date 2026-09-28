@@ -286,10 +286,6 @@ export default function AdminDashboard() {
                   <span style={{ color: 'var(--color-text-muted)' }}>Judge0 Code Execution</span>
                   <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Connected</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>YOLOv8 Phone Detector</span>
-                  <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Active</span>
-                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>Kimi AI LLM Adapter</span>
                   <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>Configured</span>
