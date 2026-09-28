@@ -165,7 +165,15 @@ mongoose
 
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
-      console.log(`[Server] Running on port ${PORT} | ENV: ${process.env.NODE_ENV}`);
+      console.log(`[Server] Running on port ${PORT} | ENV: ${process.env.NODE_ENV} | YOLO_ENABLED: ${YOLO_ENABLED}`);
+      // BUG-110: Log baseline Node memory once server is fully up (visible in Render free-tier Logs)
+      const mem = process.memoryUsage();
+      console.log(
+        `[Memory] server-ready | Node RSS: ${Math.round(mem.rss / 1024 / 1024)}MB` +
+        ` | heapUsed: ${Math.round(mem.heapUsed / 1024 / 1024)}MB` +
+        ` | heapTotal: ${Math.round(mem.heapTotal / 1024 / 1024)}MB` +
+        ` | external: ${Math.round(mem.external / 1024 / 1024)}MB`
+      );
     });
   })
   .catch((err) => {

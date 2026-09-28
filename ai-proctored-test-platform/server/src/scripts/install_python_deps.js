@@ -1,6 +1,7 @@
 // install_python_deps.js — Production-Gated Python Dependency Installer
 // Implements BUG-108: Ensures Render production builds fail loudly if pip fails,
 // while allowing local developers without Python to install Node modules smoothly with a clear warning.
+// BUG-110: Skip entirely when YOLO is disabled (prevents hundreds of MB PyTorch download on disabled instances).
 
 const { execSync } = require('child_process');
 const path = require('path');
@@ -12,7 +13,25 @@ const isProduction =
   process.env.NODE_ENV === 'production' ||
   Boolean(process.env.RENDER_SERVICE_ID);
 
-console.log(`[YOLO-Build] Checking Python environment for YOLO microservice (isProduction: ${isProduction})...`);
+const IS_RENDER = Boolean(process.env.RENDER) || Boolean(process.env.RENDER_SERVICE_ID);
+
+// BUG-110: Mirror the same YOLO_ENABLED logic from malpracticeService.js.
+// On Render: OFF unless YOLO_ENABLED=true is explicitly set.
+// Locally: ON unless YOLO_ENABLED=false is explicitly set.
+const YOLO_BUILD_ENABLED =
+  process.env.YOLO_ENABLED === 'true' ||
+  (!IS_RENDER && process.env.YOLO_ENABLED !== 'false');
+
+if (!YOLO_BUILD_ENABLED) {
+  console.log(
+    '[YOLO-Build] YOLO is disabled' +
+    (IS_RENDER ? ' (Render instance without YOLO_ENABLED=true)' : ' (YOLO_ENABLED=false set locally)') +
+    '. Skipping Python/PyTorch dependency install. No subprocess will spawn at runtime.'
+  );
+  process.exit(0);
+}
+
+console.log(`[YOLO-Build] YOLO is ENABLED. Checking Python environment for YOLO microservice (isProduction: ${isProduction})...`);
 
 const yoloDir = path.resolve(__dirname, '../../../yolo-service');
 const reqFile = path.resolve(yoloDir, 'requirements.txt');
