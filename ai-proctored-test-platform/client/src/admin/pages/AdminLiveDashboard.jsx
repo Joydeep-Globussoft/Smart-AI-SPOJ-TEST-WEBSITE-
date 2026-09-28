@@ -2400,7 +2400,7 @@ export default function AdminLiveDashboard() {
 
             {/* Header Controls: Room Filter, Voice TTS, Links */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              {/* YOLO AI Phone Detection Status Badge (BUG-108) */}
+              {/* YOLO AI Phone Detection Status Badge (BUG-108, BUG-110) */}
               <div
                 id="yolo-live-health-badge"
                 style={{
@@ -2411,39 +2411,49 @@ export default function AdminLiveDashboard() {
                   borderRadius: 6,
                   fontSize: '0.78rem',
                   fontWeight: 600,
-                  border: yoloStatus.status === 'online'
-                    ? '1px solid #86efac'
-                    : (yoloStatus.status === 'starting' ? '1px solid #fde047' : '1px solid #fca5a5'),
-                  background: yoloStatus.status === 'online'
-                    ? 'rgba(34, 197, 94, 0.1)'
-                    : (yoloStatus.status === 'starting' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)'),
-                  color: yoloStatus.status === 'online'
-                    ? '#16a34a'
-                    : (yoloStatus.status === 'starting' ? '#ca8a04' : '#dc2626'),
+                  border: yoloStatus.status === 'disabled'
+                    ? '1px solid #6b7280'
+                    : (yoloStatus.status === 'online'
+                      ? '1px solid #86efac'
+                      : (yoloStatus.status === 'starting' ? '1px solid #fde047' : '1px solid #fca5a5')),
+                  background: yoloStatus.status === 'disabled'
+                    ? 'rgba(107, 114, 128, 0.1)'
+                    : (yoloStatus.status === 'online'
+                      ? 'rgba(34, 197, 94, 0.1)'
+                      : (yoloStatus.status === 'starting' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)')),
+                  color: yoloStatus.status === 'disabled'
+                    ? '#9ca3af'
+                    : (yoloStatus.status === 'online'
+                      ? '#16a34a'
+                      : (yoloStatus.status === 'starting' ? '#ca8a04' : '#dc2626')),
                 }}
                 title={
-                  yoloStatus.status === 'online'
-                    ? 'YOLOv8 Phone Detection microservice is ONLINE and actively monitoring candidate webcams.'
-                    : (yoloStatus.status === 'starting'
-                      ? 'YOLOv8 daemon is initializing or loading model checkpoint...'
-                      : (yoloStatus.permanentFailure
-                        ? `PERMANENT FAILURE: Max restart ceiling reached (${yoloStatus.restartAttempts || 5}/${yoloStatus.maxRestartAttempts || 5}). Click Restart to retry.`
-                        : `YOLO daemon offline: ${yoloStatus.error || 'Check server logs'}`))
+                  yoloStatus.status === 'disabled'
+                    ? 'AI Phone Detection is disabled on this instance. Set YOLO_ENABLED=true in Render Environment to enable.'
+                    : (yoloStatus.status === 'online'
+                      ? 'YOLOv8 Phone Detection microservice is ONLINE and actively monitoring candidate webcams.'
+                      : (yoloStatus.status === 'starting'
+                        ? 'YOLOv8 daemon is initializing or loading model checkpoint...'
+                        : (yoloStatus.permanentFailure
+                          ? `PERMANENT FAILURE: Max restart ceiling reached (${yoloStatus.restartAttempts || 5}/${yoloStatus.maxRestartAttempts || 5}). Click Restart to retry.`
+                          : `YOLO daemon offline: ${yoloStatus.error || 'Check server logs'}`)))
                 }
               >
                 <span style={{ fontSize: '0.75rem' }}>
-                  {yoloStatus.status === 'online' ? '🟢' : (yoloStatus.status === 'starting' ? '🟡' : '🔴')}
+                  {yoloStatus.status === 'disabled' ? '⚪' : (yoloStatus.status === 'online' ? '🟢' : (yoloStatus.status === 'starting' ? '🟡' : '🔴'))}
                 </span>
                 <span>
-                  {yoloStatus.status === 'online'
-                    ? 'AI Phone Detection: Active'
-                    : (yoloStatus.status === 'starting'
-                      ? 'AI Phone Detection: Starting...'
-                      : (yoloStatus.permanentFailure
-                        ? 'AI Phone Detection: Permanent Failure'
-                        : 'AI Phone Detection: Offline [CRITICAL]'))}
+                  {yoloStatus.status === 'disabled'
+                    ? 'AI Phone Detection: Disabled'
+                    : (yoloStatus.status === 'online'
+                      ? 'AI Phone Detection: Active'
+                      : (yoloStatus.status === 'starting'
+                        ? 'AI Phone Detection: Starting...'
+                        : (yoloStatus.permanentFailure
+                          ? 'AI Phone Detection: Permanent Failure'
+                          : 'AI Phone Detection: Offline [CRITICAL]')))}
                 </span>
-                {(yoloStatus.status !== 'online' || yoloStatus.permanentFailure) && (
+                {yoloStatus.status !== 'disabled' && (yoloStatus.status !== 'online' || yoloStatus.permanentFailure) && (
                   <button
                     id="btn-restart-yolo"
                     onClick={(e) => {

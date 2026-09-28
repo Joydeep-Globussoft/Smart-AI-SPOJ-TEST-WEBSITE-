@@ -32,7 +32,13 @@ router.get('/admin/yolo-status', verifyToken, requireAdmin, (req, res) => {
 
 // POST /api/v1/admin/yolo-restart (Manual admin intervention / circuit-breaker reset)
 router.post('/admin/yolo-restart', verifyToken, requireAdmin, (req, res) => {
-  const { manualResetYoloService } = require('../services/malpracticeService');
+  const { manualResetYoloService, YOLO_ENABLED, getYoloHealthStatus } = require('../services/malpracticeService');
+  if (!YOLO_ENABLED) {
+    return res.status(200).json({
+      message: 'YOLO is disabled on this instance (YOLO_ENABLED is not set). Set YOLO_ENABLED=true in Render Environment to enable the daemon.',
+      yolo: getYoloHealthStatus(),
+    });
+  }
   const yolo = manualResetYoloService();
   res.json({ message: 'YOLO daemon reset triggered successfully', yolo });
 });

@@ -102,15 +102,16 @@ app.use('/api/v1', folderRoutes);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  const { getYoloHealthStatus } = require('./services/malpracticeService');
+  const { getYoloHealthStatus, YOLO_ENABLED } = require('./services/malpracticeService');
   const yolo = getYoloHealthStatus();
   res.json({
     status: 'ok',
-    version: '1.1.0-yolo-inference-verified',
+    version: '1.2.0-bug110-yolo-killswitch',
     timestamp: new Date().toISOString(),
     services: {
       mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
       yolo,
+      yoloEnabled: YOLO_ENABLED,
     },
   });
 });
@@ -152,9 +153,11 @@ mongoose
     // Register Socket.io handlers after DB is ready
     registerSocketHandlers(io);
 
-    // Eagerly auto-start YOLO phone-detection microservice daemon on port 8001
-    const { startLocalYoloService } = require('./services/malpracticeService');
-    startLocalYoloService();
+    // BUG-110: Only start YOLO daemon when YOLO_ENABLED (off by default on Render to prevent OOM)
+    const { startLocalYoloService, YOLO_ENABLED } = require('./services/malpracticeService');
+    if (YOLO_ENABLED) {
+      startLocalYoloService();
+    }
 
     // BUG-30 Part A: Start background lifecycle scheduler for auto-ending completed tests
     const { startLifecycleScheduler } = require('./services/testLifecycleService');
