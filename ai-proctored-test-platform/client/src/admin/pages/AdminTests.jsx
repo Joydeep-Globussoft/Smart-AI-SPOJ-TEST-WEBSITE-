@@ -20,7 +20,7 @@ const TEST_TYPES = [
 
 const SORT_FIELDS = [
   { id: 'name', label: 'Name' },
-  { id: 'date', label: 'Date' },
+  { id: 'date', label: 'Timeline' },
   { id: 'duration', label: 'Duration' },
   { id: 'type', label: 'Type' },
   { id: 'status', label: 'Status' },
@@ -80,6 +80,107 @@ export const formatLiveFor = (test, currentNow = Date.now()) => {
   if (parts.length > 0) return parts.join(' ');
   if (seconds > 0) return `${seconds} ${seconds === 1 ? 'Second' : 'Seconds'}`;
   return '< 1 Second';
+};
+
+const TIMELINE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const formatTimelineDate = (d, includeYear = false) => {
+  if (!d || isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = TIMELINE_MONTHS[d.getMonth()];
+  if (includeYear) {
+    return `${day} ${month} ${d.getFullYear()}`;
+  }
+  return `${day} ${month}`;
+};
+
+const formatTimelineDateTime = (d) => {
+  if (!d || isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = TIMELINE_MONTHS[d.getMonth()];
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+};
+
+const isSameTimelineDay = (d1, d2) => {
+  if (!d1 || !d2) return false;
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+// FEATURE-031: Smart Timeline calculation (Created & Live dates)
+export const getTestTimelineInfo = (test) => {
+  if (!test) return { display: '—', tooltip: '', isRange: false };
+
+  const createdDate = test.createdAt ? new Date(test.createdAt) : null;
+  const isCreatedValid = createdDate && !isNaN(createdDate.getTime());
+
+  const liveRaw = test.liveStartedAt || test.scheduledStartTime || test.startTime;
+  const liveDate = liveRaw ? new Date(liveRaw) : null;
+  const isLiveValid = liveDate && !isNaN(liveDate.getTime());
+
+  if (!isCreatedValid && !isLiveValid) {
+    return { display: '—', tooltip: '', isRange: false };
+  }
+
+  if (!isCreatedValid) {
+    const liveDisplay = formatTimelineDate(liveDate, true);
+    return {
+      display: liveDisplay,
+      tooltip: `Live: ${formatTimelineDateTime(liveDate)}`,
+      isRange: false,
+    };
+  }
+
+  // Case 1: No live date (e.g. DRAFT not started) OR Created Date = Live Date (Same Day)
+  if (!isLiveValid || isSameTimelineDay(createdDate, liveDate)) {
+    const singleDisplay = formatTimelineDate(createdDate, true);
+    const createdTooltip = `Created: ${formatTimelineDateTime(createdDate)}`;
+    const liveTooltip = isLiveValid
+      ? `Live: ${formatTimelineDateTime(liveDate)}`
+      : test.status === 'DRAFT'
+        ? 'Live: Not started (Draft)'
+        : '';
+    const tooltip = liveTooltip ? `${createdTooltip}\n${liveTooltip}` : createdTooltip;
+
+    return {
+      display: singleDisplay,
+      tooltip,
+      isRange: false,
+      createdStr: singleDisplay,
+    };
+  }
+
+  // Case 2: Created Date ≠ Live Date (Different Days)
+  const isSameYear = createdDate.getFullYear() === liveDate.getFullYear();
+  let createdPart = '';
+  let livePart = '';
+
+  if (isSameYear) {
+    createdPart = formatTimelineDate(createdDate, false);
+    livePart = formatTimelineDate(liveDate, false);
+  } else {
+    createdPart = formatTimelineDate(createdDate, true);
+    livePart = formatTimelineDate(liveDate, true);
+  }
+
+  const tooltip = `Created: ${formatTimelineDateTime(createdDate)}\nLive: ${formatTimelineDateTime(liveDate)}`;
+
+  return {
+    display: `${createdPart} → ${livePart}`,
+    createdPart,
+    livePart,
+    tooltip,
+    isRange: true,
+  };
 };
 
 export default function AdminTests() {
@@ -201,9 +302,9 @@ export default function AdminTests() {
 
   const currentSortSummaryLabel = useMemo(() => {
     const fieldObj = SORT_FIELDS.find((f) => f.id === activeSortField);
-    const fieldName = fieldObj ? fieldObj.label : 'Date';
+    const fieldName = fieldObj ? fieldObj.label : 'Timeline';
     if (activeSortField === 'date') {
-      return `Date (${activeSortDir === 'desc' ? 'Newest first' : 'Oldest first'})`;
+      return `Timeline (${activeSortDir === 'desc' ? 'Newest first' : 'Oldest first'})`;
     }
     if (activeSortField === 'name') {
       return `Name (${activeSortDir === 'asc' ? 'Alphabetical (A-Z)' : 'Z-A'})`;
@@ -1222,8 +1323,8 @@ export default function AdminTests() {
                   </th>
                   <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Type</th>
                   <th style={{ width: 80, minWidth: 75, textAlign: 'center' }}>Status</th>
-                  {/* FEATURE-040: Created column moved immediately after Status */}
-                  <th style={{ width: 85, minWidth: 80, textAlign: 'center' }}>Created</th>
+                  {/* FEATURE-031: Smart Timeline column (Created & Live dates) */}
+                  <th style={{ width: 115, minWidth: 105, textAlign: 'center' }}>Timeline</th>
                   <th style={{ width: 75, minWidth: 70, textAlign: 'center' }}>Duration</th>
                   {/* FEATURE-039: Live For Column */}
                   <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Live For</th>
@@ -1308,10 +1409,34 @@ export default function AdminTests() {
                             style={{ fontSize: '0.75rem' }}
                           />
                         </td>
-                        {/* FEATURE-040: Created column immediately after Status */}
-                        <td style={{ color: 'var(--color-text-light)', fontSize: '0.8rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                          {new Date(test.createdAt).toLocaleDateString()}
-                        </td>
+                        {/* FEATURE-031: Smart Timeline Column (Created & Live Dates) */}
+                        {(() => {
+                          const timelineInfo = getTestTimelineInfo(test);
+                          return (
+                            <td
+                              style={{
+                                color: 'var(--color-text)',
+                                fontSize: '0.8rem',
+                                whiteSpace: 'nowrap',
+                                textAlign: 'center',
+                                cursor: 'default',
+                              }}
+                              title={timelineInfo.tooltip}
+                            >
+                              {timelineInfo.isRange ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                  <span style={{ color: 'var(--color-text-muted)' }}>{timelineInfo.createdPart}</span>
+                                  <span style={{ color: 'var(--color-primary, #0E7C86)', fontWeight: 600, fontSize: '0.8rem' }}>→</span>
+                                  <span style={{ color: 'var(--color-navy)', fontWeight: 600 }}>{timelineInfo.livePart}</span>
+                                </span>
+                              ) : (
+                                <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                  {timelineInfo.display}
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })()}
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           {test.durationMinutes} mins
                         </td>
