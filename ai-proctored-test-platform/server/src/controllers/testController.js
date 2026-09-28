@@ -198,6 +198,20 @@ const getTests = async (req, res, next) => {
           $group: {
             _id: '$testId',
             distinctCandidates: { $addToSet: '$candidateId' },
+            submittedCandidates: {
+              $addToSet: {
+                $cond: [
+                  {
+                    $in: [
+                      '$status',
+                      ['SUBMITTED', 'AUTO_SUBMITTED_TIME_UP', 'AUTO_SUBMITTED_DISQUALIFIED'],
+                    ],
+                  },
+                  '$candidateId',
+                  '$$REMOVE',
+                ],
+              },
+            },
             disqualifiedCount: {
               $sum: { $cond: [{ $eq: ['$status', 'AUTO_SUBMITTED_DISQUALIFIED'] }, 1, 0] },
             },
@@ -304,6 +318,12 @@ const getTests = async (req, res, next) => {
       const candidateCount = distinctTestCandidates.size;
       const totalParticipants = candidateCount;
 
+      const subCandidateIds = (sStat?.submittedCandidates || [])
+        .map((c) => (c?._id ? c._id.toString() : c?.toString()))
+        .filter((cid) => cid && existingCandidateSet.has(cid));
+      const distinctSubmittedCandidates = new Set(subCandidateIds);
+      const submittedCount = distinctSubmittedCandidates.size;
+
       const violCount = vStat ? vStat.totalViolations : 0;
       const disqSubCount = sStat ? sStat.disqualifiedCount : 0;
       const totalViolations = violCount + disqSubCount;
@@ -316,6 +336,7 @@ const getTests = async (req, res, next) => {
         hasActiveRooms: activeRooms > 0,
         candidateCount,
         totalParticipants,
+        submittedCount,
         hasCandidates: candidateCount > 0,
         violationsCount: totalViolations,
         hasViolations: totalViolations > 0,

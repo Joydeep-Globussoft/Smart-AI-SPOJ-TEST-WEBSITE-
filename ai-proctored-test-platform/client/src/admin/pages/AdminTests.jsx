@@ -25,7 +25,7 @@ const SORT_FIELDS = [
   { id: 'type', label: 'Type' },
   { id: 'status', label: 'Status' },
   { id: 'passing', label: 'Passing Criteria' },
-  { id: 'participants', label: 'Total Candidates' },
+  { id: 'participants', label: 'Submissions' },
   { id: 'rooms', label: 'Total Rooms' },
 ];
 
@@ -183,6 +183,47 @@ export const getTestTimelineInfo = (test) => {
   };
 };
 
+// FEATURE-032: Smart Submissions calculation (Submitted / Total Candidates)
+export const getSubmissionsInfo = (test) => {
+  const total = Number(test?.totalParticipants ?? test?.candidateCount ?? 0) || 0;
+  const submitted = Math.min(Number(test?.submittedCount ?? 0) || 0, total);
+  const notSubmitted = Math.max(0, total - submitted);
+
+  if (total === 0) {
+    return {
+      display: '0 / 0',
+      submitted: 0,
+      total: 0,
+      notSubmitted: 0,
+      rate: 0,
+      tooltip: 'Submitted: 0\nTotal Candidates: 0',
+      statusColor: 'var(--color-text-muted)',
+    };
+  }
+
+  const rate = Math.round((submitted / total) * 100);
+  const tooltip = `Submitted: ${submitted}\nTotal Candidates: ${total}\nNot Submitted: ${notSubmitted}\nSubmission Rate: ${rate}%`;
+
+  let statusColor = 'var(--color-text-muted)'; // 0%
+  if (rate === 100) {
+    statusColor = '#10b981'; // Green
+  } else if (rate >= 50) {
+    statusColor = 'var(--color-primary, #0E7C86)'; // Blue/Teal
+  } else if (rate > 0) {
+    statusColor = '#f59e0b'; // Amber
+  }
+
+  return {
+    display: `${submitted} / ${total}`,
+    submitted,
+    total,
+    notSubmitted,
+    rate,
+    tooltip,
+    statusColor,
+  };
+};
+
 export default function AdminTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
@@ -322,7 +363,7 @@ export default function AdminTests() {
       return `Passing Criteria (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     if (activeSortField === 'participants') {
-      return `Total Candidates (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
+      return `Submissions (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     if (activeSortField === 'rooms') {
       return `Total Rooms (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
@@ -1329,9 +1370,9 @@ export default function AdminTests() {
                   {/* FEATURE-039: Live For Column */}
                   <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Live For</th>
                   <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Passing Criteria</th>
-                  {/* FEATURE-040: Renamed to Total Candidates */}
-                  <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Total Candidates</th>
-                  {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Total Candidates */}
+                  {/* FEATURE-032: Smart Submissions column (Submitted / Total Candidates) */}
+                  <th style={{ width: 105, minWidth: 95, textAlign: 'center' }}>Submissions</th>
+                  {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Submissions */}
                   <th style={{ width: 75, minWidth: 70, textAlign: 'center' }}>Total Rooms</th>
                   <th style={{ width: 140, minWidth: 125, maxWidth: 160, textAlign: 'center' }}>Question Set</th>
                   {/* BUG-104 / BUG-103: Fixed Actions column width with 3-button slot grid */}
@@ -1447,11 +1488,41 @@ export default function AdminTests() {
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           ≥ {test.passingCriteria} Qs
                         </td>
-                        {/* FEATURE-040: Total Candidates */}
-                        <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                          {test.totalParticipants ?? test.candidateCount ?? 0}
-                        </td>
-                        {/* FEATURE-040 / FEATURE-038: Total Rooms Column immediately after Total Candidates */}
+                        {/* FEATURE-032: Smart Submissions Column (Submitted / Total Candidates) */}
+                        {(() => {
+                          const subInfo = getSubmissionsInfo(test);
+                          return (
+                            <td
+                              style={{
+                                fontSize: '0.85rem',
+                                whiteSpace: 'nowrap',
+                                textAlign: 'center',
+                                cursor: 'default',
+                              }}
+                              title={subInfo.tooltip}
+                            >
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 4,
+                                  fontWeight: 600,
+                                  color: 'var(--color-text)',
+                                }}
+                              >
+                                <span style={{ color: subInfo.submitted > 0 ? subInfo.statusColor : 'var(--color-text-muted)' }}>
+                                  {subInfo.submitted}
+                                </span>
+                                <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>/</span>
+                                <span style={{ color: 'var(--color-text)' }}>
+                                  {subInfo.total}
+                                </span>
+                              </span>
+                            </td>
+                          );
+                        })()}
+                        {/* FEATURE-040 / FEATURE-038: Total Rooms Column immediately after Submissions */}
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           {test.totalRooms ?? test.roomCount ?? 0}
                         </td>
