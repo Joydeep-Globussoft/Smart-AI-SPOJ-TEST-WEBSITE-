@@ -1862,11 +1862,27 @@ export default function AdminTestDetail() {
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>
                               {(c.malpracticeCount || 0) > 0 ? (
-                                <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
-                                  ⚠️ {c.malpracticeCount}
-                                </span>
+                                (() => {
+                                  const count = c.malpracticeCount || 0;
+                                  let severityClass = 'incident-badge-low';
+                                  let icon = '⚠️';
+                                  if (count >= 6) {
+                                    severityClass = 'incident-badge-high';
+                                    icon = '🚨';
+                                  } else if (count >= 3) {
+                                    severityClass = 'incident-badge-medium';
+                                    icon = '⚠️';
+                                  }
+                                  return (
+                                    <span className={`incident-badge ${severityClass}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                      <span>{icon}</span> {count}
+                                    </span>
+                                  );
+                                })()
                               ) : (
-                                <span style={{ color: '#2ECC71', fontSize: '0.75rem', fontWeight: 600 }}>✓ Clean</span>
+                                <span style={{ color: '#059669', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                  <span>✓</span> Clean
+                                </span>
                               )}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>

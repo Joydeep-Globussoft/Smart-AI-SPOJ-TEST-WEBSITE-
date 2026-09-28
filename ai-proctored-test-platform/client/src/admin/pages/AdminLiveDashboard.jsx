@@ -601,22 +601,51 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             {candidate.name || candidate.candidateName || 'Candidate'}
           </strong>
 
-          {/* FR-7.3: Persistent Malpractice Counter directly beside candidate name */}
-          <span
-            className={`badge ${malpracticeCount > 0 ? 'badge-danger' : 'badge-secondary'}`}
-            style={{
-              fontSize: '0.65rem',
-              padding: '1px 5px',
-              fontWeight: 700,
-              flexShrink: 0,
-              backgroundColor: malpracticeCount > 0 ? '#E74C3C' : 'var(--color-bg-subtle, #f1f5f9)',
-              color: malpracticeCount > 0 ? '#ffffff' : 'var(--color-navy, #334155)',
-              border: malpracticeCount > 0 ? 'none' : '1px solid var(--color-border, #cbd5e1)',
-            }}
-            title={`Persistent Malpractice Counter: ${malpracticeCount} violations`}
-          >
-            ⚠️ {malpracticeCount}
-          </span>
+          {/* FR-7.3: Persistent Malpractice Counter directly beside candidate name (UI IMPROVEMENT-029) */}
+          {(() => {
+            let badgeBg = 'var(--color-bg-subtle, #f1f5f9)';
+            let badgeColor = 'var(--color-navy, #334155)';
+            let badgeBorder = '1px solid var(--color-border, #cbd5e1)';
+            let icon = '✓';
+
+            if (malpracticeCount >= 6) {
+              badgeBg = 'rgba(239, 68, 68, 0.25)';
+              badgeColor = '#ef4444';
+              badgeBorder = '1px solid #ef4444';
+              icon = '🚨';
+            } else if (malpracticeCount >= 3) {
+              badgeBg = 'rgba(249, 115, 22, 0.22)';
+              badgeColor = '#f97316';
+              badgeBorder = '1px solid #f97316';
+              icon = '⚠️';
+            } else if (malpracticeCount >= 1) {
+              badgeBg = 'rgba(245, 158, 11, 0.2)';
+              badgeColor = '#f59e0b';
+              badgeBorder = '1px solid #f59e0b';
+              icon = '⚠️';
+            }
+
+            return (
+              <span
+                className="badge"
+                style={{
+                  fontSize: '0.68rem',
+                  padding: '1px 6px',
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  backgroundColor: badgeBg,
+                  color: badgeColor,
+                  border: badgeBorder,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title={`Persistent Malpractice Counter: ${malpracticeCount} violations`}
+              >
+                {icon} {malpracticeCount}
+              </span>
+            );
+          })()}
         </div>
 
         {/* Status dot / badge (BUG-32: clearly visible on all tile backgrounds; BUG-43, BUG-45: high-visibility pulse for in-progress yellow dot) */}
@@ -850,32 +879,49 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
               : `${candidate.questionsCompleted ?? 0} Qs Solved`}
       </div>
 
-      {/* Malpractice (FEATURE-045: Center aligned) */}
+      {/* Malpractice (FEATURE-045: Center aligned, UI IMPROVEMENT-029: Severity styling) */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {malpracticeCount > 0 ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(candidate);
-            }}
-            className="badge badge-danger"
-            style={{
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              padding: '3px 8px',
-              borderRadius: 4,
-              display: 'inline-flex',
-              alignItems: 'center',
-            }}
-            title="Click to view violation proof screenshots"
-          >
-            ⚠️ {malpracticeCount} Violations
-          </button>
+          (() => {
+            let severityClass = 'incident-badge-low';
+            let icon = '⚠️';
+            if (malpracticeCount >= 6) {
+              severityClass = 'incident-badge-high';
+              icon = '🚨';
+            } else if (malpracticeCount >= 3) {
+              severityClass = 'incident-badge-medium';
+              icon = '⚠️';
+            }
+
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(candidate);
+                }}
+                className={`incident-badge ${severityClass}`}
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '3px 8px',
+                  borderRadius: 4,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+                title="Click to view violation proof screenshots"
+              >
+                <span>{icon}</span>
+                <span>{malpracticeCount} {malpracticeCount === 1 ? 'Violation' : 'Violations'}</span>
+              </button>
+            );
+          })()
         ) : (
-          <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center' }}>✓ Clean (0)</span>
+          <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <span>✓</span> Clean (0)
+          </span>
         )}
       </div>
 
@@ -3179,10 +3225,40 @@ export default function AdminLiveDashboard() {
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Total Violations:</span>
-                    <strong style={{ display: 'block', color: (activeInspectCandidate.malpracticeCount || totalLogsCount || candidateLogs.length) > 0 ? '#E74C3C' : '#2ECC71', fontSize: '1.1rem', marginTop: 2 }}>
-                      {Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length)}
-                    </strong>
+                    <span id="inspect-candidate-total-violations-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Total Violations:</span>
+                    {(() => {
+                      const totalViolations = Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length);
+                      let color = '#059669';
+                      let icon = '✓';
+                      if (totalViolations >= 6) {
+                        color = '#dc2626';
+                        icon = '🚨';
+                      } else if (totalViolations >= 3) {
+                        color = '#ea580c';
+                        icon = '⚠️';
+                      } else if (totalViolations >= 1) {
+                        color = '#d97706';
+                        icon = '⚠️';
+                      }
+
+                      return (
+                        <strong
+                          id="inspect-candidate-total-violations-val"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            color,
+                            fontSize: '1.15rem',
+                            fontWeight: 700,
+                            marginTop: 2,
+                          }}
+                        >
+                          <span style={{ fontSize: '0.9rem' }}>{icon}</span>
+                          <span>{totalViolations}</span>
+                        </strong>
+                      );
+                    })()}
                   </div>
                   <div>
                     {(() => {
@@ -3234,15 +3310,38 @@ export default function AdminLiveDashboard() {
 
                 {/* Malpractice Logs & Evidence Section */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                    <h4 style={{ fontSize: '0.96rem', fontWeight: 700, color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                       <span>📸</span> Malpractice Violation History &amp; Proof Screenshots
                     </h4>
                     {(() => {
                       const totalIncidents = Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length);
+                      let severityClass = 'incident-badge-clean';
+                      let icon = '✓';
+                      let label = '0 INCIDENTS';
+
+                      if (totalIncidents >= 6) {
+                        severityClass = 'incident-badge-high';
+                        icon = '🚨';
+                        label = `${totalIncidents} INCIDENTS`;
+                      } else if (totalIncidents >= 3) {
+                        severityClass = 'incident-badge-medium';
+                        icon = '⚠️';
+                        label = `${totalIncidents} INCIDENTS`;
+                      } else if (totalIncidents >= 1) {
+                        severityClass = 'incident-badge-low';
+                        icon = '⚠️';
+                        label = `${totalIncidents} ${totalIncidents === 1 ? 'INCIDENT' : 'INCIDENTS'}`;
+                      }
+
                       return (
-                        <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
-                          {totalIncidents} {totalIncidents === 1 ? 'Incident' : 'Incidents'}
+                        <span
+                          id="inspect-candidate-incident-badge"
+                          className={`incident-badge ${severityClass}`}
+                          title={`Malpractice Incidents: ${totalIncidents}`}
+                        >
+                          <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{icon}</span>
+                          <span>{label}</span>
                         </span>
                       );
                     })()}

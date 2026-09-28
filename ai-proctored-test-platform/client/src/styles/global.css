@@ -550,6 +550,79 @@ button.btn-warning:active {
 .badge-ended { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
 .badge-scheduled { background: var(--badge-info-bg); color: var(--badge-info-text); }
 
+/* ── Incident & Malpractice Severity Badges (UI IMPROVEMENT-029) ─────────────── */
+.incident-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.2;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+/* Clean (0 incidents) */
+.incident-badge-clean {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1.5px solid #10b981;
+}
+[data-theme="dark"] .incident-badge-clean {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1.5px solid #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+/* Low Severity (1-2 incidents): Amber/Orange */
+.incident-badge-low {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1.5px solid #f59e0b;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+}
+[data-theme="dark"] .incident-badge-low {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fde047;
+  border: 1.5px solid #f59e0b;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+/* Medium Severity (3-5 incidents): Deep Orange */
+.incident-badge-medium {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1.5px solid #ea580c;
+  box-shadow: 0 1px 3px rgba(234, 88, 12, 0.15);
+}
+[data-theme="dark"] .incident-badge-medium {
+  background: rgba(249, 115, 22, 0.25);
+  color: #fb923c;
+  border: 1.5px solid #f97316;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
+}
+
+/* High Severity (6+ incidents): Red / Crimson Alarm */
+.incident-badge-high {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1.5px solid #dc2626;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.2);
+}
+[data-theme="dark"] .incident-badge-high {
+  background: rgba(239, 68, 68, 0.28);
+  color: #f87171;
+  border: 1.5px solid #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+}
+
 /* ── Tables ──────────────────────────────────────────────────────────────────── */
 .table-container {
   overflow-x: auto;

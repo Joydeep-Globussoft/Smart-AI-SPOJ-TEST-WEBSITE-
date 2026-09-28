@@ -505,11 +505,26 @@ export default function AdminResults() {
                         </td>
                         <td>
                           {c.malpracticeCount > 0 ? (
-                            <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
-                              ⚠️ {c.malpracticeCount}
-                            </span>
+                            (() => {
+                              let severityClass = 'incident-badge-low';
+                              let icon = '⚠️';
+                              if (c.malpracticeCount >= 6) {
+                                severityClass = 'incident-badge-high';
+                                icon = '🚨';
+                              } else if (c.malpracticeCount >= 3) {
+                                severityClass = 'incident-badge-medium';
+                                icon = '⚠️';
+                              }
+                              return (
+                                <span className={`incident-badge ${severityClass}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                  <span>{icon}</span> {c.malpracticeCount}
+                                </span>
+                              );
+                            })()
                           ) : (
-                            <span style={{ color: '#2ECC71', fontSize: '0.8rem' }}>✓ Clean (0)</span>
+                            <span style={{ color: '#059669', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <span>✓</span> Clean (0)
+                            </span>
                           )}
                         </td>
                         <td style={{ textAlign: 'center' }}>
