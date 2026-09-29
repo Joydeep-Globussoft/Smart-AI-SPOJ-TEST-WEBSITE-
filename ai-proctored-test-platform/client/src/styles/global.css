@@ -710,6 +710,20 @@ button.btn-warning:active {
   filter: brightness(1.08);
 }
 
+/* ── Room Metric Divider (BUG-034: Clear contrast in Light & Dark mode) ──────── */
+.room-metric-divider {
+  color: var(--color-text-light, #94a3b8);
+  font-weight: 300;
+  font-size: 0.85rem;
+  user-select: none;
+  opacity: 0.7;
+}
+
+[data-theme="dark"] .room-metric-divider {
+  color: #64748b;
+  opacity: 0.85;
+}
+
 /* ── Tables ──────────────────────────────────────────────────────────────────── */
 .table-container {
   overflow-x: auto;

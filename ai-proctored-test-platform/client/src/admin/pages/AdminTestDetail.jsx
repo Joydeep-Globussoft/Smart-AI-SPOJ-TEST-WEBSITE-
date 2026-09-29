@@ -1340,13 +1340,13 @@ export default function AdminTestDetail() {
                           <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{candidateTotal}</strong>
                           <span>{candidateTotal === 1 ? 'Candidate' : 'Candidates'}</span>
                         </span>
-                        <span style={{ color: 'var(--color-border, #cbd5e1)' }}>•</span>
+                        <span className="room-metric-divider" aria-hidden="true">|</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ color: '#10B981' }}>✅</span>
                           <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{room.submittedCount ?? 0}</strong>
                           <span>Submitted</span>
                         </span>
-                        <span style={{ color: 'var(--color-border, #cbd5e1)' }}>•</span>
+                        <span className="room-metric-divider" aria-hidden="true">|</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ color: '#E74C3C' }}>⚠️</span>
                           <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{room.violationCount ?? 0}</strong>

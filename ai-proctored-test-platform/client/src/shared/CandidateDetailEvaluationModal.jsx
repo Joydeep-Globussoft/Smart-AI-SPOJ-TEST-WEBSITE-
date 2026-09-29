@@ -142,17 +142,17 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                       <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                         {candidateEmail}
                       </span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--color-border)' }}>•</span>
+                      <span className="room-metric-divider" aria-hidden="true">|</span>
                     </>
                   )}
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                     Total Score: {totalScore} / 10.0
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-border)' }}>•</span>
+                  <span className="room-metric-divider" aria-hidden="true">|</span>
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>
                     Solved: {solvedCount} Qs
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-border)' }}>•</span>
+                  <span className="room-metric-divider" aria-hidden="true">|</span>
                   {malpracticeCount > 0 ? (
                     (() => {
                       let severityClass = 'incident-badge-low';
