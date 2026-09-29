@@ -696,6 +696,7 @@ button.btn-warning:active {
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   transition: var(--transition, all 0.2s ease);
 }
 

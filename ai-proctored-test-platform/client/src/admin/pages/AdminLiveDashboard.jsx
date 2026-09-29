@@ -668,19 +668,31 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
         />
       </div>
 
-      {/* Room and progress */}
+      {/* Room and progress (BUG-035: Priority to Set Badge, intelligent Room Name truncation with tooltip) */}
       <div style={{ margin: '6px 0', fontSize: '0.78rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, color: 'var(--color-text-muted, #475569)' }}>{roomName || candidate.roomName || 'Room'}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span
+            style={{
+              fontWeight: 600,
+              color: 'var(--color-text-muted, #475569)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              minWidth: 0,
+              flex: 1,
+            }}
+            title={roomName || candidate.roomName || 'Room'}
+          >
+            {roomName || candidate.roomName || 'Room'}
+          </span>
           {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
             <span
               className="candidate-set-badge"
               style={{
                 fontSize: '0.68rem',
                 padding: '1px 6px',
-                maxWidth: 90,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
               title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
             >
@@ -832,7 +844,10 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
 
       {/* Room and Question Set Grouping (BUG-018, FEATURE-045: Center aligned) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0 }}>
-        <strong style={{ color: 'var(--color-navy)', fontSize: '0.84rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
+        <strong
+          style={{ color: 'var(--color-navy)', fontSize: '0.84rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}
+          title={roomName || candidate.roomName || 'Room'}
+        >
           {roomName || candidate.roomName || 'Room'}
         </strong>
         {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
