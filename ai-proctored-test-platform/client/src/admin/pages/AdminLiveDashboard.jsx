@@ -842,28 +842,51 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         </strong>
       </div>
 
-      {/* Room and Question Set Grouping (BUG-018, FEATURE-045: Center aligned) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0 }}>
+      {/* Room and Question Set Grouping (BUG-018, FEATURE-045, BUG-036: Structured two-column layout for fixed Set Badge alignment) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) auto',
+          alignItems: 'center',
+          gap: 8,
+          minWidth: 0,
+          width: '100%',
+          padding: '0 8px',
+        }}
+      >
         <strong
-          style={{ color: 'var(--color-navy)', fontSize: '0.84rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}
+          style={{
+            color: 'var(--color-navy)',
+            fontSize: '0.84rem',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+            textAlign: 'left',
+          }}
           title={roomName || candidate.roomName || 'Room'}
         >
           {roomName || candidate.roomName || 'Room'}
         </strong>
-        {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
-          <span
-            className="candidate-set-badge"
-            style={{
-              fontSize: '0.7rem',
-              padding: '2px 6px',
-              gap: 3,
-              flexShrink: 0,
-            }}
-            title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
-          >
-            🎲 {candidate.assignedSetIndex ? `Set ${candidate.assignedSetIndex}` : candidate.assignedQuestionSetName}
-          </span>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
+          {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) ? (
+            <span
+              className="candidate-set-badge"
+              style={{
+                fontSize: '0.7rem',
+                padding: '2px 6px',
+                gap: 3,
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+              title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
+            >
+              🎲 {candidate.assignedSetIndex ? `Set ${candidate.assignedSetIndex}` : candidate.assignedQuestionSetName}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* Candidate Status Badge (BUG-018, FEATURE-045: Center aligned) */}
