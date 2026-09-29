@@ -60,6 +60,9 @@
   --badge-danger-text: #991b1b;
   --badge-info-bg: #dbeafe;
   --badge-info-text: #1e40af;
+  --badge-purple-bg: rgba(99, 102, 241, 0.12);
+  --badge-purple-text: #4338ca;
+  --badge-purple-border: rgba(99, 102, 241, 0.35);
 
   /* Seat map colors */
   --color-green: #2ECC71;
@@ -130,6 +133,9 @@
   --badge-danger-text: #f87171;
   --badge-info-bg: rgba(59, 130, 246, 0.18);
   --badge-info-text: #93c5fd;
+  --badge-purple-bg: rgba(139, 92, 246, 0.24);
+  --badge-purple-text: #c4b5fd;
+  --badge-purple-border: rgba(167, 139, 250, 0.6);
 
   /* Seat map colors */
   --color-green: #2ECC71;
@@ -678,6 +684,30 @@ button.btn-warning:active {
   color: #f87171;
   border: 1.5px solid #ef4444;
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+}
+
+/* ── Candidate Question Set Badge (Physical Seat Map, Roster, Inspector) ───────── */
+.candidate-set-badge {
+  background-color: var(--badge-purple-bg, rgba(99, 102, 241, 0.12));
+  color: var(--badge-purple-text, #4338ca);
+  border: 1px solid var(--badge-purple-border, rgba(99, 102, 241, 0.35));
+  font-weight: 700;
+  border-radius: 4px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  transition: var(--transition, all 0.2s ease);
+}
+
+[data-theme="dark"] .candidate-set-badge {
+  background-color: rgba(139, 92, 246, 0.24);
+  color: #c4b5fd;
+  border: 1px solid rgba(167, 139, 250, 0.6);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.22);
+}
+
+.candidate-set-badge:hover {
+  filter: brightness(1.08);
 }
 
 /* ── Tables ──────────────────────────────────────────────────────────────────── */

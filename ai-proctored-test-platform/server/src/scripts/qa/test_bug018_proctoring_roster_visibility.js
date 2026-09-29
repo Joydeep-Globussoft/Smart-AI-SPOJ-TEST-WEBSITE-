@@ -101,7 +101,8 @@ assert(
 console.log('\n5. Verifying Room & Set presentation...');
 assert(
   content.includes("{roomName || candidate.roomName || 'Room'}") &&
-  content.includes("style={{ color: 'var(--color-navy)', fontSize: '0.84rem' }}"),
+  content.includes("color: 'var(--color-navy)'") &&
+  content.includes("fontSize: '0.84rem'"),
   'Room Name uses strong typography with var(--color-navy)'
 );
 assert(

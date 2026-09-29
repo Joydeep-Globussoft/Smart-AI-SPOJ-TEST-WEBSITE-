@@ -162,12 +162,12 @@ export default function CandidateJoinRoom() {
           return;
         }
 
-        if (data.isLive) {
+        if (data.testStatus === 'ENDED') {
+          setError('This test is no longer active');
+        } else if (data.isLive) {
           performAutoJoin({ inviteToken: activeInviteToken });
         } else if (data.isExpired) {
           setError('Room code expired');
-        } else if (data.testStatus === 'ENDED') {
-          setError('This test is no longer active');
         }
       })
       .catch((err) => {
@@ -192,13 +192,13 @@ export default function CandidateJoinRoom() {
         if (data.roomId) setTargetRoomId(data.roomId);
         if (data.testId) setTargetTestId(data.testId);
 
-        if (data.isLive) {
+        if (data.testStatus === 'ENDED') {
+          setError('This test is no longer active');
+        } else if (data.isLive) {
           clearInterval(interval);
           performAutoJoin({ inviteToken: activeInviteToken });
         } else if (data.isExpired) {
           setError('Room code expired');
-        } else if (data.testStatus === 'ENDED') {
-          setError('This test is no longer active');
         }
       } catch (err) {
         console.warn('[CandidateJoinRoom] Polling error:', err);
@@ -338,7 +338,10 @@ export default function CandidateJoinRoom() {
     try {
       const { data } = await api.getInviteInfo(activeInviteToken);
       setInviteDetails(data);
-      if (data.isLive) {
+      if (data.testStatus === 'ENDED') {
+        setError('This test is no longer active');
+        toast.error('This test is no longer active');
+      } else if (data.isLive) {
         toast.success('Test is LIVE! Entering room...');
         performAutoJoin({ inviteToken: activeInviteToken });
       } else if (data.isExpired) {

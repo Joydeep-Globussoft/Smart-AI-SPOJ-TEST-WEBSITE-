@@ -674,15 +674,10 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
           <span style={{ fontWeight: 600, color: 'var(--color-text-muted, #475569)' }}>{roomName || candidate.roomName || 'Room'}</span>
           {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
             <span
+              className="candidate-set-badge"
               style={{
                 fontSize: '0.68rem',
                 padding: '1px 6px',
-                fontWeight: 700,
-                backgroundColor: 'rgba(99, 102, 241, 0.12)',
-                color: '#4338ca',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
-                borderRadius: 4,
-                whiteSpace: 'nowrap',
                 maxWidth: 90,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -842,17 +837,10 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         </strong>
         {(candidate.assignedQuestionSetName || candidate.assignedSetIndex) && (
           <span
+            className="candidate-set-badge"
             style={{
               fontSize: '0.7rem',
               padding: '2px 6px',
-              fontWeight: 700,
-              backgroundColor: 'rgba(99, 102, 241, 0.12)',
-              color: '#4338ca',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              borderRadius: 4,
-              whiteSpace: 'nowrap',
-              display: 'inline-flex',
-              alignItems: 'center',
               gap: 3,
               flexShrink: 0,
             }}

@@ -283,8 +283,8 @@ const resolveInviteToken = async (req, res, next) => {
       return res.status(404).json({ error: 'Associated test not found' });
     }
 
-    const isExpired = Boolean(room.passwordValidUntil && new Date() > room.passwordValidUntil);
     const isLive = test.status === 'LIVE';
+    const isExpired = Boolean(isLive && room.passwordValidUntil && new Date() > room.passwordValidUntil);
     const isFull = Boolean(room.capacity && room.joinedCandidates && room.joinedCandidates.length >= room.capacity);
 
     res.json({

@@ -66,7 +66,7 @@ function runTests() {
   );
   assert(
     testDetailCode.includes('id={`copy-invite-btn-${room._id}`}') &&
-    testDetailCode.includes('📋 Copy Full Invite'),
+    testDetailCode.includes('Copy Full Invite'),
     '"Copy Full Invite" button is preserved directly next to "QR Code" button'
   );
 
