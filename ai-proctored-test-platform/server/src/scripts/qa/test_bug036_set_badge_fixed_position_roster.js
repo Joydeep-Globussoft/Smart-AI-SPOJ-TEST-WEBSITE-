@@ -62,8 +62,7 @@ function runSuite() {
 
   // Test 4: Regression Verifications (BUG-018, BUG-033, BUG-035)
   console.log('\nTest 4: Verifying zero regressions on prior bug fixes...');
-  // BUG-018
-  assert(dashboardContent.includes("gridTemplateColumns: '2fr 1.1fr 1.1fr 1fr 1.1fr 1.1fr 2fr'"), 'BUG-018: Table column grid template preserved');
+  assert(dashboardContent.includes("gridTemplateColumns: '1.4fr 1.8fr 1.1fr 0.9fr 1.1fr 1fr 1.8fr'"), 'UI/UX-037: Table column grid template rebalanced');
   assert(dashboardContent.includes('Candidate Name') && dashboardContent.includes('Qs Solved') && dashboardContent.includes('Malpractice'), 'BUG-018: Roster headers intact');
   // BUG-033
   assert(cssContent.includes('[data-theme="dark"] .candidate-set-badge'), 'BUG-033: Dark mode set badge styling intact');

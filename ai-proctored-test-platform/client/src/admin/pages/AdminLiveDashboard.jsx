@@ -809,7 +809,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       style={{
         ...style,
         display: 'grid',
-        gridTemplateColumns: '2fr 1.1fr 1.1fr 1fr 1.1fr 1.1fr 2fr',
+        gridTemplateColumns: '1.4fr 1.8fr 1.1fr 0.9fr 1.1fr 1fr 1.8fr',
         alignItems: 'center',
         padding: '8px 16px',
         borderBottom: '1px solid var(--color-border)',
@@ -837,7 +837,10 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             willChange: isYellowDot ? 'opacity, transform' : 'auto',
           }}
         />
-        <strong style={{ color: 'var(--color-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <strong
+          style={{ color: 'var(--color-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+          title={candidate.name || candidate.candidateName || 'Candidate'}
+        >
           {candidate.name || candidate.candidateName || 'Candidate'}
         </strong>
       </div>
@@ -3078,7 +3081,7 @@ export default function AdminLiveDashboard() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 1.1fr 1.1fr 1fr 1.1fr 1.1fr 2fr',
+              gridTemplateColumns: '1.4fr 1.8fr 1.1fr 0.9fr 1.1fr 1fr 1.8fr',
               padding: '10px 16px',
               borderLeft: '4px solid transparent',
               background: 'var(--color-table-header-bg)',
