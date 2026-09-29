@@ -823,50 +823,210 @@ export default function AdminTests() {
           </button>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="card" style={{ padding: '14px 18px', marginBottom: 14, flexShrink: 0 }}>
+        {/* Filter & Search Bar (FEATURE-047: Redesigned Lavender/Indigo Container) */}
+        <div
+          style={{
+            background: 'var(--filterbar-bg, #F4F6FF)',
+            border: '1px solid var(--filterbar-border, #E0E5F5)',
+            borderRadius: 12,
+            padding: '14px 18px',
+            marginBottom: 14,
+            flexShrink: 0,
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+          }}
+        >
           {/* Main Filter Bar Row */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-            {/* 1. Search Tests (Reduced to 2/3 width) */}
+            {/* 1. Search Tests */}
             <div style={{ flex: '0 1 260px', minWidth: 180, maxWidth: 300 }}>
-              <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Search Tests</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by test title or pool..."
-                value={searchQuery}
-                onChange={(e) => updateFilter('search', e.target.value)}
-              />
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+                Search Tests
+              </label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--filterbar-icon, #6366F1)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    opacity: 0.9,
+                  }}
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  className="form-control"
+                  style={{
+                    paddingLeft: 36,
+                    background: 'var(--filterbar-input-bg, #ffffff)',
+                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    color: 'var(--color-text)',
+                    borderRadius: 8,
+                    height: 38,
+                    fontSize: '0.84rem',
+                  }}
+                  placeholder="Search by test title or pool..."
+                  value={searchQuery}
+                  onChange={(e) => updateFilter('search', e.target.value)}
+                />
+              </div>
             </div>
 
             {/* 2. Filter by Type */}
             <div style={{ flex: '0 1 180px', minWidth: 150 }}>
-              <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Filter by Type</label>
-              <select
-                className="form-select"
-                value={filterType}
-                onChange={(e) => updateFilter('type', e.target.value)}
-              >
-                <option value="ALL">All Test Types</option>
-                {TEST_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+                Filter by Type
+              </label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--filterbar-icon, #6366F1)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+                <select
+                  className="form-select"
+                  style={{
+                    paddingLeft: 34,
+                    paddingRight: 32,
+                    background: 'var(--filterbar-input-bg, #ffffff)',
+                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    color: 'var(--color-text)',
+                    borderRadius: 8,
+                    height: 38,
+                    fontSize: '0.84rem',
+                    fontWeight: 500,
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    cursor: 'pointer',
+                  }}
+                  value={filterType}
+                  onChange={(e) => updateFilter('type', e.target.value)}
+                >
+                  <option value="ALL">All Test Types</option>
+                  {TEST_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--filterbar-icon, #6366F1)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
             </div>
 
             {/* 3. Filter by Status */}
             <div style={{ flex: '0 1 150px', minWidth: 130 }}>
-              <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Filter by Status</label>
-              <select
-                className="form-select"
-                value={filterStatus}
-                onChange={(e) => updateFilter('status', e.target.value)}
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="DRAFT">DRAFT</option>
-                <option value="LIVE">LIVE (Active)</option>
-                <option value="ENDED">ENDED (Completed)</option>
-              </select>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+                Filter by Status
+              </label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--filterbar-icon, #6366F1)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <select
+                  className="form-select"
+                  style={{
+                    paddingLeft: 34,
+                    paddingRight: 32,
+                    background: 'var(--filterbar-input-bg, #ffffff)',
+                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    color: 'var(--color-text)',
+                    borderRadius: 8,
+                    height: 38,
+                    fontSize: '0.84rem',
+                    fontWeight: 500,
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    cursor: 'pointer',
+                  }}
+                  value={filterStatus}
+                  onChange={(e) => updateFilter('status', e.target.value)}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="LIVE">LIVE (Active)</option>
+                  <option value="ENDED">ENDED (Completed)</option>
+                </select>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--filterbar-icon, #6366F1)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
             </div>
 
             {/* 4. More Filters Button */}
@@ -874,21 +1034,26 @@ export default function AdminTests() {
               <button
                 type="button"
                 onClick={() => setShowMoreFilters((prev) => !prev)}
-                className={`btn ${showMoreFilters || advancedActiveCount > 0 ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 14px',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
+                  gap: 7,
+                  padding: '0 14px',
                   height: 38,
+                  borderRadius: 8,
+                  border: '1px solid',
+                  borderColor: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-primary)' : 'var(--filterbar-more-border, #DDE2F5)',
+                  background: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-primary)' : 'var(--filterbar-more-bg, #ffffff)',
+                  color: showMoreFilters || advancedActiveCount > 0 ? '#ffffff' : 'var(--filterbar-more-text, #4F46E5)',
+                  fontWeight: 600,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  transition: 'all var(--transition)',
                 }}
                 title="Toggle advanced filters"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                 </svg>
                 <span>More Filters</span>
                 {advancedActiveCount > 0 && (
@@ -909,46 +1074,87 @@ export default function AdminTests() {
                     ({advancedActiveCount})
                   </span>
                 )}
-                <span style={{ fontSize: '0.65rem' }}>{showMoreFilters ? '▲' : '▼'}</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ transform: showMoreFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
             </div>
 
-            {/* 5. Sort by Dropdown Menu (Positioned on far right) */}
-            <div style={{ position: 'relative', flex: '0 0 auto', marginLeft: 'auto', alignSelf: 'flex-end' }}>
-              <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: 6 }}>Sort by</label>
+            {/* 5. Vertical Divider Line (Positioned before Sort on the right) */}
+            <div
+              style={{
+                width: 1,
+                height: 34,
+                background: 'var(--filterbar-divider, #D8DEF0)',
+                marginLeft: 'auto',
+                marginRight: 6,
+                alignSelf: 'flex-end',
+                marginBottom: 2,
+              }}
+            />
+
+            {/* 6. Sort Control (Pill Button with static 'Sort' label per FEATURE-047) */}
+            <div style={{ position: 'relative', flex: '0 0 auto', alignSelf: 'flex-end' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+                Sort by
+              </label>
               <button
                 type="button"
                 ref={sortBtnRef}
                 onClick={() => setShowSortMenu((prev) => !prev)}
-                className="form-control"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 8,
-                  cursor: 'pointer',
+                  gap: 10,
+                  padding: '0 14px',
                   height: 38,
-                  minWidth: 165,
-                  padding: '0 12px',
-                  fontSize: '0.85rem',
-                  background: 'var(--color-input-bg, #ffffff)',
-                  borderColor: showSortMenu ? 'var(--color-primary)' : 'var(--color-border)',
-                  color: 'var(--color-navy, #1A2B3C)',
-                  textAlign: 'left',
-                  fontWeight: 500,
+                  borderRadius: 8,
+                  background: 'var(--filterbar-button-bg, #ffffff)',
+                  border: '1px solid',
+                  borderColor: showSortMenu ? 'var(--filterbar-icon, #6366F1)' : 'var(--filterbar-input-border, #E2E8F0)',
+                  color: 'var(--filterbar-button-text, #1E293B)',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  minWidth: 95,
+                  outline: 'none',
+                  transition: 'all var(--transition)',
                 }}
                 aria-haspopup="true"
                 aria-expanded={showSortMenu}
-                title={`Sorted by ${SORT_FIELDS.find(f => f.id === activeSortField)?.label || 'Date'} (${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`}
+                title={`Sort tests (${SORT_FIELDS.find(f => f.id === activeSortField)?.label || 'Date'}, ${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary, #0E7C86)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M7 15l5 5 5-5" />
-                    <path d="M7 9l5-5 5 5" />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--filterbar-icon, #6366F1)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 16V4M7 4L3 8M7 4L11 8" />
+                    <path d="M17 8V20M17 20L21 16M17 20L13 16" />
                   </svg>
-                  <span>{currentSortSummaryLabel}</span>
+                  <span>Sort</span>
                 </span>
-                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{showSortMenu ? '▲' : '▼'}</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--filterbar-icon, #6366F1)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ transform: showSortMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
 
               {showSortMenu && (
@@ -985,7 +1191,7 @@ export default function AdminTests() {
                           padding: '7px 10px',
                           border: 'none',
                           background: isSelected ? 'var(--color-bg-hover, #f1f5f9)' : 'transparent',
-                          color: 'var(--color-navy, #1A2B3C)',
+                          color: isSelected ? 'var(--filterbar-icon, #6366F1)' : 'var(--color-navy, #1A2B3C)',
                           borderRadius: 5,
                           fontSize: '0.85rem',
                           cursor: 'pointer',
@@ -995,8 +1201,12 @@ export default function AdminTests() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover, #f1f5f9)'; }}
                         onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                       >
-                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-primary, #0E7C86)' }}>
-                          {isSelected ? '●' : ''}
+                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.85rem', color: 'var(--filterbar-icon, #6366F1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {isSelected ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : ''}
                         </span>
                         <span>{f.label}</span>
                       </button>
@@ -1022,7 +1232,7 @@ export default function AdminTests() {
                           padding: '7px 10px',
                           border: 'none',
                           background: isSelected ? 'var(--color-bg-hover, #f1f5f9)' : 'transparent',
-                          color: 'var(--color-navy, #1A2B3C)',
+                          color: isSelected ? 'var(--filterbar-icon, #6366F1)' : 'var(--color-navy, #1A2B3C)',
                           borderRadius: 5,
                           fontSize: '0.85rem',
                           cursor: 'pointer',
@@ -1032,8 +1242,12 @@ export default function AdminTests() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover, #f1f5f9)'; }}
                         onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                       >
-                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-primary, #0E7C86)' }}>
-                          {isSelected ? '●' : ''}
+                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.85rem', color: 'var(--filterbar-icon, #6366F1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {isSelected ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : ''}
                         </span>
                         <span>{d.label}</span>
                       </button>

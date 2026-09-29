@@ -64,6 +64,20 @@
   --badge-purple-text: #4338ca;
   --badge-purple-border: rgba(99, 102, 241, 0.35);
 
+  /* FEATURE-047: Test Management Filter Bar Tokens (Light Mode) */
+  --filterbar-bg: #F4F6FF;
+  --filterbar-border: #E0E5F5;
+  --filterbar-label: #5B6B8A;
+  --filterbar-icon: #6366F1;
+  --filterbar-divider: #D8DEF0;
+  --filterbar-input-bg: #ffffff;
+  --filterbar-input-border: #E2E8F0;
+  --filterbar-button-bg: #ffffff;
+  --filterbar-button-text: #1E293B;
+  --filterbar-more-bg: #ffffff;
+  --filterbar-more-text: #4F46E5;
+  --filterbar-more-border: #DDE2F5;
+
   /* Seat map colors */
   --color-green: #2ECC71;
   --color-yellow: #F1C40F;
@@ -136,6 +150,20 @@
   --badge-purple-bg: rgba(139, 92, 246, 0.24);
   --badge-purple-text: #c4b5fd;
   --badge-purple-border: rgba(167, 139, 250, 0.6);
+
+  /* FEATURE-047: Test Management Filter Bar Tokens (Dark Mode) */
+  --filterbar-bg: #131A2B;
+  --filterbar-border: #212D45;
+  --filterbar-label: #8E9DB8;
+  --filterbar-icon: #818CF8;
+  --filterbar-divider: #23314F;
+  --filterbar-input-bg: #0F1626;
+  --filterbar-input-border: #253456;
+  --filterbar-button-bg: #0F1626;
+  --filterbar-button-text: #F1F5F9;
+  --filterbar-more-bg: #162035;
+  --filterbar-more-text: #A5B4FC;
+  --filterbar-more-border: #2A3A5E;
 
   /* Seat map colors */
   --color-green: #2ECC71;
