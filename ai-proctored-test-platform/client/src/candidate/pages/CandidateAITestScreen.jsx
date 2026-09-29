@@ -26,6 +26,7 @@ import CameraDisconnectedOverlay from '../components/CameraDisconnectedOverlay';
 import SessionSupersededOverlay from '../components/SessionSupersededOverlay';
 import ProctorWarningModal from '../components/ProctorWarningModal';
 import ViolationNotificationBanner, { useViolationNotification } from '../components/ViolationNotificationBanner';
+import TestFooter from '../components/TestFooter';
 import EmbeddedPdfViewer from '../components/EmbeddedPdfViewer';
 import Editor from '@monaco-editor/react';
 import logoLight from '../../assets/logo-light.png';
