@@ -271,23 +271,102 @@ export default function CreateTestModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={handleClose}>
-      <div className="modal-container" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Create New Test</h3>
+    <div
+      className="modal-backdrop"
+      onClick={handleClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(6px)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+      }}
+    >
+      <div
+        className="modal-container"
+        style={{
+          maxWidth: 680,
+          width: '100%',
+          backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+          border: '1px solid var(--admin-card-border, #E0E7FF)',
+          borderRadius: '14px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header Ribbon */}
+        <div
+          className="modal-header"
+          style={{
+            padding: '16px 22px',
+            backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+            borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '1.25rem' }}>✨</span>
+            <h3
+              className="modal-title"
+              style={{
+                margin: 0,
+                fontSize: '1.15rem',
+                fontWeight: 700,
+                color: 'var(--color-navy, #1E293B)',
+              }}
+            >
+              Create New Test
+            </h3>
+          </div>
           <button
             type="button"
             onClick={handleClose}
-            style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+            aria-label="Close dialog"
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.2rem',
+              cursor: 'pointer',
+              color: 'var(--color-text-muted, #64748b)',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease',
+            }}
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="form-group">
-              <label className="form-label">Test Title *</label>
+        <form onSubmit={handleSubmit} style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+          <div
+            className="modal-body"
+            style={{
+              maxHeight: '70vh',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 18,
+              padding: '22px 24px',
+              backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+            }}
+          >
+            {/* Test Title */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                Test Title <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <input
                 type="text"
                 name="title"
@@ -296,13 +375,23 @@ export default function CreateTestModal({
                 value={formData.title}
                 onChange={handleInputChange}
                 required
+                style={{
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderColor: 'var(--admin-card-border, #E0E7FF)',
+                  color: 'var(--color-text, #0f172a)',
+                  borderRadius: '8px',
+                  padding: '9px 12px',
+                  fontSize: '0.9rem',
+                }}
               />
             </div>
 
             {/* Test Type & Question Folder Selection */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div className="form-group">
-                <label className="form-label">Test Type *</label>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                  Test Type <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <select
                   name="testType"
                   className="form-select"
@@ -321,6 +410,14 @@ export default function CreateTestModal({
                     setHighlightedFolderIndex(-1);
                   }}
                   required
+                  style={{
+                    backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--color-text, #0f172a)',
+                    borderRadius: '8px',
+                    padding: '9px 12px',
+                    fontSize: '0.9rem',
+                  }}
                 >
                   {TEST_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -329,8 +426,10 @@ export default function CreateTestModal({
               </div>
 
               {/* FEATURE-025: Searchable Combobox for Question Folder */}
-              <div className="form-group" ref={folderComboboxRef} style={{ position: 'relative' }}>
-                <label className="form-label" htmlFor="create-test-folder-input">Question Folder *</label>
+              <div className="form-group" ref={folderComboboxRef} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label className="form-label" htmlFor="create-test-folder-input" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                  Question Folder <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <input
                     id="create-test-folder-input"
@@ -360,6 +459,13 @@ export default function CreateTestModal({
                     style={{
                       paddingRight: formData.folderId || folderSearchText ? '60px' : '36px',
                       cursor: 'text',
+                      backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                      borderColor: 'var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--color-text, #0f172a)',
+                      borderRadius: '8px',
+                      padding: '9px 12px',
+                      fontSize: '0.9rem',
+                      width: '100%',
                     }}
                   />
 
@@ -436,16 +542,16 @@ export default function CreateTestModal({
                       left: 0,
                       right: 0,
                       zIndex: 1050,
-                      background: 'var(--color-bg-card, #ffffff)',
-                      border: '1.5px solid var(--color-border, #cbd5e1)',
+                      background: 'var(--admin-card-bg, #ffffff)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
                       borderRadius: '8px',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
                       maxHeight: '240px',
                       overflowY: 'auto',
                     }}
                   >
                     {filteredFolders.length === 0 ? (
-                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#e74c3c' }}>
+                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#ef4444' }}>
                         No Folders found for {formData.testType}. Create a folder in Question Bank first.
                       </div>
                     ) : searchedFolders.length === 0 ? (
@@ -462,18 +568,18 @@ export default function CreateTestModal({
                             onClick={() => handleSelectFolder(f)}
                             onMouseEnter={() => setHighlightedFolderIndex(index)}
                             style={{
-                              padding: '10px 12px',
+                              padding: '10px 14px',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
                               gap: '8px',
                               background: isSelected
-                                ? 'rgba(14, 124, 134, 0.12)'
+                                ? 'rgba(62, 99, 221, 0.12)'
                                 : isHighlighted
-                                ? 'var(--color-bg-subtle, #f8fafc)'
+                                ? 'var(--filterbar-bg, #F4F6FF)'
                                 : 'transparent',
-                              borderBottom: index < searchedFolders.length - 1 ? '1px solid #f1f5f9' : 'none',
+                              borderBottom: index < searchedFolders.length - 1 ? '1px solid var(--admin-card-border, #E0E7FF)' : 'none',
                               transition: 'background 0.15s ease',
                             }}
                           >
@@ -483,7 +589,7 @@ export default function CreateTestModal({
                                 style={{
                                   fontSize: '0.875rem',
                                   fontWeight: isSelected ? 600 : 500,
-                                  color: isSelected ? 'var(--color-primary, #0e7c86)' : 'var(--color-navy, #1e293b)',
+                                  color: isSelected ? 'var(--admin-indigo, #3E63DD)' : 'var(--color-navy, #1e293b)',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap',
@@ -499,10 +605,10 @@ export default function CreateTestModal({
                                 padding: '2px 8px',
                                 borderRadius: '6px',
                                 flexShrink: 0,
-                                fontWeight: 500,
-                                background: f.isValid ? 'rgba(14, 124, 134, 0.08)' : '#fee2e2',
-                                color: f.isValid ? 'var(--color-primary, #0e7c86)' : '#991b1b',
-                                border: f.isValid ? '1px solid rgba(14, 124, 134, 0.2)' : '1px solid #fca5a5',
+                                fontWeight: 600,
+                                background: f.isValid ? 'rgba(62, 99, 221, 0.1)' : '#fee2e2',
+                                color: f.isValid ? 'var(--admin-indigo, #3E63DD)' : '#991b1b',
+                                border: f.isValid ? '1px solid rgba(62, 99, 221, 0.25)' : '1px solid #fca5a5',
                               }}
                             >
                               {f.setCount} {f.setCount === 1 ? 'Set' : 'Sets'}
@@ -516,23 +622,23 @@ export default function CreateTestModal({
                 )}
 
                 {filteredFolders.length === 0 ? (
-                  <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                  <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: 4 }}>
                     No Folders found for {formData.testType}. Create a folder in Question Bank first.
                   </p>
                 ) : selectedFolder && !selectedFolder.isValid ? (
-                  <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
+                  <div style={{ marginTop: 6, padding: '8px 12px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 8 }}>
                     <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0, lineHeight: 1.4 }}>
                       ⚠️ {selectedFolder.validationError}
                     </p>
                   </div>
                 ) : selectedFolder && selectedFolder.isValid ? (
-                  <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
+                  <div style={{ marginTop: 6, padding: '8px 12px', background: 'rgba(62, 99, 221, 0.08)', border: '1px solid rgba(62, 99, 221, 0.25)', borderRadius: 8 }}>
                     {selectedFolder.setCount === 1 ? (
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--admin-indigo, #3E63DD)', margin: 0, fontWeight: 600 }}>
                         ✓ Folder contains 1 Question Set ({selectedFolder.questionCount} Qs).
                       </p>
                     ) : (
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--admin-indigo, #3E63DD)', margin: 0, fontWeight: 600 }}>
                         ✓ Folder contains {selectedFolder.setCount} Question Sets ({selectedFolder.questionCount} Qs each).
                       </p>
                     )}
@@ -541,9 +647,12 @@ export default function CreateTestModal({
               </div>
             </div>
 
+            {/* Duration, Total Qs, Passing Criteria */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-              <div className="form-group">
-                <label className="form-label">Duration (Minutes) *</label>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                  Duration (Minutes) <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <input
                   type="number"
                   name="durationMinutes"
@@ -553,13 +662,22 @@ export default function CreateTestModal({
                   value={formData.durationMinutes}
                   onChange={handleInputChange}
                   required
+                  style={{
+                    backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--color-text, #0f172a)',
+                    borderRadius: '8px',
+                    padding: '9px 12px',
+                    fontSize: '0.9rem',
+                  }}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="form-label" style={{ marginBottom: 0 }}>Total Questions</label>
-
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                    Total Questions
+                  </label>
                 </div>
                 <input
                   type="number"
@@ -569,17 +687,23 @@ export default function CreateTestModal({
                   disabled
                   readOnly
                   style={{
-                    backgroundColor: 'var(--color-bg-subtle)',
+                    backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
                     cursor: 'not-allowed',
-                    color: 'var(--color-text-muted)',
+                    color: 'var(--color-text-muted, #64748b)',
                     fontWeight: 600,
+                    borderRadius: '8px',
+                    padding: '9px 12px',
+                    fontSize: '0.9rem',
+                    opacity: 0.85,
                   }}
                 />
-
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Passing Criteria (Min Qs) *</label>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                  Passing Criteria (Min Qs) <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <input
                   type="number"
                   name="passingCriteria"
@@ -589,17 +713,28 @@ export default function CreateTestModal({
                   value={formData.passingCriteria}
                   onChange={handleInputChange}
                   required
+                  style={{
+                    backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--color-text, #0f172a)',
+                    borderRadius: '8px',
+                    padding: '9px 12px',
+                    fontSize: '0.9rem',
+                  }}
                 />
                 {formData.passingCriteria > formData.totalQuestions && formData.totalQuestions > 0 && (
-                  <small style={{ color: '#E74C3C', fontSize: '0.75rem', display: 'block', marginTop: 2 }}>
+                  <small style={{ color: '#ef4444', fontSize: '0.75rem', display: 'block', marginTop: 2 }}>
                     Cannot exceed Total Questions ({formData.totalQuestions}).
                   </small>
                 )}
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Join Window / Password Validity (Minutes)</label>
+            {/* Join Window */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                Join Window / Password Validity (Minutes)
+              </label>
               <input
                 type="number"
                 name="startTestWindowMinutes"
@@ -608,50 +743,72 @@ export default function CreateTestModal({
                 max="120"
                 value={formData.startTestWindowMinutes}
                 onChange={handleInputChange}
+                style={{
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderColor: 'var(--admin-card-border, #E0E7FF)',
+                  color: 'var(--color-text, #0f172a)',
+                  borderRadius: '8px',
+                  padding: '9px 12px',
+                  fontSize: '0.9rem',
+                }}
               />
-              <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+              <small style={{ color: 'var(--color-text-muted, #64748b)', fontSize: '0.75rem' }}>
                 Room passwords expire after this window from room creation.
               </small>
             </div>
 
+            {/* SPOJ Supported Languages */}
             {formData.testType === 'SPOJ' && (
-              <div className="form-group">
-                <label className="form-label">Supported Languages</label>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
-                  {PROGRAMMING_LANGUAGES.map((lang) => (
-                    <label
-                      key={lang}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        padding: '6px 12px',
-                        borderRadius: 6,
-                        border: formData.supportedLanguages.includes(lang)
-                          ? '1.5px solid var(--color-primary)'
-                          : '1.5px solid var(--color-border)',
-                        background: formData.supportedLanguages.includes(lang)
-                          ? 'rgba(14, 124, 134, 0.15)'
-                          : 'var(--color-bg-card)',
-                        color: 'var(--color-text)',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.supportedLanguages.includes(lang)}
-                        onChange={() => handleLanguageToggle(lang)}
-                      />
-                      {lang.toUpperCase()}
-                    </label>
-                  ))}
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                  Supported Languages
+                </label>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+                  {PROGRAMMING_LANGUAGES.map((lang) => {
+                    const isChecked = formData.supportedLanguages.includes(lang);
+                    return (
+                      <label
+                        key={lang}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          padding: '7px 14px',
+                          borderRadius: 8,
+                          border: isChecked
+                            ? '1.5px solid var(--admin-indigo, #3E63DD)'
+                            : '1px solid var(--admin-card-border, #E0E7FF)',
+                          background: isChecked
+                            ? 'rgba(62, 99, 221, 0.12)'
+                            : 'var(--filterbar-bg, #F4F6FF)',
+                          color: isChecked
+                            ? 'var(--admin-indigo, #3E63DD)'
+                            : 'var(--color-navy, #1E293B)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleLanguageToggle(lang)}
+                          style={{ accentColor: 'var(--admin-indigo, #3E63DD)', cursor: 'pointer' }}
+                        />
+                        {lang.toUpperCase()}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            <div className="form-group">
-              <label className="form-label">Candidate Instructions *</label>
+            {/* Candidate Instructions */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                Candidate Instructions <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <textarea
                 name="instructions"
                 className="form-control"
@@ -659,16 +816,48 @@ export default function CreateTestModal({
                 value={formData.instructions}
                 onChange={handleInputChange}
                 required
+                style={{
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderColor: 'var(--admin-card-border, #E0E7FF)',
+                  color: 'var(--color-text, #0f172a)',
+                  borderRadius: '8px',
+                  padding: '9px 12px',
+                  fontSize: '0.875rem',
+                  lineHeight: 1.5,
+                  resize: 'vertical',
+                }}
               />
             </div>
           </div>
 
-          <div className="modal-footer">
+          {/* Modal Footer Ribbon */}
+          <div
+            className="modal-footer"
+            style={{
+              padding: '14px 22px',
+              backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+              borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 12,
+            }}
+          >
             <button
               type="button"
               onClick={handleClose}
-              className="btn btn-secondary"
+              className="btn"
               disabled={creating}
+              style={{
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                color: 'var(--filterbar-button-text, #1E293B)',
+                borderRadius: '8px',
+                padding: '9px 18px',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
             >
               Cancel
             </button>
@@ -676,6 +865,19 @@ export default function CreateTestModal({
               type="submit"
               className="btn btn-primary"
               disabled={creating || (selectedFolder && !selectedFolder.isValid) || !formData.folderId}
+              style={{
+                backgroundColor: 'var(--admin-indigo, #3E63DD)',
+                borderColor: 'var(--admin-indigo, #3E63DD)',
+                color: '#ffffff',
+                borderRadius: '8px',
+                padding: '9px 22px',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                cursor: creating || (selectedFolder && !selectedFolder.isValid) || !formData.folderId ? 'not-allowed' : 'pointer',
+                opacity: creating || (selectedFolder && !selectedFolder.isValid) || !formData.folderId ? 0.6 : 1,
+                boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+                transition: 'all 0.15s ease',
+              }}
             >
               {creating ? 'Creating...' : 'Create Test (Draft)'}
             </button>

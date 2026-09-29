@@ -793,7 +793,7 @@ export default function AdminTests() {
   };
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
       <AdminNavbar />
       <main
         className="main-content"
@@ -804,42 +804,52 @@ export default function AdminTests() {
           boxSizing: 'border-box',
           overflow: 'hidden',
           padding: '16px 24px 20px 24px',
+          background: 'var(--admin-canvas-bg, #EEF2FF)',
         }}
       >
         {/* Page Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12, flexShrink: 0 }}>
           <div>
             <h1 style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>Test Management</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 3, marginBottom: 0 }}>
+            <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.875rem', marginTop: 3, marginBottom: 0 }}>
               Create, configure, and manage proctored coding assessments and rooms.
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'var(--admin-indigo, #3E63DD)',
+              borderColor: 'var(--admin-indigo, #3E63DD)',
+              color: '#ffffff',
+              borderRadius: 8,
+              boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+            }}
           >
             <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span> Create New Test
           </button>
         </div>
 
-        {/* Filter & Search Bar (FEATURE-047: Redesigned Lavender/Indigo Container) */}
+        {/* Filter & Search Bar (White lifted card on lavender canvas) */}
         <div
           style={{
-            background: 'var(--filterbar-bg, #F4F6FF)',
-            border: '1px solid var(--filterbar-border, #E0E5F5)',
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
             borderRadius: 12,
             padding: '14px 18px',
             marginBottom: 14,
             flexShrink: 0,
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+            boxShadow: 'var(--admin-card-shadow)',
           }}
         >
           {/* Main Filter Bar Row */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
             {/* 1. Search Tests */}
             <div style={{ flex: '0 1 260px', minWidth: 180, maxWidth: 300 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--admin-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
                 Search Tests
               </label>
               <div style={{ position: 'relative', width: '100%' }}>
@@ -848,7 +858,7 @@ export default function AdminTests() {
                   height="15"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--filterbar-icon, #6366F1)"
+                  stroke="var(--admin-indigo, #3E63DD)"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -869,8 +879,8 @@ export default function AdminTests() {
                   className="form-control"
                   style={{
                     paddingLeft: 36,
-                    background: 'var(--filterbar-input-bg, #ffffff)',
-                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
                     color: 'var(--color-text)',
                     borderRadius: 8,
                     height: 38,
@@ -888,7 +898,7 @@ export default function AdminTests() {
               style={{
                 width: 1,
                 height: 32,
-                background: 'var(--filterbar-divider, #D8DEF0)',
+                background: 'var(--admin-card-border, #E0E7FF)',
                 margin: '0 2px',
                 alignSelf: 'flex-end',
                 marginBottom: 3,
@@ -898,7 +908,7 @@ export default function AdminTests() {
 
             {/* 2. Filter by Type */}
             <div style={{ flex: '0 1 180px', minWidth: 150 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--admin-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
                 Filter by Type
               </label>
               <div style={{ position: 'relative', width: '100%' }}>
@@ -907,7 +917,7 @@ export default function AdminTests() {
                   height="15"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--filterbar-icon, #6366F1)"
+                  stroke="var(--admin-indigo, #3E63DD)"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -929,8 +939,8 @@ export default function AdminTests() {
                   style={{
                     paddingLeft: 34,
                     paddingRight: 32,
-                    background: 'var(--filterbar-input-bg, #ffffff)',
-                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
                     color: 'var(--color-text)',
                     borderRadius: 8,
                     height: 38,
@@ -953,7 +963,7 @@ export default function AdminTests() {
                   height="12"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--filterbar-icon, #6366F1)"
+                  stroke="var(--admin-indigo, #3E63DD)"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -975,7 +985,7 @@ export default function AdminTests() {
               style={{
                 width: 1,
                 height: 32,
-                background: 'var(--filterbar-divider, #D8DEF0)',
+                background: 'var(--admin-card-border, #E0E7FF)',
                 margin: '0 2px',
                 alignSelf: 'flex-end',
                 marginBottom: 3,
@@ -985,7 +995,7 @@ export default function AdminTests() {
 
             {/* 3. Filter by Status */}
             <div style={{ flex: '0 1 150px', minWidth: 130 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--admin-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
                 Filter by Status
               </label>
               <div style={{ position: 'relative', width: '100%' }}>
@@ -994,7 +1004,7 @@ export default function AdminTests() {
                   height="15"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--filterbar-icon, #6366F1)"
+                  stroke="var(--admin-indigo, #3E63DD)"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1014,8 +1024,8 @@ export default function AdminTests() {
                   style={{
                     paddingLeft: 34,
                     paddingRight: 32,
-                    background: 'var(--filterbar-input-bg, #ffffff)',
-                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: 'var(--admin-card-border, #E0E7FF)',
                     color: 'var(--color-text)',
                     borderRadius: 8,
                     height: 38,
@@ -1038,7 +1048,7 @@ export default function AdminTests() {
                   height="12"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--filterbar-icon, #6366F1)"
+                  stroke="var(--admin-indigo, #3E63DD)"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1060,7 +1070,7 @@ export default function AdminTests() {
               style={{
                 width: 1,
                 height: 32,
-                background: 'var(--filterbar-divider, #D8DEF0)',
+                background: 'var(--admin-card-border, #E0E7FF)',
                 margin: '0 2px',
                 alignSelf: 'flex-end',
                 marginBottom: 3,
@@ -1081,9 +1091,9 @@ export default function AdminTests() {
                   height: 38,
                   borderRadius: 8,
                   border: '1px solid',
-                  borderColor: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-primary)' : 'var(--filterbar-more-border, #DDE2F5)',
-                  background: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-primary)' : 'var(--filterbar-more-bg, #ffffff)',
-                  color: showMoreFilters || advancedActiveCount > 0 ? '#ffffff' : 'var(--filterbar-more-text, #4F46E5)',
+                  borderColor: showMoreFilters || advancedActiveCount > 0 ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-border, #E0E7FF)',
+                  background: showMoreFilters || advancedActiveCount > 0 ? 'var(--admin-indigo, #3E63DD)' : 'var(--filterbar-bg, #F4F6FF)',
+                  color: showMoreFilters || advancedActiveCount > 0 ? '#ffffff' : 'var(--admin-indigo, #3E63DD)',
                   fontWeight: 600,
                   fontSize: '0.84rem',
                   cursor: 'pointer',
@@ -1098,8 +1108,8 @@ export default function AdminTests() {
                 {advancedActiveCount > 0 && (
                   <span
                     style={{
-                      background: showMoreFilters || advancedActiveCount > 0 ? '#FFFFFF' : 'var(--color-primary, #0E7C86)',
-                      color: showMoreFilters || advancedActiveCount > 0 ? 'var(--color-primary, #0E7C86)' : '#FFFFFF',
+                      background: showMoreFilters || advancedActiveCount > 0 ? '#FFFFFF' : 'var(--admin-indigo, #3E63DD)',
+                      color: showMoreFilters || advancedActiveCount > 0 ? 'var(--admin-indigo, #3E63DD)' : '#FFFFFF',
                       borderRadius: 10,
                       padding: '1px 6px',
                       fontSize: '0.72rem',
@@ -1134,7 +1144,7 @@ export default function AdminTests() {
               style={{
                 width: 1,
                 height: 32,
-                background: 'var(--filterbar-divider, #D8DEF0)',
+                background: 'var(--admin-card-border, #E0E7FF)',
                 marginLeft: 'auto',
                 marginRight: 4,
                 alignSelf: 'flex-end',
@@ -1157,9 +1167,9 @@ export default function AdminTests() {
                   padding: '0 14px',
                   height: 38,
                   borderRadius: 8,
-                  background: 'var(--filterbar-button-bg, #ffffff)',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
                   border: '1px solid',
-                  borderColor: showSortMenu ? 'var(--filterbar-icon, #6366F1)' : 'var(--filterbar-input-border, #E2E8F0)',
+                  borderColor: showSortMenu ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-border, #E0E7FF)',
                   color: 'var(--filterbar-button-text, #1E293B)',
                   fontSize: '0.84rem',
                   fontWeight: 600,
@@ -1173,7 +1183,7 @@ export default function AdminTests() {
                 title={`Sort tests (${SORT_FIELDS.find(f => f.id === activeSortField)?.label || 'Date'}, ${activeSortDir === 'asc' ? 'Ascending' : 'Descending'})`}
               >
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--filterbar-icon, #6366F1)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--admin-indigo, #3E63DD)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M7 16V4M7 4L3 8M7 4L11 8" />
                     <path d="M17 8V20M17 20L21 16M17 20L13 16" />
                   </svg>
@@ -1184,7 +1194,7 @@ export default function AdminTests() {
                   height="12"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--filterbar-icon, #6366F1)"
+                  stroke="var(--admin-indigo, #3E63DD)"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1202,8 +1212,8 @@ export default function AdminTests() {
                     top: 'calc(100% + 4px)',
                     right: 0,
                     zIndex: 1000,
-                    background: 'var(--color-bg-card, #ffffff)',
-                    border: '1px solid var(--color-border)',
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                     borderRadius: 8,
                     boxShadow: '0 10px 25px rgba(0, 0, 0, 0.14)',
                     minWidth: 190,
@@ -1227,18 +1237,18 @@ export default function AdminTests() {
                           width: '100%',
                           padding: '7px 10px',
                           border: 'none',
-                          background: isSelected ? 'var(--color-bg-hover, #f1f5f9)' : 'transparent',
-                          color: isSelected ? 'var(--filterbar-icon, #6366F1)' : 'var(--color-navy, #1A2B3C)',
+                          background: isSelected ? 'var(--filterbar-bg, #F4F6FF)' : 'transparent',
+                          color: isSelected ? 'var(--admin-indigo, #3E63DD)' : 'var(--color-navy, #1A2B3C)',
                           borderRadius: 5,
                           fontSize: '0.85rem',
                           cursor: 'pointer',
                           textAlign: 'left',
                           fontWeight: isSelected ? 600 : 400,
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover, #f1f5f9)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--filterbar-bg, #F4F6FF)'; }}
                         onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                       >
-                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.85rem', color: 'var(--filterbar-icon, #6366F1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.85rem', color: 'var(--admin-indigo, #3E63DD)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                           {isSelected ? (
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1251,7 +1261,7 @@ export default function AdminTests() {
                   })}
 
                   {/* Divider */}
-                  <div style={{ height: 1, background: 'var(--color-border)', margin: '5px 4px' }} />
+                  <div style={{ height: 1, background: 'var(--admin-card-border, #E0E7FF)', margin: '5px 4px' }} />
 
                   {/* Direction Items */}
                   {SORT_DIRS.map((d) => {
@@ -1268,18 +1278,18 @@ export default function AdminTests() {
                           width: '100%',
                           padding: '7px 10px',
                           border: 'none',
-                          background: isSelected ? 'var(--color-bg-hover, #f1f5f9)' : 'transparent',
-                          color: isSelected ? 'var(--filterbar-icon, #6366F1)' : 'var(--color-navy, #1A2B3C)',
+                          background: isSelected ? 'var(--filterbar-bg, #F4F6FF)' : 'transparent',
+                          color: isSelected ? 'var(--admin-indigo, #3E63DD)' : 'var(--color-navy, #1A2B3C)',
                           borderRadius: 5,
                           fontSize: '0.85rem',
                           cursor: 'pointer',
                           textAlign: 'left',
                           fontWeight: isSelected ? 600 : 400,
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover, #f1f5f9)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--filterbar-bg, #F4F6FF)'; }}
                         onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                       >
-                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.85rem', color: 'var(--filterbar-icon, #6366F1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ width: 14, textAlign: 'center', fontSize: '0.85rem', color: 'var(--admin-indigo, #3E63DD)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                           {isSelected ? (
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1301,7 +1311,7 @@ export default function AdminTests() {
               style={{
                 marginTop: 14,
                 paddingTop: 14,
-                borderTop: '1px solid var(--color-border)',
+                borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 12,
@@ -1317,23 +1327,23 @@ export default function AdminTests() {
                 {/* SECTION 1: TIMING */}
                 <div
                   style={{
-                    background: 'var(--color-bg-subtle, rgba(0,0,0,0.02))',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
                     padding: '12px 14px',
                     borderRadius: 8,
-                    border: '1px solid var(--color-border)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-teal)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--admin-indigo, #3E63DD)' }}>
                       ⏱️ Timing
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Date Created</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Date Created</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.dateCreated || 'ALL'}
                         onChange={(e) => updateFilter('dateCreated', e.target.value)}
                       >
@@ -1347,21 +1357,21 @@ export default function AdminTests() {
                     {filters.dateCreated === 'CUSTOM' && (
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>From:</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--admin-label, #5B6B8A)' }}>From:</span>
                           <input
                             type="date"
                             className="form-control"
-                            style={{ fontSize: '0.78rem', padding: '4px 8px' }}
+                            style={{ fontSize: '0.78rem', padding: '4px 8px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                             value={filters.dateFrom || ''}
                             onChange={(e) => updateFilter('dateFrom', e.target.value)}
                           />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>To:</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--admin-label, #5B6B8A)' }}>To:</span>
                           <input
                             type="date"
                             className="form-control"
-                            style={{ fontSize: '0.78rem', padding: '4px 8px' }}
+                            style={{ fontSize: '0.78rem', padding: '4px 8px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                             value={filters.dateTo || ''}
                             onChange={(e) => updateFilter('dateTo', e.target.value)}
                           />
@@ -1369,10 +1379,10 @@ export default function AdminTests() {
                       </div>
                     )}
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Duration</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Duration</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.duration || 'ALL'}
                         onChange={(e) => updateFilter('duration', e.target.value)}
                       >
@@ -1389,23 +1399,23 @@ export default function AdminTests() {
                 {/* SECTION 2: CONTENT */}
                 <div
                   style={{
-                    background: 'var(--color-bg-subtle, rgba(0,0,0,0.02))',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
                     padding: '12px 14px',
                     borderRadius: 8,
-                    border: '1px solid var(--color-border)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-teal)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--admin-indigo, #3E63DD)' }}>
                       📚 Content
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Passing Criteria</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Passing Criteria</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.passingCriteria || 'ALL'}
                         onChange={(e) => updateFilter('passingCriteria', e.target.value)}
                       >
@@ -1415,10 +1425,10 @@ export default function AdminTests() {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Question Set / Folder</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Question Set / Folder</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px', maxWidth: '100%' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', maxWidth: '100%', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.folderId || 'ALL'}
                         onChange={(e) => updateFilter('folderId', e.target.value)}
                       >
@@ -1431,10 +1441,10 @@ export default function AdminTests() {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Language</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Language</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.language || 'ALL'}
                         onChange={(e) => updateFilter('language', e.target.value)}
                       >
@@ -1453,23 +1463,23 @@ export default function AdminTests() {
                 {/* SECTION 3: ACTIVITY */}
                 <div
                   style={{
-                    background: 'var(--color-bg-subtle, rgba(0,0,0,0.02))',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
                     padding: '12px 14px',
                     borderRadius: 8,
-                    border: '1px solid var(--color-border)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-teal)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--admin-indigo, #3E63DD)' }}>
                       ⚡ Activity
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Room Status</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Room Status</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.roomStatus || 'ALL'}
                         onChange={(e) => updateFilter('roomStatus', e.target.value)}
                       >
@@ -1479,10 +1489,10 @@ export default function AdminTests() {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Candidate Activity</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Candidate Activity</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.candidateActivity || 'ALL'}
                         onChange={(e) => updateFilter('candidateActivity', e.target.value)}
                       >
@@ -1492,10 +1502,10 @@ export default function AdminTests() {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4 }}>Violations Present</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: 4, color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Violations Present</label>
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{ fontSize: '0.82rem', padding: '6px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)', borderRadius: 6 }}
                         value={filters.violations || 'ALL'}
                         onChange={(e) => updateFilter('violations', e.target.value)}
                       >
@@ -1513,7 +1523,7 @@ export default function AdminTests() {
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    style={{ fontSize: '0.78rem', padding: '5px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--filterbar-button-text, #1E293B)', borderRadius: 6 }}
                     onClick={() => {
                       setFilters({
                         dateCreated: 'ALL',
@@ -1535,7 +1545,7 @@ export default function AdminTests() {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                  style={{ fontSize: '0.78rem', padding: '5px 10px', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--filterbar-button-text, #1E293B)', borderRadius: 6 }}
                   onClick={() => setShowMoreFilters(false)}
                 >
                   Close Panel
@@ -1550,14 +1560,14 @@ export default function AdminTests() {
               style={{
                 marginTop: 12,
                 paddingTop: 10,
-                borderTop: '1px solid var(--color-border)',
+                borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
                 display: 'flex',
                 alignItems: 'center',
                 flexWrap: 'wrap',
                 gap: 8,
               }}
             >
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-label, #5B6B8A)' }}>
                 Active Filters:
               </span>
               {activeChips.map((chip) => (
@@ -1567,9 +1577,9 @@ export default function AdminTests() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    background: 'rgba(14, 124, 134, 0.1)',
-                    color: 'var(--color-teal)',
-                    border: '1px solid rgba(14, 124, 134, 0.25)',
+                    background: 'rgba(62, 99, 221, 0.1)',
+                    color: 'var(--admin-indigo, #3E63DD)',
+                    border: '1px solid rgba(62, 99, 221, 0.25)',
                     borderRadius: 16,
                     padding: '3px 10px',
                     fontSize: '0.78rem',
@@ -1583,7 +1593,7 @@ export default function AdminTests() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: 'var(--color-teal)',
+                      color: 'var(--admin-indigo, #3E63DD)',
                       cursor: 'pointer',
                       padding: 0,
                       fontSize: '0.85rem',
@@ -1628,15 +1638,19 @@ export default function AdminTests() {
             <LoadingDots size="md" />
           </div>
         ) : tests.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flexShrink: 0 }}>
+          <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flexShrink: 0, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', borderRadius: 12, boxShadow: 'var(--admin-card-shadow)' }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>📋</div>
             <h3 style={{ color: 'var(--color-navy)', marginBottom: 8 }}>
               No tests found
             </h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>
+            <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.9rem', marginBottom: 20 }}>
               Get started by creating your first proctored test
             </p>
-            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary"
+              style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff', borderRadius: 8 }}
+            >
               + Create New Test
             </button>
           </div>
@@ -1645,7 +1659,15 @@ export default function AdminTests() {
             ref={tableContainerRef}
             className={`table-container test-table-scroll-container ${isScrolledLeft ? 'is-scrolled-x' : ''}`}
             onScroll={handleTableScroll}
-            style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderRadius: 12,
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
           >
             <table className="table" style={{ width: '100%', minWidth: 1480 }}>
               <thead>
@@ -1696,32 +1718,37 @@ export default function AdminTests() {
               <tbody>
                 {filteredTests.length === 0 ? (
                   <tr>
-                    <td colSpan={13} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
+                    <td colSpan={13} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--admin-card-bg, #FFFFFF)' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
                       </h3>
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: 16 }}>
+                      <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.875rem', marginBottom: 16 }}>
                         Try adjusting or clearing your filters to see available tests
                       </p>
-                      <button onClick={handleClearAll} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                      <button
+                        onClick={handleClearAll}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.85rem', background: 'var(--filterbar-bg, #F4F6FF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--filterbar-button-text, #1E293B)', borderRadius: 8 }}
+                      >
                         Clear All Filters
                       </button>
                     </td>
                   </tr>
                 ) : (
                   filteredTests.map((test, index) => {
-                    let typeBadgeColor = '#0E7C86';
+                    let typeBadgeColor = 'var(--admin-indigo, #3E63DD)';
                     if (test.testType === 'AI_TEST') typeBadgeColor = '#8e44ad';
-                    if (test.testType === 'REACT') typeBadgeColor = '#2980b9';
-                    if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#d35400';
+                    if (test.testType === 'REACT') typeBadgeColor = '#2563eb';
+                    if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#d97706';
+                    if (test.testType === 'SPOJ') typeBadgeColor = 'var(--admin-indigo, #3E63DD)';
 
                     const questionSetName = test.questionSetPoolName || test.folderId?.name || test.questionSetId?.name || '—';
 
                     return (
                       <tr key={test._id}>
                         {/* FEATURE-040 / FEATURE-029: Position-based row index (1, 2, 3...) with frozen left-alignment */}
-                        <td className="sticky-col-index" style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, width: 36, minWidth: 36, maxWidth: 36 }}>
+                        <td className="sticky-col-index" style={{ textAlign: 'center', color: 'var(--admin-label, #5B6B8A)', fontSize: '0.82rem', fontWeight: 600, width: 36, minWidth: 36, maxWidth: 36 }}>
                           {index + 1}
                         </td>
                         {/* FEATURE-040: Frozen Test Title with single-line ellipsis truncation and hover tooltip */}
@@ -1753,6 +1780,7 @@ export default function AdminTests() {
                               border: `1px solid ${typeBadgeColor}40`,
                               fontSize: '0.75rem',
                               whiteSpace: 'nowrap',
+                              borderRadius: 6,
                             }}
                           >
                             {test.testType}
@@ -1780,12 +1808,12 @@ export default function AdminTests() {
                             >
                               {timelineInfo.isRange ? (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                                  <span style={{ color: 'var(--color-text-muted)' }}>{timelineInfo.createdPart}</span>
-                                  <span style={{ color: 'var(--color-primary, #0E7C86)', fontWeight: 600, fontSize: '0.8rem' }}>→</span>
+                                  <span style={{ color: 'var(--admin-label, #5B6B8A)' }}>{timelineInfo.createdPart}</span>
+                                  <span style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 600, fontSize: '0.8rem' }}>→</span>
                                   <span style={{ color: 'var(--color-navy)', fontWeight: 600 }}>{timelineInfo.livePart}</span>
                                 </span>
                               ) : (
-                                <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                <span style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 500 }}>
                                   {timelineInfo.display}
                                 </span>
                               )}
@@ -1825,10 +1853,10 @@ export default function AdminTests() {
                                   color: 'var(--color-text)',
                                 }}
                               >
-                                <span style={{ color: subInfo.submitted > 0 ? subInfo.statusColor : 'var(--color-text-muted)' }}>
+                                <span style={{ color: subInfo.submitted > 0 ? subInfo.statusColor : 'var(--admin-label, #5B6B8A)' }}>
                                   {subInfo.submitted}
                                 </span>
-                                <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>/</span>
+                                <span style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 400 }}>/</span>
                                 <span style={{ color: 'var(--color-text)' }}>
                                   {subInfo.total}
                                 </span>
@@ -1889,7 +1917,16 @@ export default function AdminTests() {
                             <Link
                               to={`/admin/tests/${test._id}`}
                               className="btn btn-secondary"
-                              style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', whiteSpace: 'nowrap' }}
+                              style={{
+                                padding: '5px 8px',
+                                fontSize: '0.78rem',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                background: 'var(--filterbar-bg, #F4F6FF)',
+                                borderColor: 'var(--admin-card-border, #E0E7FF)',
+                                color: 'var(--filterbar-button-text, #1E293B)',
+                                borderRadius: 6,
+                              }}
                             >
                               Manage &amp; Rooms
                             </Link>
@@ -1899,7 +1936,16 @@ export default function AdminTests() {
                               <Link
                                 to={`/admin/tests/${test._id}/live`}
                                 className="btn btn-primary"
-                                style={{ padding: '5px 8px', fontSize: '0.78rem', background: '#2ECC71', textAlign: 'center', whiteSpace: 'nowrap' }}
+                                style={{
+                                  padding: '5px 8px',
+                                  fontSize: '0.78rem',
+                                  background: '#16a34a',
+                                  borderColor: '#15803d',
+                                  color: '#ffffff',
+                                  textAlign: 'center',
+                                  whiteSpace: 'nowrap',
+                                  borderRadius: 6,
+                                }}
                               >
                                 Live Monitor
                               </Link>
@@ -1907,7 +1953,16 @@ export default function AdminTests() {
                               <Link
                                 to={`/admin/tests/${test._id}/live`}
                                 className="btn btn-secondary"
-                                style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', whiteSpace: 'nowrap' }}
+                                style={{
+                                  padding: '5px 8px',
+                                  fontSize: '0.78rem',
+                                  textAlign: 'center',
+                                  whiteSpace: 'nowrap',
+                                  background: 'var(--filterbar-bg, #F4F6FF)',
+                                  borderColor: 'var(--admin-card-border, #E0E7FF)',
+                                  color: 'var(--filterbar-button-text, #1E293B)',
+                                  borderRadius: 6,
+                                }}
                                 title="View frozen post-test operational summary"
                               >
                                 Test Summary
@@ -1921,7 +1976,16 @@ export default function AdminTests() {
                               <Link
                                 to={`/admin/tests/${test._id}/results`}
                                 className="btn btn-primary"
-                                style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', whiteSpace: 'nowrap' }}
+                                style={{
+                                  padding: '5px 8px',
+                                  fontSize: '0.78rem',
+                                  textAlign: 'center',
+                                  whiteSpace: 'nowrap',
+                                  background: 'var(--admin-indigo, #3E63DD)',
+                                  borderColor: 'var(--admin-indigo, #3E63DD)',
+                                  color: '#ffffff',
+                                  borderRadius: 6,
+                                }}
                               >
                                 Results
                               </Link>
@@ -1929,7 +1993,19 @@ export default function AdminTests() {
                               <button
                                 onClick={() => setDeleteTarget(test)}
                                 className="btn btn-danger"
-                                style={{ padding: '5px 8px', fontSize: '0.78rem', textAlign: 'center', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{
+                                  padding: '5px 8px',
+                                  fontSize: '0.78rem',
+                                  textAlign: 'center',
+                                  width: '100%',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: '#dc2626',
+                                  borderColor: '#b91c1c',
+                                  color: '#ffffff',
+                                  borderRadius: 6,
+                                }}
                                 title="Delete Test"
                               >
                                 🗑️
@@ -1964,27 +2040,28 @@ export default function AdminTests() {
         {/* ── Delete Confirmation Modal ── */}
         {deleteTarget && (
           <div className="modal-backdrop" onClick={() => !deleting && setDeleteTarget(null)}>
-            <div className="modal-container" style={{ maxWidth: 450 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title" style={{ color: '#E74C3C' }}>Delete Test</h3>
+            <div className="modal-container" style={{ maxWidth: 450, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)', borderRadius: 14, overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ padding: '16px 20px', background: 'var(--filterbar-bg, #F4F6FF)', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
+                <h3 className="modal-title" style={{ color: '#dc2626', margin: 0, fontWeight: 700 }}>Delete Test</h3>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
               </div>
-              <div className="modal-body">
-                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem' }}>
+              <div className="modal-body" style={{ padding: '20px 24px', background: 'var(--admin-card-bg, #FFFFFF)' }}>
+                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem', margin: 0 }}>
                   Are you sure you want to delete test <strong>"{deleteTarget.title}"</strong>? This action cannot be undone.
                 </p>
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ padding: '14px 20px', background: 'var(--filterbar-bg, #F4F6FF)', borderTop: '1px solid var(--admin-card-border, #E0E7FF)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
                   className="btn btn-secondary"
+                  style={{ background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--filterbar-button-text, #1E293B)', borderRadius: 8 }}
                   disabled={deleting}
                 >
                   Cancel
@@ -1993,6 +2070,7 @@ export default function AdminTests() {
                   type="button"
                   onClick={handleDeleteConfirm}
                   className="btn btn-danger"
+                  style={{ background: '#dc2626', borderColor: '#b91c1c', color: '#ffffff', borderRadius: 8 }}
                   disabled={deleting}
                 >
                   {deleting ? 'Deleting...' : 'Confirm Delete'}
