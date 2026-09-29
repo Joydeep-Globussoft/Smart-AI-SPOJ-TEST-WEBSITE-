@@ -355,7 +355,7 @@ export default function CandidateInstructions() {
       console.error('[Instructions] Start test error:', JSON.stringify(err.response?.data) || err.message);
       setError(err.response?.data?.error || 'Failed to start test attempt');
       if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
+        document.exitFullscreen().catch(() => { });
       }
     } finally {
       setLoading(false);
@@ -794,7 +794,7 @@ export default function CandidateInstructions() {
               {/* Device Permissions Card */}
               <div className="card">
                 <div className="card-header">
-                  <h3 className="card-title">📸 Device Permissions (FR-5.2)</h3>
+                  <h3 className="card-title">📸 Device Permissions</h3>
                 </div>
                 <div
                   style={{
@@ -856,8 +856,8 @@ export default function CandidateInstructions() {
                       {webcamStatus === 'GRANTED'
                         ? '✓ Granted'
                         : webcamStatus === 'NOT_FOUND'
-                        ? '✗ No Camera Found'
-                        : '✗ Not Granted'}
+                          ? '✗ No Camera Found'
+                          : '✗ Not Granted'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
@@ -866,8 +866,8 @@ export default function CandidateInstructions() {
                       {micStatus === 'GRANTED'
                         ? '✓ Granted'
                         : micStatus === 'NOT_FOUND'
-                        ? '✗ No Mic Found'
-                        : '✗ Not Granted'}
+                          ? '✗ No Mic Found'
+                          : '✗ Not Granted'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
