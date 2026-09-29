@@ -871,9 +871,9 @@ export default function AdminQuestionBank() {
   };
 
   return (
-    <div className="app-layout" style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-layout" style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
       <AdminNavbar />
-      <main className="main-content" style={{ maxWidth: 1440, width: '100%', margin: '0 auto', padding: '16px 20px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
+      <main className="main-content" style={{ maxWidth: 1440, width: '100%', margin: '0 auto', padding: '16px 20px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box', background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
         {/* Page Header (Fixed) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 16, flexShrink: 0 }}>
           <div>
@@ -881,8 +881,20 @@ export default function AdminQuestionBank() {
               <h1 style={{ fontSize: '1.75rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
                 Question Bank
               </h1>
-              <span className="badge badge-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
-                {folders.length} Folders
+              <span
+                style={{
+                  display: 'inline-block',
+                  background: 'rgba(62, 99, 221, 0.12)',
+                  color: 'var(--admin-indigo, #3E63DD)',
+                  border: '1px solid rgba(62, 99, 221, 0.28)',
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.03em',
+                }}
+              >
+                {folders.length} FOLDERS
               </span>
             </div>
           </div>
@@ -891,7 +903,16 @@ export default function AdminQuestionBank() {
               id="upload-pdfs-btn"
               onClick={() => handleOpenUploadModal()}
               className="btn btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.85rem',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                borderColor: 'var(--admin-card-border, #E0E7FF)',
+                color: 'var(--filterbar-button-text, #1E293B)',
+                boxShadow: 'var(--admin-card-shadow)',
+              }}
             >
               📁 Upload PDFs
             </button>
@@ -899,7 +920,16 @@ export default function AdminQuestionBank() {
               id="new-folder-btn"
               onClick={() => setShowNewFolderModal(true)}
               className="btn btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.85rem',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                borderColor: 'var(--admin-card-border, #E0E7FF)',
+                color: 'var(--filterbar-button-text, #1E293B)',
+                boxShadow: 'var(--admin-card-shadow)',
+              }}
             >
               + New Folder
             </button>
@@ -915,7 +945,16 @@ export default function AdminQuestionBank() {
                 }
               }}
               className="btn btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.85rem',
+                background: 'var(--admin-indigo, #3E63DD)',
+                borderColor: 'var(--admin-indigo, #3E63DD)',
+                color: '#ffffff',
+                boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+              }}
             >
               {selectedSet ? '+ Add Question' : '+ New Question Set'}
             </button>
@@ -926,7 +965,22 @@ export default function AdminQuestionBank() {
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'stretch', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
           {/* ════════ LEFT PANEL: FOLDERS SIDEBAR ════════ */}
-          <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+          <div
+            className="card"
+            style={{
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              minHeight: 0,
+              overflow: 'hidden',
+              boxSizing: 'border-box',
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              boxShadow: 'var(--admin-card-shadow)',
+              borderRadius: 12,
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1.1rem' }}>📂</span>
@@ -938,7 +992,13 @@ export default function AdminQuestionBank() {
                 type="button"
                 onClick={() => setShowNewFolderModal(true)}
                 className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '3px 8px',
+                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                  borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                  color: 'var(--filterbar-button-text, #1E293B)',
+                }}
                 title="Create a new folder container"
               >
                 + Folder
@@ -952,14 +1012,26 @@ export default function AdminQuestionBank() {
                 id="search-folder-input"
                 className="form-control"
                 placeholder="🔍 Search folders..."
-                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                style={{
+                  fontSize: '0.8rem',
+                  padding: '6px 10px',
+                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                  borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                  color: 'var(--color-text)',
+                }}
                 value={folderSearch}
                 onChange={(e) => updateFilter('search', e.target.value)}
               />
               <select
                 id="filter-type-select"
                 className="form-select"
-                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                style={{
+                  fontSize: '0.8rem',
+                  padding: '6px 10px',
+                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                  borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                  color: 'var(--color-text)',
+                }}
                 value={filterType}
                 onChange={(e) => updateFilter('type', e.target.value)}
               >
@@ -976,12 +1048,18 @@ export default function AdminQuestionBank() {
                 <LoadingDots size="md" />
               </div>
             ) : filteredFolders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+              <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--admin-label, #5B6B8A)', fontSize: '0.85rem' }}>
                 No folders match filter.
                 <button
                   onClick={() => setShowNewFolderModal(true)}
                   className="btn btn-primary"
-                  style={{ marginTop: 12, width: '100%', fontSize: '0.8rem' }}
+                  style={{
+                    marginTop: 12,
+                    width: '100%',
+                    fontSize: '0.8rem',
+                    background: 'var(--admin-indigo, #3E63DD)',
+                    borderColor: 'var(--admin-indigo, #3E63DD)',
+                  }}
                 >
                   + Create First Folder
                 </button>
@@ -1001,8 +1079,8 @@ export default function AdminQuestionBank() {
                         textAlign: 'left',
                         padding: '12px',
                         borderRadius: 8,
-                        border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: isSelected ? 'rgba(14, 124, 134, 0.08)' : 'var(--color-bg-card)',
+                        border: isSelected ? '2px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-subcard-border, #E2E8F0)',
+                        background: isSelected ? 'rgba(62, 99, 221, 0.08)' : 'var(--admin-subcard-bg, #F8FAFC)',
                         cursor: 'pointer',
                         transition: 'all 150ms',
                         fontFamily: 'inherit',
@@ -1011,7 +1089,7 @@ export default function AdminQuestionBank() {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
-                        <strong style={{ fontSize: '0.88rem', color: isSelected ? 'var(--color-primary)' : 'var(--color-navy)', wordBreak: 'break-word', flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <strong style={{ fontSize: '0.88rem', color: isSelected ? 'var(--admin-indigo, #3E63DD)' : 'var(--color-navy)', wordBreak: 'break-word', flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span>📁</span> {f.name}
                         </strong>
                         <span
@@ -1027,14 +1105,14 @@ export default function AdminQuestionBank() {
                       </div>
 
                       {f.description && (
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '0 0 6px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', margin: '0 0 6px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {f.description}
                         </p>
                       )}
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 4, flexWrap: 'wrap', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4, flexWrap: 'wrap', gap: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 600 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
                             {setCount} {setCount === 1 ? 'Set' : 'Sets'} · {totalQ} Qs
                           </span>
                           {setCount > 1 && (
@@ -1045,6 +1123,7 @@ export default function AdminQuestionBank() {
                                 borderRadius: 4,
                                 background: f.isValidPool ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
                                 color: f.isValidPool ? '#15803d' : '#b45309',
+                                border: f.isValidPool ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(234, 179, 8, 0.3)',
                                 fontWeight: 600,
                               }}
                               title={f.isValidPool ? `Valid Pool (${f.questionCountPerSet} Qs/set)` : (f.poolError || 'Sets have unequal question counts')}
@@ -1055,7 +1134,7 @@ export default function AdminQuestionBank() {
                         </div>
 
                         {/* FEATURE-035: Folder Created Date + Time */}
-                        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', opacity: 0.85, whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--admin-label, #5B6B8A)', opacity: 0.85, whiteSpace: 'nowrap' }}>
                           Created: {formatDateTime(f.createdAt)}
                         </div>
                       </div>
@@ -1069,7 +1148,19 @@ export default function AdminQuestionBank() {
           {/* ════════ RIGHT PANEL: DYNAMIC CONTENT AREA (STATE 1 OR STATE 2) ════════ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
             {!selectedFolder ? (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)', flex: 1 }}>
+              <div
+                className="card"
+                style={{
+                  textAlign: 'center',
+                  padding: '60px 20px',
+                  color: 'var(--admin-label, #5B6B8A)',
+                  flex: 1,
+                  background: 'var(--admin-card-bg, #FFFFFF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  boxShadow: 'var(--admin-card-shadow)',
+                  borderRadius: 12,
+                }}
+              >
                 <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
                 <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No Folder Selected</h3>
                 <p style={{ fontSize: '0.85rem' }}>
@@ -1080,7 +1171,20 @@ export default function AdminQuestionBank() {
               /* ════════ STATE 1: FOLDER OVERVIEW & QUESTION SETS LIST ════════ */
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 {/* Folder Header Card (UI/UX IMPROVEMENT-024) */}
-                <div className="card" style={{ padding: '14px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div
+                  className="card"
+                  style={{
+                    padding: '14px 20px',
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    boxShadow: 'var(--admin-card-shadow)',
+                    borderRadius: 12,
+                  }}
+                >
                   {/* TOP ROW: Folder Name & Language Badge (Left) + Actions (Right) */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 240, flexWrap: 'wrap' }}>
@@ -1100,7 +1204,17 @@ export default function AdminQuestionBank() {
                         id="new-set-in-folder-btn"
                         onClick={() => handleOpenNewSet(selectedFolder._id)}
                         className="btn btn-primary"
-                        style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        style={{
+                          fontSize: '0.82rem',
+                          padding: '6px 14px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: 'var(--admin-indigo, #3E63DD)',
+                          borderColor: 'var(--admin-indigo, #3E63DD)',
+                          color: '#ffffff',
+                          boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+                        }}
                       >
                         + New Set
                       </button>
@@ -1108,7 +1222,16 @@ export default function AdminQuestionBank() {
                         type="button"
                         onClick={() => handleOpenUploadModal(selectedFolder)}
                         className="btn btn-secondary"
-                        style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        style={{
+                          fontSize: '0.82rem',
+                          padding: '6px 14px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: 'var(--admin-subcard-bg, #F8FAFC)',
+                          borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                          color: 'var(--filterbar-button-text, #1E293B)',
+                        }}
                       >
                         📁 Add PDFs
                       </button>
@@ -1117,7 +1240,13 @@ export default function AdminQuestionBank() {
                         id="edit-folder-btn"
                         onClick={handleOpenEditFolder}
                         className="btn btn-secondary"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{
+                          fontSize: '0.82rem',
+                          padding: '6px 10px',
+                          background: 'var(--admin-subcard-bg, #F8FAFC)',
+                          borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                          color: 'var(--filterbar-button-text, #1E293B)',
+                        }}
                         title="Edit Folder Name / Description"
                       >
                         ✏ Edit
@@ -1130,7 +1259,13 @@ export default function AdminQuestionBank() {
                           setShowDeleteFolderModal(true);
                         }}
                         className="btn btn-danger"
-                        style={{ fontSize: '0.82rem', padding: '6px 10px' }}
+                        style={{
+                          fontSize: '0.82rem',
+                          padding: '6px 10px',
+                          background: '#dc2626',
+                          borderColor: '#b91c1c',
+                          color: '#ffffff',
+                        }}
                         title="Delete Folder"
                       >
                         🗑
@@ -1152,8 +1287,8 @@ export default function AdminQuestionBank() {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 5,
-                            background: 'var(--color-bg-subtle)',
-                            border: '1px solid var(--color-border)',
+                            background: 'var(--admin-subcard-bg, #F8FAFC)',
+                            border: '1px solid var(--admin-subcard-border, #E2E8F0)',
                             color: 'var(--color-navy)',
                           }}
                         >
@@ -1168,8 +1303,8 @@ export default function AdminQuestionBank() {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 5,
-                            background: 'var(--color-bg-subtle)',
-                            border: '1px solid var(--color-border)',
+                            background: 'var(--admin-subcard-bg, #F8FAFC)',
+                            border: '1px solid var(--admin-subcard-border, #E2E8F0)',
                             color: 'var(--color-navy)',
                           }}
                         >
@@ -1182,7 +1317,7 @@ export default function AdminQuestionBank() {
                         <p
                           title={selectedFolder.description}
                           style={{
-                            color: 'var(--color-text-muted)',
+                            color: 'var(--admin-label, #5B6B8A)',
                             fontSize: '0.82rem',
                             margin: 0,
                             lineHeight: 1.4,
@@ -1200,7 +1335,7 @@ export default function AdminQuestionBank() {
 
                     {/* RIGHT COLUMN: Audit info + Valid Pool pill (directly below action buttons) */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0, textAlign: 'right' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.76rem', color: 'var(--color-text-muted)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.76rem', color: 'var(--admin-label, #5B6B8A)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           <span>🕒</span> Created: <strong style={{ color: 'var(--color-navy)', fontWeight: 600 }}>{formatDateTime(selectedFolder.createdAt)}</strong>
                         </span>
@@ -1264,14 +1399,26 @@ export default function AdminQuestionBank() {
                   <h3 style={{ fontSize: '1rem', color: 'var(--color-navy)', fontWeight: 700, margin: 0 }}>
                     Question Sets in this Folder
                   </h3>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)' }}>
                     Click any Question Set to view and manage its questions
                   </span>
                 </div>
 
                 {/* Question Sets Roster Container (Scrolls independently) */}
                 {(!selectedFolder.questionSets || selectedFolder.questionSets.length === 0) ? (
-                  <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)', flex: 1 }}>
+                  <div
+                    className="card"
+                    style={{
+                      textAlign: 'center',
+                      padding: '60px 20px',
+                      color: 'var(--admin-label, #5B6B8A)',
+                      flex: 1,
+                      background: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      boxShadow: 'var(--admin-card-shadow)',
+                      borderRadius: 12,
+                    }}
+                  >
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📄</div>
                     <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>This folder is empty</h3>
                     <p style={{ fontSize: '0.85rem', marginBottom: 20 }}>
@@ -1281,14 +1428,24 @@ export default function AdminQuestionBank() {
                       <button
                         onClick={() => handleOpenNewSet(selectedFolder._id)}
                         className="btn btn-primary"
-                        style={{ fontSize: '0.85rem' }}
+                        style={{
+                          fontSize: '0.85rem',
+                          background: 'var(--admin-indigo, #3E63DD)',
+                          borderColor: 'var(--admin-indigo, #3E63DD)',
+                          color: '#ffffff',
+                        }}
                       >
                         + Create Question Set
                       </button>
                       <button
                         onClick={() => handleOpenUploadModal(selectedFolder)}
                         className="btn btn-secondary"
-                        style={{ fontSize: '0.85rem' }}
+                        style={{
+                          fontSize: '0.85rem',
+                          background: 'var(--admin-subcard-bg, #F8FAFC)',
+                          borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                          color: 'var(--filterbar-button-text, #1E293B)',
+                        }}
                       >
                         📁 Upload PDFs
                       </button>
@@ -1313,27 +1470,39 @@ export default function AdminQuestionBank() {
                             alignItems: 'center',
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
-                            border: '1px solid var(--color-border)',
+                            background: 'var(--admin-card-bg, #FFFFFF)',
+                            border: '1px solid var(--admin-card-border, #E0E7FF)',
+                            boxShadow: 'var(--admin-card-shadow)',
+                            borderRadius: 10,
                             flexWrap: 'wrap',
                             gap: 12,
                           }}
                           onClick={() => handleSelectSet(qs)}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 240 }}>
-                            <span style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>📄</span>
+                            <span style={{ fontSize: '1.2rem', color: 'var(--admin-indigo, #3E63DD)' }}>📄</span>
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                 <h4 style={{ fontSize: '1rem', color: 'var(--color-navy)', margin: 0, fontWeight: 700 }}>
                                   {qs.name}
                                 </h4>
-                                <span className="badge badge-secondary" style={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                                <span
+                                  className="badge badge-secondary"
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    background: 'var(--admin-subcard-bg, #F8FAFC)',
+                                    border: '1px solid var(--admin-subcard-border, #E2E8F0)',
+                                    color: 'var(--color-navy)',
+                                  }}
+                                >
                                   {qCount} {qCount === 1 ? 'Question' : 'Questions'}
                                 </span>
                                 <span className="badge" style={{ fontSize: '0.65rem', ...getBadgeStyle(qs.testType || selectedFolder.testType) }}>
                                   {qs.testType || selectedFolder.testType}
                                 </span>
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4 }}>
                                 Created: {formatDateTime(qs.createdAt)}
                                 {qs.createdBy?.name && ` · by ${qs.createdBy.name}`}
                               </div>
@@ -1349,7 +1518,13 @@ export default function AdminQuestionBank() {
                                 handleOpenEditSet(qs);
                               }}
                               className="btn btn-secondary btn-sm"
-                              style={{ fontSize: '0.75rem', padding: '5px 10px' }}
+                              style={{
+                                fontSize: '0.75rem',
+                                padding: '5px 10px',
+                                background: 'var(--admin-subcard-bg, #F8FAFC)',
+                                borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                                color: 'var(--filterbar-button-text, #1E293B)',
+                              }}
                             >
                               ✏ Edit
                             </button>
@@ -1361,7 +1536,13 @@ export default function AdminQuestionBank() {
                                 setShowDeleteSetModal(true);
                               }}
                               className="btn btn-danger btn-sm"
-                              style={{ fontSize: '0.75rem', padding: '5px 10px' }}
+                              style={{
+                                fontSize: '0.75rem',
+                                padding: '5px 10px',
+                                background: '#dc2626',
+                                borderColor: '#b91c1c',
+                                color: '#ffffff',
+                              }}
                             >
                               🗑 Delete
                             </button>
@@ -1369,7 +1550,17 @@ export default function AdminQuestionBank() {
                               type="button"
                               onClick={() => handleSelectSet(qs)}
                               className="btn btn-primary btn-sm"
-                              style={{ fontSize: '0.78rem', padding: '5px 14px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              style={{
+                                fontSize: '0.78rem',
+                                padding: '5px 14px',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                background: 'var(--admin-indigo, #3E63DD)',
+                                borderColor: 'var(--admin-indigo, #3E63DD)',
+                                color: '#ffffff',
+                              }}
                             >
                               View Questions →
                             </button>
@@ -1384,20 +1575,40 @@ export default function AdminQuestionBank() {
               /* ════════ STATE 2: QUESTION SET DETAIL & QUESTIONS ROSTER ════════ */
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 {/* Back Navigation Bar & Set Header Card */}
-                <div className="card" style={{ padding: '16px 20px', flexShrink: 0 }}>
+                <div
+                  className="card"
+                  style={{
+                    padding: '16px 20px',
+                    flexShrink: 0,
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    boxShadow: 'var(--admin-card-shadow)',
+                    borderRadius: 12,
+                  }}
+                >
                   {/* Breadcrumb / Back Button */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
                     <button
                       type="button"
                       onClick={handleBackToSets}
                       className="btn btn-secondary btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', padding: '4px 10px', fontWeight: 600 }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: '0.8rem',
+                        padding: '4px 10px',
+                        fontWeight: 600,
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                        color: 'var(--filterbar-button-text, #1E293B)',
+                      }}
                     >
                       ← Back
                     </button>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)' }}>
                       <span>📁 {selectedFolder.name}</span>
-                      <span style={{ margin: '0 6px' }}>/</span>
+                      <span style={{ margin: '0 6px', color: 'var(--filterbar-divider, #D8DEF0)' }}>/</span>
                       <strong style={{ color: 'var(--color-navy)' }}>📄 {selectedSet.name}</strong>
                     </div>
                   </div>
@@ -1415,8 +1626,9 @@ export default function AdminQuestionBank() {
                         <span
                           style={{
                             fontSize: '0.72rem',
-                            background: 'rgba(14, 124, 134, 0.08)',
-                            color: 'var(--color-primary)',
+                            background: 'rgba(62, 99, 221, 0.1)',
+                            color: 'var(--admin-indigo, #3E63DD)',
+                            border: '1px solid rgba(62, 99, 221, 0.25)',
                             padding: '2px 8px',
                             borderRadius: 4,
                             fontWeight: 600,
@@ -1425,8 +1637,8 @@ export default function AdminQuestionBank() {
                           📁 Folder: {selectedFolder.name}
                         </span>
                       </div>
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
-                        Contains <strong>{questions.length}</strong> question(s) · Created: {formatDateTime(selectedSet.createdAt)}{selectedSet.createdBy?.name ? ` · by ${selectedSet.createdBy.name}` : ''}
+                      <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.8rem', marginTop: 4 }}>
+                        Contains <strong style={{ color: 'var(--color-navy)' }}>{questions.length}</strong> question(s) · Created: {formatDateTime(selectedSet.createdAt)}{selectedSet.createdBy?.name ? ` · by ${selectedSet.createdBy.name}` : ''}
                       </p>
                     </div>
 
@@ -1436,7 +1648,12 @@ export default function AdminQuestionBank() {
                         id="edit-question-set-btn"
                         onClick={() => handleOpenEditSet(selectedSet)}
                         className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '0.78rem' }}
+                        style={{
+                          fontSize: '0.78rem',
+                          background: 'var(--admin-subcard-bg, #F8FAFC)',
+                          borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                          color: 'var(--filterbar-button-text, #1E293B)',
+                        }}
                       >
                         ✏ Edit Set
                       </button>
@@ -1445,7 +1662,12 @@ export default function AdminQuestionBank() {
                         id="delete-question-set-btn"
                         onClick={() => setShowDeleteSetModal(true)}
                         className="btn btn-danger btn-sm"
-                        style={{ fontSize: '0.78rem' }}
+                        style={{
+                          fontSize: '0.78rem',
+                          background: '#dc2626',
+                          borderColor: '#b91c1c',
+                          color: '#ffffff',
+                        }}
                       >
                         🗑 Delete Set
                       </button>
@@ -1454,7 +1676,12 @@ export default function AdminQuestionBank() {
                         id="add-question-btn"
                         onClick={handleOpenCreateQuestion}
                         className="btn btn-primary btn-sm"
-                        style={{ fontSize: '0.78rem' }}
+                        style={{
+                          fontSize: '0.78rem',
+                          background: 'var(--admin-indigo, #3E63DD)',
+                          borderColor: 'var(--admin-indigo, #3E63DD)',
+                          color: '#ffffff',
+                        }}
                       >
                         + Add Question
                       </button>
@@ -1468,13 +1695,32 @@ export default function AdminQuestionBank() {
                     <LoadingDots size="md" />
                   </div>
                 ) : questions.length === 0 ? (
-                  <div className="card" style={{ textAlign: 'center', padding: '60px 20px', flex: 1 }}>
+                  <div
+                    className="card"
+                    style={{
+                      textAlign: 'center',
+                      padding: '60px 20px',
+                      flex: 1,
+                      background: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      boxShadow: 'var(--admin-card-shadow)',
+                      borderRadius: 12,
+                    }}
+                  >
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💡</div>
                     <h3 style={{ color: 'var(--color-navy)', marginBottom: 6 }}>No questions in this set yet</h3>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: 20 }}>
+                    <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.85rem', marginBottom: 20 }}>
                       Every question must have at least 1 visible test case before being added.
                     </p>
-                    <button onClick={handleOpenCreateQuestion} className="btn btn-primary">
+                    <button
+                      onClick={handleOpenCreateQuestion}
+                      className="btn btn-primary"
+                      style={{
+                        background: 'var(--admin-indigo, #3E63DD)',
+                        borderColor: 'var(--admin-indigo, #3E63DD)',
+                        color: '#ffffff',
+                      }}
+                    >
                       + Add First Question
                     </button>
                   </div>
@@ -1493,13 +1739,17 @@ export default function AdminQuestionBank() {
                           className="card"
                           style={{
                             padding: '14px 18px',
-                            borderLeft: isExpanded ? '4px solid var(--color-primary)' : '1px solid var(--color-border)',
+                            background: 'var(--admin-card-bg, #FFFFFF)',
+                            border: '1px solid var(--admin-card-border, #E0E7FF)',
+                            borderLeft: isExpanded ? '4px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-card-border, #E0E7FF)',
+                            boxShadow: 'var(--admin-card-shadow)',
+                            borderRadius: 10,
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: 260 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.9rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--admin-indigo, #3E63DD)', fontSize: '0.9rem' }}>
                                   Q{idx + 1}.
                                 </span>
                                 <h4 style={{ fontSize: '1.02rem', color: 'var(--color-navy)', margin: 0 }}>
@@ -1547,21 +1797,39 @@ export default function AdminQuestionBank() {
                               <button
                                 onClick={() => setExpandedQuestionId(isExpanded ? null : q._id)}
                                 className="btn btn-secondary btn-sm"
-                                style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                                style={{
+                                  padding: '5px 10px',
+                                  fontSize: '0.78rem',
+                                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                                  borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                                  color: 'var(--filterbar-button-text, #1E293B)',
+                                }}
                               >
                                 {isExpanded ? 'Collapse' : 'Details'}
                               </button>
                               <button
                                 onClick={() => handleOpenEditQuestion(q)}
                                 className="btn btn-secondary btn-sm"
-                                style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                                style={{
+                                  padding: '5px 10px',
+                                  fontSize: '0.78rem',
+                                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                                  borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                                  color: 'var(--filterbar-button-text, #1E293B)',
+                                }}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => setDeleteTarget(q)}
                                 className="btn btn-danger btn-sm"
-                                style={{ padding: '5px 8px', fontSize: '0.78rem' }}
+                                style={{
+                                  padding: '5px 8px',
+                                  fontSize: '0.78rem',
+                                  background: '#dc2626',
+                                  borderColor: '#b91c1c',
+                                  color: '#ffffff',
+                                }}
                                 title="Delete Question"
                               >
                                 🗑
@@ -1570,20 +1838,20 @@ export default function AdminQuestionBank() {
                           </div>
 
                           {/* Test Cases Count summary */}
-                          <div style={{ display: 'flex', gap: 16, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: '0.78rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 16, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--admin-card-border, #E0E7FF)', fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)', flexWrap: 'wrap' }}>
                             <span>
-                              👁️ Visible Cases: <strong>{q.visibleTestCases?.length || 0}</strong>
+                              👁️ Visible Cases: <strong style={{ color: 'var(--color-navy)' }}>{q.visibleTestCases?.length || 0}</strong>
                             </span>
                             {q.constraints && (
                               <span>
-                                📏 Constraints: <code>{q.constraints}</code>
+                                📏 Constraints: <code style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--admin-subcard-border, #E2E8F0)' }}>{q.constraints}</code>
                               </span>
                             )}
                           </div>
 
                           {/* Expanded Full Details */}
                           {isExpanded && (
-                            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--admin-card-border, #E0E7FF)', display: 'flex', flexDirection: 'column', gap: 16 }}>
                               {/* PDF Problem Statement Preview for PDF-imported questions */}
                               {q.isPdfImported && (
                                 <div>
@@ -1592,7 +1860,7 @@ export default function AdminQuestionBank() {
                                       📄 Problem Statement Preview :
                                     </strong>
                                   </div>
-                                  <div style={{ height: 440, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--color-primary)' }}>
+                                  <div style={{ height: 440, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--admin-indigo, #3E63DD)' }}>
                                     <EmbeddedPdfViewer
                                       fileName={q.pdfFileName}
                                       originalName={q.pdfOriginalName}
@@ -1606,7 +1874,7 @@ export default function AdminQuestionBank() {
                               {q.inputFormat && (
                                 <div>
                                   <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>Input Format:</strong>
-                                  <div style={{ background: 'var(--color-bg-subtle)', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+                                  <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: 'var(--color-text)', border: '1px solid var(--admin-subcard-border, #E2E8F0)' }}>
                                     {q.inputFormat}
                                   </div>
                                 </div>
@@ -1614,7 +1882,7 @@ export default function AdminQuestionBank() {
                               {q.outputFormat && (
                                 <div>
                                   <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>Output Format:</strong>
-                                  <div style={{ background: 'var(--color-bg-subtle)', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+                                  <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', padding: 10, borderRadius: 6, fontSize: '0.8rem', marginTop: 4, color: 'var(--color-text)', border: '1px solid var(--admin-subcard-border, #E2E8F0)' }}>
                                     {q.outputFormat}
                                   </div>
                                 </div>
@@ -1628,21 +1896,21 @@ export default function AdminQuestionBank() {
                                 {q.visibleTestCases?.length > 0 ? (
                                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 6 }}>
                                     {q.visibleTestCases.map((tc, tcIdx) => (
-                                      <div key={tcIdx} style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
-                                        <div style={{ fontWeight: 600, color: 'var(--color-primary)', marginBottom: 4 }}>Case #{tcIdx + 1}</div>
+                                      <div key={tcIdx} style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 6, padding: 10, fontSize: '0.78rem' }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--admin-indigo, #3E63DD)', marginBottom: 4 }}>Case #{tcIdx + 1}</div>
                                         <div style={{ marginBottom: 4 }}>
-                                          <span style={{ color: 'var(--color-text-muted)' }}>Input: </span>
+                                          <span style={{ color: 'var(--admin-label, #5B6B8A)' }}>Input: </span>
                                           <code>{tc.input || '(empty)'}</code>
                                         </div>
                                         <div>
-                                          <span style={{ color: 'var(--color-text-muted)' }}>Output: </span>
+                                          <span style={{ color: 'var(--admin-label, #5B6B8A)' }}>Output: </span>
                                           <code>{tc.expectedOutput || '(empty)'}</code>
                                         </div>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div style={{ padding: 10, background: 'var(--color-bg-subtle)', borderRadius: 6, fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4, border: '1px solid var(--color-border)' }}>
+                                  <div style={{ padding: 10, background: 'var(--admin-subcard-bg, #F8FAFC)', borderRadius: 6, fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4, border: '1px solid var(--admin-subcard-border, #E2E8F0)' }}>
                                     No visible test cases defined.
                                   </div>
                                 )}
@@ -1654,7 +1922,7 @@ export default function AdminQuestionBank() {
                                   <strong style={{ fontSize: '0.8rem', color: 'var(--color-navy)' }}>AI Test Starter Files:</strong>
                                   <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                                     {q.aiTestBriefFiles.map((f, fIdx) => (
-                                      <span key={fIdx} className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
+                                      <span key={fIdx} className="badge badge-secondary" style={{ fontSize: '0.75rem', background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-navy)' }}>
                                         📄 {f.fileName}
                                       </span>
                                     ))}
@@ -1676,13 +1944,13 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: CREATE FOLDER ════════ */}
         {showNewFolderModal && (
           <div className="modal-backdrop" onClick={() => !creatingFolder && setShowNewFolderModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 480, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title">Create New Folder</h3>
                 <button
                   type="button"
                   onClick={() => setShowNewFolderModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1697,6 +1965,7 @@ export default function AdminQuestionBank() {
                       placeholder="e.g. SDE-1 Core DSA Problem Sets"
                       value={newFolderData.name}
                       onChange={(e) => setNewFolderData((p) => ({ ...p, name: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     />
                   </div>
@@ -1707,13 +1976,14 @@ export default function AdminQuestionBank() {
                       className="form-select"
                       value={newFolderData.testType}
                       onChange={(e) => setNewFolderData((p) => ({ ...p, testType: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     >
                       {TEST_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4 }}>
                       All Question Sets created or added inside this folder will inherit this test type.
                     </p>
                   </div>
@@ -1726,14 +1996,16 @@ export default function AdminQuestionBank() {
                       placeholder="Brief note on intended round, difficulty, or pool usage..."
                       value={newFolderData.description}
                       onChange={(e) => setNewFolderData((p) => ({ ...p, description: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                     />
                   </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                   <button
                     type="button"
                     onClick={() => setShowNewFolderModal(false)}
                     className="btn btn-secondary"
+                    style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                     disabled={creatingFolder}
                   >
                     Cancel
@@ -1741,6 +2013,7 @@ export default function AdminQuestionBank() {
                   <button
                     type="submit"
                     className="btn btn-primary"
+                    style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff' }}
                     disabled={creatingFolder}
                   >
                     {creatingFolder ? 'Creating...' : 'Create Folder'}
@@ -1754,13 +2027,13 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: EDIT FOLDER ════════ */}
         {showEditFolderModal && selectedFolder && (
           <div className="modal-backdrop" onClick={() => !editingFolder && setShowEditFolderModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 480, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title">Edit Folder</h3>
                 <button
                   type="button"
                   onClick={() => setShowEditFolderModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1774,6 +2047,7 @@ export default function AdminQuestionBank() {
                       className="form-control"
                       value={editFolderData.name}
                       onChange={(e) => setEditFolderData((p) => ({ ...p, name: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     />
                   </div>
@@ -1785,9 +2059,9 @@ export default function AdminQuestionBank() {
                       className="form-control"
                       value={selectedFolder.testType}
                       disabled
-                      style={{ background: 'var(--color-bg-subtle)' }}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--admin-label, #5B6B8A)' }}
                     />
-                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4 }}>
                       Test type is locked to maintain set consistency.
                     </p>
                   </div>
@@ -1799,14 +2073,16 @@ export default function AdminQuestionBank() {
                       rows={2}
                       value={editFolderData.description}
                       onChange={(e) => setEditFolderData((p) => ({ ...p, description: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                     />
                   </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                   <button
                     type="button"
                     onClick={() => setShowEditFolderModal(false)}
                     className="btn btn-secondary"
+                    style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                     disabled={editingFolder}
                   >
                     Cancel
@@ -1814,6 +2090,7 @@ export default function AdminQuestionBank() {
                   <button
                     type="submit"
                     className="btn btn-primary"
+                    style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff' }}
                     disabled={editingFolder}
                   >
                     {editingFolder ? 'Saving...' : 'Save Changes'}
@@ -1827,13 +2104,13 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: DELETE FOLDER ════════ */}
         {showDeleteFolderModal && selectedFolder && (
           <div className="modal-backdrop" onClick={() => !deletingFolder && setShowDeleteFolderModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 480, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title" style={{ color: '#dc2626' }}>🗑 Delete Folder</h3>
                 <button
                   type="button"
                   onClick={() => setShowDeleteFolderModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1855,16 +2132,17 @@ export default function AdminQuestionBank() {
                     ⚠️ <strong>Warning:</strong> This folder contains <strong>{selectedFolder.setCount || selectedFolder.questionSets?.length}</strong> question set(s). Deleting this folder will permanently delete all contained questions. This action cannot be undone.
                   </div>
                 ) : (
-                  <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--admin-label, #5B6B8A)', margin: 0 }}>
                     This empty folder will be permanently deleted. This action cannot be undone.
                   </p>
                 )}
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <button
                   type="button"
                   onClick={() => setShowDeleteFolderModal(false)}
                   className="btn btn-secondary"
+                  style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                   disabled={deletingFolder}
                 >
                   Cancel
@@ -1874,6 +2152,7 @@ export default function AdminQuestionBank() {
                   id="confirm-delete-folder-btn"
                   onClick={handleDeleteFolderSubmit}
                   className="btn btn-danger"
+                  style={{ background: '#dc2626', borderColor: '#b91c1c', color: '#ffffff' }}
                   disabled={deletingFolder}
                 >
                   {deletingFolder ? 'Deleting...' : 'Confirm Delete'}
@@ -1886,13 +2165,13 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: CREATE QUESTION SET ════════ */}
         {showNewSetModal && (
           <div className="modal-backdrop" onClick={() => !creatingSet && setShowNewSetModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 480, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title">Create Question Set</h3>
                 <button
                   type="button"
                   onClick={() => setShowNewSetModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1905,6 +2184,7 @@ export default function AdminQuestionBank() {
                       className="form-select"
                       value={newSetData.folderId}
                       onChange={(e) => setNewSetData((p) => ({ ...p, folderId: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     >
                       {folders.map((f) => (
@@ -1923,15 +2203,17 @@ export default function AdminQuestionBank() {
                       placeholder="e.g. Set 1 (Arrays & Strings)"
                       value={newSetData.name}
                       onChange={(e) => setNewSetData((p) => ({ ...p, name: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     />
                   </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                   <button
                     type="button"
                     onClick={() => setShowNewSetModal(false)}
                     className="btn btn-secondary"
+                    style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                     disabled={creatingSet}
                   >
                     Cancel
@@ -1939,6 +2221,7 @@ export default function AdminQuestionBank() {
                   <button
                     type="submit"
                     className="btn btn-primary"
+                    style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff' }}
                     disabled={creatingSet}
                   >
                     {creatingSet ? 'Creating...' : 'Create Set'}
@@ -1952,14 +2235,14 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: EDIT QUESTION SET (RENAME & MOVE) ════════ */}
         {showEditSetModal && (
           <div className="modal-backdrop" onClick={() => !editingSet && setShowEditSetModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 480, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title">Edit Question Set</h3>
                 <button
                   type="button"
                   id="close-edit-set-modal-btn"
                   onClick={() => setShowEditSetModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1974,6 +2257,7 @@ export default function AdminQuestionBank() {
                       className="form-control"
                       value={editSetData.name}
                       onChange={(e) => setEditSetData((p) => ({ ...p, name: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     />
                   </div>
@@ -1986,13 +2270,14 @@ export default function AdminQuestionBank() {
                       value={selectedSet?.testType || 'SPOJ'}
                       disabled={questions.length > 0}
                       readOnly
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--admin-label, #5B6B8A)' }}
                     >
                       {TEST_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
                     {questions.length > 0 && (
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4 }}>
                         ℹ Test Type is locked to parent folder ({selectedSet?.testType}).
                       </p>
                     )}
@@ -2004,6 +2289,7 @@ export default function AdminQuestionBank() {
                       className="form-select"
                       value={editSetData.folderId}
                       onChange={(e) => setEditSetData((p) => ({ ...p, folderId: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required
                     >
                       {folders
@@ -2014,17 +2300,18 @@ export default function AdminQuestionBank() {
                           </option>
                         ))}
                     </select>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4 }}>
                       You can move this set to any other folder of the same test type ({selectedSet?.testType}).
                     </p>
                   </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                   <button
                     type="button"
                     id="cancel-edit-set-btn"
                     onClick={() => setShowEditSetModal(false)}
                     className="btn btn-secondary"
+                    style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                     disabled={editingSet}
                   >
                     Cancel
@@ -2033,6 +2320,7 @@ export default function AdminQuestionBank() {
                     type="submit"
                     id="save-edit-set-btn"
                     className="btn btn-primary"
+                    style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff' }}
                     disabled={editingSet}
                   >
                     {editingSet ? 'Saving...' : 'Save Changes'}
@@ -2046,13 +2334,13 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: DELETE QUESTION SET ════════ */}
         {showDeleteSetModal && selectedSet && (
           <div className="modal-backdrop" onClick={() => !deletingSet && setShowDeleteSetModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 440, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title" style={{ color: '#dc2626' }}>🗑 Delete Question Set</h3>
                 <button
                   type="button"
                   onClick={() => setShowDeleteSetModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -2067,11 +2355,12 @@ export default function AdminQuestionBank() {
                   </p>
                 )}
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <button
                   type="button"
                   onClick={() => setShowDeleteSetModal(false)}
                   className="btn btn-secondary"
+                  style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                   disabled={deletingSet}
                 >
                   Cancel
@@ -2080,6 +2369,7 @@ export default function AdminQuestionBank() {
                   type="button"
                   onClick={handleDeleteSetSubmit}
                   className="btn btn-danger"
+                  style={{ background: '#dc2626', borderColor: '#b91c1c', color: '#ffffff' }}
                   disabled={deletingSet}
                 >
                   {deletingSet ? 'Deleting...' : 'Confirm Delete'}
@@ -2092,15 +2382,15 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: ADD / EDIT QUESTION (FR-4.1) ════════ */}
         {showQuestionModal && (
           <div className="modal-backdrop" onClick={() => !savingQuestion && setShowQuestionModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 780 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 780, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title">
                   {editingQuestionId ? 'Edit Question' : `Add Question to ${selectedSet?.name}`}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setShowQuestionModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -2110,10 +2400,10 @@ export default function AdminQuestionBank() {
                 <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {/* PDF Imported Question Info Banner */}
                   {questionForm.isPdfImported && (
-                    <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+                    <div style={{ background: 'rgba(62, 99, 221, 0.08)', border: '1px solid rgba(62, 99, 221, 0.25)', borderRadius: 8, padding: 12, fontSize: '0.85rem', color: 'var(--admin-indigo, #3E63DD)' }}>
                       <div style={{ fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span>📄 PDF Imported Question</span>
-                        <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>
+                        <span className="badge badge-secondary" style={{ fontSize: '0.7rem', background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', color: 'var(--color-navy)' }}>
                           {questionForm.pdfFileName} (pp. {questionForm.pdfPageRange?.startPage}–{questionForm.pdfPageRange?.endPage})
                         </span>
                       </div>
@@ -2135,6 +2425,7 @@ export default function AdminQuestionBank() {
                         placeholder={questionForm.isPdfImported ? "e.g. Problem 1 (or leave blank for default)" : "e.g. Reverse Linked List II"}
                         value={questionForm.title}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, title: e.target.value }))}
+                        style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                         required={!questionForm.isPdfImported}
                       />
                     </div>
@@ -2145,6 +2436,7 @@ export default function AdminQuestionBank() {
                         className="form-select"
                         value={questionForm.difficulty}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, difficulty: e.target.value }))}
+                        style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       >
                         <option value="EASY">EASY</option>
                         <option value="MEDIUM">MEDIUM</option>
@@ -2164,6 +2456,7 @@ export default function AdminQuestionBank() {
                       placeholder="Write the complete problem statement..."
                       value={questionForm.description}
                       onChange={(e) => setQuestionForm((p) => ({ ...p, description: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       required={!questionForm.isPdfImported}
                     />
                   </div>
@@ -2180,6 +2473,7 @@ export default function AdminQuestionBank() {
                         placeholder="e.g. First line contains integer N"
                         value={questionForm.inputFormat}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, inputFormat: e.target.value }))}
+                        style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       />
                     </div>
                     <div className="form-group">
@@ -2190,6 +2484,7 @@ export default function AdminQuestionBank() {
                         placeholder="e.g. Return modified array"
                         value={questionForm.outputFormat}
                         onChange={(e) => setQuestionForm((p) => ({ ...p, outputFormat: e.target.value }))}
+                        style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                       />
                     </div>
                   </div>
@@ -2202,6 +2497,7 @@ export default function AdminQuestionBank() {
                       placeholder="e.g. 1 <= N <= 10^5 or -1000 <= val <= 1000"
                       value={questionForm.constraints}
                       onChange={(e) => setQuestionForm((p) => ({ ...p, constraints: e.target.value }))}
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                     />
                   </div>
 
@@ -2214,7 +2510,7 @@ export default function AdminQuestionBank() {
                           type="button"
                           onClick={handleAddBriefFile}
                           className="btn btn-secondary"
-                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                          style={{ padding: '2px 8px', fontSize: '0.75rem', background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                         >
                           + Add File
                         </button>
@@ -2228,12 +2524,13 @@ export default function AdminQuestionBank() {
                               placeholder="e.g. index.html"
                               value={file.fileName}
                               onChange={(e) => handleBriefFileChange(fIdx, e.target.value)}
+                              style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                             />
                             <button
                               type="button"
                               onClick={() => handleRemoveBriefFile(fIdx)}
                               className="btn btn-danger"
-                              style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+                              style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#dc2626', borderColor: '#b91c1c', color: '#ffffff' }}
                             >
                               ✕
                             </button>
@@ -2244,13 +2541,13 @@ export default function AdminQuestionBank() {
                   )}
 
                   {/* Visible Test Cases */}
-                  <div style={{ background: 'var(--color-bg-subtle)', border: '1.5px solid var(--color-border)', borderRadius: 8, padding: 16 }}>
+                  <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1.5px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div>
                         <strong style={{ fontSize: '0.9rem', color: 'var(--color-navy)' }}>
                           👁️ Visible Test Cases *
                         </strong>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)' }}>
                           Displayed to candidates during the test for code verification.
                         </div>
                       </div>
@@ -2258,7 +2555,7 @@ export default function AdminQuestionBank() {
                         type="button"
                         onClick={() => handleAddTestCase('visibleTestCases')}
                         className="btn btn-secondary"
-                        style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--filterbar-button-text, #1E293B)' }}
                       >
                         + Add Visible Case
                       </button>
@@ -2266,8 +2563,8 @@ export default function AdminQuestionBank() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {questionForm.visibleTestCases.map((tc, idx) => (
-                        <div key={idx} style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 6, padding: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+                        <div key={idx} style={{ background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', borderRadius: 6, padding: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.78rem', fontWeight: 600, color: 'var(--admin-indigo, #3E63DD)' }}>
                             <span>Visible Case #{idx + 1}</span>
                             {questionForm.visibleTestCases.length > 1 && (
                               <button
@@ -2281,7 +2578,7 @@ export default function AdminQuestionBank() {
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                             <div>
-                              <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                              <label style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', display: 'block', marginBottom: 4 }}>
                                 Standard Input (stdin)
                               </label>
                               <textarea
@@ -2290,10 +2587,11 @@ export default function AdminQuestionBank() {
                                 placeholder="Input..."
                                 value={tc.input}
                                 onChange={(e) => handleTestCaseChange('visibleTestCases', idx, 'input', e.target.value)}
+                                style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                               />
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                              <label style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', display: 'block', marginBottom: 4 }}>
                                 Expected Output (stdout)
                               </label>
                               <textarea
@@ -2302,6 +2600,7 @@ export default function AdminQuestionBank() {
                                 placeholder="Expected output..."
                                 value={tc.expectedOutput}
                                 onChange={(e) => handleTestCaseChange('visibleTestCases', idx, 'expectedOutput', e.target.value)}
+                                style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--color-text)' }}
                               />
                             </div>
                           </div>
@@ -2311,11 +2610,12 @@ export default function AdminQuestionBank() {
                   </div>
                 </div>
 
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                   <button
                     type="button"
                     onClick={() => setShowQuestionModal(false)}
                     className="btn btn-secondary"
+                    style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                     disabled={savingQuestion}
                   >
                     Cancel
@@ -2323,6 +2623,7 @@ export default function AdminQuestionBank() {
                   <button
                     type="submit"
                     className="btn btn-primary"
+                    style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff' }}
                     disabled={savingQuestion}
                   >
                     {savingQuestion ? 'Saving...' : editingQuestionId ? 'Update Question' : 'Save Question'}
@@ -2336,13 +2637,13 @@ export default function AdminQuestionBank() {
         {/* ════════ MODAL: DELETE QUESTION ════════ */}
         {deleteTarget && (
           <div className="modal-backdrop" onClick={() => !deletingQuestion && setDeleteTarget(null)}>
-            <div className="modal-container" style={{ maxWidth: 450 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="modal-container" style={{ maxWidth: 450, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <h3 className="modal-title" style={{ color: '#E74C3C' }}>Delete Question</h3>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -2352,11 +2653,12 @@ export default function AdminQuestionBank() {
                   Are you sure you want to delete question <strong>"{deleteTarget.title || deleteTarget.pdfFileName || 'this question'}"</strong> from this set?
                 </p>
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
                   className="btn btn-secondary"
+                  style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                   disabled={deletingQuestion}
                 >
                   Cancel
@@ -2365,6 +2667,7 @@ export default function AdminQuestionBank() {
                   type="button"
                   onClick={handleDeleteQuestionConfirm}
                   className="btn btn-danger"
+                  style={{ background: '#dc2626', borderColor: '#b91c1c', color: '#ffffff' }}
                   disabled={deletingQuestion}
                 >
                   {deletingQuestion ? 'Deleting...' : 'Confirm Delete'}
@@ -2379,17 +2682,17 @@ export default function AdminQuestionBank() {
           <div className="modal-backdrop" onClick={handleCloseUploadModal}>
             <div
               className="modal-container"
-              style={{ maxWidth: uploadSummary ? 820 : 660 }}
+              style={{ maxWidth: uploadSummary ? 820 : 660, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', boxShadow: 'var(--admin-card-shadow)', borderRadius: 12 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: '1.4rem' }}>📁</span>
                   <div>
                     <h3 className="modal-title" style={{ margin: 0 }}>
                       Bulk Upload PDFs to Folder
                     </h3>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)' }}>
                       Upload a folder containing PDF files to auto-create Question Sets inside a selected or new Folder.
                     </p>
                   </div>
@@ -2398,7 +2701,7 @@ export default function AdminQuestionBank() {
                   type="button"
                   onClick={handleCloseUploadModal}
                   disabled={isUploadingPdfs}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -2408,9 +2711,9 @@ export default function AdminQuestionBank() {
                 <form onSubmit={handleUploadPdfSubmit}>
                   <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                     {/* Step 1: Destination Folder Selection */}
-                    <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 14 }}>
+                    <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ background: 'var(--color-primary)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <span style={{ background: 'var(--admin-indigo, #3E63DD)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                           1
                         </span>
                         <label className="form-label" style={{ margin: 0, fontWeight: 700, color: 'var(--color-navy)' }}>
@@ -2447,7 +2750,7 @@ export default function AdminQuestionBank() {
                       {uploadMode === 'CREATE_NEW_FOLDER' ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 12 }}>
                           <div>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', display: 'block', marginBottom: 4 }}>
                               New Folder Name *
                             </label>
                             <input
@@ -2457,11 +2760,12 @@ export default function AdminQuestionBank() {
                               value={uploadFolderName}
                               onChange={(e) => setUploadFolderName(e.target.value)}
                               disabled={isUploadingPdfs}
+                              style={{ background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)' }}
                               required
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', display: 'block', marginBottom: 4 }}>
                               Test Type *
                             </label>
                             <select
@@ -2469,6 +2773,7 @@ export default function AdminQuestionBank() {
                               value={uploadTestType}
                               onChange={(e) => setUploadTestType(e.target.value)}
                               disabled={isUploadingPdfs}
+                              style={{ background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)' }}
                               required
                             >
                               {TEST_TYPES.map((t) => (
@@ -2479,7 +2784,7 @@ export default function AdminQuestionBank() {
                         </div>
                       ) : (
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', display: 'block', marginBottom: 4 }}>
                             Select Existing Folder *
                           </label>
                           <select
@@ -2491,6 +2796,7 @@ export default function AdminQuestionBank() {
                               if (f) setUploadTestType(f.testType);
                             }}
                             disabled={isUploadingPdfs}
+                            style={{ background: 'var(--admin-card-bg, #FFFFFF)', borderColor: 'var(--admin-card-border, #E0E7FF)', color: 'var(--color-text)' }}
                             required
                           >
                             <option value="">-- Choose a Folder --</option>
@@ -2505,9 +2811,9 @@ export default function AdminQuestionBank() {
                     </div>
 
                     {/* Step 2: Upload Folder / PDFs */}
-                    <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 14 }}>
+                    <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ background: 'var(--color-primary)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <span style={{ background: 'var(--admin-indigo, #3E63DD)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                           2
                         </span>
                         <label className="form-label" style={{ margin: 0, fontWeight: 700, color: 'var(--color-navy)' }}>
@@ -2521,8 +2827,8 @@ export default function AdminQuestionBank() {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                          border: isDraggingFolder ? '2px dashed var(--color-primary)' : '2px dashed var(--color-border)',
-                          background: isDraggingFolder ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
+                          border: isDraggingFolder ? '2px dashed var(--admin-indigo, #3E63DD)' : '2px dashed var(--admin-subcard-border, #E2E8F0)',
+                          background: isDraggingFolder ? 'rgba(62, 99, 221, 0.12)' : 'var(--admin-card-bg, #FFFFFF)',
                           borderRadius: 10,
                           padding: '24px 20px',
                           textAlign: 'center',
@@ -2536,7 +2842,7 @@ export default function AdminQuestionBank() {
                         <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', color: 'var(--color-navy)' }}>
                           {isDraggingFolder ? 'Drop folder here!' : 'Drag & drop a folder containing PDF files'}
                         </h4>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0 0 14px 0' }}>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)', margin: '0 0 14px 0' }}>
                           Each PDF will become a Question Set in this Folder.
                         </p>
 
@@ -2564,7 +2870,15 @@ export default function AdminQuestionBank() {
                             onClick={() => folderInputRef.current?.click()}
                             className="btn btn-primary"
                             disabled={isUploadingPdfs}
-                            style={{ fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            style={{
+                              fontSize: '0.82rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              background: 'var(--admin-indigo, #3E63DD)',
+                              borderColor: 'var(--admin-indigo, #3E63DD)',
+                              color: '#ffffff',
+                            }}
                           >
                             📁 Choose Folder
                           </button>
@@ -2573,7 +2887,15 @@ export default function AdminQuestionBank() {
                             onClick={() => fileInputRef.current?.click()}
                             className="btn btn-secondary"
                             disabled={isUploadingPdfs}
-                            style={{ fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            style={{
+                              fontSize: '0.82rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              background: 'var(--admin-subcard-bg, #F8FAFC)',
+                              borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                              color: 'var(--filterbar-button-text, #1E293B)',
+                            }}
                           >
                             📄 Choose PDF Files
                           </button>
@@ -2581,13 +2903,13 @@ export default function AdminQuestionBank() {
                       </div>
 
                       {uploadFiles.length > 0 && (
-                        <div style={{ marginTop: 12, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ marginTop: 12, background: 'var(--admin-card-bg, #FFFFFF)', border: '1px solid var(--admin-card-border, #E0E7FF)', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: '1.1rem' }}>📄</span>
                             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-navy)' }}>
                               {uploadFiles.length} PDF file(s) selected
                             </span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)' }}>
                               ({(uploadFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB total)
                             </span>
                           </div>
@@ -2606,14 +2928,14 @@ export default function AdminQuestionBank() {
                     {isUploadingPdfs && (
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
-                          <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Parsing and uploading PDFs...</span>
-                          <span style={{ color: 'var(--color-text-muted)' }}>{uploadProgress}%</span>
+                          <span style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 600 }}>Parsing and uploading PDFs...</span>
+                          <span style={{ color: 'var(--admin-label, #5B6B8A)' }}>{uploadProgress}%</span>
                         </div>
-                        <div style={{ width: '100%', background: 'var(--color-bg-subtle)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                        <div style={{ width: '100%', background: 'var(--admin-subcard-bg, #F8FAFC)', borderRadius: 4, height: 8, overflow: 'hidden', border: '1px solid var(--admin-subcard-border, #E2E8F0)' }}>
                           <div
                             style={{
                               width: `${uploadProgress}%`,
-                              background: 'var(--color-primary)',
+                              background: 'var(--admin-indigo, #3E63DD)',
                               height: '100%',
                               transition: 'width 0.3s ease',
                             }}
@@ -2623,11 +2945,12 @@ export default function AdminQuestionBank() {
                     )}
                   </div>
 
-                  <div className="modal-footer">
+                  <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                     <button
                       type="button"
                       onClick={handleCloseUploadModal}
                       className="btn btn-secondary"
+                      style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderColor: 'var(--admin-subcard-border, #E2E8F0)', color: 'var(--filterbar-button-text, #1E293B)' }}
                       disabled={isUploadingPdfs}
                     >
                       Cancel
@@ -2636,7 +2959,14 @@ export default function AdminQuestionBank() {
                       type="submit"
                       className="btn btn-primary"
                       disabled={isUploadingPdfs || uploadFiles.length === 0}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: 'var(--admin-indigo, #3E63DD)',
+                        borderColor: 'var(--admin-indigo, #3E63DD)',
+                        color: '#ffffff',
+                      }}
                     >
                       {isUploadingPdfs ? (
                         <>
@@ -2654,29 +2984,29 @@ export default function AdminQuestionBank() {
                 <div>
                   <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                      <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--admin-indigo, #3E63DD)' }}>
                           {uploadSummary?.totalPdfs ?? uploadSummary?.totalPdfsReceived ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>PDFs Processed</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>PDFs Processed</div>
                       </div>
-                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                      <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--admin-indigo, #3E63DD)' }}>
                           {uploadSummary?.questionSetsCreated ?? uploadSummary?.totalQuestionSetsCreated ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Question Sets Created</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Question Sets Created</div>
                       </div>
-                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                      <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#15803d' }}>
                           {uploadSummary?.questionsCreated ?? uploadSummary?.totalQuestionsCreated ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Questions Created</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Questions Created</div>
                       </div>
-                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
+                      <div style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', border: '1px solid var(--admin-subcard-border, #E2E8F0)', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#b91c1c' }}>
                           {uploadSummary?.incompleteQuestions ?? 0}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Incomplete</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Incomplete</div>
                       </div>
                     </div>
 
@@ -2686,9 +3016,9 @@ export default function AdminQuestionBank() {
 
                     <div>
                       <h4 style={{ fontSize: '0.9rem', color: 'var(--color-navy)', marginBottom: 8 }}>File Processing Breakdown</h4>
-                      <div style={{ border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
+                      <div style={{ border: '1px solid var(--admin-card-border, #E0E7FF)', borderRadius: 8, overflow: 'hidden' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                          <thead style={{ background: 'var(--color-table-header-bg)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-table-header-text)' }}>
+                          <thead style={{ background: 'var(--admin-subcard-bg, #F8FAFC)', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', color: 'var(--admin-label, #5B6B8A)' }}>
                             <tr>
                               <th style={{ padding: '8px 12px' }}>File / Set Name</th>
                               <th style={{ padding: '8px 12px' }}>Questions</th>
@@ -2720,7 +3050,7 @@ export default function AdminQuestionBank() {
                               if (reports.length === 0) {
                                 return (
                                   <tr>
-                                    <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                                    <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: 'var(--admin-label, #5B6B8A)' }}>
                                       No file reports available.
                                     </td>
                                   </tr>
@@ -2730,21 +3060,21 @@ export default function AdminQuestionBank() {
                               return reports.map((r, rIdx) => {
                                 const isSuccess = r.status === 'SUCCESS';
                                 return (
-                                  <tr key={rIdx} style={{ borderBottom: '1px solid var(--color-border)', background: isSuccess ? 'var(--color-bg-card)' : 'var(--color-bg-subtle)' }}>
+                                  <tr key={rIdx} style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', background: isSuccess ? 'var(--admin-card-bg, #FFFFFF)' : 'var(--admin-subcard-bg, #F8FAFC)' }}>
                                     <td style={{ padding: '8px 12px' }}>
                                       <div style={{ fontWeight: 600, color: isSuccess ? 'var(--color-navy)' : '#b91c1c' }}>
                                         {r.setName || r.originalName || 'Unknown Set'}
                                       </div>
-                                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{r.originalName || r.fileName}</div>
+                                      <div style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)' }}>{r.originalName || r.fileName}</div>
                                     </td>
                                     <td style={{ padding: '8px 12px' }}>
                                       <span
                                         className="badge"
                                         style={{
                                           fontSize: '0.75rem',
-                                          background: isSuccess ? 'var(--color-bg-subtle)' : '#fee2e2',
-                                          color: isSuccess ? 'var(--color-text)' : '#991b1b',
-                                          border: `1px solid ${isSuccess ? 'var(--color-border)' : '#fecaca'}`,
+                                          background: isSuccess ? 'var(--admin-subcard-bg, #F8FAFC)' : '#fee2e2',
+                                          color: isSuccess ? 'var(--color-navy)' : '#991b1b',
+                                          border: `1px solid ${isSuccess ? 'var(--admin-subcard-border, #E2E8F0)' : '#fecaca'}`,
                                         }}
                                       >
                                         {r.questionCount} question(s)
@@ -2760,7 +3090,7 @@ export default function AdminQuestionBank() {
                                             </div>
                                           ))
                                         ) : (
-                                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>No question details</span>
+                                          <span style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.75rem' }}>No question details</span>
                                         )
                                       ) : (
                                         <div style={{ fontSize: '0.75rem', color: '#b91c1c', background: '#fee2e2', padding: '4px 8px', borderRadius: 4, border: '1px solid #fecaca' }}>
@@ -2807,11 +3137,12 @@ export default function AdminQuestionBank() {
                     </div>
                   </div>
 
-                  <div className="modal-footer">
+                  <div className="modal-footer" style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                     <button
                       type="button"
                       onClick={handleCloseUploadModal}
                       className="btn btn-primary"
+                      style={{ background: 'var(--admin-indigo, #3E63DD)', borderColor: 'var(--admin-indigo, #3E63DD)', color: '#ffffff' }}
                     >
                       Done
                     </button>
