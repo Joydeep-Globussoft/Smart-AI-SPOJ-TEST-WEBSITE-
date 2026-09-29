@@ -511,9 +511,21 @@ export default function AdminCreateAdmin() {
             <button
               type="button"
               id="create-admin-btn"
-              className="btn btn-primary"
+              className="btn"
               onClick={() => setIsCreateModalOpen(true)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, padding: '8px 16px', fontSize: '0.85rem', borderRadius: 8 }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: 600,
+                padding: '8px 16px',
+                fontSize: '0.85rem',
+                borderRadius: 8,
+                background: 'var(--filterbar-icon, #6366F1)',
+                color: '#ffffff',
+                border: '1px solid var(--filterbar-icon, #6366F1)',
+                cursor: 'pointer',
+              }}
             >
               <span>+</span> Create Admin Account
             </button>
@@ -535,9 +547,20 @@ export default function AdminCreateAdmin() {
               </p>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn"
                 onClick={() => setIsCreateModalOpen(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 8 }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  borderRadius: 8,
+                  background: 'var(--filterbar-icon, #6366F1)',
+                  color: '#ffffff',
+                  border: '1px solid var(--filterbar-icon, #6366F1)',
+                  cursor: 'pointer',
+                  padding: '8px 16px',
+                  fontWeight: 600,
+                }}
               >
                 <span>+</span> Create Admin Account
               </button>
@@ -960,9 +983,17 @@ export default function AdminCreateAdmin() {
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn"
                     disabled={loading}
-                    style={{ borderRadius: 6 }}
+                    style={{
+                      borderRadius: 6,
+                      background: 'var(--filterbar-icon, #6366F1)',
+                      color: '#ffffff',
+                      border: '1px solid var(--filterbar-icon, #6366F1)',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      padding: '8px 16px',
+                      fontWeight: 600,
+                    }}
                   >
                     {loading ? 'Provisioning Account...' : '+ Create Admin Account'}
                   </button>
@@ -1104,8 +1135,16 @@ export default function AdminCreateAdmin() {
                   <button
                     type="submit"
                     disabled={savingEdit}
-                    className="btn btn-primary"
-                    style={{ borderRadius: 6 }}
+                    className="btn"
+                    style={{
+                      borderRadius: 6,
+                      background: 'var(--filterbar-icon, #6366F1)',
+                      color: '#ffffff',
+                      border: '1px solid var(--filterbar-icon, #6366F1)',
+                      cursor: savingEdit ? 'not-allowed' : 'pointer',
+                      padding: '8px 16px',
+                      fontWeight: 600,
+                    }}
                   >
                     {savingEdit ? 'Saving Changes...' : 'Save Changes'}
                   </button>
