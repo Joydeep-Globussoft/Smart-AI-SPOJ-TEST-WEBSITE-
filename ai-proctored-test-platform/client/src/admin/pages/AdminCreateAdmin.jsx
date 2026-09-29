@@ -250,7 +250,7 @@ export default function AdminCreateAdmin() {
               style={{
                 display: 'inline-block',
                 background: 'rgba(99, 102, 241, 0.12)',
-                color: 'var(--admin-indigo, #4F46E5)',
+                color: 'var(--admin-indigo, #3E63DD)',
                 border: '1px solid rgba(99, 102, 241, 0.28)',
                 borderRadius: 6,
                 padding: '3px 8px',
@@ -426,7 +426,7 @@ export default function AdminCreateAdmin() {
       <main className="main-content" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
         {/* Breadcrumb Navigation */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin" style={{ color: 'var(--admin-indigo, #4F46E5)', fontWeight: 500 }}>
+          <Link to="/admin" style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 500 }}>
             ← Dashboard
           </Link>
           <span style={{ color: 'var(--filterbar-divider, #D8DEF0)' }}>/</span>
@@ -454,7 +454,7 @@ export default function AdminCreateAdmin() {
                 <span
                   style={{
                     background: 'rgba(99, 102, 241, 0.12)',
-                    color: 'var(--admin-indigo, #4F46E5)',
+                    color: 'var(--admin-indigo, #3E63DD)',
                     border: '1px solid rgba(99, 102, 241, 0.28)',
                     borderRadius: 20,
                     padding: '3px 10px',
@@ -472,7 +472,7 @@ export default function AdminCreateAdmin() {
               </p>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--admin-label, #5B6B8A)' }}>
-              Logged in as: <strong style={{ color: 'var(--color-navy)' }}>{user?.name}</strong> (<span style={{ color: 'var(--admin-indigo, #4F46E5)', fontWeight: 700 }}>{user?.role}</span>)
+              Logged in as: <strong style={{ color: 'var(--color-navy)' }}>{user?.name}</strong> (<span style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 700 }}>{user?.role}</span>)
             </div>
           </div>
         </div>
@@ -523,9 +523,9 @@ export default function AdminCreateAdmin() {
                 padding: '8px 16px',
                 fontSize: '0.85rem',
                 borderRadius: 8,
-                background: 'var(--admin-indigo, #4F46E5)',
+                background: 'var(--admin-indigo, #3E63DD)',
                 color: '#ffffff',
-                border: '1px solid var(--admin-indigo, #4F46E5)',
+                border: '1px solid var(--admin-indigo, #3E63DD)',
                 cursor: 'pointer',
               }}
             >
@@ -556,9 +556,9 @@ export default function AdminCreateAdmin() {
                   alignItems: 'center',
                   gap: 6,
                   borderRadius: 8,
-                  background: 'var(--admin-indigo, #4F46E5)',
+                  background: 'var(--admin-indigo, #3E63DD)',
                   color: '#ffffff',
-                  border: '1px solid var(--admin-indigo, #4F46E5)',
+                  border: '1px solid var(--admin-indigo, #3E63DD)',
                   cursor: 'pointer',
                   padding: '8px 16px',
                   fontWeight: 600,
@@ -580,7 +580,7 @@ export default function AdminCreateAdmin() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         color: 'var(--color-navy)',
-                        borderLeft: '4px solid var(--admin-indigo, #4F46E5)',
+                        borderLeft: '4px solid var(--admin-indigo, #3E63DD)',
                       }}
                     >
                       Super Admins
@@ -639,7 +639,7 @@ export default function AdminCreateAdmin() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         color: 'var(--color-navy)',
-                        borderLeft: '4px solid var(--admin-indigo, #4F46E5)',
+                        borderLeft: '4px solid var(--admin-indigo, #3E63DD)',
                       }}
                     >
                       Admins
@@ -746,7 +746,7 @@ export default function AdminCreateAdmin() {
                   <span
                     style={{
                       background: 'rgba(99, 102, 241, 0.12)',
-                      color: 'var(--admin-indigo, #4F46E5)',
+                      color: 'var(--admin-indigo, #3E63DD)',
                       border: '1px solid rgba(99, 102, 241, 0.28)',
                       borderRadius: 6,
                       padding: '3px 8px',
@@ -990,9 +990,9 @@ export default function AdminCreateAdmin() {
                     disabled={loading}
                     style={{
                       borderRadius: 6,
-                      background: 'var(--admin-indigo, #4F46E5)',
+                      background: 'var(--admin-indigo, #3E63DD)',
                       color: '#ffffff',
-                      border: '1px solid var(--admin-indigo, #4F46E5)',
+                      border: '1px solid var(--admin-indigo, #3E63DD)',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       padding: '8px 16px',
                       fontWeight: 600,
@@ -1141,9 +1141,9 @@ export default function AdminCreateAdmin() {
                     className="btn"
                     style={{
                       borderRadius: 6,
-                      background: 'var(--admin-indigo, #4F46E5)',
+                      background: 'var(--admin-indigo, #3E63DD)',
                       color: '#ffffff',
-                      border: '1px solid var(--admin-indigo, #4F46E5)',
+                      border: '1px solid var(--admin-indigo, #3E63DD)',
                       cursor: savingEdit ? 'not-allowed' : 'pointer',
                       padding: '8px 16px',
                       fontWeight: 600,

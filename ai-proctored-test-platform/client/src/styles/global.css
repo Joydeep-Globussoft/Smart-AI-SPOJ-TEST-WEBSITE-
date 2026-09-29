@@ -78,16 +78,16 @@
   --filterbar-more-text: #4F46E5;
   --filterbar-more-border: #DDE2F5;
 
-  /* FEATURE-049: Manage Admins Page Tokens (Inverted Scheme: Tinted Canvas, Crisp White Cards) */
+  /* FEATURE-049/BUG-116: Manage Admins Page Tokens (Inverted Scheme: Tinted Canvas, Crisp White Cards) */
   --admin-canvas-bg: #EEF2FF;
   --admin-card-bg: #FFFFFF;
   --admin-card-border: #E0E7FF;
-  --admin-card-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --admin-card-shadow: 0 4px 20px -2px rgba(62, 99, 221, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
   --admin-subcard-bg: #F8FAFC;
   --admin-subcard-border: #E2E8F0;
   --admin-section-bar-bg: #F1F4FD;
-  --admin-indigo: #4F46E5;
-  --admin-indigo-hover: #4338CA;
+  --admin-indigo: #3E63DD;
+  --admin-indigo-hover: #3354C4;
   --admin-label: #5B6B8A;
 
   /* Seat map colors */
@@ -185,8 +185,8 @@
   --admin-subcard-bg: #0F1626;
   --admin-subcard-border: #253456;
   --admin-section-bar-bg: #18233C;
-  --admin-indigo: #818CF8;
-  --admin-indigo-hover: #A5B4FC;
+  --admin-indigo: #5375E2;
+  --admin-indigo-hover: #6B8CF5;
   --admin-label: #8E9DB8;
 
   /* Seat map colors */
