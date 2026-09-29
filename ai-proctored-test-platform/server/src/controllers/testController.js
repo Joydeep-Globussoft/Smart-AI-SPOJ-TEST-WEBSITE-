@@ -175,10 +175,11 @@ const getTests = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // FEATURE-022: Aggregate Room, Submission, and MalpracticeLog metrics for activity filters
+    // FEATURE-022 / FEATURE-039: Aggregate Room, Submission, MalpracticeLog, and Shortlist metrics
     const testIds = tests.map((t) => t._id);
+    const Shortlist = require('../models/Shortlist');
 
-    const [roomStats, submissionStats, violationStats] = await Promise.all([
+    const [roomStats, submissionStats, violationStats, shortlistDocs] = await Promise.all([
       Room.aggregate([
         { $match: { testId: { $in: testIds } } },
         {
@@ -230,6 +231,7 @@ const getTests = async (req, res, next) => {
           },
         },
       ]),
+      Shortlist.find({ testId: { $in: testIds } }, 'testId candidates totalCandidates generatedAt').lean(),
     ]);
 
     const roomMap = {};
@@ -243,6 +245,17 @@ const getTests = async (req, res, next) => {
     const violMap = {};
     for (const v of violationStats) {
       if (v._id) violMap[v._id.toString()] = v;
+    }
+    const shortlistMap = {};
+    for (const sl of shortlistDocs) {
+      if (sl.testId) {
+        shortlistMap[sl.testId.toString()] = {
+          shortlistedCount: Array.isArray(sl.candidates) ? sl.candidates.length : 0,
+          totalCandidates: sl.totalCandidates || 0,
+          generatedAt: sl.generatedAt || null,
+          hasShortlist: true,
+        };
+      }
     }
 
     // FEATURE-034: Verify all participant candidate IDs against Candidate collection
@@ -328,6 +341,11 @@ const getTests = async (req, res, next) => {
       const disqSubCount = sStat ? sStat.disqualifiedCount : 0;
       const totalViolations = violCount + disqSubCount;
 
+      // FEATURE-039: Shortlisted candidates from official Shortlist document
+      const slStat = shortlistMap[testIdStr];
+      const shortlistedCount = slStat ? slStat.shortlistedCount : (t.status === 'ENDED' ? 0 : null);
+      const hasShortlist = Boolean(slStat && slStat.hasShortlist);
+
       const base = {
         ...t,
         roomCount: totalRooms,
@@ -340,6 +358,8 @@ const getTests = async (req, res, next) => {
         hasCandidates: candidateCount > 0,
         violationsCount: totalViolations,
         hasViolations: totalViolations > 0,
+        shortlistedCount,
+        hasShortlist,
       };
 
       const pId = (t.folderId?._id || t.folderId || t.questionSetPoolId)?.toString();

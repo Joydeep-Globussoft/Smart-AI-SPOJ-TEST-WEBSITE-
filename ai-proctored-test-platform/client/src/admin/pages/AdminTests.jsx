@@ -26,6 +26,7 @@ const SORT_FIELDS = [
   { id: 'status', label: 'Status' },
   { id: 'passing', label: 'Passing Criteria' },
   { id: 'participants', label: 'Submissions' },
+  { id: 'shortlisted', label: 'Shortlisted' },
   { id: 'rooms', label: 'Total Rooms' },
 ];
 
@@ -224,6 +225,59 @@ export const getSubmissionsInfo = (test) => {
   };
 };
 
+// FEATURE-039: Smart Shortlisted calculation (Official Shortlist Candidates Count)
+export const getShortlistedInfo = (test) => {
+  if (!test) {
+    return {
+      display: '—',
+      count: 0,
+      tooltip: '',
+      isAvailable: false,
+      color: 'var(--color-text-muted)',
+    };
+  }
+
+  const hasCount = test.shortlistedCount !== null && test.shortlistedCount !== undefined;
+
+  if (!hasCount) {
+    if (test.status === 'DRAFT' || test.status === 'LIVE') {
+      return {
+        display: '—',
+        count: null,
+        tooltip: test.status === 'LIVE' ? 'Results not yet generated (Test is Live)' : 'Not started (Draft)',
+        isAvailable: false,
+        color: 'var(--color-text-muted)',
+      };
+    }
+  }
+
+  const count = Number(test.shortlistedCount) || 0;
+  const total = Number(test.totalParticipants ?? test.candidateCount ?? 0) || 0;
+  const submitted = Math.min(Number(test.submittedCount ?? 0) || 0, total);
+
+  const lines = [
+    `Shortlisted: ${count}`,
+    `Submitted: ${submitted}`,
+    `Total Candidates: ${total}`,
+  ];
+
+  if (submitted > 0) {
+    const rate = ((count / submitted) * 100).toFixed(1);
+    lines.push(`Shortlist Rate: ${rate}%`);
+  }
+
+  const tooltip = lines.join('\n');
+  const color = count > 0 ? '#10b981' : 'var(--color-text-muted)';
+
+  return {
+    display: String(count),
+    count,
+    tooltip,
+    isAvailable: true,
+    color,
+  };
+};
+
 export default function AdminTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
@@ -282,6 +336,7 @@ export default function AdminTests() {
     if (s === 'status_asc' || s === 'status_desc') return 'status';
     if (s === 'passing_asc' || s === 'passing_desc') return 'passing';
     if (s === 'participants_asc' || s === 'participants_desc') return 'participants';
+    if (s === 'shortlisted_asc' || s === 'shortlisted_desc') return 'shortlisted';
     if (s === 'rooms_asc' || s === 'rooms_desc') return 'rooms';
     return 'date';
   }, [filters.sortField, filters.sort]);
@@ -364,6 +419,9 @@ export default function AdminTests() {
     }
     if (activeSortField === 'participants') {
       return `Submissions (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
+    }
+    if (activeSortField === 'shortlisted') {
+      return `Shortlisted (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
     }
     if (activeSortField === 'rooms') {
       return `Total Rooms (${activeSortDir === 'desc' ? 'Highest' : 'Lowest'})`;
@@ -587,6 +645,9 @@ export default function AdminTests() {
           break;
         case 'participants':
           comparison = (Number(a.totalParticipants ?? a.candidateCount) || 0) - (Number(b.totalParticipants ?? b.candidateCount) || 0);
+          break;
+        case 'shortlisted':
+          comparison = (Number(a.shortlistedCount ?? -1)) - (Number(b.shortlistedCount ?? -1));
           break;
         case 'rooms':
           comparison = (Number(a.totalRooms ?? a.roomCount) || 0) - (Number(b.totalRooms ?? b.roomCount) || 0);
@@ -1335,7 +1396,7 @@ export default function AdminTests() {
             onScroll={handleTableScroll}
             style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
           >
-            <table className="table" style={{ width: '100%', minWidth: 1400 }}>
+            <table className="table" style={{ width: '100%', minWidth: 1480 }}>
               <thead>
                 <tr>
                   {/* FEATURE-040 / FEATURE-029: Dual-axis sticky row index column (blank header) */}
@@ -1372,7 +1433,9 @@ export default function AdminTests() {
                   <th style={{ width: 95, minWidth: 90, textAlign: 'center' }}>Passing Criteria</th>
                   {/* FEATURE-032: Smart Submissions column (Submitted / Total Candidates) */}
                   <th style={{ width: 105, minWidth: 95, textAlign: 'center' }}>Submissions</th>
-                  {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Submissions */}
+                  {/* FEATURE-039: Shortlisted Column */}
+                  <th style={{ width: 95, minWidth: 85, textAlign: 'center' }}>Shortlisted</th>
+                  {/* FEATURE-040 / FEATURE-038: Total Rooms column moved immediately after Submissions/Shortlisted */}
                   <th style={{ width: 75, minWidth: 70, textAlign: 'center' }}>Total Rooms</th>
                   <th style={{ width: 140, minWidth: 125, maxWidth: 160, textAlign: 'center' }}>Question Set</th>
                   {/* BUG-104 / BUG-103: Fixed Actions column width with 3-button slot grid */}
@@ -1382,7 +1445,7 @@ export default function AdminTests() {
               <tbody>
                 {filteredTests.length === 0 ? (
                   <tr>
-                    <td colSpan={12} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
+                    <td colSpan={13} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg-card)' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
@@ -1522,7 +1585,26 @@ export default function AdminTests() {
                             </td>
                           );
                         })()}
-                        {/* FEATURE-040 / FEATURE-038: Total Rooms Column immediately after Submissions */}
+                        {/* FEATURE-039: Shortlisted Column */}
+                        {(() => {
+                          const slInfo = getShortlistedInfo(test);
+                          return (
+                            <td
+                              style={{
+                                fontSize: '0.85rem',
+                                whiteSpace: 'nowrap',
+                                textAlign: 'center',
+                                cursor: slInfo.tooltip ? 'default' : 'inherit',
+                                color: slInfo.color,
+                                fontWeight: slInfo.count > 0 ? 600 : 500,
+                              }}
+                              title={slInfo.tooltip}
+                            >
+                              {slInfo.display}
+                            </td>
+                          );
+                        })()}
+                        {/* FEATURE-040 / FEATURE-038: Total Rooms Column immediately after Submissions/Shortlisted */}
                         <td style={{ color: 'var(--color-text)', fontSize: '0.85rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           {test.totalRooms ?? test.roomCount ?? 0}
                         </td>

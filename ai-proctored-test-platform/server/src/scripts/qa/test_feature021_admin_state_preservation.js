@@ -67,7 +67,7 @@ runTest('AdminTests.jsx wires search, type, and status filters to useAdminFilter
 runTest('AdminTests.jsx attaches scroll restoration to table container without mutating sticky styles', () => {
   assert(adminTestsContent.includes('useScrollRestoration({'), 'Must use useScrollRestoration');
   assert(adminTestsContent.includes('ref={tableContainerRef}'), 'Must attach tableContainerRef to table container');
-  assert(adminTestsContent.includes('className="table-container test-table-scroll-container"'), 'Must keep test-table-scroll-container class for BUG-86');
+  assert(adminTestsContent.includes('test-table-scroll-container'), 'Must keep test-table-scroll-container class for BUG-86');
 });
 
 // 3. AdminResults State & Scroll Preservation

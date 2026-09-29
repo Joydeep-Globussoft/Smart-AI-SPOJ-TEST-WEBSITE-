@@ -45,17 +45,17 @@ async function runFeature038Tests() {
   check(adminTestsSrc.includes("if (activeSortField === 'rooms')"), 'currentSortSummaryLabel handles rooms label');
   check(adminTestsSrc.includes('Total Rooms</th>'), 'Table header includes Total Rooms column');
   check(adminTestsSrc.includes("test.totalRooms ?? test.roomCount ?? 0"), 'Table row renders test.totalRooms accurately');
-  check(adminTestsSrc.includes('colSpan={11}') || adminTestsSrc.includes('colSpan={12}'), 'Empty state updated with colSpan for new column');
+  check(adminTestsSrc.includes('colSpan={11}') || adminTestsSrc.includes('colSpan={12}') || adminTestsSrc.includes('colSpan={13}'), 'Empty state updated with colSpan for new column');
 
-  // Verify column ordering (FEATURE-040: Total Candidates -> Total Rooms -> Question Set)
-  const candidatesIndex = adminTestsSrc.indexOf('Total Candidates</th>');
+  // Verify column ordering (FEATURE-040: Submissions/Total Candidates -> Total Rooms -> Question Set)
+  const candidatesIndex = adminTestsSrc.indexOf('Submissions</th>') !== -1 ? adminTestsSrc.indexOf('Submissions</th>') : adminTestsSrc.indexOf('Total Candidates</th>');
   const totalRoomsIndex = adminTestsSrc.indexOf('Total Rooms</th>');
   const questionSetIndex = adminTestsSrc.indexOf('Question Set</th>');
 
   check(candidatesIndex !== -1 && totalRoomsIndex !== -1 && questionSetIndex !== -1, 'All three adjacent headers exist in source');
   check(
     candidatesIndex < totalRoomsIndex && totalRoomsIndex < questionSetIndex,
-    'Total Rooms is positioned strictly after Total Candidates and before Question Set'
+    'Total Rooms is positioned strictly after Submissions/Total Candidates and before Question Set'
   );
 
   // 2. Test Backend Logic against MongoDB
