@@ -281,8 +281,9 @@ a:not(.btn):not([class*="btn"]):not(.navbar a):not(.navbar-nav a):not(.nav-item-
   gap: 8px;
 }
 
-.navbar-nav a,
-.navbar-nav button,
+.navbar-nav > a,
+.navbar-nav > button,
+.navbar-nav > .nav-item-link,
 .nav-item-link {
   color: rgba(255, 255, 255, 0.90) !important;
   padding: 8px 16px;
@@ -302,23 +303,26 @@ a:not(.btn):not([class*="btn"]):not(.navbar a):not(.navbar-nav a):not(.nav-item-
   line-height: 1.2;
 }
 
-.navbar-nav a:hover,
-.navbar-nav button:hover,
+.navbar-nav > a:hover,
+.navbar-nav > button:hover,
+.navbar-nav > .nav-item-link:hover,
 .nav-item-link:hover {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.16) !important;
   text-decoration: none !important;
 }
 
-.navbar-nav a:focus-visible,
-.navbar-nav button:focus-visible,
+.navbar-nav > a:focus-visible,
+.navbar-nav > button:focus-visible,
+.navbar-nav > .nav-item-link:focus-visible,
 .nav-item-link:focus-visible {
   color: #ffffff !important;
   outline: 2px solid var(--color-primary-light, #2dd4bf);
   outline-offset: 2px;
 }
 
-.navbar-nav a.active,
+.navbar-nav > a.active,
+.navbar-nav > .nav-item-link.active,
 .nav-item-link.active {
   color: #ffffff !important;
   background: var(--color-primary) !important;
@@ -326,7 +330,8 @@ a:not(.btn):not([class*="btn"]):not(.navbar a):not(.navbar-nav a):not(.nav-item-
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.navbar-nav a.active:hover,
+.navbar-nav > a.active:hover,
+.navbar-nav > .nav-item-link.active:hover,
 .nav-item-link.active:hover {
   color: #ffffff !important;
   background: var(--color-primary-dark, #0a5f67) !important;
@@ -334,29 +339,63 @@ a:not(.btn):not([class*="btn"]):not(.navbar a):not(.navbar-nav a):not(.nav-item-
   transform: translateY(-1px);
 }
 
-/* Dropdown Menu Links (BUG-030 Accessibility Fix) */
-.dropdown-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+/* ── Dropdown Menu (BUG-030 / BUG-113: Ensure High Contrast & Solid Background in Light and Dark Modes) ── */
+.admin-avatar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 250px;
+  background: var(--color-dropdown-bg) !important;
   color: var(--color-text) !important;
-  font-size: 0.85rem;
-  text-decoration: none !important;
-  font-weight: 500;
-  transition: all var(--transition);
-  background: transparent;
-  border: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--color-dropdown-border) !important;
+  z-index: 1050;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease;
 }
 
+.navbar-nav .dropdown-menu-item,
+.dropdown-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  padding: 10px 16px !important;
+  color: var(--color-text) !important;
+  font-size: 0.85rem !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  line-height: 1.4 !important;
+}
+
+.navbar-nav .dropdown-menu-item:hover,
+.navbar-nav .dropdown-menu-item:focus-visible,
 .dropdown-menu-item:hover,
 .dropdown-menu-item:focus-visible {
-  background: var(--color-bg-hover) !important;
+  background: var(--color-dropdown-hover, var(--color-bg-hover)) !important;
   color: var(--color-navy) !important;
   text-decoration: none !important;
+}
+
+.navbar-nav .dropdown-menu-item.logout-btn,
+.navbar-nav button.dropdown-menu-item.logout-btn,
+.dropdown-menu-item.logout-btn {
+  color: #DC2626 !important;
+}
+
+.navbar-nav .dropdown-menu-item.logout-btn:hover,
+.navbar-nav button.dropdown-menu-item.logout-btn:hover,
+.dropdown-menu-item.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #DC2626 !important;
 }
 
 /* ── Cards ───────────────────────────────────────────────────────────────────── */

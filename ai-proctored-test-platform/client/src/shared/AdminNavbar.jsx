@@ -167,22 +167,7 @@ export default function AdminNavbar() {
 
             {/* Profile Dropdown Menu */}
             {dropdownOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 10px)',
-                  right: 0,
-                  width: 250,
-                  background: 'var(--color-dropdown-bg)',
-                  color: 'var(--color-text)',
-                  borderRadius: 10,
-                  boxShadow: 'var(--shadow-lg)',
-                  border: '1px solid var(--color-dropdown-border)',
-                  zIndex: 1050,
-                  overflow: 'hidden',
-                  animation: 'fadeIn 0.15s ease',
-                }}
-              >
+              <div className="admin-avatar-dropdown-menu">
                 {/* Header Block: Avatar, Name, Role, Email */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-bg-subtle)', borderBottom: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -288,12 +273,7 @@ export default function AdminNavbar() {
                       setDropdownOpen(false);
                       setShowLogoutConfirm(true);
                     }}
-                    className="dropdown-menu-item"
-                    style={{
-                      color: '#DC2626',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    className="dropdown-menu-item logout-btn"
                   >
                     <span style={{ fontSize: '1rem' }}>🚪</span>
                     <span>Logout</span>
