@@ -22,6 +22,7 @@ export default function AdminCreateAdmin() {
   });
   const [loading, setLoading] = useState(false);
   const [createdAdmins, setCreatedAdmins] = useState([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Existing Admins state (BUG-01, BUG-02)
   const [admins, setAdmins] = useState([]);
@@ -103,6 +104,9 @@ export default function AdminCreateAdmin() {
         password: '',
         role: 'ADMIN',
       });
+
+      // Close create modal (UI/UX RESTRUCTURE-038)
+      setIsCreateModalOpen(false);
 
       // Refresh admin list in place
       await fetchAdmins();
@@ -394,179 +398,37 @@ export default function AdminCreateAdmin() {
           </div>
         </div>
 
-        {/* 2-Column Grid: Form & Permissions Matrix */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.2fr) minmax(300px, 1fr)', gap: 24, marginBottom: 24 }}>
-
-          {/* Create Admin Form */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">Create Admin Account</h3>
-            </div>
-
-            <form onSubmit={handleCreateSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">Full Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="form-control"
-                    placeholder="e.g. Priya Sharma"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email Address *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    className="form-control"
-                    placeholder="e.g. priya.sharma@globussoft.in"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Temporary Password *</label>
-                  <PasswordInput
-                    name="password"
-                    className="form-control"
-                    placeholder="At least 6 characters"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    minLength={6}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Role Assignment *</label>
-                  <select
-                    name="role"
-                    className="form-select"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="ADMIN">ADMIN — Standard Access</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN — Full Control</option>
-                  </select>
-                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
-                    {formData.role === 'SUPER_ADMIN'
-                      ? '⚠️ SUPER_ADMIN can create and manage other Admin accounts.'
-                      : 'ℹ️ ADMIN can create tests, manage rooms, monitor live sessions, and view results.'}
-                  </small>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={loading}
-                  style={{ marginTop: 8 }}
-                >
-                  {loading ? 'Provisioning Account...' : '+ Create Admin Account'}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Role Permissions Matrix (Section 3) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">Role Based Permissions</h3>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.85rem' }}>
-                <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>SUPER_ADMIN</span>
-                    <strong style={{ color: 'var(--color-navy)' }}>Full Platform Control</strong>
-                  </div>
-                  <ul style={{ paddingLeft: 18, color: 'var(--color-text)', lineHeight: 1.6, fontSize: '0.8rem' }}>
-                    <li>Create &amp; manage other Admin accounts</li>
-                    <li>Create, configure, start, and end tests</li>
-                    <li>Manage Question Sets &amp; Question Bank</li>
-                    <li>Live proctoring monitoring, warnings, &amp; disqualifications</li>
-                    <li>Recalculate passing criteria &amp; malpractice thresholds</li>
-                    <li>Export branded shortlist PDFs</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span className="badge badge-secondary" style={{ fontSize: '0.7rem' }}>ADMIN</span>
-                    <strong style={{ color: 'var(--color-navy)' }}>Test Operations &amp; Proctoring</strong>
-                  </div>
-                  <ul style={{ paddingLeft: 18, color: 'var(--color-text)', lineHeight: 1.6, fontSize: '0.8rem' }}>
-                    <li>Create &amp; manage tests and physical test rooms</li>
-                    <li>Manage Question Sets &amp; Question Bank</li>
-                    <li>Live proctoring monitoring &amp; malpractice review</li>
-                    <li>Export shortlisted candidate PDFs</li>
-                    <li style={{ color: '#E74C3C', fontWeight: 600 }}>Cannot create other Admin accounts (403 Forbidden)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Session Created Admins List */}
-            {createdAdmins.length > 0 && (
-              <div className="card">
-                <div className="card-header">
-                  <h3 className="card-title">Provisioned This Session ({createdAdmins.length})</h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {createdAdmins.map((adm, i) => (
-                    <div
-                      key={adm.id || i}
-                      style={{
-                        background: 'var(--color-bg-subtle)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 8,
-                        padding: 10,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      <div>
-                        <strong style={{ color: 'var(--color-navy)' }}>{adm.name}</strong>
-                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>{adm.email}</div>
-                      </div>
-                      <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
-                        {adm.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Active Admins Section (BUG-03) ── */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        {/* ── SECTION 2: Active Admins (UI/UX RESTRUCTURE-038: Primary Top Section with + Create Admin Button) ── */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 24 }}>
           <div
             className="card-header"
             style={{
               padding: '20px 24px',
               borderBottom: '1px solid var(--color-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 16,
             }}
           >
             <div>
-              <h3 className="card-title" style={{ fontSize: '1.15rem' }}>
+              <h3 className="card-title" style={{ fontSize: '1.15rem', margin: 0 }}>
                 Active Admins
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2, marginBottom: 0 }}>
                 Full listing of organizational administrators, active states, and role assignments.
               </p>
             </div>
+            <button
+              type="button"
+              id="create-admin-btn"
+              className="btn btn-primary"
+              onClick={() => setIsCreateModalOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, padding: '8px 16px', fontSize: '0.85rem' }}
+            >
+              <span>+</span> Create Admin Account
+            </button>
           </div>
 
           {loadingList && admins.length === 0 ? (
@@ -580,9 +442,17 @@ export default function AdminCreateAdmin() {
             <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
               <div style={{ fontSize: '2.2rem', marginBottom: 8 }}>👥</div>
               <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No other admin accounts yet</h4>
-              <p style={{ fontSize: '0.85rem' }}>
-                Use the form above to provision additional organizational administrators.
+              <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>
+                Click the "+ Create Admin Account" button above to provision organizational administrators.
               </p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setIsCreateModalOpen(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <span>+</span> Create Admin Account
+              </button>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -692,11 +562,11 @@ export default function AdminCreateAdmin() {
                         style={{
                           padding: '16px 20px',
                           textAlign: 'center',
-                          color: '#94A3B8',
+                          color: 'var(--color-text-muted)',
                           fontSize: '0.82rem',
                           fontStyle: 'italic',
-                          background: '#ffffff',
-                          borderBottom: '1px solid #f1f5f9',
+                          background: 'var(--color-bg-card)',
+                          borderBottom: '1px solid var(--color-border)',
                         }}
                       >
                         No Admins yet
@@ -710,6 +580,216 @@ export default function AdminCreateAdmin() {
             </div>
           )}
         </div>
+
+        {/* ── SECTION 3: Role Based Permissions (UI/UX RESTRUCTURE-038: 2-Column Equal Width Layout) ── */}
+        <div className="card" style={{ marginBottom: 24, padding: 0, overflow: 'hidden' }}>
+          <div
+            className="card-header"
+            style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid var(--color-border)',
+            }}
+          >
+            <h3 className="card-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+              Role Based Permissions
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2, marginBottom: 0 }}>
+              Overview of platform administrative roles, capabilities, and operational boundaries.
+            </p>
+          </div>
+
+          <div style={{ padding: '20px 24px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: 20,
+              }}
+            >
+              {/* Left Column: SUPER_ADMIN */}
+              <div
+                style={{
+                  background: 'var(--color-bg-subtle, rgba(14, 124, 134, 0.04))',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: 18,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="badge badge-primary" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
+                    SUPER_ADMIN
+                  </span>
+                  <strong style={{ color: 'var(--color-navy)', fontSize: '0.92rem' }}>
+                    Full Platform Control
+                  </strong>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-navy)', marginBottom: 6 }}>
+                    Permissions:
+                  </div>
+                  <ul style={{ paddingLeft: 18, margin: 0, color: 'var(--color-text)', lineHeight: 1.7, fontSize: '0.82rem' }}>
+                    <li>Create &amp; manage other Admin accounts</li>
+                    <li>Create, configure, start, and end tests</li>
+                    <li>Manage Question Sets &amp; Question Bank</li>
+                    <li>Live proctoring monitoring, warnings, &amp; disqualifications</li>
+                    <li>Recalculate passing criteria &amp; malpractice thresholds</li>
+                    <li>Export branded shortlist PDFs</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Right Column: ADMIN */}
+              <div
+                style={{
+                  background: 'var(--color-bg-subtle, rgba(14, 124, 134, 0.04))',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: 18,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="badge badge-secondary" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
+                    ADMIN
+                  </span>
+                  <strong style={{ color: 'var(--color-navy)', fontSize: '0.92rem' }}>
+                    Test Operations &amp; Proctoring
+                  </strong>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-navy)', marginBottom: 6 }}>
+                    Permissions:
+                  </div>
+                  <ul style={{ paddingLeft: 18, margin: 0, color: 'var(--color-text)', lineHeight: 1.7, fontSize: '0.82rem' }}>
+                    <li>Create &amp; manage tests and physical test rooms</li>
+                    <li>Manage Question Sets &amp; Question Bank</li>
+                    <li>Live proctoring monitoring &amp; malpractice review</li>
+                    <li>Export shortlisted candidate PDFs</li>
+                  </ul>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#E74C3C', marginTop: 10, marginBottom: 4 }}>
+                    Restrictions:
+                  </div>
+                  <ul style={{ paddingLeft: 18, margin: 0, color: '#E74C3C', lineHeight: 1.7, fontSize: '0.82rem', fontWeight: 600 }}>
+                    <li>Cannot create other Admin accounts (403 Forbidden)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 4: Create Admin Account Modal (UI/UX RESTRUCTURE-038) ── */}
+        {isCreateModalOpen && (
+          <div className="modal-backdrop" onClick={() => !loading && setIsCreateModalOpen(false)}>
+            <div
+              className="modal-container"
+              style={{ maxWidth: 520, width: '100%' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div>
+                  <h3 className="modal-title" style={{ margin: 0 }}>Create Admin Account</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2, marginBottom: 0 }}>
+                    Provision a new organizational admin with role-based access.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => !loading && setIsCreateModalOpen(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--color-text-muted)' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateSubmit}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      className="form-control"
+                      placeholder="e.g. Priya Sharma"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Email Address *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      className="form-control"
+                      placeholder="e.g. priya.sharma@globussoft.in"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Temporary Password *</label>
+                    <PasswordInput
+                      name="password"
+                      className="form-control"
+                      placeholder="At least 6 characters"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Role Assignment *</label>
+                    <select
+                      name="role"
+                      className="form-select"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="ADMIN">ADMIN — Standard Access</option>
+                      <option value="SUPER_ADMIN">SUPER_ADMIN — Full Control</option>
+                    </select>
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                      {formData.role === 'SUPER_ADMIN'
+                        ? '⚠️ SUPER_ADMIN can create and manage other Admin accounts.'
+                        : 'ℹ️ ADMIN can create tests, manage rooms, monitor live sessions, and view results.'}
+                    </small>
+                  </div>
+                </div>
+
+                <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? 'Provisioning Account...' : '+ Create Admin Account'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* ── Edit Admin Modal ── */}
         {editAdmin && (
