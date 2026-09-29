@@ -223,13 +223,13 @@ export default function AdminCreateAdmin() {
       <tr
         key={adm._id}
         style={{
-          borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
-          background: 'var(--filterbar-input-bg, #ffffff)',
+          borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+          background: 'var(--admin-card-bg, #FFFFFF)',
           transition: 'background 0.15s ease',
         }}
       >
         {/* Index (#) */}
-        <td style={{ padding: '14px 16px', color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, textAlign: 'center', fontSize: '0.82rem' }}>
+        <td style={{ padding: '14px 16px', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, textAlign: 'center', fontSize: '0.82rem' }}>
           {index}
         </td>
 
@@ -250,7 +250,7 @@ export default function AdminCreateAdmin() {
               style={{
                 display: 'inline-block',
                 background: 'rgba(99, 102, 241, 0.12)',
-                color: 'var(--filterbar-icon, #6366F1)',
+                color: 'var(--admin-indigo, #4F46E5)',
                 border: '1px solid rgba(99, 102, 241, 0.28)',
                 borderRadius: 6,
                 padding: '3px 8px',
@@ -266,8 +266,8 @@ export default function AdminCreateAdmin() {
               style={{
                 display: 'inline-block',
                 background: 'rgba(142, 157, 184, 0.15)',
-                color: 'var(--filterbar-label, #5B6B8A)',
-                border: '1px solid var(--filterbar-border, #E0E5F5)',
+                color: 'var(--admin-label, #5B6B8A)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
                 borderRadius: 6,
                 padding: '3px 8px',
                 fontSize: '0.72rem',
@@ -316,7 +316,7 @@ export default function AdminCreateAdmin() {
         </td>
 
         {/* Created Date */}
-        <td style={{ padding: '14px 20px', color: 'var(--filterbar-label, #5B6B8A)', fontSize: '0.82rem' }}>
+        <td style={{ padding: '14px 20px', color: 'var(--admin-label, #5B6B8A)', fontSize: '0.82rem' }}>
           {adm.createdAt
             ? new Date(adm.createdAt).toLocaleDateString(undefined, {
               year: 'numeric',
@@ -336,7 +336,7 @@ export default function AdminCreateAdmin() {
               {adm.createdBy.name}
             </span>
           ) : (
-            <span style={{ color: 'var(--filterbar-label, #5B6B8A)', fontStyle: 'italic' }}>System</span>
+            <span style={{ color: 'var(--admin-label, #5B6B8A)', fontStyle: 'italic' }}>System</span>
           )}
         </td>
 
@@ -351,8 +351,8 @@ export default function AdminCreateAdmin() {
               style={{
                 padding: '4px 10px',
                 fontSize: '0.75rem',
-                background: 'var(--filterbar-button-bg, #ffffff)',
-                borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                background: 'var(--admin-subcard-bg, #F8FAFC)',
+                borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                 color: 'var(--filterbar-button-text, #1E293B)',
                 borderRadius: 6,
               }}
@@ -421,16 +421,16 @@ export default function AdminCreateAdmin() {
   };
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)', minHeight: '100vh' }}>
       <AdminNavbar />
-      <main className="main-content">
+      <main className="main-content" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
         {/* Breadcrumb Navigation */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin" style={{ color: 'var(--filterbar-icon, #6366F1)', fontWeight: 500 }}>
+          <Link to="/admin" style={{ color: 'var(--admin-indigo, #4F46E5)', fontWeight: 500 }}>
             ← Dashboard
           </Link>
           <span style={{ color: 'var(--filterbar-divider, #D8DEF0)' }}>/</span>
-          <span style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600 }}>Manage Admins</span>
+          <span style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>Manage Admins</span>
         </div>
 
         {/* ── SECTION 1: Header Card ── */}
@@ -439,8 +439,9 @@ export default function AdminCreateAdmin() {
           style={{
             marginBottom: 24,
             padding: '24px 28px',
-            background: 'var(--filterbar-bg, #F4F6FF)',
-            border: '1px solid var(--filterbar-border, #E0E5F5)',
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            boxShadow: 'var(--admin-card-shadow)',
             borderRadius: 12,
           }}
         >
@@ -453,7 +454,7 @@ export default function AdminCreateAdmin() {
                 <span
                   style={{
                     background: 'rgba(99, 102, 241, 0.12)',
-                    color: 'var(--filterbar-icon, #6366F1)',
+                    color: 'var(--admin-indigo, #4F46E5)',
                     border: '1px solid rgba(99, 102, 241, 0.28)',
                     borderRadius: 20,
                     padding: '3px 10px',
@@ -466,12 +467,12 @@ export default function AdminCreateAdmin() {
                   Super Admin Only
                 </span>
               </div>
-              <p style={{ color: 'var(--filterbar-label, #5B6B8A)', fontSize: '0.875rem', marginTop: 4 }}>
+              <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.875rem', marginTop: 4 }}>
                 Provision and manage organizational admin accounts with Role-Based Access Control (RBAC).
               </p>
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--filterbar-label, #5B6B8A)' }}>
-              Logged in as: <strong style={{ color: 'var(--color-navy)' }}>{user?.name}</strong> (<span style={{ color: 'var(--filterbar-icon, #6366F1)', fontWeight: 700 }}>{user?.role}</span>)
+            <div style={{ fontSize: '0.85rem', color: 'var(--admin-label, #5B6B8A)' }}>
+              Logged in as: <strong style={{ color: 'var(--color-navy)' }}>{user?.name}</strong> (<span style={{ color: 'var(--admin-indigo, #4F46E5)', fontWeight: 700 }}>{user?.role}</span>)
             </div>
           </div>
         </div>
@@ -483,8 +484,9 @@ export default function AdminCreateAdmin() {
             padding: 0,
             overflow: 'hidden',
             marginBottom: 24,
-            background: 'var(--filterbar-bg, #F4F6FF)',
-            border: '1px solid var(--filterbar-border, #E0E5F5)',
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            boxShadow: 'var(--admin-card-shadow)',
             borderRadius: 12,
           }}
         >
@@ -492,7 +494,7 @@ export default function AdminCreateAdmin() {
             className="card-header"
             style={{
               padding: '20px 24px',
-              borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+              borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -504,7 +506,7 @@ export default function AdminCreateAdmin() {
               <h3 className="card-title" style={{ fontSize: '1.15rem', color: 'var(--color-navy)', margin: 0, fontWeight: 700 }}>
                 Active Admins
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--filterbar-label, #5B6B8A)', marginTop: 2, marginBottom: 0 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 2, marginBottom: 0 }}>
                 Full listing of organizational administrators, active states, and role assignments.
               </p>
             </div>
@@ -521,9 +523,9 @@ export default function AdminCreateAdmin() {
                 padding: '8px 16px',
                 fontSize: '0.85rem',
                 borderRadius: 8,
-                background: 'var(--filterbar-icon, #6366F1)',
+                background: 'var(--admin-indigo, #4F46E5)',
                 color: '#ffffff',
-                border: '1px solid var(--filterbar-icon, #6366F1)',
+                border: '1px solid var(--admin-indigo, #4F46E5)',
                 cursor: 'pointer',
               }}
             >
@@ -532,14 +534,14 @@ export default function AdminCreateAdmin() {
           </div>
 
           {loadingList && admins.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--filterbar-label, #5B6B8A)' }}>
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--admin-label, #5B6B8A)' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
                 <LoadingDots size="md" />
               </div>
               <p style={{ fontSize: '0.85rem' }}>Loading admin accounts...</p>
             </div>
           ) : displayedAdmins.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--filterbar-label, #5B6B8A)' }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--admin-label, #5B6B8A)' }}>
               <div style={{ fontSize: '2.2rem', marginBottom: 8 }}>👥</div>
               <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No other admin accounts yet</h4>
               <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>
@@ -554,9 +556,9 @@ export default function AdminCreateAdmin() {
                   alignItems: 'center',
                   gap: 6,
                   borderRadius: 8,
-                  background: 'var(--filterbar-icon, #6366F1)',
+                  background: 'var(--admin-indigo, #4F46E5)',
                   color: '#ffffff',
-                  border: '1px solid var(--filterbar-icon, #6366F1)',
+                  border: '1px solid var(--admin-indigo, #4F46E5)',
                   cursor: 'pointer',
                   padding: '8px 16px',
                   fontWeight: 600,
@@ -570,7 +572,7 @@ export default function AdminCreateAdmin() {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                 <tbody>
                   {/* Group 1 Divider: Super Admins (BUG-03) */}
-                  <tr style={{ background: 'var(--filterbar-bg, #F4F6FF)', borderTop: '1px solid var(--filterbar-border, #E0E5F5)', borderBottom: '1px solid var(--filterbar-border, #E0E5F5)' }}>
+                  <tr style={{ background: 'var(--admin-section-bar-bg, #F1F4FD)', borderTop: '1px solid var(--admin-card-border, #E0E7FF)', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                     <td
                       colSpan={8}
                       style={{
@@ -578,7 +580,7 @@ export default function AdminCreateAdmin() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         color: 'var(--color-navy)',
-                        borderLeft: '4px solid var(--filterbar-icon, #6366F1)',
+                        borderLeft: '4px solid var(--admin-indigo, #4F46E5)',
                       }}
                     >
                       Super Admins
@@ -589,7 +591,7 @@ export default function AdminCreateAdmin() {
                   <tr
                     style={{
                       background: 'var(--color-table-header-bg)',
-                      borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+                      borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                       color: 'var(--color-table-header-text)',
                       fontSize: '0.75rem',
                       textTransform: 'uppercase',
@@ -614,11 +616,11 @@ export default function AdminCreateAdmin() {
                         style={{
                           padding: '16px 20px',
                           textAlign: 'center',
-                          color: 'var(--filterbar-label, #5B6B8A)',
+                          color: 'var(--admin-label, #5B6B8A)',
                           fontSize: '0.82rem',
                           fontStyle: 'italic',
-                          background: 'var(--filterbar-input-bg, #ffffff)',
-                          borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+                          background: 'var(--admin-card-bg, #FFFFFF)',
+                          borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                         }}
                       >
                         No other Super Admins
@@ -629,7 +631,7 @@ export default function AdminCreateAdmin() {
                   )}
 
                   {/* Group 2 Divider: Admins (BUG-03) */}
-                  <tr style={{ background: 'var(--filterbar-bg, #F4F6FF)', borderTop: '2px solid var(--filterbar-border, #E0E5F5)', borderBottom: '1px solid var(--filterbar-border, #E0E5F5)' }}>
+                  <tr style={{ background: 'var(--admin-section-bar-bg, #F1F4FD)', borderTop: '2px solid var(--admin-card-border, #E0E7FF)', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                     <td
                       colSpan={8}
                       style={{
@@ -637,7 +639,7 @@ export default function AdminCreateAdmin() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         color: 'var(--color-navy)',
-                        borderLeft: '4px solid var(--filterbar-icon, #6366F1)',
+                        borderLeft: '4px solid var(--admin-indigo, #4F46E5)',
                       }}
                     >
                       Admins
@@ -648,7 +650,7 @@ export default function AdminCreateAdmin() {
                   <tr
                     style={{
                       background: 'var(--color-table-header-bg)',
-                      borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+                      borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                       color: 'var(--color-table-header-text)',
                       fontSize: '0.75rem',
                       textTransform: 'uppercase',
@@ -673,11 +675,11 @@ export default function AdminCreateAdmin() {
                         style={{
                           padding: '16px 20px',
                           textAlign: 'center',
-                          color: 'var(--filterbar-label, #5B6B8A)',
+                          color: 'var(--admin-label, #5B6B8A)',
                           fontSize: '0.82rem',
                           fontStyle: 'italic',
-                          background: 'var(--filterbar-input-bg, #ffffff)',
-                          borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+                          background: 'var(--admin-card-bg, #FFFFFF)',
+                          borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                         }}
                       >
                         No Admins yet
@@ -699,8 +701,9 @@ export default function AdminCreateAdmin() {
             marginBottom: 24,
             padding: 0,
             overflow: 'hidden',
-            background: 'var(--filterbar-bg, #F4F6FF)',
-            border: '1px solid var(--filterbar-border, #E0E5F5)',
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            boxShadow: 'var(--admin-card-shadow)',
             borderRadius: 12,
           }}
         >
@@ -708,13 +711,13 @@ export default function AdminCreateAdmin() {
             className="card-header"
             style={{
               padding: '18px 24px',
-              borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+              borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
             }}
           >
             <h3 className="card-title" style={{ fontSize: '1.1rem', color: 'var(--color-navy)', margin: 0, fontWeight: 700 }}>
               Role Based Permissions
             </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--filterbar-label, #5B6B8A)', marginTop: 2, marginBottom: 0 }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 2, marginBottom: 0 }}>
               Overview of platform administrative roles, capabilities, and operational boundaries.
             </p>
           </div>
@@ -730,8 +733,8 @@ export default function AdminCreateAdmin() {
               {/* Left Column: SUPER_ADMIN */}
               <div
                 style={{
-                  background: 'var(--filterbar-input-bg, #ffffff)',
-                  border: '1px solid var(--filterbar-border, #E0E5F5)',
+                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                  border: '1px solid var(--admin-subcard-border, #E2E8F0)',
                   borderRadius: 8,
                   padding: 18,
                   display: 'flex',
@@ -743,7 +746,7 @@ export default function AdminCreateAdmin() {
                   <span
                     style={{
                       background: 'rgba(99, 102, 241, 0.12)',
-                      color: 'var(--filterbar-icon, #6366F1)',
+                      color: 'var(--admin-indigo, #4F46E5)',
                       border: '1px solid rgba(99, 102, 241, 0.28)',
                       borderRadius: 6,
                       padding: '3px 8px',
@@ -776,8 +779,8 @@ export default function AdminCreateAdmin() {
               {/* Right Column: ADMIN */}
               <div
                 style={{
-                  background: 'var(--filterbar-input-bg, #ffffff)',
-                  border: '1px solid var(--filterbar-border, #E0E5F5)',
+                  background: 'var(--admin-subcard-bg, #F8FAFC)',
+                  border: '1px solid var(--admin-subcard-border, #E2E8F0)',
                   borderRadius: 8,
                   padding: 18,
                   display: 'flex',
@@ -789,8 +792,8 @@ export default function AdminCreateAdmin() {
                   <span
                     style={{
                       background: 'rgba(142, 157, 184, 0.15)',
-                      color: 'var(--filterbar-label, #5B6B8A)',
-                      border: '1px solid var(--filterbar-border, #E0E5F5)',
+                      color: 'var(--admin-label, #5B6B8A)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
                       borderRadius: 6,
                       padding: '3px 8px',
                       fontSize: '0.72rem',
@@ -834,8 +837,8 @@ export default function AdminCreateAdmin() {
               style={{
                 maxWidth: 520,
                 width: '100%',
-                background: 'var(--filterbar-bg, #F4F6FF)',
-                border: '1px solid var(--filterbar-border, #E0E5F5)',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
                 borderRadius: 12,
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
               }}
@@ -845,19 +848,19 @@ export default function AdminCreateAdmin() {
                 className="modal-header"
                 style={{
                   padding: '20px 24px',
-                  borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                 }}
               >
                 <div>
                   <h3 className="modal-title" style={{ margin: 0, color: 'var(--color-navy)' }}>Create Admin Account</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--filterbar-label, #5B6B8A)', marginTop: 2, marginBottom: 0 }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 2, marginBottom: 0 }}>
                     Provision a new organizational admin with role-based access.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => !loading && setIsCreateModalOpen(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--filterbar-label, #5B6B8A)' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -866,7 +869,7 @@ export default function AdminCreateAdmin() {
               <form onSubmit={handleCreateSubmit}>
                 <div className="modal-body" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Full Name *
                     </label>
                     <input
@@ -879,8 +882,8 @@ export default function AdminCreateAdmin() {
                       required
                       autoFocus
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -888,7 +891,7 @@ export default function AdminCreateAdmin() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Email Address *
                     </label>
                     <input
@@ -900,8 +903,8 @@ export default function AdminCreateAdmin() {
                       onChange={handleInputChange}
                       required
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -909,7 +912,7 @@ export default function AdminCreateAdmin() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Temporary Password *
                     </label>
                     <PasswordInput
@@ -921,8 +924,8 @@ export default function AdminCreateAdmin() {
                       required
                       minLength={6}
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -930,7 +933,7 @@ export default function AdminCreateAdmin() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Role Assignment *
                     </label>
                     <select
@@ -940,8 +943,8 @@ export default function AdminCreateAdmin() {
                       onChange={handleInputChange}
                       required
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -949,7 +952,7 @@ export default function AdminCreateAdmin() {
                       <option value="ADMIN">ADMIN — Standard Access</option>
                       <option value="SUPER_ADMIN">SUPER_ADMIN — Full Control</option>
                     </select>
-                    <small style={{ color: 'var(--filterbar-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                    <small style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                       {formData.role === 'SUPER_ADMIN'
                         ? '⚠️ SUPER_ADMIN can create and manage other Admin accounts.'
                         : 'ℹ️ ADMIN can create tests, manage rooms, monitor live sessions, and view results.'}
@@ -961,7 +964,7 @@ export default function AdminCreateAdmin() {
                   className="modal-footer"
                   style={{
                     padding: '16px 24px',
-                    borderTop: '1px solid var(--filterbar-border, #E0E5F5)',
+                    borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
                     display: 'flex',
                     justifyContent: 'flex-end',
                     gap: 10,
@@ -973,8 +976,8 @@ export default function AdminCreateAdmin() {
                     onClick={() => setIsCreateModalOpen(false)}
                     className="btn btn-secondary"
                     style={{
-                      background: 'var(--filterbar-input-bg, #ffffff)',
-                      borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                      background: 'var(--admin-subcard-bg, #F8FAFC)',
+                      borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                       color: 'var(--filterbar-button-text, #1E293B)',
                       borderRadius: 6,
                     }}
@@ -987,9 +990,9 @@ export default function AdminCreateAdmin() {
                     disabled={loading}
                     style={{
                       borderRadius: 6,
-                      background: 'var(--filterbar-icon, #6366F1)',
+                      background: 'var(--admin-indigo, #4F46E5)',
                       color: '#ffffff',
-                      border: '1px solid var(--filterbar-icon, #6366F1)',
+                      border: '1px solid var(--admin-indigo, #4F46E5)',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       padding: '8px 16px',
                       fontWeight: 600,
@@ -1011,8 +1014,8 @@ export default function AdminCreateAdmin() {
               style={{
                 maxWidth: 500,
                 width: '100%',
-                background: 'var(--filterbar-bg, #F4F6FF)',
-                border: '1px solid var(--filterbar-border, #E0E5F5)',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
                 borderRadius: 12,
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
               }}
@@ -1022,14 +1025,14 @@ export default function AdminCreateAdmin() {
                 className="modal-header"
                 style={{
                   padding: '20px 24px',
-                  borderBottom: '1px solid var(--filterbar-border, #E0E5F5)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                 }}
               >
                 <h3 className="modal-title" style={{ margin: 0, color: 'var(--color-navy)' }}>Edit Admin Account</h3>
                 <button
                   type="button"
                   onClick={() => !savingEdit && setEditAdmin(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--filterbar-label, #5B6B8A)' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1038,7 +1041,7 @@ export default function AdminCreateAdmin() {
               <form onSubmit={handleSaveEdit}>
                 <div className="modal-body" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Full Name *
                     </label>
                     <input
@@ -1048,8 +1051,8 @@ export default function AdminCreateAdmin() {
                       onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                       required
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -1057,7 +1060,7 @@ export default function AdminCreateAdmin() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Email Address *
                     </label>
                     <input
@@ -1067,8 +1070,8 @@ export default function AdminCreateAdmin() {
                       onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                       required
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -1076,7 +1079,7 @@ export default function AdminCreateAdmin() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--filterbar-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
+                    <label className="form-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, fontSize: '0.82rem', marginBottom: 6, display: 'block' }}>
                       Role Assignment *
                     </label>
                     <select
@@ -1085,8 +1088,8 @@ export default function AdminCreateAdmin() {
                       disabled={isCurrentUser(editAdmin)}
                       onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
                       style={{
-                        background: 'var(--filterbar-input-bg, #ffffff)',
-                        borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                        background: 'var(--admin-subcard-bg, #F8FAFC)',
+                        borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                         color: 'var(--color-text)',
                         borderRadius: 8,
                       }}
@@ -1095,11 +1098,11 @@ export default function AdminCreateAdmin() {
                       <option value="SUPER_ADMIN">SUPER_ADMIN — Full Control</option>
                     </select>
                     {isCurrentUser(editAdmin) ? (
-                      <small style={{ color: 'var(--filterbar-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                      <small style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                         🔒 You cannot change your own Super Admin role.
                       </small>
                     ) : (
-                      <small style={{ color: 'var(--filterbar-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                      <small style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                         {editFormData.role === 'SUPER_ADMIN'
                           ? '⚠️ SUPER_ADMIN can create and manage other Admin accounts.'
                           : 'ℹ️ ADMIN can create tests, manage rooms, monitor live sessions, and view results.'}
@@ -1112,7 +1115,7 @@ export default function AdminCreateAdmin() {
                   className="modal-footer"
                   style={{
                     padding: '16px 24px',
-                    borderTop: '1px solid var(--filterbar-border, #E0E5F5)',
+                    borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
                     display: 'flex',
                     justifyContent: 'flex-end',
                     gap: 10,
@@ -1124,8 +1127,8 @@ export default function AdminCreateAdmin() {
                     onClick={() => setEditAdmin(null)}
                     className="btn btn-secondary"
                     style={{
-                      background: 'var(--filterbar-input-bg, #ffffff)',
-                      borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                      background: 'var(--admin-subcard-bg, #F8FAFC)',
+                      borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                       color: 'var(--filterbar-button-text, #1E293B)',
                       borderRadius: 6,
                     }}
@@ -1138,9 +1141,9 @@ export default function AdminCreateAdmin() {
                     className="btn"
                     style={{
                       borderRadius: 6,
-                      background: 'var(--filterbar-icon, #6366F1)',
+                      background: 'var(--admin-indigo, #4F46E5)',
                       color: '#ffffff',
-                      border: '1px solid var(--filterbar-icon, #6366F1)',
+                      border: '1px solid var(--admin-indigo, #4F46E5)',
                       cursor: savingEdit ? 'not-allowed' : 'pointer',
                       padding: '8px 16px',
                       fontWeight: 600,
@@ -1162,8 +1165,8 @@ export default function AdminCreateAdmin() {
               style={{
                 maxWidth: 460,
                 width: '100%',
-                background: 'var(--filterbar-bg, #F4F6FF)',
-                border: '1px solid var(--filterbar-border, #E0E5F5)',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
                 borderRadius: 12,
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
               }}
@@ -1184,7 +1187,7 @@ export default function AdminCreateAdmin() {
                 <button
                   type="button"
                   onClick={() => !deactivating && setDeactivateModalAdmin(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--filterbar-label, #5B6B8A)' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1194,7 +1197,7 @@ export default function AdminCreateAdmin() {
                 <p style={{ margin: 0 }}>
                   Are you sure you want to deactivate <strong>{deactivateModalAdmin.name}</strong> (<code>{deactivateModalAdmin.email}</code>)?
                 </p>
-                <p style={{ marginTop: 8, marginBottom: 0, fontSize: '0.85rem', color: 'var(--filterbar-label, #5B6B8A)' }}>
+                <p style={{ marginTop: 8, marginBottom: 0, fontSize: '0.85rem', color: 'var(--admin-label, #5B6B8A)' }}>
                   Their credentials will be immediately blocked from signing in until a Super Admin reactivates the account.
                 </p>
               </div>
@@ -1203,7 +1206,7 @@ export default function AdminCreateAdmin() {
                 className="modal-footer"
                 style={{
                   padding: '14px 20px',
-                  borderTop: '1px solid var(--filterbar-border, #E0E5F5)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
                   display: 'flex',
                   justifyContent: 'flex-end',
                   gap: 10,
@@ -1215,8 +1218,8 @@ export default function AdminCreateAdmin() {
                   onClick={() => setDeactivateModalAdmin(null)}
                   className="btn btn-secondary"
                   style={{
-                    background: 'var(--filterbar-input-bg, #ffffff)',
-                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    background: 'var(--admin-subcard-bg, #F8FAFC)',
+                    borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                     color: 'var(--filterbar-button-text, #1E293B)',
                     borderRadius: 6,
                   }}
@@ -1245,8 +1248,8 @@ export default function AdminCreateAdmin() {
               style={{
                 maxWidth: 460,
                 width: '100%',
-                background: 'var(--filterbar-bg, #F4F6FF)',
-                border: '1px solid var(--filterbar-border, #E0E5F5)',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
                 borderRadius: 12,
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
               }}
@@ -1267,7 +1270,7 @@ export default function AdminCreateAdmin() {
                 <button
                   type="button"
                   onClick={() => !deleting && setDeleteModalAdmin(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--filterbar-label, #5B6B8A)' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--admin-label, #5B6B8A)' }}
                 >
                   ✕
                 </button>
@@ -1286,7 +1289,7 @@ export default function AdminCreateAdmin() {
                 className="modal-footer"
                 style={{
                   padding: '14px 20px',
-                  borderTop: '1px solid var(--filterbar-border, #E0E5F5)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
                   display: 'flex',
                   justifyContent: 'flex-end',
                   gap: 10,
@@ -1298,8 +1301,8 @@ export default function AdminCreateAdmin() {
                   onClick={() => setDeleteModalAdmin(null)}
                   className="btn btn-secondary"
                   style={{
-                    background: 'var(--filterbar-input-bg, #ffffff)',
-                    borderColor: 'var(--filterbar-input-border, #E2E8F0)',
+                    background: 'var(--admin-subcard-bg, #F8FAFC)',
+                    borderColor: 'var(--admin-subcard-border, #E2E8F0)',
                     color: 'var(--filterbar-button-text, #1E293B)',
                     borderRadius: 6,
                   }}
