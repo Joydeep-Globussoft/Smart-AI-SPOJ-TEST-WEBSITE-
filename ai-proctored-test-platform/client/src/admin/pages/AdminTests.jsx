@@ -883,6 +883,19 @@ export default function AdminTests() {
               </div>
             </div>
 
+            {/* Divider 1: Between Search and Type */}
+            <div
+              style={{
+                width: 1,
+                height: 32,
+                background: 'var(--filterbar-divider, #D8DEF0)',
+                margin: '0 2px',
+                alignSelf: 'flex-end',
+                marginBottom: 3,
+                flexShrink: 0,
+              }}
+            />
+
             {/* 2. Filter by Type */}
             <div style={{ flex: '0 1 180px', minWidth: 150 }}>
               <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
@@ -957,6 +970,19 @@ export default function AdminTests() {
               </div>
             </div>
 
+            {/* Divider 2: Between Type and Status */}
+            <div
+              style={{
+                width: 1,
+                height: 32,
+                background: 'var(--filterbar-divider, #D8DEF0)',
+                margin: '0 2px',
+                alignSelf: 'flex-end',
+                marginBottom: 3,
+                flexShrink: 0,
+              }}
+            />
+
             {/* 3. Filter by Status */}
             <div style={{ flex: '0 1 150px', minWidth: 130 }}>
               <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
@@ -1029,6 +1055,19 @@ export default function AdminTests() {
               </div>
             </div>
 
+            {/* Divider 3: Between Status and More Filters */}
+            <div
+              style={{
+                width: 1,
+                height: 32,
+                background: 'var(--filterbar-divider, #D8DEF0)',
+                margin: '0 2px',
+                alignSelf: 'flex-end',
+                marginBottom: 3,
+                flexShrink: 0,
+              }}
+            />
+
             {/* 4. More Filters Button */}
             <div style={{ flex: '0 0 auto', alignSelf: 'flex-end' }}>
               <button
@@ -1090,24 +1129,22 @@ export default function AdminTests() {
               </button>
             </div>
 
-            {/* 5. Vertical Divider Line (Positioned before Sort on the right) */}
+            {/* Divider 4: Vertical Divider Line before Sort (Pushed to the right) */}
             <div
               style={{
                 width: 1,
-                height: 34,
+                height: 32,
                 background: 'var(--filterbar-divider, #D8DEF0)',
                 marginLeft: 'auto',
-                marginRight: 6,
+                marginRight: 4,
                 alignSelf: 'flex-end',
-                marginBottom: 2,
+                marginBottom: 3,
+                flexShrink: 0,
               }}
             />
 
-            {/* 6. Sort Control (Pill Button with static 'Sort' label per FEATURE-047) */}
+            {/* 5. Sort Control (Pill Button without label per BUG-114 / FEATURE-047) */}
             <div style={{ position: 'relative', flex: '0 0 auto', alignSelf: 'flex-end' }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--filterbar-label, #5B6B8A)', marginBottom: 6, display: 'block' }}>
-                Sort by
-              </label>
               <button
                 type="button"
                 ref={sortBtnRef}
