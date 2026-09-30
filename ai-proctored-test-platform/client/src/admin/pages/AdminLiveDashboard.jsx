@@ -567,8 +567,8 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
     <div
       onClick={() => onClick(candidate)}
       style={{
-        background: isWhite ? 'var(--color-bg-card)' : `${color}18`,
-        border: `2px solid ${isWhite ? 'var(--color-seat-not-started-border, #cbd5e1)' : color}`,
+        background: isWhite ? 'var(--admin-card-bg, #FFFFFF)' : `${color}18`,
+        border: `2px solid ${isWhite ? 'var(--admin-card-border, #E0E7FF)' : color}`,
         borderRadius: 10,
         padding: '12px 14px',
         cursor: 'pointer',
@@ -577,7 +577,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
         flexDirection: 'column',
         justifyContent: 'space-between',
         minHeight: 115,
-        boxShadow: isWhite ? '0 2px 6px rgba(0,0,0,0.06)' : `0 2px 8px ${color}25`,
+        boxShadow: isWhite ? '0 2px 6px rgba(0,0,0,0.04)' : `0 2px 8px ${color}25`,
         position: 'relative',
         overflow: 'hidden',
         opacity: 1,
@@ -591,7 +591,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             style={{
               fontSize: '0.88rem',
               fontWeight: 700,
-              color: 'var(--color-navy)',
+              color: 'var(--color-navy, #0f172a)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -603,9 +603,9 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
 
           {/* FR-7.3: Persistent Malpractice Counter directly beside candidate name (UI IMPROVEMENT-029) */}
           {(() => {
-            let badgeBg = 'var(--color-bg-subtle, #f1f5f9)';
+            let badgeBg = 'var(--filterbar-bg, #F4F6FF)';
             let badgeColor = 'var(--color-navy, #334155)';
-            let badgeBorder = '1px solid var(--color-border, #cbd5e1)';
+            let badgeBorder = '1px solid var(--admin-card-border, #E0E7FF)';
             let icon = '✓';
 
             if (malpracticeCount >= 6) {
@@ -636,6 +636,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
                   backgroundColor: badgeBg,
                   color: badgeColor,
                   border: badgeBorder,
+                  borderRadius: 4,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 3,
@@ -656,7 +657,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             height: 10,
             borderRadius: '50%',
             backgroundColor: isWhite ? '#94A3B8' : color,
-            border: isWhite ? '1.5px solid var(--color-seat-not-started-border, #cbd5e1)' : `1px solid ${color}`,
+            border: isWhite ? '1.5px solid var(--admin-card-border, #E0E7FF)' : `1px solid ${color}`,
             display: 'inline-block',
             boxShadow: isWhite ? 'none' : `0 0 6px ${color}`,
             flexShrink: 0,
@@ -690,7 +691,12 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
               className="candidate-set-badge"
               style={{
                 fontSize: '0.68rem',
-                padding: '1px 6px',
+                fontWeight: 700,
+                padding: '2px 7px',
+                borderRadius: 6,
+                background: 'rgba(62, 99, 221, 0.1)',
+                color: 'var(--admin-indigo, #3E63DD)',
+                border: '1px solid rgba(62, 99, 221, 0.25)',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
               }}
@@ -700,7 +706,7 @@ const SeatTile = memo(({ candidate, roomName, onClick, now, isTestEnded }) => {
             </span>
           )}
         </div>
-        <div style={{ fontWeight: 700, color: 'var(--color-navy)', marginTop: 3, fontSize: '0.82rem' }}>
+        <div style={{ fontWeight: 700, color: 'var(--color-navy, #0F172A)', marginTop: 3, fontSize: '0.82rem' }}>
           {candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP' || (isTestEnded && candidate.candidateStartTime)
             ? `${candidate.questionsCompleted ?? 0} Qs Solved`
             : candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && !isCandidateInProgress)
@@ -811,11 +817,11 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
         display: 'grid',
         gridTemplateColumns: '1.4fr 1.8fr 1.1fr 0.9fr 1.1fr 1fr 1.8fr',
         alignItems: 'center',
-        padding: '8px 16px',
-        borderBottom: '1px solid var(--color-border)',
-        borderLeft: isActive ? '4px solid var(--color-primary, #0e7c86)' : '4px solid transparent',
+        padding: '10px 18px',
+        borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+        borderLeft: isActive ? '4px solid var(--admin-indigo, #3E63DD)' : '4px solid transparent',
         fontSize: '0.85rem',
-        background: isActive ? 'var(--color-bg-subtle, rgba(14, 124, 134, 0.08))' : 'var(--color-bg-card)',
+        background: isActive ? 'var(--filterbar-bg, #F4F6FF)' : 'var(--admin-card-bg, #FFFFFF)',
         opacity: 1,
         transition: 'background 0.2s ease, border-left 0.2s ease',
       }}
@@ -829,7 +835,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
             height: 8,
             borderRadius: '50%',
             backgroundColor: isWhite ? '#94A3B8' : color,
-            border: isWhite ? '1.5px solid var(--color-border)' : `1px solid ${color}`,
+            border: isWhite ? '1.5px solid var(--admin-card-border, #E0E7FF)' : `1px solid ${color}`,
             flexShrink: 0,
             boxShadow: isCandidateInProgress ? `0 0 6px ${color}` : 'none',
             transformOrigin: 'center',
@@ -838,7 +844,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
           }}
         />
         <strong
-          style={{ color: 'var(--color-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+          style={{ color: 'var(--color-navy, #0F172A)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
           title={candidate.name || candidate.candidateName || 'Candidate'}
         >
           {candidate.name || candidate.candidateName || 'Candidate'}
@@ -859,7 +865,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       >
         <strong
           style={{
-            color: 'var(--color-navy)',
+            color: 'var(--color-navy, #0F172A)',
             fontSize: '0.84rem',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -877,12 +883,17 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
               className="candidate-set-badge"
               style={{
                 fontSize: '0.7rem',
-                padding: '2px 6px',
+                fontWeight: 700,
+                padding: '2px 7px',
                 gap: 3,
                 flexShrink: 0,
                 whiteSpace: 'nowrap',
                 display: 'inline-flex',
                 alignItems: 'center',
+                background: 'rgba(62, 99, 221, 0.1)',
+                color: 'var(--admin-indigo, #3E63DD)',
+                border: '1px solid rgba(62, 99, 221, 0.25)',
+                borderRadius: 6,
               }}
               title={`Assigned Question Set: ${candidate.assignedQuestionSetName || `Set ${candidate.assignedSetIndex}`}`}
             >
@@ -898,7 +909,7 @@ const CandidateRowItem = memo(({ candidate, roomName, onSelect, onWarn, onDisqua
       </div>
 
       {/* Qs Solved (FEATURE-045: Center aligned) */}
-      <div style={{ color: 'var(--color-navy)', fontWeight: 600, textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ color: 'var(--color-navy, #0F172A)', fontWeight: 600, textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {candidate.status === 'NOT_STARTED' || (!candidate.candidateStartTime && isTestEnded && candidate.questionsCompleted === undefined && candidate.questionsAttempted === undefined)
           ? '—'
           : isTestEnded || candidate.status === 'SUBMITTED' || candidate.status === 'AUTO_SUBMITTED_TIME_UP'
@@ -2299,9 +2310,9 @@ export default function AdminLiveDashboard() {
 
   if (loading) {
     return (
-      <div className="app-layout">
+      <div className="app-layout" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)', minHeight: '100vh' }}>
         <AdminNavbar />
-        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400, background: 'transparent' }}>
           <LoadingDots size="lg" />
         </main>
       </div>
@@ -2310,28 +2321,55 @@ export default function AdminLiveDashboard() {
 
   if (loadError) {
     return (
-      <div className="app-layout">
+      <div className="app-layout" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)', minHeight: '100vh' }}>
         <AdminNavbar />
-        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400, flexDirection: 'column', gap: 16 }}>
-          <div style={{ fontSize: '2.5rem' }}>⚠️</div>
-          <h3 style={{ color: '#1A2B3C', fontWeight: 700 }}>Unable to Load Live Monitoring</h3>
-          <p style={{ color: '#64748B', maxWidth: 460, textAlign: 'center', fontSize: '0.9rem' }}>{loadError}</p>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="btn btn-primary"
-              style={{ padding: '8px 20px', fontSize: '0.85rem' }}
-            >
-              Retry
-            </button>
-            <Link
-              to="/admin/tests"
-              className="btn btn-secondary"
-              style={{ padding: '8px 20px', fontSize: '0.85rem' }}
-            >
-              Back to Tests
-            </Link>
+        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400, flexDirection: 'column', gap: 16, background: 'transparent' }}>
+          <div
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderRadius: 14,
+              padding: '36px 40px',
+              textAlign: 'center',
+              boxShadow: 'var(--admin-card-shadow)',
+              maxWidth: 500,
+            }}
+          >
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚠️</div>
+            <h3 style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700, marginBottom: 8 }}>Unable to Load Live Monitoring</h3>
+            <p style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.9rem', marginBottom: 20 }}>{loadError}</p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="btn btn-primary"
+                style={{
+                  padding: '8px 20px',
+                  fontSize: '0.85rem',
+                  background: 'var(--admin-indigo, #3E63DD)',
+                  borderColor: 'var(--admin-indigo, #3E63DD)',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                }}
+              >
+                Retry
+              </button>
+              <Link
+                to="/admin/tests"
+                className="btn btn-secondary"
+                style={{
+                  padding: '8px 20px',
+                  fontSize: '0.85rem',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  color: 'var(--filterbar-button-text, #1E293B)',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                }}
+              >
+                Back to Tests
+              </Link>
+            </div>
           </div>
         </main>
       </div>
@@ -2340,58 +2378,118 @@ export default function AdminLiveDashboard() {
 
   if (!test) {
     return (
-      <div className="app-layout">
+      <div className="app-layout" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)', minHeight: '100vh' }}>
         <AdminNavbar />
-        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400, flexDirection: 'column', gap: 16 }}>
-          <div style={{ fontSize: '2.5rem' }}>🔍</div>
-          <h3 style={{ color: '#1A2B3C', fontWeight: 700 }}>Test Not Found</h3>
-          <p style={{ color: '#64748B', maxWidth: 460, textAlign: 'center', fontSize: '0.9rem' }}>
-            The requested test could not be found or has been removed.
-          </p>
-          <Link
-            to="/admin/tests"
-            className="btn btn-primary"
-            style={{ padding: '8px 20px', fontSize: '0.85rem' }}
+        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400, flexDirection: 'column', gap: 16, background: 'transparent' }}>
+          <div
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderRadius: 14,
+              padding: '36px 40px',
+              textAlign: 'center',
+              boxShadow: 'var(--admin-card-shadow)',
+              maxWidth: 500,
+            }}
           >
-            Return to Tests
-          </Link>
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
+            <h3 style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700, marginBottom: 8 }}>Test Not Found</h3>
+            <p style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.9rem', marginBottom: 20 }}>
+              The requested test could not be found or has been removed.
+            </p>
+            <Link
+              to="/admin/tests"
+              className="btn btn-primary"
+              style={{
+                padding: '8px 20px',
+                fontSize: '0.85rem',
+                background: 'var(--admin-indigo, #3E63DD)',
+                borderColor: 'var(--admin-indigo, #3E63DD)',
+                borderRadius: 8,
+                fontWeight: 600,
+              }}
+            >
+              Return to Tests
+            </Link>
+          </div>
         </main>
       </div>
     );
   }
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" style={{ background: 'var(--admin-canvas-bg, #EEF2FF)', minHeight: '100vh' }}>
       <AdminNavbar />
-      <main className="main-content">
+      <main className="main-content" style={{ background: 'transparent' }}>
         {/* Breadcrumb Navigation (FEATURE-008: Dynamically rename post-test) */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin/tests" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
+          <Link
+            to="/admin/tests"
+            style={{
+              color: 'var(--admin-indigo, #3E63DD)',
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'opacity 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+          >
             ← Tests
           </Link>
-          <span style={{ color: 'var(--color-text-muted)' }}>/</span>
-          <Link to={`/admin/tests/${testId}`} style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
+          <span style={{ color: 'var(--color-text-muted, #64748B)' }}>/</span>
+          <Link
+            to={`/admin/tests/${testId}`}
+            style={{
+              color: 'var(--admin-indigo, #3E63DD)',
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'opacity 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+          >
             {test?.title || 'Test Details'}
           </Link>
-          <span style={{ color: 'var(--color-text-muted)' }}>/</span>
-          <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>
+          <span style={{ color: 'var(--color-text-muted, #64748B)' }}>/</span>
+          <span style={{ color: 'var(--color-text, #0f172a)', fontWeight: 700 }}>
             {isTestEnded ? 'Test Summary' : 'Live Monitoring'}
           </span>
         </div>
 
         {/* Top Header Card */}
-        <div className="card" style={{ marginBottom: 20, padding: '20px 24px' }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: 20,
+            padding: '24px 28px',
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: 14,
+            boxShadow: 'var(--admin-card-shadow)',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <h1 style={{ fontSize: '1.6rem', color: 'var(--color-navy)', fontWeight: 800 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: '1.6rem', color: 'var(--color-navy, #1E293B)', fontWeight: 800, margin: 0 }}>
                   {test?.title}
                 </h1>
                 <TestStatusBadge
                   status={test?.status || 'LIVE'}
                   style={{ fontSize: '0.8rem', padding: '4px 10px' }}
                 />
-                <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    padding: '3px 10px',
+                    borderRadius: 20,
+                    background: 'rgba(62, 99, 221, 0.1)',
+                    color: 'var(--admin-indigo, #3E63DD)',
+                    border: '1px solid rgba(62, 99, 221, 0.25)',
+                    letterSpacing: '0.04em',
+                  }}
+                >
                   {test?.testType}
                 </span>
 
@@ -2402,7 +2500,7 @@ export default function AdminLiveDashboard() {
                     alignItems: 'center',
                     gap: 8,
                     padding: '4px 12px',
-                    background: 'linear-gradient(135deg, #2d4c95ff 0%, #1E293B 100%)',
+                    background: 'linear-gradient(135deg, #2d4c95 0%, #1E293B 100%)',
                     borderRadius: 8,
                     border: '1px solid #334155',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
@@ -2435,7 +2533,7 @@ export default function AdminLiveDashboard() {
                   </div>
                 </div>
               </div>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 6, marginBottom: 0 }}>
+              <p style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.85rem', marginTop: 8, marginBottom: 0 }}>
                 {isTestEnded
                   ? 'Post-test operational summary & malpractice review'
                   : 'Real-time multi-room monitoring & candidate proctoring'}
@@ -2444,8 +2542,6 @@ export default function AdminLiveDashboard() {
 
             {/* Header Controls: Room Filter, Voice TTS, Links */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-
-
               {/* Voice Announcement Toggle (FR-8.3, removed post-test per FEATURE-008) */}
               {!isTestEnded && (
                 <button
@@ -2453,8 +2549,17 @@ export default function AdminLiveDashboard() {
                     setVoiceEnabled(!voiceEnabled);
                     toast.success(voiceEnabled ? 'Voice announcements muted' : 'Voice announcements enabled');
                   }}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                  className="btn"
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '8px 14px',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--filterbar-button-text, #1E293B)',
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
                   title="AI Voice announcement when candidates submit"
                 >
                   {voiceEnabled ? '🔊 Voice TTS: ON' : '🔇 Voice TTS: OFF'}
@@ -2464,7 +2569,16 @@ export default function AdminLiveDashboard() {
               {/* Room Filter Dropdown (FR-8.2) */}
               <select
                 className="form-select"
-                style={{ width: 180, fontSize: '0.85rem' }}
+                style={{
+                  width: 180,
+                  fontSize: '0.85rem',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  color: 'var(--color-text, #0f172a)',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  padding: '7px 12px',
+                }}
                 value={selectedRoomId}
                 onChange={(e) => setSelectedRoomId(e.target.value)}
               >
@@ -2477,9 +2591,21 @@ export default function AdminLiveDashboard() {
               <Link
                 to={`/admin/tests/${testId}/results`}
                 className="btn btn-primary"
-                style={{ fontSize: '0.85rem', padding: '8px 16px', color: '#ffffff' }}
+                style={{
+                  fontSize: '0.85rem',
+                  padding: '8px 18px',
+                  color: '#ffffff',
+                  background: 'var(--admin-indigo, #3E63DD)',
+                  borderColor: 'var(--admin-indigo, #3E63DD)',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 2px 8px rgba(62, 99, 221, 0.25)',
+                }}
               >
-                View Shortlist &amp; Results →
+                <span>View Shortlist &amp; Results →</span>
               </Link>
             </div>
           </div>
@@ -2490,27 +2616,27 @@ export default function AdminLiveDashboard() {
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
               gap: 12,
-              marginTop: 18,
-              paddingTop: 16,
-              borderTop: '1px solid var(--color-border)',
+              marginTop: 20,
+              paddingTop: 18,
+              borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
             }}
           >
             {/* 1. Duration */}
             <div
               style={{
-                background: 'var(--color-bg-subtle, #F8FAFC)',
-                border: '1px solid var(--color-border, #E2E8F0)',
-                borderRadius: 8,
-                padding: '10px 14px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 10,
+                padding: '12px 16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
                 minWidth: 0,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1rem', lineHeight: 1 }}>⏱️</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   Duration
                 </span>
               </div>
@@ -2532,19 +2658,19 @@ export default function AdminLiveDashboard() {
             {/* 2. Passing Criteria (Renamed from Passing Threshold per FEATURE-027) */}
             <div
               style={{
-                background: 'var(--color-bg-subtle, #F8FAFC)',
-                border: '1px solid var(--color-border, #E2E8F0)',
-                borderRadius: 8,
-                padding: '10px 14px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 10,
+                padding: '12px 16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
                 minWidth: 0,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1rem', lineHeight: 1 }}>✅</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   Passing Criteria
                 </span>
               </div>
@@ -2565,19 +2691,19 @@ export default function AdminLiveDashboard() {
             {/* 3. Question Set / Folder */}
             <div
               style={{
-                background: 'var(--color-bg-subtle, #F8FAFC)',
-                border: '1px solid var(--color-border, #E2E8F0)',
-                borderRadius: 8,
-                padding: '10px 14px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 10,
+                padding: '12px 16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
                 minWidth: 0,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1rem', lineHeight: 1 }}>📁</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   Question Set
                 </span>
               </div>
@@ -2605,19 +2731,19 @@ export default function AdminLiveDashboard() {
             {/* 4. Created */}
             <div
               style={{
-                background: 'var(--color-bg-subtle, #F8FAFC)',
-                border: '1px solid var(--color-border, #E2E8F0)',
-                borderRadius: 8,
-                padding: '10px 14px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 10,
+                padding: '12px 16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
                 minWidth: 0,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1rem', lineHeight: 1 }}>📅</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   Created
                 </span>
               </div>
@@ -2641,10 +2767,10 @@ export default function AdminLiveDashboard() {
             {/* 5. Live Session / Live for */}
             <div
               style={{
-                background: 'var(--color-bg-subtle, #F8FAFC)',
-                border: '1px solid var(--color-border, #E2E8F0)',
-                borderRadius: 8,
-                padding: '10px 14px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 10,
+                padding: '12px 16px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 4,
@@ -2653,7 +2779,7 @@ export default function AdminLiveDashboard() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '1rem', lineHeight: 1 }}>🕐</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   Live Session
                 </span>
               </div>
@@ -2681,7 +2807,7 @@ export default function AdminLiveDashboard() {
                         style={{
                           fontSize: '0.78rem',
                           fontWeight: 700,
-                          color: 'var(--color-primary, #0e7c86)',
+                          color: 'var(--admin-indigo, #3E63DD)',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 4,
@@ -2692,7 +2818,7 @@ export default function AdminLiveDashboard() {
                     )}
                   </>
                 ) : (
-                  <span style={{ color: 'var(--color-text-muted)' }}>Not yet live</span>
+                  <span style={{ color: 'var(--color-text-muted, #64748B)' }}>Not yet live</span>
                 )}
               </div>
             </div>
@@ -2705,10 +2831,10 @@ export default function AdminLiveDashboard() {
             className="card"
             style={{
               marginBottom: 20,
-              padding: '16px 20px',
+              padding: '18px 24px',
               border: '1.5px solid #F59E0B',
-              background: 'var(--color-bg-card)',
-              borderRadius: '12px',
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              borderRadius: 14,
               boxShadow: '0 4px 12px rgba(245, 158, 11, 0.1)',
             }}
           >
@@ -2719,7 +2845,7 @@ export default function AdminLiveDashboard() {
                   <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#d97706', margin: 0 }}>
                     Late Join Requests ({lateJoinRequests.length})
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748B)', margin: 0 }}>
                     The following candidates are requesting entry after the room access window closed.
                   </p>
                 </div>
@@ -2736,17 +2862,17 @@ export default function AdminLiveDashboard() {
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: 12,
-                    background: 'var(--color-bg-subtle)',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
                     padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border)',
+                    borderRadius: 8,
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--color-navy)', fontSize: '0.95rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-navy, #0F172A)', fontSize: '0.95rem' }}>
                       {req.candidateName}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748B)' }}>
                       {req.candidateEmail} {req.candidatePhone ? `· ${req.candidatePhone}` : ''}
                       {' · '}Target: <strong>{req.roomName || req.roomCode}</strong>
                       {req.requestedAt && (
@@ -2759,14 +2885,14 @@ export default function AdminLiveDashboard() {
                     <button
                       className="btn btn-sm btn-success"
                       onClick={() => handleAllowLateEntry(req.roomId, req.candidateId)}
-                      style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6 }}
                     >
                       ✓ Allow Entry
                     </button>
                     <button
                       className="btn btn-sm btn-danger"
                       onClick={() => handleDismissLateJoin(req.roomId, req.candidateId)}
-                      style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6 }}
                     >
                       ✕ Dismiss
                     </button>
@@ -2778,38 +2904,121 @@ export default function AdminLiveDashboard() {
         )}
 
         {/* ── Real-Time Metrics Bar (FEATURE-008: Clear post-test summary metrics) ── */}
-        <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-          <div className="stat-card" style={{ borderLeft: '4px solid #3B82F6' }}>
-            <div className="stat-value" style={{ color: '#3B82F6' }}>{stats.total}</div>
-            <div className="stat-label">{isTestEnded ? 'Total Candidates' : 'Active Candidates'}</div>
+        <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #3B82F6',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#3B82F6', fontSize: '1.8rem', fontWeight: 800 }}>{stats.total}</div>
+            <div className="stat-label" style={{ color: 'var(--color-text-muted, #64748B)', fontWeight: 600, fontSize: '0.82rem', marginTop: 4 }}>
+              {isTestEnded ? 'Total Candidates' : 'Active Candidates'}
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.GREEN}` }}>
-            <div className="stat-value" style={{ color: STATUS_COLORS.GREEN }}>{stats.submitted}</div>
-            <div className="stat-label">Submitted</div>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: `4px solid ${STATUS_COLORS.GREEN}`,
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
+          >
+            <div className="stat-value" style={{ color: STATUS_COLORS.GREEN, fontSize: '1.8rem', fontWeight: 800 }}>{stats.submitted}</div>
+            <div className="stat-label" style={{ color: 'var(--color-text-muted, #64748B)', fontWeight: 600, fontSize: '0.82rem', marginTop: 4 }}>
+              Submitted
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.YELLOW}` }}>
-            <div className="stat-value" style={{ color: '#d97706' }}>{isTestEnded ? 0 : stats.yellow}</div>
-            <div className="stat-label">In Progress</div>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: `4px solid ${STATUS_COLORS.YELLOW}`,
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#d97706', fontSize: '1.8rem', fontWeight: 800 }}>{isTestEnded ? 0 : stats.yellow}</div>
+            <div className="stat-label" style={{ color: 'var(--color-text-muted, #64748B)', fontWeight: 600, fontSize: '0.82rem', marginTop: 4 }}>
+              In Progress
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: `4px solid ${STATUS_COLORS.RED}` }}>
-            <div className="stat-value" style={{ color: STATUS_COLORS.RED }}>{stats.red}</div>
-            <div className="stat-label">Disqualified</div>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: `4px solid ${STATUS_COLORS.RED}`,
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
+          >
+            <div className="stat-value" style={{ color: STATUS_COLORS.RED, fontSize: '1.8rem', fontWeight: 800 }}>{stats.red}</div>
+            <div className="stat-label" style={{ color: 'var(--color-text-muted, #64748B)', fontWeight: 600, fontSize: '0.82rem', marginTop: 4 }}>
+              Disqualified
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #10B981' }}>
-            <div className="stat-value" style={{ color: '#10B981' }}>{stats.passing}</div>
-            <div className="stat-label">Meeting Criteria (≥ {test?.passingCriteria || 1} Qs)</div>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #10B981',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#10B981', fontSize: '1.8rem', fontWeight: 800 }}>{stats.passing}</div>
+            <div className="stat-label" style={{ color: 'var(--color-text-muted, #64748B)', fontWeight: 600, fontSize: '0.82rem', marginTop: 4 }}>
+              Meeting Criteria (≥ {test?.passingCriteria || 1} Qs)
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #8e44ad' }}>
-            <div className="stat-value" style={{ color: '#8e44ad' }}>{stats.totalMalpractice}</div>
-            <div className="stat-label">Total Violations</div>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #8e44ad',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#8e44ad', fontSize: '1.8rem', fontWeight: 800 }}>{stats.totalMalpractice}</div>
+            <div className="stat-label" style={{ color: 'var(--color-text-muted, #64748B)', fontWeight: 600, fontSize: '0.82rem', marginTop: 4 }}>
+              Total Violations
+            </div>
           </div>
         </div>
 
         {/* ── Section 11.8: Seat Map Visualization (FR-7.3 Persistent Counter, FEATURE-008 Post-Test Summary, FEATURE-028 Room Filter) ── */}
-        <div className="card" style={{ marginBottom: 24 }}>
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: 24,
+            padding: 0,
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: 14,
+            boxShadow: 'var(--admin-card-shadow)',
+            overflow: 'hidden',
+          }}
+        >
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <h3 className="card-title" style={{ margin: 0 }}>
+              <h3 className="card-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)' }}>
                 {isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}
               </h3>
               {/* BUG-011 & FEATURE-028: Total Candidate Count Badge with Active Room Filter Counter */}
@@ -2818,11 +3027,11 @@ export default function AdminLiveDashboard() {
                 style={{
                   fontSize: '0.78rem',
                   fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: 6,
-                  background: 'var(--color-bg-subtle, #f1f5f9)',
+                  padding: '4px 12px',
+                  borderRadius: 8,
+                  background: 'var(--filterbar-bg, #F4F6FF)',
                   color: 'var(--color-navy, #0f172a)',
-                  border: '1px solid var(--color-border, #cbd5e1)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
@@ -2850,7 +3059,7 @@ export default function AdminLiveDashboard() {
                 <span>Disqualified</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card, #ffffff)', border: '2px solid var(--color-seat-not-started-border, #cbd5e1)' }} />
+                <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--admin-card-bg, #ffffff)', border: '1.5px solid var(--admin-card-border, #E0E7FF)' }} />
                 <span>Not Started</span>
               </div>
 
@@ -2865,27 +3074,24 @@ export default function AdminLiveDashboard() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'var(--color-bg-subtle, #f1f5f9)',
-                  border: '1.5px solid var(--color-border, #cbd5e1)',
-                  color: 'var(--color-navy, #0f172a)',
-                  padding: '6px 12px',
-                  borderRadius: 6,
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  color: 'var(--filterbar-button-text, #1E293B)',
+                  padding: '6px 14px',
+                  borderRadius: 8,
                   cursor: 'pointer',
                   fontSize: '0.8rem',
                   fontWeight: 700,
                   transition: 'all 0.15s ease',
                   marginLeft: 8,
-                  boxShadow: 'var(--shadow-sm)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-bg-hover, #e2e8f0)';
-                  e.currentTarget.style.borderColor = 'var(--color-primary, #0E7C86)';
-                  e.currentTarget.style.color = 'var(--color-primary, #0E7C86)';
+                  e.currentTarget.style.borderColor = 'var(--admin-indigo, #3E63DD)';
+                  e.currentTarget.style.color = 'var(--admin-indigo, #3E63DD)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--color-bg-subtle, #f1f5f9)';
-                  e.currentTarget.style.borderColor = 'var(--color-border, #cbd5e1)';
-                  e.currentTarget.style.color = 'var(--color-navy, #0f172a)';
+                  e.currentTarget.style.borderColor = 'var(--admin-card-border, #E0E7FF)';
+                  e.currentTarget.style.color = 'var(--filterbar-button-text, #1E293B)';
                 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -2908,12 +3114,13 @@ export default function AdminLiveDashboard() {
                 alignItems: 'center',
                 gap: 8,
                 flexWrap: 'wrap',
-                padding: '10px 16px',
-                background: 'var(--color-bg-subtle, #f8fafc)',
-                borderBottom: '1px solid var(--color-border, #e2e8f0)',
+                padding: '12px 24px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
               }}
             >
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted, #64748b)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--admin-label, #5B6B8A)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                 </svg>
@@ -2924,15 +3131,15 @@ export default function AdminLiveDashboard() {
                 id="room-filter-chip-all"
                 onClick={() => setSelectedRoomId('ALL')}
                 style={{
-                  padding: '4px 12px',
+                  padding: '5px 14px',
                   borderRadius: 20,
                   fontSize: '0.78rem',
                   fontWeight: selectedRoomId === 'ALL' ? 700 : 500,
                   cursor: 'pointer',
-                  border: selectedRoomId === 'ALL' ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
-                  background: selectedRoomId === 'ALL' ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
-                  color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-navy, #0f172a)',
-                  boxShadow: selectedRoomId === 'ALL' ? '0 1px 3px rgba(14, 124, 134, 0.2)' : 'none',
+                  border: selectedRoomId === 'ALL' ? '1.5px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-card-border, #E0E7FF)',
+                  background: selectedRoomId === 'ALL' ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-bg, #FFFFFF)',
+                  color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--filterbar-button-text, #1E293B)',
+                  boxShadow: selectedRoomId === 'ALL' ? '0 1px 4px rgba(62, 99, 221, 0.25)' : 'none',
                   transition: 'all 0.15s ease',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -2945,8 +3152,8 @@ export default function AdminLiveDashboard() {
                     fontSize: '0.72rem',
                     padding: '1px 6px',
                     borderRadius: 10,
-                    background: selectedRoomId === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
-                    color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                    background: selectedRoomId === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--filterbar-bg, #F4F6FF)',
+                    color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-text-muted, #64748B)',
                     fontWeight: 700,
                   }}
                 >
@@ -2963,15 +3170,15 @@ export default function AdminLiveDashboard() {
                     id={`room-filter-chip-${r._id}`}
                     onClick={() => setSelectedRoomId(isSelected ? 'ALL' : String(r._id))}
                     style={{
-                      padding: '4px 12px',
+                      padding: '5px 14px',
                       borderRadius: 20,
                       fontSize: '0.78rem',
                       fontWeight: isSelected ? 700 : 500,
                       cursor: 'pointer',
-                      border: isSelected ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
-                      background: isSelected ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
-                      color: isSelected ? '#ffffff' : 'var(--color-navy, #0f172a)',
-                      boxShadow: isSelected ? '0 1px 3px rgba(14, 124, 134, 0.2)' : 'none',
+                      border: isSelected ? '1.5px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-card-border, #E0E7FF)',
+                      background: isSelected ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-bg, #FFFFFF)',
+                      color: isSelected ? '#ffffff' : 'var(--filterbar-button-text, #1E293B)',
+                      boxShadow: isSelected ? '0 1px 4px rgba(62, 99, 221, 0.25)' : 'none',
                       transition: 'all 0.15s ease',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -2984,8 +3191,8 @@ export default function AdminLiveDashboard() {
                         fontSize: '0.72rem',
                         padding: '1px 6px',
                         borderRadius: 10,
-                        background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
-                        color: isSelected ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                        background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--filterbar-bg, #F4F6FF)',
+                        color: isSelected ? '#ffffff' : 'var(--color-text-muted, #64748B)',
                         fontWeight: 700,
                       }}
                     >
@@ -2998,9 +3205,9 @@ export default function AdminLiveDashboard() {
           )}
 
           {seatMapCandidates.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted, #64748B)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📡</div>
-              <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>
+              <h4 style={{ color: 'var(--color-navy, #0F172A)', marginBottom: 4 }}>
                 {selectedRoomId !== 'ALL'
                   ? 'No candidates found in the selected room.'
                   : isTestEnded
@@ -3021,7 +3228,7 @@ export default function AdminLiveDashboard() {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                 gap: 14,
-                padding: '8px 0',
+                padding: '20px 24px',
               }}
             >
               {seatMapCandidates.map((c) => (
@@ -3039,13 +3246,23 @@ export default function AdminLiveDashboard() {
         </div>
 
         {/* ── Candidate Roster & Proctoring Table (Section 13: react-window Virtualization) ── */}
-        <div className="card">
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div
+          className="card"
+          style={{
+            padding: 0,
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: 14,
+            boxShadow: 'var(--admin-card-shadow)',
+            overflow: 'hidden',
+          }}
+        >
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
             <div>
-              <h3 className="card-title">
+              <h3 className="card-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)' }}>
                 {isTestEnded ? 'Candidate Proctoring Summary' : 'Candidate Live Proctoring'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748B)', marginTop: 4, marginBottom: 0 }}>
                 {candidateList.length > 50
                   ? `⚡ Virtualized View Active (${candidateList.length} candidates — 60fps steady)`
                   : `Showing ${candidateList.length} ${isTestEnded ? 'candidate(s) in summary' : 'connected candidate(s)'}`}
@@ -3058,14 +3275,30 @@ export default function AdminLiveDashboard() {
                 type="text"
                 className="form-control"
                 placeholder="Search candidate..."
-                style={{ width: 200, fontSize: '0.8rem', padding: '6px 12px' }}
+                style={{
+                  width: 200,
+                  fontSize: '0.85rem',
+                  padding: '8px 14px',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  borderRadius: 8,
+                  color: 'var(--color-text, #0f172a)',
+                }}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
 
               <select
                 className="form-select"
-                style={{ width: 140, fontSize: '0.8rem', padding: '6px 10px' }}
+                style={{
+                  width: 150,
+                  fontSize: '0.85rem',
+                  padding: '8px 14px',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  borderRadius: 8,
+                  color: 'var(--color-text, #0f172a)',
+                }}
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -3082,13 +3315,13 @@ export default function AdminLiveDashboard() {
             style={{
               display: 'grid',
               gridTemplateColumns: '1.4fr 1.8fr 1.1fr 0.9fr 1.1fr 1fr 1.8fr',
-              padding: '10px 16px',
+              padding: '12px 18px',
               borderLeft: '4px solid transparent',
-              background: 'var(--color-table-header-bg)',
-              borderBottom: '1.5px solid var(--color-border)',
+              background: 'var(--color-table-header-bg, #111827)',
+              borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
               fontWeight: 700,
               fontSize: '0.8rem',
-              color: 'var(--color-table-header-text)',
+              color: 'var(--color-table-header-text, #F9FAFB)',
               alignItems: 'center',
             }}
           >
@@ -3158,38 +3391,87 @@ export default function AdminLiveDashboard() {
 
         {/* ── Candidate Inspect Modal with Malpractice Proof & Evidence History (FR-7.3, FR-7.4) ── */}
         {activeInspectCandidate && (
-          <div className="modal-backdrop" onClick={handleCloseInspectModal}>
-            <div id="candidate-inspection-modal" className="modal-container" style={{ maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+          <div className="modal-backdrop" onClick={handleCloseInspectModal} style={{ zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }}>
+            <div
+              id="candidate-inspection-modal"
+              className="modal-container"
+              style={{
+                maxWidth: 680,
+                width: '100%',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                borderRadius: 16,
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                boxShadow: '0 20px 50px rgba(62, 99, 221, 0.15)',
+                overflow: 'hidden',
+                animation: 'modalSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
                 <div>
-                  <h3 className="modal-title" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    🔍 Candidate Inspection &amp; Evidence
+                  <h3 className="modal-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <span>🔍</span> Candidate Inspection &amp; Evidence
                   </h3>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 2, display: 'block' }}>
                     Live Proctoring &amp; Malpractice Review
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleCloseInspectModal}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.25rem',
+                    cursor: 'pointer',
+                    color: 'var(--admin-label, #5B6B8A)',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    lineHeight: 1,
+                  }}
+                  aria-label="Close modal"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', padding: '20px', paddingRight: '16px' }}>
                 {/* Top Info Card */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-bg-subtle)', padding: 14, borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    padding: '14px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    flexWrap: 'wrap',
+                    gap: 10,
+                  }}
+                >
                   <div>
-                    <h4 style={{ fontSize: '1.15rem', color: 'var(--color-navy)', fontWeight: 800, margin: 0 }}>
+                    <h4 style={{ fontSize: '1.15rem', color: 'var(--color-navy, #0F172A)', fontWeight: 800, margin: 0 }}>
                       {activeInspectCandidate.name || activeInspectCandidate.candidateName || 'Candidate'}
                     </h4>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                      {activeInspectCandidate.email || activeInspectCandidate.candidateEmail || ''} {activeInspectCandidate.email || activeInspectCandidate.candidateEmail ? '·' : ''} Room: <strong>{roomsById[activeInspectCandidate.roomId] || activeInspectCandidate.roomName || 'Assigned Room'}</strong>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--admin-label, #5B6B8A)' }}>
+                      {activeInspectCandidate.email || activeInspectCandidate.candidateEmail || ''} {activeInspectCandidate.email || activeInspectCandidate.candidateEmail ? '·' : ''} Room: <strong style={{ color: 'var(--color-navy, #0F172A)' }}>{roomsById[activeInspectCandidate.roomId] || activeInspectCandidate.roomName || 'Assigned Room'}</strong>
                       {(activeInspectCandidate.assignedQuestionSetName || activeInspectCandidate.assignedSetIndex) && (
                         <span style={{ marginLeft: 8 }}>
-                          · Set: <strong>{activeInspectCandidate.assignedQuestionSetName ? `${activeInspectCandidate.assignedQuestionSetName}${activeInspectCandidate.assignedSetIndex ? ` (Set ${activeInspectCandidate.assignedSetIndex})` : ''}` : `Set ${activeInspectCandidate.assignedSetIndex}`}</strong>
+                          · Set: <strong style={{ color: 'var(--color-navy, #0F172A)' }}>{activeInspectCandidate.assignedQuestionSetName ? `${activeInspectCandidate.assignedQuestionSetName}${activeInspectCandidate.assignedSetIndex ? ` (Set ${activeInspectCandidate.assignedSetIndex})` : ''}` : `Set ${activeInspectCandidate.assignedSetIndex}`}</strong>
                         </span>
                       )}
                     </span>
@@ -3222,6 +3504,7 @@ export default function AdminLiveDashboard() {
                           fontWeight: 700,
                           fontSize: '0.8rem',
                           padding: '4px 10px',
+                          borderRadius: 6,
                         }}
                       >
                         {displayStatus}
@@ -3234,27 +3517,28 @@ export default function AdminLiveDashboard() {
                 <div
                   id="inspect-candidate-key-metrics-grid"
                   style={{
-                    background: 'var(--color-bg-card)',
-                    padding: '14px 16px',
-                    borderRadius: 8,
-                    border: '1px solid var(--color-border)',
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    padding: '16px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    boxShadow: 'var(--admin-card-shadow)',
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '12px 16px',
+                    gap: '14px 18px',
                     fontSize: '0.85rem',
                   }}
                 >
                   {/* Row 1 - Existing Metrics (Preserved Unchanged) */}
                   <div>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Questions Solved:</span>
-                    <strong style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
+                    <span style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem', fontWeight: 600 }}>Questions Solved:</span>
+                    <strong style={{ display: 'block', color: 'var(--color-navy, #0F172A)', fontSize: '1.1rem', marginTop: 2, fontWeight: 800 }}>
                       {activeInspectCandidate.status === 'NOT_STARTED' || (!activeInspectCandidate.candidateStartTime && activeInspectCandidate.status !== 'SUBMITTED' && activeInspectCandidate.status !== 'IN_PROGRESS')
                         ? '—'
                         : (activeInspectCandidate.questionsCompleted ?? 0)}
                     </strong>
                   </div>
                   <div>
-                    <span id="inspect-candidate-total-violations-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Total Violations:</span>
+                    <span id="inspect-candidate-total-violations-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem', fontWeight: 600 }}>Total Violations:</span>
                     {(() => {
                       const totalViolations = Math.max(activeInspectCandidate.malpracticeCount || 0, totalLogsCount || 0, candidateLogs.length);
                       let color = '#059669';
@@ -3279,7 +3563,7 @@ export default function AdminLiveDashboard() {
                             gap: 5,
                             color,
                             fontSize: '1.15rem',
-                            fontWeight: 700,
+                            fontWeight: 800,
                             marginTop: 2,
                           }}
                         >
@@ -3299,10 +3583,10 @@ export default function AdminLiveDashboard() {
                       );
                       return (
                         <>
-                          <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                          <span id="inspect-candidate-time-spent-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem', fontWeight: 600 }}>
                             {timeInfo.label}
                           </span>
-                          <strong id="inspect-candidate-time-spent-val" style={{ display: 'block', fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-navy)', fontSize: '1.1rem', marginTop: 2 }}>
+                          <strong id="inspect-candidate-time-spent-val" style={{ display: 'block', fontFamily: 'monospace', fontWeight: 800, color: 'var(--color-navy, #0F172A)', fontSize: '1.1rem', marginTop: 2 }}>
                             {timeInfo.value}
                           </strong>
                         </>
@@ -3311,27 +3595,27 @@ export default function AdminLiveDashboard() {
                   </div>
 
                   {/* Row 2 - Timeline Metrics (FEATURE-021) */}
-                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
-                    <span id="inspect-candidate-room-joined-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                  <div style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)', paddingTop: 10 }}>
+                    <span id="inspect-candidate-room-joined-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem', fontWeight: 600 }}>
                       Room Joined:
                     </span>
-                    <strong id="inspect-candidate-room-joined-val" style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.05rem', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                    <strong id="inspect-candidate-room-joined-val" style={{ display: 'block', color: 'var(--color-navy, #0F172A)', fontSize: '1.05rem', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
                       {getInspectRoomJoinedText(activeInspectCandidate)}
                     </strong>
                   </div>
-                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
-                    <span id="inspect-candidate-test-start-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                  <div style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)', paddingTop: 10 }}>
+                    <span id="inspect-candidate-test-start-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem', fontWeight: 600 }}>
                       Test Start:
                     </span>
-                    <strong id="inspect-candidate-test-start-val" style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.05rem', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                    <strong id="inspect-candidate-test-start-val" style={{ display: 'block', color: 'var(--color-navy, #0F172A)', fontSize: '1.05rem', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
                       {getInspectTestStartText(activeInspectCandidate)}
                     </strong>
                   </div>
-                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
-                    <span id="inspect-candidate-test-end-label" style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                  <div style={{ borderTop: '1px solid var(--admin-card-border, #E0E7FF)', paddingTop: 10 }}>
+                    <span id="inspect-candidate-test-end-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem', fontWeight: 600 }}>
                       Test End:
                     </span>
-                    <strong id="inspect-candidate-test-end-val" style={{ display: 'block', color: 'var(--color-navy)', fontSize: '1.05rem', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                    <strong id="inspect-candidate-test-end-val" style={{ display: 'block', color: 'var(--color-navy, #0F172A)', fontSize: '1.05rem', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
                       {getInspectTestEndText(activeInspectCandidate)}
                     </strong>
                   </div>
@@ -3340,7 +3624,7 @@ export default function AdminLiveDashboard() {
                 {/* Malpractice Logs & Evidence Section */}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                    <h4 style={{ fontSize: '0.96rem', fontWeight: 700, color: 'var(--color-navy)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                    <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                       <span>📸</span> Malpractice Violation History &amp; Proof Screenshots
                     </h4>
                     {(() => {
@@ -3385,7 +3669,7 @@ export default function AdminLiveDashboard() {
                           justifyContent: 'center',
                           gap: 8,
                           padding: '12px 0',
-                          color: 'var(--color-text-muted)',
+                          color: 'var(--admin-label, #5B6B8A)',
                           fontSize: '0.85rem',
                         }}
                       >
@@ -3399,8 +3683,8 @@ export default function AdminLiveDashboard() {
                           <div
                             key={i}
                             style={{
-                              background: 'var(--color-bg-subtle)',
-                              border: '1px solid var(--color-border)',
+                              background: 'var(--filterbar-bg, #F4F6FF)',
+                              border: '1px solid var(--admin-card-border, #E0E7FF)',
                               borderRadius: 8,
                               padding: 14,
                               display: 'flex',
@@ -3412,26 +3696,26 @@ export default function AdminLiveDashboard() {
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <div style={{ width: 110, height: 20, background: 'var(--color-border)', borderRadius: 4 }} />
-                                <div style={{ width: 130, height: 16, background: 'var(--color-border)', borderRadius: 4 }} />
+                                <div style={{ width: 110, height: 20, background: 'var(--admin-card-border, #E0E7FF)', borderRadius: 4 }} />
+                                <div style={{ width: 130, height: 16, background: 'var(--admin-card-border, #E0E7FF)', borderRadius: 4 }} />
                               </div>
-                              <div style={{ width: 80, height: 20, background: 'var(--color-border)', borderRadius: 4 }} />
+                              <div style={{ width: 80, height: 20, background: 'var(--admin-card-border, #E0E7FF)', borderRadius: 4 }} />
                             </div>
-                            <div style={{ width: '100%', height: 44, background: 'var(--color-border)', borderRadius: 6, opacity: 0.6 }} />
+                            <div style={{ width: '100%', height: 44, background: 'var(--admin-card-border, #E0E7FF)', borderRadius: 6, opacity: 0.6 }} />
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : candidateLogs.length === 0 ? (
                     (activeInspectCandidate.malpracticeCount || 0) > 0 ? (
-                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', color: '#d97706', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ background: 'var(--filterbar-bg, #F4F6FF)', border: '1px solid var(--admin-card-border, #E0E7FF)', color: '#d97706', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: '1.4rem' }}>⚠️</span>
                         <div>
                           <strong>Violations Recorded:</strong> {activeInspectCandidate.malpracticeCount} violation(s) registered for this candidate. Loading incident history...
                         </div>
                       </div>
                     ) : (
-                      <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid #10b98140', color: '#059669', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ background: 'var(--filterbar-bg, #F4F6FF)', border: '1px solid #10b98140', color: '#059669', padding: '16px', borderRadius: 8, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: '1.4rem' }}>✓</span>
                         <div>
                           <strong>Clean Record:</strong> No malpractice violations or suspicious events have been logged for this candidate.
@@ -3449,8 +3733,8 @@ export default function AdminLiveDashboard() {
                           <div
                             key={log._id || index}
                             style={{
-                              background: 'var(--color-bg-subtle)',
-                              border: `1.5px solid ${isDisqualified ? '#fca5a5' : isWarned ? '#fcd34d' : 'var(--color-border)'}`,
+                              background: 'var(--filterbar-bg, #F4F6FF)',
+                              border: `1.5px solid ${isDisqualified ? '#fca5a5' : isWarned ? '#fcd34d' : 'var(--admin-card-border, #E0E7FF)'}`,
                               borderRadius: 8,
                               padding: 14,
                               display: 'flex',
@@ -3466,7 +3750,7 @@ export default function AdminLiveDashboard() {
                                     ? 'badge-danger'
                                     : 'badge-warning'
                                     }`}
-                                  style={{ fontWeight: 700, fontSize: '0.75rem', padding: '3px 8px' }}
+                                  style={{ fontWeight: 700, fontSize: '0.75rem', padding: '3px 8px', borderRadius: 4 }}
                                 >
                                   {log.violationType === 'PHONE_DETECTED' && '📱 Phone Detected'}
                                   {log.violationType === 'MULTIPLE_FACES' && '👥 Multiple Faces'}
@@ -3476,19 +3760,19 @@ export default function AdminLiveDashboard() {
                                   {log.violationType === 'CAMERA_DISCONNECTED' && '📷 Camera Disconnected'}
                                   {!['PHONE_DETECTED', 'MULTIPLE_FACES', 'NO_FACE_15MIN', 'TAB_SWITCH', 'FULLSCREEN_EXIT', 'CAMERA_DISCONNECTED'].includes(log.violationType) && (log.violationType || 'Violation')}
                                 </span>
-                                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)' }}>
                                   🕒 {new Date(log.detectedAt).toLocaleTimeString()} · {new Date(log.detectedAt).toLocaleDateString()}
                                 </span>
                               </div>
 
                               <div>
                                 {isDisqualified && (
-                                  <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                  <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>
                                     🚫 Disqualified
                                   </span>
                                 )}
                                 {isWarned && (
-                                  <span className="badge badge-warning" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                  <span className="badge badge-warning" style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>
                                     ⚠️ Warning Issued
                                   </span>
                                 )}
@@ -3517,7 +3801,7 @@ export default function AdminLiveDashboard() {
                             {/* Camera Disconnect Specific Details */}
                             {log.violationType === 'CAMERA_DISCONNECTED' && (
                               <div style={{
-                                background: 'var(--color-bg-card)',
+                                background: 'var(--admin-card-bg, #FFFFFF)',
                                 border: `1px solid ${log.reconnectAt ? '#a7f3d0' : '#fecaca'}`,
                                 borderRadius: 6,
                                 padding: '8px 12px',
@@ -3531,12 +3815,12 @@ export default function AdminLiveDashboard() {
                                     {log.reconnectAt ? '🟢 Resolved (Camera Reconnected & Face Verified)' : '🔴 Camera Disconnected — Opaque Overlay & Lock Active'}
                                   </span>
                                   {log.durationSeconds !== null && log.durationSeconds !== undefined && (
-                                    <span style={{ fontWeight: 800, color: 'var(--color-text)', background: 'var(--color-bg-subtle)', padding: '2px 8px', borderRadius: 4, fontSize: '0.78rem' }}>
+                                    <span style={{ fontWeight: 800, color: 'var(--color-text)', background: 'var(--filterbar-bg, #F4F6FF)', padding: '2px 8px', borderRadius: 4, fontSize: '0.78rem' }}>
                                       Duration: {log.durationSeconds}s {log.durationSeconds >= 60 ? `(${Math.floor(log.durationSeconds / 60)}m ${log.durationSeconds % 60}s)` : ''}
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                                <div style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.75rem' }}>
                                   Disconnected at: <strong>{new Date(log.disconnectAt || log.detectedAt).toLocaleTimeString()}</strong>
                                   {log.reconnectAt && (
                                     <span> · Reconnected at: <strong>{new Date(log.reconnectAt).toLocaleTimeString()}</strong></span>
@@ -3548,13 +3832,13 @@ export default function AdminLiveDashboard() {
                             {/* Proof Screenshot Frame */}
                             {log.proofScreenshotUrl ? (
                               <div>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)', display: 'block', marginBottom: 4, fontWeight: 600 }}>
                                   Captured Proof Evidence:
                                 </span>
                                 <div
                                   style={{
                                     position: 'relative',
-                                    border: '1px solid var(--color-border)',
+                                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                                     borderRadius: 6,
                                     overflow: 'hidden',
                                     cursor: 'zoom-in',
@@ -3585,14 +3869,14 @@ export default function AdminLiveDashboard() {
                                 </div>
                               </div>
                             ) : (
-                              <div style={{ background: 'var(--color-bg-card)', padding: '8px 12px', borderRadius: 6, color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                              <div style={{ background: 'var(--admin-card-bg, #FFFFFF)', padding: '8px 12px', borderRadius: 6, color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem' }}>
                                 📷 No image frame captured for this event.
                               </div>
                             )}
 
                             {/* Review Action Buttons */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--color-border)' }}>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--admin-card-border, #E0E7FF)' }}>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)' }}>
                                 {log.reviewedBy ? `Reviewed by ${log.reviewedBy.name || 'Admin'}` : 'Admin Review Action:'}
                               </span>
                               <div style={{ display: 'flex', gap: 8 }}>
@@ -3607,6 +3891,7 @@ export default function AdminLiveDashboard() {
                                       color: isWarned ? '#ffffff' : '#f59e0b',
                                       borderColor: '#f59e0b',
                                       background: isWarned ? '#f59e0b' : 'transparent',
+                                      borderRadius: 6,
                                     }}
                                     disabled={isDisqualified}
                                   >
@@ -3620,6 +3905,7 @@ export default function AdminLiveDashboard() {
                                   style={{
                                     padding: '3px 10px', fontSize: '0.72rem',
                                     background: isDisqualified ? '#dc2626' : undefined,
+                                    borderRadius: 6,
                                   }}
                                   disabled={isDisqualified}
                                 >
@@ -3646,6 +3932,9 @@ export default function AdminLiveDashboard() {
                               alignItems: 'center',
                               gap: 8,
                               cursor: loadingMoreLogs ? 'not-allowed' : 'pointer',
+                              background: 'var(--admin-card-bg, #FFFFFF)',
+                              border: '1px solid var(--admin-card-border, #E0E7FF)',
+                              borderRadius: 8,
                             }}
                           >
                             {loadingMoreLogs ? (
@@ -3664,7 +3953,17 @@ export default function AdminLiveDashboard() {
                 </div>
               </div>
 
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                className="modal-footer"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  padding: '14px 20px',
+                }}
+              >
                 {/* FEATURE-024: View Result button on Candidate Inspection & Evidence modal */}
                 <button
                   type="button"
@@ -3672,17 +3971,20 @@ export default function AdminLiveDashboard() {
                   disabled={!isCandidateSubmitted(activeInspectCandidate, isTestEnded)}
                   className="btn btn-primary"
                   style={{
-                    background: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#0E7C86' : 'var(--color-bg-subtle)',
-                    borderColor: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#0E7C86' : 'var(--color-border)',
-                    color: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#ffffff' : 'var(--color-text-muted)',
+                    background: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? 'var(--admin-indigo, #3E63DD)' : 'var(--filterbar-bg, #F4F6FF)',
+                    borderColor: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-border, #E0E7FF)',
+                    color: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '#ffffff' : 'var(--admin-label, #5B6B8A)',
                     opacity: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? 1 : 0.5,
                     cursor: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? 'pointer' : 'not-allowed',
-                    padding: '6px 16px',
+                    padding: '8px 18px',
                     fontSize: '0.85rem',
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    borderRadius: 8,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
+                    boxShadow: isCandidateSubmitted(activeInspectCandidate, isTestEnded) ? '0 2px 8px rgba(62, 99, 221, 0.3)' : 'none',
+                    transition: 'all 0.15s ease',
                   }}
                   title={
                     isCandidateSubmitted(activeInspectCandidate, isTestEnded)
@@ -3696,7 +3998,15 @@ export default function AdminLiveDashboard() {
                   type="button"
                   onClick={handleCloseInspectModal}
                   className="btn btn-secondary"
-                  style={{ padding: '6px 16px' }}
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 8,
+                    color: 'var(--color-navy, #0F172A)',
+                  }}
                 >
                   Close
                 </button>
@@ -3716,6 +4026,7 @@ export default function AdminLiveDashboard() {
               justifyContent: 'center',
               padding: 20,
               background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
             }}
           >
             <div
@@ -3723,19 +4034,19 @@ export default function AdminLiveDashboard() {
               style={{
                 maxWidth: 580,
                 width: '100%',
-                background: 'var(--color-modal-bg)',
-                borderRadius: 12,
-                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                borderRadius: 16,
+                boxShadow: '0 20px 50px rgba(220, 38, 38, 0.25)',
                 overflow: 'hidden',
                 border: '2px solid #ef4444',
-                animation: 'modalSlideIn 0.25s ease-out',
+                animation: 'modalSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div
                 style={{
-                  background: 'var(--color-modal-header-bg)',
-                  borderBottom: '1px solid var(--color-border)',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                   padding: '16px 20px',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -3745,10 +4056,10 @@ export default function AdminLiveDashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>⚠️</span>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#dc2626', fontWeight: 700 }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#dc2626', fontWeight: 800 }}>
                       Real-Time Malpractice Alert
                     </h3>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)' }}>
                       Automated violation flagged by proctoring engine
                     </span>
                   </div>
@@ -3763,7 +4074,8 @@ export default function AdminLiveDashboard() {
                     color: '#dc2626',
                     cursor: 'pointer',
                     padding: '4px 8px',
-                    borderRadius: 4,
+                    borderRadius: 6,
+                    lineHeight: 1,
                   }}
                   aria-label="Dismiss alert"
                 >
@@ -3777,35 +4089,35 @@ export default function AdminLiveDashboard() {
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: 12,
-                    background: 'var(--color-bg-subtle)',
-                    padding: 14,
-                    borderRadius: 8,
-                    border: '1px solid var(--color-border)',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    padding: '14px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', textTransform: 'uppercase', fontWeight: 700 }}>
                       Candidate
                     </div>
-                    <div style={{ fontWeight: 700, color: 'var(--color-navy)', fontSize: '0.95rem' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--color-navy, #0F172A)', fontSize: '0.95rem', marginTop: 2 }}>
                       {activeAlert.candidateName || 'Candidate'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)' }}>
                       {activeAlert.candidateEmail || ''}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', textTransform: 'uppercase', fontWeight: 700 }}>
                       Assigned Room
                     </div>
-                    <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-navy, #0F172A)', fontSize: '0.9rem', marginTop: 2 }}>
                       {activeAlert.roomName || 'Assigned Room'}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', textTransform: 'uppercase', fontWeight: 700 }}>
                       Violation Type
                     </div>
                     <span
@@ -3816,6 +4128,7 @@ export default function AdminLiveDashboard() {
                         padding: '3px 8px',
                         marginTop: 2,
                         display: 'inline-block',
+                        borderRadius: 4,
                       }}
                     >
                       {activeAlert.violationType?.replace(/_/g, ' ') || 'MALPRACTICE'}
@@ -3823,10 +4136,10 @@ export default function AdminLiveDashboard() {
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)', textTransform: 'uppercase', fontWeight: 700 }}>
                       Total Violations
                     </div>
-                    <div style={{ fontWeight: 800, color: '#dc2626', fontSize: '1rem' }}>
+                    <div style={{ fontWeight: 800, color: '#dc2626', fontSize: '1rem', marginTop: 2 }}>
                       {activeAlert.currentCount || 1} {activeAlert.currentCount === 1 ? 'incident' : 'incidents'}
                     </div>
                   </div>
@@ -3834,11 +4147,11 @@ export default function AdminLiveDashboard() {
 
                 {/* Camera Disconnected Security Notification */}
                 {activeAlert.violationType === 'CAMERA_DISCONNECTED' && (
-                  <div style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '10px 14px' }}>
+                  <div style={{ background: 'var(--filterbar-bg, #F4F6FF)', border: '1px solid var(--admin-card-border, #E0E7FF)', borderRadius: 8, padding: '10px 14px' }}>
                     <span style={{ fontWeight: 700, color: '#dc2626', display: 'block', fontSize: '0.85rem' }}>
                       📷 Camera Disconnected Security Alert
                     </span>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                    <span style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.78rem' }}>
                       Candidate camera was disconnected. Fullscreen opaque blackout overlay and editor lock are active.
                     </span>
                     {activeAlert.durationSeconds !== null && activeAlert.durationSeconds !== undefined && (
@@ -3853,17 +4166,17 @@ export default function AdminLiveDashboard() {
                 {activeAlert.proofScreenshotUrl ? (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-navy, #0F172A)' }}>
                         Captured Proof Evidence:
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)' }}>
                         Click image to enlarge
                       </span>
                     </div>
                     <div
                       style={{
                         position: 'relative',
-                        border: '1px solid var(--color-border)',
+                        border: '1px solid var(--admin-card-border, #E0E7FF)',
                         borderRadius: 8,
                         overflow: 'hidden',
                         cursor: 'zoom-in',
@@ -3901,10 +4214,11 @@ export default function AdminLiveDashboard() {
                 ) : (
                   <div
                     style={{
-                      background: 'var(--color-bg-card)',
+                      background: 'var(--filterbar-bg, #F4F6FF)',
                       padding: '16px 14px',
-                      borderRadius: 6,
-                      color: 'var(--color-text-muted)',
+                      borderRadius: 8,
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--admin-label, #5B6B8A)',
                       fontSize: '0.82rem',
                       textAlign: 'center',
                     }}
@@ -3923,9 +4237,9 @@ export default function AdminLiveDashboard() {
 
               <div
                 style={{
-                  background: 'var(--color-bg-subtle)',
-                  borderTop: '1px solid var(--color-border)',
-                  padding: '12px 20px',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  padding: '14px 20px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -3949,7 +4263,15 @@ export default function AdminLiveDashboard() {
                     closeActiveAlert();
                   }}
                   className="btn btn-secondary"
-                  style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 8,
+                    color: 'var(--color-navy, #0F172A)',
+                  }}
                 >
                   🔍 Inspect Candidate
                 </button>
@@ -3974,9 +4296,10 @@ export default function AdminLiveDashboard() {
                       }}
                       className="btn btn-warning"
                       style={{
-                        padding: '6px 14px',
+                        padding: '8px 16px',
                         fontSize: '0.82rem',
-                        fontWeight: 600,
+                        fontWeight: 700,
+                        borderRadius: 8,
                       }}
                     >
                       ⚠️ Warn Candidate
@@ -3998,7 +4321,7 @@ export default function AdminLiveDashboard() {
                       closeActiveAlert();
                     }}
                     className="btn btn-danger"
-                    style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                    style={{ padding: '8px 16px', fontSize: '0.82rem', fontWeight: 700, borderRadius: 8 }}
                   >
                     🚫 Disqualify
                   </button>
@@ -4007,7 +4330,15 @@ export default function AdminLiveDashboard() {
                     type="button"
                     onClick={closeActiveAlert}
                     className="btn btn-secondary"
-                    style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      background: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      borderRadius: 8,
+                      color: 'var(--color-navy, #0F172A)',
+                    }}
                   >
                     Dismiss
                   </button>
@@ -4029,6 +4360,7 @@ export default function AdminLiveDashboard() {
               justifyContent: 'center',
               padding: 20,
               background: 'rgba(0, 0, 0, 0.85)',
+              backdropFilter: 'blur(4px)',
             }}
           >
             <div
@@ -4041,9 +4373,10 @@ export default function AdminLiveDashboard() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 background: '#0f172a',
-                borderRadius: 8,
+                borderRadius: 12,
                 boxShadow: '0 12px 40px rgba(0, 0, 0, 0.7)',
                 overflow: 'hidden',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -4107,7 +4440,7 @@ export default function AdminLiveDashboard() {
               width: '100vw',
               height: '100vh',
               zIndex: 900,
-              background: 'var(--color-bg, #0b0f19)',
+              background: 'var(--admin-canvas-bg, #EEF2FF)',
               display: 'flex',
               flexDirection: 'column',
               boxSizing: 'border-box',
@@ -4121,15 +4454,16 @@ export default function AdminLiveDashboard() {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '16px 28px',
-                background: 'var(--color-bg-card, #ffffff)',
-                borderBottom: '1.5px solid var(--color-border, #cbd5e1)',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                boxShadow: 'var(--admin-card-shadow)',
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 12,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-navy, #0f172a)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>{isTestEnded ? 'Physical Seat Map Summary' : 'Live Physical Seat Map'}</span>
                   <span
                     style={{
@@ -4138,7 +4472,7 @@ export default function AdminLiveDashboard() {
                       padding: '2px 8px',
                       borderRadius: 12,
                       background: isTestEnded ? 'rgba(100, 116, 139, 0.12)' : 'rgba(16, 185, 129, 0.15)',
-                      color: isTestEnded ? 'var(--color-text-muted, #475569)' : '#059669',
+                      color: isTestEnded ? 'var(--admin-label, #5B6B8A)' : '#059669',
                       border: `1px solid ${isTestEnded ? 'rgba(100, 116, 139, 0.3)' : 'rgba(16, 185, 129, 0.35)'}`,
                     }}
                   >
@@ -4146,7 +4480,7 @@ export default function AdminLiveDashboard() {
                   </span>
                 </h3>
                 {test?.testTitle && (
-                  <span style={{ fontSize: '0.88rem', color: 'var(--color-text-muted, #64748b)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.88rem', color: 'var(--admin-label, #5B6B8A)', fontWeight: 600 }}>
                     · {test.testTitle}
                   </span>
                 )}
@@ -4156,11 +4490,11 @@ export default function AdminLiveDashboard() {
                   style={{
                     fontSize: '0.78rem',
                     fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: 6,
-                    background: 'var(--color-bg-subtle, #f1f5f9)',
-                    color: 'var(--color-navy, #0f172a)',
-                    border: '1px solid var(--color-border, #cbd5e1)',
+                    padding: '4px 12px',
+                    borderRadius: 8,
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    color: 'var(--color-navy, #0F172A)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
@@ -4174,21 +4508,21 @@ export default function AdminLiveDashboard() {
               </div>
 
               {/* Legend & Collapse Button */}
-              <div style={{ display: 'flex', gap: 16, fontSize: '0.78rem', alignItems: 'center', flexWrap: 'wrap', color: 'var(--color-navy, #0f172a)', fontWeight: 600 }}>
+              <div style={{ display: 'flex', gap: 16, fontSize: '0.78rem', alignItems: 'center', flexWrap: 'wrap', color: 'var(--color-navy, #0F172A)', fontWeight: 600 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.GREEN }} />
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLORS.GREEN }} />
                   <span>Submitted</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.YELLOW }} />
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLORS.YELLOW }} />
                   <span>In Progress</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 12, height: 12, borderRadius: 3, background: STATUS_COLORS.RED }} />
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLORS.RED }} />
                   <span>Disqualified</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--color-bg-card, #ffffff)', border: '2px solid var(--color-seat-not-started-border, #cbd5e1)' }} />
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--admin-card-bg, #FFFFFF)', border: '1.5px solid var(--admin-card-border, #E0E7FF)' }} />
                   <span>Not Started</span>
                 </div>
 
@@ -4203,27 +4537,25 @@ export default function AdminLiveDashboard() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    background: 'var(--color-bg-subtle, #f1f5f9)',
-                    border: '1.5px solid var(--color-border, #cbd5e1)',
-                    color: 'var(--color-navy, #0f172a)',
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--color-navy, #0F172A)',
                     padding: '6px 14px',
-                    borderRadius: 6,
+                    borderRadius: 8,
                     cursor: 'pointer',
                     fontSize: '0.8rem',
                     fontWeight: 700,
                     transition: 'all 0.15s ease',
                     marginLeft: 8,
-                    boxShadow: 'var(--shadow-sm)',
+                    boxShadow: 'var(--admin-card-shadow)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--color-bg-hover, #e2e8f0)';
-                    e.currentTarget.style.borderColor = 'var(--color-primary, #0E7C86)';
-                    e.currentTarget.style.color = 'var(--color-primary, #0E7C86)';
+                    e.currentTarget.style.borderColor = 'var(--admin-indigo, #3E63DD)';
+                    e.currentTarget.style.color = 'var(--admin-indigo, #3E63DD)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'var(--color-bg-subtle, #f1f5f9)';
-                    e.currentTarget.style.borderColor = 'var(--color-border, #cbd5e1)';
-                    e.currentTarget.style.color = 'var(--color-navy, #0f172a)';
+                    e.currentTarget.style.borderColor = 'var(--admin-card-border, #E0E7FF)';
+                    e.currentTarget.style.color = 'var(--color-navy, #0F172A)';
                   }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -4247,12 +4579,12 @@ export default function AdminLiveDashboard() {
                   gap: 8,
                   flexWrap: 'wrap',
                   padding: '12px 28px',
-                  background: 'var(--color-bg-subtle, #f8fafc)',
-                  borderBottom: '1px solid var(--color-border, #cbd5e1)',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                   flexShrink: 0,
                 }}
               >
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-muted, #64748b)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-label, #5B6B8A)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                   </svg>
@@ -4268,10 +4600,10 @@ export default function AdminLiveDashboard() {
                     fontSize: '0.8rem',
                     fontWeight: selectedRoomId === 'ALL' ? 700 : 500,
                     cursor: 'pointer',
-                    border: selectedRoomId === 'ALL' ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
-                    background: selectedRoomId === 'ALL' ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
-                    color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-navy, #0f172a)',
-                    boxShadow: selectedRoomId === 'ALL' ? '0 2px 4px rgba(14, 124, 134, 0.25)' : 'none',
+                    border: selectedRoomId === 'ALL' ? '1.5px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-card-border, #E0E7FF)',
+                    background: selectedRoomId === 'ALL' ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-bg, #FFFFFF)',
+                    color: selectedRoomId === 'ALL' ? '#FFFFFF' : 'var(--color-navy, #0F172A)',
+                    boxShadow: selectedRoomId === 'ALL' ? '0 2px 6px rgba(62, 99, 221, 0.35)' : 'none',
                     transition: 'all 0.15s ease',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -4284,8 +4616,8 @@ export default function AdminLiveDashboard() {
                       fontSize: '0.72rem',
                       padding: '1px 6px',
                       borderRadius: 10,
-                      background: selectedRoomId === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
-                      color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                      background: selectedRoomId === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--filterbar-bg, #F4F6FF)',
+                      color: selectedRoomId === 'ALL' ? '#ffffff' : 'var(--admin-label, #5B6B8A)',
                       fontWeight: 700,
                     }}
                   >
@@ -4307,10 +4639,10 @@ export default function AdminLiveDashboard() {
                         fontSize: '0.8rem',
                         fontWeight: isSelected ? 700 : 500,
                         cursor: 'pointer',
-                        border: isSelected ? '1.5px solid var(--color-primary, #0E7C86)' : '1px solid var(--color-border, #cbd5e1)',
-                        background: isSelected ? 'var(--color-primary, #0E7C86)' : 'var(--color-bg-card, #ffffff)',
-                        color: isSelected ? '#ffffff' : 'var(--color-navy, #0f172a)',
-                        boxShadow: isSelected ? '0 2px 4px rgba(14, 124, 134, 0.25)' : 'none',
+                        border: isSelected ? '1.5px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-card-border, #E0E7FF)',
+                        background: isSelected ? 'var(--admin-indigo, #3E63DD)' : 'var(--admin-card-bg, #FFFFFF)',
+                        color: isSelected ? '#FFFFFF' : 'var(--color-navy, #0F172A)',
+                        boxShadow: isSelected ? '0 2px 6px rgba(62, 99, 221, 0.35)' : 'none',
                         transition: 'all 0.15s ease',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -4323,8 +4655,8 @@ export default function AdminLiveDashboard() {
                           fontSize: '0.72rem',
                           padding: '1px 6px',
                           borderRadius: 10,
-                          background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--color-bg-subtle, #f1f5f9)',
-                          color: isSelected ? '#ffffff' : 'var(--color-text-muted, #64748b)',
+                          background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--filterbar-bg, #F4F6FF)',
+                          color: isSelected ? '#ffffff' : 'var(--admin-label, #5B6B8A)',
                           fontWeight: 700,
                         }}
                       >
@@ -4346,9 +4678,9 @@ export default function AdminLiveDashboard() {
               }}
             >
               {seatMapCandidates.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--color-text-muted)' }}>
+                <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--admin-label, #5B6B8A)' }}>
                   <div style={{ fontSize: '3rem', marginBottom: 12 }}>📡</div>
-                  <h4 style={{ color: 'var(--color-navy)', marginBottom: 6, fontSize: '1.2rem' }}>
+                  <h4 style={{ color: 'var(--color-navy, #0F172A)', marginBottom: 6, fontSize: '1.2rem', fontWeight: 800 }}>
                     {selectedRoomId !== 'ALL'
                       ? 'No candidates found in the selected room.'
                       : isTestEnded

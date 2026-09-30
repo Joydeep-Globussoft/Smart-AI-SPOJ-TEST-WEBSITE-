@@ -117,21 +117,41 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
     <>
       {/* ── Candidate Detail Evaluation Modal ── */}
       {!inspectingQuestion && (
-        <div className="modal-backdrop" style={{ zIndex: 1150 }} onClick={onClose}>
+        <div className="modal-backdrop" style={{ zIndex: 1150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
           <div
             id="candidate-detail-evaluation-modal"
             className="modal-container"
-            style={{ maxWidth: 960, width: '95vw', maxHeight: '88vh' }}
+            style={{
+              maxWidth: 960,
+              width: '95vw',
+              maxHeight: '88vh',
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              borderRadius: 16,
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              boxShadow: '0 20px 50px rgba(62, 99, 221, 0.15)',
+              overflow: 'hidden',
+              animation: 'modalSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div
+              className="modal-header"
+              style={{
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                padding: '16px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h3 className="modal-title" style={{ fontSize: '1.15rem', margin: 0 }}>
+                  <h3 className="modal-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', margin: 0 }}>
                     Candidate Evaluation: {candidateName}
                   </h3>
                   {isDisqualified && (
-                    <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                    <span className="badge badge-danger" style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>
                       DISQUALIFIED
                     </span>
                   )}
@@ -139,20 +159,20 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                 <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {candidateEmail && (
                     <>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)' }}>
                         {candidateEmail}
                       </span>
-                      <span className="room-metric-divider" aria-hidden="true">|</span>
+                      <span className="room-metric-divider" aria-hidden="true" style={{ color: 'var(--admin-card-border, #E0E7FF)' }}>|</span>
                     </>
                   )}
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--admin-indigo, #3E63DD)', fontWeight: 700 }}>
                     Total Score: {totalScore} / 10.0
                   </span>
-                  <span className="room-metric-divider" aria-hidden="true">|</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>
+                  <span className="room-metric-divider" aria-hidden="true" style={{ color: 'var(--admin-card-border, #E0E7FF)' }}>|</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-navy, #0F172A)', fontWeight: 600 }}>
                     Solved: {solvedCount} Qs
                   </span>
-                  <span className="room-metric-divider" aria-hidden="true">|</span>
+                  <span className="room-metric-divider" aria-hidden="true" style={{ color: 'var(--admin-card-border, #E0E7FF)' }}>|</span>
                   {malpracticeCount > 0 ? (
                     (() => {
                       let severityClass = 'incident-badge-low';
@@ -180,37 +200,46 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
               <button
                 type="button"
                 onClick={onClose}
-                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--admin-label, #5B6B8A)',
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  lineHeight: 1,
+                }}
                 title="Close"
               >
                 ✕
               </button>
             </div>
 
-            <div className="modal-body" style={{ overflowY: 'auto', padding: '16px 20px' }}>
+            <div className="modal-body" style={{ overflowY: 'auto', padding: '18px 20px' }}>
               {candidateDetailLoading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <LoadingDots size="md" />
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 12 }}>
+                  <p style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.85rem', marginTop: 12 }}>
                     Loading question-level evaluation details...
                   </p>
                 </div>
               ) : !candidateDetail?.questions || candidateDetail.questions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--admin-label, #5B6B8A)' }}>
                   <p>No question evaluation records found for this candidate.</p>
                 </div>
               ) : (
-                <div className="table-container">
+                <div className="table-container" style={{ border: '1px solid var(--admin-card-border, #E0E7FF)', borderRadius: 10, overflow: 'hidden' }}>
                   <table className="table" style={{ width: '100%', marginBottom: 0 }}>
                     <thead>
-                      <tr>
-                        <th>Question</th>
-                        <th>Status</th>
-                        <th>Final Weighted Score</th>
-                        <th>Correctness (30%)</th>
-                        <th>Complexity (25%)</th>
-                        <th>Structure &amp; Approach</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      <tr style={{ background: 'var(--color-table-header-bg, #111827)', color: 'var(--color-table-header-text, #F9FAFB)' }}>
+                        <th style={{ background: 'inherit', color: 'inherit' }}>Question</th>
+                        <th style={{ background: 'inherit', color: 'inherit' }}>Status</th>
+                        <th style={{ background: 'inherit', color: 'inherit' }}>Final Weighted Score</th>
+                        <th style={{ background: 'inherit', color: 'inherit' }}>Correctness (30%)</th>
+                        <th style={{ background: 'inherit', color: 'inherit' }}>Complexity (25%)</th>
+                        <th style={{ background: 'inherit', color: 'inherit' }}>Structure &amp; Approach</th>
+                        <th style={{ textAlign: 'right', background: 'inherit', color: 'inherit' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -228,12 +257,12 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                         const hasCode = Boolean(q.code && q.code.trim().length > 0) || Boolean(q.filesJson);
 
                         return (
-                          <tr key={q.questionId || q.questionIndex}>
+                          <tr key={q.questionId || q.questionIndex} style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                             <td>
-                              <strong style={{ color: 'var(--color-navy)', display: 'block' }}>
+                              <strong style={{ color: 'var(--color-navy, #0F172A)', display: 'block' }}>
                                 {formatQuestionTitle(q, (q.questionIndex || (qIdx + 1)) - 1)}
                               </strong>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--admin-label, #5B6B8A)' }}>
                                 {q.testType} · {q.difficulty}
                               </span>
                             </td>
@@ -257,11 +286,11 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                             </td>
                             <td>
                               {hasEval ? (
-                                <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>
+                                <strong style={{ color: 'var(--admin-indigo, #3E63DD)', fontSize: '0.95rem' }}>
                                   {finalScore} / 10
                                 </strong>
                               ) : (
-                                <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                                <span style={{ color: 'var(--admin-label, #5B6B8A)' }}>—</span>
                               )}
                             </td>
                             <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
@@ -270,7 +299,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                             <td style={{ color: 'var(--color-text)', fontSize: '0.85rem' }}>
                               {complexity !== '—' ? `${complexity} / 10` : '—'}
                             </td>
-                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                            <td style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.8rem' }}>
                               {hasEval
                                 ? `Opt: ${(breakdown.codeOptimization || 0).toFixed(1)} · Exc: ${(breakdown.exceptionHandling || 0).toFixed(1)}`
                                 : '—'}
@@ -280,10 +309,12 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                                 onClick={() => handleInspectCode(q)}
                                 className="btn btn-primary"
                                 style={{
-                                  background: '#0E7C86',
-                                  padding: '4px 12px',
+                                  background: 'var(--admin-indigo, #3E63DD)',
+                                  borderColor: 'var(--admin-indigo, #3E63DD)',
+                                  padding: '5px 14px',
                                   fontSize: '0.78rem',
-                                  fontWeight: 600,
+                                  fontWeight: 700,
+                                  borderRadius: 6,
                                   opacity: hasCode || hasEval ? 1 : 0.6,
                                 }}
                                 disabled={!hasCode && !hasEval}
@@ -301,11 +332,27 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
               )}
             </div>
 
-            <div className="modal-footer">
+            <div
+              className="modal-footer"
+              style={{
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                padding: '14px 20px',
+              }}
+            >
               <button
                 type="button"
                 onClick={onClose}
                 className="btn btn-secondary"
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  background: 'var(--admin-card-bg, #FFFFFF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  borderRadius: 8,
+                  color: 'var(--color-navy, #0F172A)',
+                }}
               >
                 Close
               </button>
@@ -316,37 +363,61 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
 
       {/* ── Split-Screen Inspect Code Modal (Code Left, Rubric Right) ── */}
       {inspectingQuestion && (
-        <div className="modal-backdrop" style={{ zIndex: 1200 }} onClick={handleCloseInspectCode}>
+        <div className="modal-backdrop" style={{ zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }} onClick={handleCloseInspectCode}>
           <div
             id="inspect-code-modal"
             className="modal-container"
-            style={{ maxWidth: 1150, width: '95vw', maxHeight: '90vh' }}
+            style={{
+              maxWidth: 1150,
+              width: '95vw',
+              maxHeight: '90vh',
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              borderRadius: 16,
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              boxShadow: '0 20px 50px rgba(62, 99, 221, 0.15)',
+              overflow: 'hidden',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div
+              className="modal-header"
+              style={{
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                padding: '16px 20px',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={handleCloseInspectCode}
                   className="btn btn-secondary"
-                  style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: 600 }}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 6,
+                    color: 'var(--color-navy, #0F172A)',
+                  }}
                 >
                   ← Back to Question List
                 </button>
-                <h3 className="modal-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                <h3 className="modal-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', margin: 0 }}>
                   Submission Report — {formatQuestionTitle(inspectingQuestion, (inspectingQuestion.questionIndex || 1) - 1)}
                 </h3>
                 <span
                   className="badge badge-primary"
-                  style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}
+                  style={{ fontSize: '0.75rem', textTransform: 'uppercase', background: 'var(--admin-indigo, #3E63DD)', borderRadius: 4 }}
                 >
                   {inspectingQuestion.language || inspectingQuestion.testType}
                 </span>
                 {inspectingQuestion.evaluation && (
                   <span
                     style={{
-                      background: 'rgba(14, 124, 134, 0.15)',
-                      color: 'var(--color-primary)',
+                      background: 'rgba(62, 99, 221, 0.12)',
+                      color: 'var(--admin-indigo, #3E63DD)',
                       padding: '3px 10px',
                       borderRadius: 12,
                       fontWeight: 700,
@@ -360,7 +431,16 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
               <button
                 type="button"
                 onClick={onClose}
-                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--admin-label, #5B6B8A)',
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  lineHeight: 1,
+                }}
                 title="Close Modal"
               >
                 ✕
@@ -372,7 +452,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                 {/* ── LEFT PANE: Submitted Code ── */}
                 <div className="inspect-split-left" style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <strong style={{ fontSize: '0.88rem', color: 'var(--color-navy)' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--color-navy, #0F172A)' }}>
                       📄 Submitted Code
                     </strong>
                     {inspectingQuestion.code && (
@@ -387,7 +467,15 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                           toast.success('Code copied to clipboard!');
                         }}
                         className="btn btn-secondary"
-                        style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                        style={{
+                          padding: '3px 10px',
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          background: 'var(--filterbar-bg, #F4F6FF)',
+                          border: '1px solid var(--admin-card-border, #E0E7FF)',
+                          borderRadius: 4,
+                          color: 'var(--color-navy, #0F172A)',
+                        }}
                       >
                         📋 Copy Code
                       </button>
@@ -405,12 +493,12 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                           style={{
                             padding: '4px 10px',
                             fontSize: '0.75rem',
-                            borderRadius: 4,
-                            border: activeFile === fileName ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                            background: activeFile === fileName ? 'var(--color-primary)' : 'var(--color-bg-subtle)',
-                            color: activeFile === fileName ? '#fff' : 'var(--color-text)',
+                            borderRadius: 6,
+                            border: activeFile === fileName ? '1.5px solid var(--admin-indigo, #3E63DD)' : '1px solid var(--admin-card-border, #E0E7FF)',
+                            background: activeFile === fileName ? 'var(--admin-indigo, #3E63DD)' : 'var(--filterbar-bg, #F4F6FF)',
+                            color: activeFile === fileName ? '#fff' : 'var(--color-navy, #0F172A)',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                           }}
                         >
                           {fileName}
@@ -422,7 +510,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                   {/* Monaco Editor Read-Only Code Viewer */}
                   <div
                     style={{
-                      border: '1px solid var(--color-border)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
                       borderRadius: 8,
                       overflow: 'hidden',
                       height: 450,
@@ -454,12 +542,12 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                 {/* ── RIGHT PANE: Granular Rubric Breakdown ── */}
                 <div className="inspect-split-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '0.88rem', color: 'var(--color-navy)' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--color-navy, #0F172A)' }}>
                       📊 Evaluation Rubric Breakdown
                     </strong>
                     {inspectingQuestion.evaluation && (
-                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                        Final: <strong>{(inspectingQuestion.evaluation.finalScorePerQuestion ?? 0).toFixed(2)} / 10.0</strong>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--admin-label, #5B6B8A)' }}>
+                        Final: <strong style={{ color: 'var(--color-navy, #0F172A)' }}>{(inspectingQuestion.evaluation.finalScorePerQuestion ?? 0).toFixed(2)} / 10.0</strong>
                       </span>
                     )}
                   </div>
@@ -467,12 +555,12 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                   {!inspectingQuestion.evaluation ? (
                     <div
                       style={{
-                        background: 'var(--color-bg-subtle)',
-                        border: '1px solid var(--color-border)',
+                        background: 'var(--filterbar-bg, #F4F6FF)',
+                        border: '1px solid var(--admin-card-border, #E0E7FF)',
                         borderRadius: 8,
                         padding: 24,
                         textAlign: 'center',
-                        color: 'var(--color-text-muted)',
+                        color: 'var(--admin-label, #5B6B8A)',
                       }}
                     >
                       <p style={{ margin: 0, fontSize: '0.88rem' }}>
@@ -505,8 +593,8 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                               <div
                                 key={param}
                                 style={{
-                                  background: 'var(--color-bg-subtle)',
-                                  border: '1px solid var(--color-border)',
+                                  background: 'var(--filterbar-bg, #F4F6FF)',
+                                  border: '1px solid var(--admin-card-border, #E0E7FF)',
                                   borderRadius: 8,
                                   padding: 10,
                                 }}
@@ -514,9 +602,9 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                                 <span
                                   style={{
                                     fontSize: '0.7rem',
-                                    color: 'var(--color-text-muted)',
+                                    color: 'var(--admin-label, #5B6B8A)',
                                     textTransform: 'uppercase',
-                                    fontWeight: 600,
+                                    fontWeight: 700,
                                     display: 'block',
                                   }}
                                 >
@@ -525,13 +613,14 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                                 <strong
                                   style={{
                                     fontSize: '1.05rem',
-                                    color: 'var(--color-primary)',
+                                    color: 'var(--admin-indigo, #3E63DD)',
                                     marginTop: 2,
                                     display: 'block',
+                                    fontWeight: 800,
                                   }}
                                 >
                                   {typeof score === 'number' ? score.toFixed(1) : score}{' '}
-                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--admin-label, #5B6B8A)' }}>
                                     / 10
                                   </span>
                                 </strong>
@@ -544,7 +633,7 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                         <>
                           {inspectingQuestion.evaluation.llmFeedback && (
                             <div style={{ marginTop: 6 }}>
-                              <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy)' }}>
+                              <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy, #0F172A)' }}>
                                 🤖 AI Evaluator Feedback:
                               </strong>
                               <div
@@ -569,13 +658,13 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
 
                           {inspectingQuestion.promptLog?.length > 0 && (
                             <div style={{ marginTop: 6 }}>
-                              <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy)' }}>
+                              <strong style={{ fontSize: '0.82rem', color: 'var(--color-navy, #0F172A)' }}>
                                 💬 AI Test Prompt Log ({inspectingQuestion.promptLog.length} messages):
                               </strong>
                               <div
                                 style={{
-                                  background: 'var(--color-bg-subtle)',
-                                  border: '1px solid var(--color-border)',
+                                  background: 'var(--filterbar-bg, #F4F6FF)',
+                                  border: '1px solid var(--admin-card-border, #E0E7FF)',
                                   borderRadius: 8,
                                   padding: 10,
                                   marginTop: 4,
@@ -593,11 +682,11 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                                     style={{
                                       background:
                                         log.role === 'user' || log.role === 'candidate'
-                                          ? 'rgba(14, 124, 134, 0.15)'
-                                          : 'var(--color-bg-card)',
-                                      border: '1px solid var(--color-border)',
+                                          ? 'rgba(62, 99, 221, 0.12)'
+                                          : 'var(--admin-card-bg, #FFFFFF)',
+                                      border: '1px solid var(--admin-card-border, #E0E7FF)',
                                       borderRadius: 6,
-                                      padding: 6,
+                                      padding: 8,
                                     }}
                                   >
                                     <span
@@ -605,8 +694,8 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                                         fontWeight: 700,
                                         color:
                                           log.role === 'user' || log.role === 'candidate'
-                                            ? 'var(--color-primary)'
-                                            : 'var(--color-text)',
+                                            ? 'var(--admin-indigo, #3E63DD)'
+                                            : 'var(--color-navy, #0F172A)',
                                       }}
                                     >
                                       {log.role === 'user' || log.role === 'candidate'
@@ -629,11 +718,27 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div
+              className="modal-footer"
+              style={{
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                padding: '14px 20px',
+              }}
+            >
               <button
                 type="button"
                 onClick={handleCloseInspectCode}
                 className="btn btn-secondary"
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  background: 'var(--admin-card-bg, #FFFFFF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  borderRadius: 8,
+                  color: 'var(--color-navy, #0F172A)',
+                }}
               >
                 Close Inspection
               </button>

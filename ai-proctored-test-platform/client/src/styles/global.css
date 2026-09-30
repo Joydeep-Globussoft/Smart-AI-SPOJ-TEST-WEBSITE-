@@ -1700,46 +1700,46 @@ tbody td {
 
 /* 1. Inspect: Neutral Action */
 .roster-action-btn-inspect {
-  background: var(--color-bg-card) !important;
-  border: 1.5px solid var(--color-border) !important;
-  color: var(--color-navy) !important;
+  background: var(--filterbar-bg, #F4F6FF) !important;
+  border: 1px solid var(--admin-card-border, #E0E7FF) !important;
+  color: var(--filterbar-button-text, #1E293B) !important;
   cursor: pointer !important;
 }
 .roster-action-btn-inspect:hover:not(:disabled),
 .roster-action-btn-inspect:focus-visible:not(:disabled) {
-  background: var(--color-bg-hover) !important;
-  border-color: var(--color-primary) !important;
-  color: var(--color-primary) !important;
+  background: var(--filterbar-more-bg, #ffffff) !important;
+  border-color: var(--admin-indigo, #3E63DD) !important;
+  color: var(--admin-indigo, #3E63DD) !important;
   transform: translateY(-1px);
 }
 
-/* 2. View Result: Teal Action */
+/* 2. View Result: Signature Indigo Action */
 .roster-action-btn-result-enabled {
-  background: #0E7C86 !important;
-  border: 1.5px solid #0E7C86 !important;
+  background: var(--admin-indigo, #3E63DD) !important;
+  border: 1px solid var(--admin-indigo, #3E63DD) !important;
   color: #ffffff !important;
   cursor: pointer !important;
-  box-shadow: 0 1px 4px rgba(14, 124, 134, 0.25) !important;
+  box-shadow: 0 1px 4px rgba(62, 99, 221, 0.25) !important;
 }
 .roster-action-btn-result-enabled:hover:not(:disabled),
 .roster-action-btn-result-enabled:focus-visible:not(:disabled) {
-  background: #0a5f67 !important;
-  border-color: #0a5f67 !important;
+  background: var(--admin-indigo-hover, #3354C4) !important;
+  border-color: var(--admin-indigo-hover, #3354C4) !important;
   color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(14, 124, 134, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(62, 99, 221, 0.35) !important;
 }
 [data-theme="dark"] .roster-action-btn-result-enabled {
-  background: #14b8a6 !important;
-  border: 1.5px solid #14b8a6 !important;
-  color: #042f2e !important;
+  background: var(--admin-indigo, #5375E2) !important;
+  border: 1px solid var(--admin-indigo, #5375E2) !important;
+  color: #ffffff !important;
   font-weight: 700 !important;
 }
 [data-theme="dark"] .roster-action-btn-result-enabled:hover:not(:disabled),
 [data-theme="dark"] .roster-action-btn-result-enabled:focus-visible:not(:disabled) {
-  background: #2dd4bf !important;
-  border-color: #2dd4bf !important;
-  color: #042f2e !important;
+  background: var(--admin-indigo-hover, #6B8CF5) !important;
+  border-color: var(--admin-indigo-hover, #6B8CF5) !important;
+  color: #ffffff !important;
 }
 
 /* 3. Warn: Amber Warning */
