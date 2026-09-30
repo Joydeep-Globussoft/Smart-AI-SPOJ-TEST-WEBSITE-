@@ -879,9 +879,31 @@ export default function AdminTestDetail() {
 
   if (loading) {
     return (
-      <div className="app-layout">
+      <div
+        className="app-layout"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--admin-canvas-bg, #EEF2FF)',
+        }}
+      >
         <AdminNavbar />
-        <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <main
+          className="main-content"
+          style={{
+            maxWidth: 1440,
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 28px',
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 400,
+            background: 'var(--admin-canvas-bg, #EEF2FF)',
+          }}
+        >
           <LoadingDots size="lg" />
         </main>
       </div>
@@ -890,12 +912,52 @@ export default function AdminTestDetail() {
 
   if (!test) {
     return (
-      <div className="app-layout">
+      <div
+        className="app-layout"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--admin-canvas-bg, #EEF2FF)',
+        }}
+      >
         <AdminNavbar />
-        <main className="main-content">
-          <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-            <h3>Test not found</h3>
-            <Link to="/admin/tests" className="btn btn-primary" style={{ marginTop: 16 }}>
+        <main
+          className="main-content"
+          style={{
+            maxWidth: 1440,
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 28px',
+            flex: 1,
+            background: 'var(--admin-canvas-bg, #EEF2FF)',
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderRadius: '14px',
+              boxShadow: 'var(--admin-card-shadow)',
+              textAlign: 'center',
+              padding: 40,
+            }}
+          >
+            <h3 style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>Test not found</h3>
+            <Link
+              to="/admin/tests"
+              className="btn btn-primary"
+              style={{
+                marginTop: 16,
+                background: 'var(--admin-indigo, #3E63DD)',
+                borderColor: 'var(--admin-indigo, #3E63DD)',
+                color: '#ffffff',
+                borderRadius: '8px',
+                padding: '9px 20px',
+                fontWeight: 600,
+              }}
+            >
               Back to Tests
             </Link>
           </div>
@@ -905,24 +967,54 @@ export default function AdminTestDetail() {
   }
 
   return (
-    <div className="app-layout">
+    <div
+      className="app-layout"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--admin-canvas-bg, #EEF2FF)',
+      }}
+    >
       <AdminNavbar />
-      <main className="main-content">
+      <main
+        className="main-content"
+        style={{
+          maxWidth: 1440,
+          width: '100%',
+          margin: '0 auto',
+          padding: '24px 28px',
+          flex: 1,
+          background: 'var(--admin-canvas-bg, #EEF2FF)',
+        }}
+      >
         {/* Breadcrumb Navigation */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin/tests" style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <Link to="/admin/tests" style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 600, textDecoration: 'none' }}>
             ← All Tests
           </Link>
-          <span style={{ color: 'var(--color-text-light)' }}>/</span>
-          <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{test.title}</span>
+          <span style={{ color: 'var(--color-text-light, #94a3b8)' }}>/</span>
+          <span style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 600 }}>{test.title}</span>
         </div>
 
         {/* Top Header Card */}
-        <div className="card" style={{ marginBottom: 24, padding: '24px 28px' }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: 24,
+            padding: '24px 28px',
+            backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: '14px',
+            boxShadow: 'var(--admin-card-shadow)',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: '1.7rem', color: 'var(--color-navy)', fontWeight: 800 }}>{test.title}</h1>
+                <h1 style={{ fontSize: '1.75rem', color: 'var(--color-navy, #1E293B)', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
+                  {test.title}
+                </h1>
                 <TestStatusBadge
                   status={test.status}
                   style={{ fontSize: '0.8rem', padding: '4px 10px' }}
@@ -930,19 +1022,23 @@ export default function AdminTestDetail() {
                 <span
                   className="badge"
                   style={{
-                    background: 'rgba(14, 124, 134, 0.1)',
-                    color: '#0E7C86',
-                    border: '1px solid rgba(14, 124, 134, 0.3)',
-                    fontSize: '0.8rem',
+                    background: 'rgba(62, 99, 221, 0.1)',
+                    color: 'var(--admin-indigo, #3E63DD)',
+                    border: '1px solid rgba(62, 99, 221, 0.25)',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
                     padding: '4px 10px',
+                    borderRadius: '9999px',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
                   }}
                 >
                   {test.testType}
                 </span>
               </div>
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.875rem', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div>
-                  Created by <strong>{test.createdBy?.name || 'Admin'}</strong> on{' '}
+                  Created by <strong style={{ color: 'var(--color-navy, #1E293B)' }}>{test.createdBy?.name || 'Admin'}</strong> on{' '}
                   {formatCreationDateText(test.createdAt)}
                 </div>
 
@@ -954,15 +1050,17 @@ export default function AdminTestDetail() {
                       <span
                         className="badge"
                         style={{
-                          background: 'var(--color-bg-subtle)',
-                          color: 'var(--color-text)',
-                          border: '1px solid var(--color-border)',
+                          background: 'rgba(62, 99, 221, 0.08)',
+                          color: 'var(--admin-indigo, #3E63DD)',
+                          border: '1px solid rgba(62, 99, 221, 0.25)',
                           fontSize: '0.75rem',
-                          padding: '2px 8px',
-                          fontWeight: 600,
+                          padding: '3px 10px',
+                          borderRadius: '9999px',
+                          fontWeight: 700,
+                          letterSpacing: '0.03em',
                         }}
                       >
-                        ⏱️ Live for {formatLiveDuration(test.liveStartedAt, test.endedAt)}
+                        ⏱️ LIVE FOR {formatLiveDuration(test.liveStartedAt, test.endedAt)?.toUpperCase()}
                       </span>
                     )}
                   </div>
@@ -983,10 +1081,16 @@ export default function AdminTestDetail() {
                   className="btn btn-primary"
                   disabled={rooms.length === 0 || starting}
                   style={{
-                    background: rooms.length === 0 ? '#9ca3af' : '#2ECC71',
-                    border: 'none',
+                    background: rooms.length === 0 ? '#9ca3af' : '#16a34a',
+                    border: '1px solid ' + (rooms.length === 0 ? '#9ca3af' : '#15803d'),
+                    color: '#ffffff',
                     cursor: rooms.length === 0 ? 'not-allowed' : 'pointer',
                     opacity: rooms.length === 0 ? 0.7 : 1,
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    boxShadow: rooms.length > 0 ? '0 2px 4px rgba(22, 163, 74, 0.25)' : 'none',
                   }}
                   title={
                     rooms.length === 0
@@ -1003,13 +1107,37 @@ export default function AdminTestDetail() {
                   <Link
                     to={`/admin/tests/${test._id}/live`}
                     className="btn btn-primary"
-                    style={{ background: '#0E7C86' }}
+                    style={{
+                      background: 'var(--admin-indigo, #3E63DD)',
+                      borderColor: 'var(--admin-indigo, #3E63DD)',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '9px 18px',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
                   >
                     📊 Open Live Dashboard
                   </Link>
                   <button
                     onClick={() => setShowEndModal(true)}
                     className="btn btn-danger"
+                    style={{
+                      background: '#dc2626',
+                      borderColor: '#b91c1c',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '9px 18px',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)',
+                      cursor: 'pointer',
+                    }}
                   >
                     ⏹ End Test
                   </button>
@@ -1020,15 +1148,40 @@ export default function AdminTestDetail() {
                 <>
                   <Link
                     to={`/admin/tests/${test._id}/live`}
-                    className="btn btn-secondary"
-                    style={{ padding: '8px 16px' }}
+                    className="btn"
+                    style={{
+                      padding: '9px 18px',
+                      background: 'var(--filterbar-bg, #F4F6FF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--filterbar-button-text, #1E293B)',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
                   >
                     📋 Test Summary Dashboard
                   </Link>
                   <Link
                     to={`/admin/tests/${test._id}/results`}
                     className="btn btn-primary"
-                    style={{ padding: '8px 16px' }}
+                    style={{
+                      padding: '9px 20px',
+                      background: 'var(--admin-indigo, #3E63DD)',
+                      borderColor: 'var(--admin-indigo, #3E63DD)',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
                   >
                     🏆 View Results &amp; Shortlist
                   </Link>
@@ -1038,28 +1191,42 @@ export default function AdminTestDetail() {
           </div>
         </div>
 
-
-
         {/* 2-Column Grid: Config / Dynamic Thresholds & Room Management */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.3fr)', gap: 24 }}>
 
           {/* Column 1: Test Configuration Details */}
-          <div className="card">
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="card-title">Configuration Details</h3>
+          <div
+            className="card"
+            style={{
+              backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderRadius: '14px',
+              boxShadow: 'var(--admin-card-shadow)',
+              padding: '24px 26px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)', margin: 0 }}>
+                Configuration Details
+              </h3>
               {test?.status === 'DRAFT' && (
                 <button
                   type="button"
                   id="edit-config-btn"
                   onClick={handleOpenEditModal}
-                  className="btn btn-secondary"
+                  className="btn"
                   style={{
-                    padding: '4px 12px',
+                    padding: '5px 12px',
                     fontSize: '0.8rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
                     fontWeight: 600,
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--filterbar-button-text, #1E293B)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
                   }}
                 >
                   ✏️ Edit
@@ -1067,53 +1234,54 @@ export default function AdminTestDetail() {
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.875rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
+                <span style={{ color: 'var(--color-text-muted, #64748B)' }}>
                   Question Folder
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)' }}>
                   {test.questionSetPoolName || test.folderId?.name
                     ? `📁 ${test.questionSetPoolName || test.folderId?.name} (${test.poolSetCount || 1} ${test.poolSetCount === 1 ? 'Set' : 'Sets'})`
                     : (test.questionSetId?.name || '—')}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>Duration</span>
-                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.durationMinutes} Minutes</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
+                <span style={{ color: 'var(--color-text-muted, #64748B)' }}>Duration</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)' }}>{test.durationMinutes} Minutes</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>Total Questions</span>
-                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.totalQuestions}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
+                <span style={{ color: 'var(--color-text-muted, #64748B)' }}>Total Questions</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)' }}>{test.totalQuestions}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>Passing Criteria</span>
-                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
+                <span style={{ color: 'var(--color-text-muted, #64748B)' }}>Passing Criteria</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)' }}>
                   {test.passingCriteria ?? 0} {(test.passingCriteria ?? 0) === 1 ? 'Question' : 'Questions'}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>Start Window</span>
-                <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{test.startTestWindowMinutes} Minutes</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
+                <span style={{ color: 'var(--color-text-muted, #64748B)' }}>Start Window</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)' }}>{test.startTestWindowMinutes} Minutes</span>
               </div>
               {test.supportedLanguages?.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>Languages</span>
-                  <span style={{ fontWeight: 600, color: 'var(--color-navy)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-card-border, #E0E7FF)', paddingBottom: 10 }}>
+                  <span style={{ color: 'var(--color-text-muted, #64748B)' }}>Languages</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)' }}>
                     {test.supportedLanguages.join(', ').toUpperCase()}
                   </span>
                 </div>
               )}
               <div>
-                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Instructions:</span>
+                <span style={{ color: 'var(--color-text-muted, #64748B)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Instructions:</span>
                 <div
                   style={{
-                    background: 'var(--color-bg-subtle)',
-                    padding: 12,
-                    borderRadius: 6,
-                    fontSize: '0.8rem',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    padding: '12px 14px',
+                    borderRadius: 8,
+                    fontSize: '0.82rem',
+                    lineHeight: 1.5,
                     whiteSpace: 'pre-line',
-                    color: 'var(--color-text)',
-                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-navy, #1E293B)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                   }}
                 >
                   {test.instructions}
@@ -1123,11 +1291,22 @@ export default function AdminTestDetail() {
           </div>
 
           {/* Column 2: Physical Test Rooms Management (Section 9.3, 11.3) */}
-          <div className="card">
-            <div className="card-header">
+          <div
+            className="card"
+            style={{
+              backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderRadius: '14px',
+              boxShadow: 'var(--admin-card-shadow)',
+              padding: '24px 26px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 className="card-title">Physical Rooms ({rooms.length})</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)', margin: 0 }}>
+                  Physical Rooms ({rooms.length})
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted, #64748B)', marginTop: 4, margin: 0 }}>
                   Generate secure room codes &amp; passwords for physical test centers.
                 </p>
               </div>
@@ -1135,7 +1314,17 @@ export default function AdminTestDetail() {
                 <button
                   onClick={() => setShowAddRoomModal(true)}
                   className="btn btn-primary"
-                  style={{ padding: '8px 14px', fontSize: '0.8rem' }}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                    background: 'var(--admin-indigo, #3E63DD)',
+                    borderColor: 'var(--admin-indigo, #3E63DD)',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+                    cursor: 'pointer',
+                  }}
                 >
                   + Add Room
                 </button>
@@ -1143,10 +1332,10 @@ export default function AdminTestDetail() {
             </div>
 
             {rooms.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted, #64748B)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🏢</div>
-                <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No rooms added yet</h4>
-                <p style={{ fontSize: '0.85rem', marginBottom: 12 }}>
+                <h4 style={{ color: 'var(--color-navy, #1E293B)', marginBottom: 6, fontWeight: 700 }}>No rooms added yet</h4>
+                <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>
                   Add physical test rooms to generate unique Room Codes and Passwords for candidates.
                 </p>
                 {test?.status === 'DRAFT' && (
@@ -1154,11 +1343,11 @@ export default function AdminTestDetail() {
                     style={{
                       background: '#fffbeb',
                       border: '1px solid #fde68a',
-                      borderRadius: 6,
-                      padding: '8px 12px',
-                      fontSize: '0.8rem',
+                      borderRadius: 8,
+                      padding: '10px 14px',
+                      fontSize: '0.82rem',
                       color: '#92400e',
-                      maxWidth: 420,
+                      maxWidth: 440,
                       margin: '0 auto 16px auto',
                       fontWeight: 500,
                     }}
@@ -1170,7 +1359,15 @@ export default function AdminTestDetail() {
                   <button
                     onClick={() => setShowAddRoomModal(true)}
                     className="btn btn-primary"
-                    style={{ fontSize: '0.85rem' }}
+                    style={{
+                      fontSize: '0.85rem',
+                      background: 'var(--admin-indigo, #3E63DD)',
+                      borderColor: 'var(--admin-indigo, #3E63DD)',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '8px 18px',
+                      fontWeight: 600,
+                    }}
                   >
                     + Add First Room
                   </button>
@@ -1181,7 +1378,6 @@ export default function AdminTestDetail() {
                 {rooms.map((room) => {
                   const isLive = test?.status === 'LIVE';
                   const isEnded = test?.status === 'ENDED';
-                  // BUG-22: Rooms in an ENDED test are closed by definition
                   const isClosed = room.status === 'CLOSED' || isEnded;
                   const isExpired = isLive && room.passwordValidUntil && new Date(room.passwordValidUntil) < new Date();
                   const candidateTotal = room.candidateCount ?? (room.joinedCandidates?.length || 0);
@@ -1191,26 +1387,18 @@ export default function AdminTestDetail() {
                       key={room._id}
                       className={`physical-room-card ${isEnded ? 'room-concluded' : isLive ? 'room-live' : 'room-draft'}`}
                       style={{
-                        border: isEnded
-                          ? '1.5px solid var(--color-border, #cbd5e1)'
-                          : isLive
-                            ? '1.5px solid var(--color-primary, #0E7C86)'
-                            : '1.5px solid var(--color-border, #cbd5e1)',
+                        border: '1px solid var(--admin-card-border, #E0E7FF)',
                         borderRadius: 12,
                         padding: '18px 20px',
-                        background: 'var(--color-bg-card, #ffffff)',
-                        boxShadow: isEnded
-                          ? '0 2px 10px rgba(0, 0, 0, 0.05)'
-                          : isLive
-                            ? '0 4px 14px rgba(14, 124, 134, 0.12)'
-                            : '0 2px 8px rgba(0, 0, 0, 0.04)',
+                        backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                         transition: 'all 0.2s ease',
                       }}
                     >
                       {/* Room Header & Badges */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-navy, #0f172a)' }}>
+                          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-navy, #1E293B)' }}>
                             {room.roomName}
                           </span>
                           {room.capacity && (
@@ -1218,9 +1406,9 @@ export default function AdminTestDetail() {
                               style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                color: 'var(--color-text-muted, #475569)',
-                                background: 'var(--color-bg-subtle, #f1f5f9)',
-                                border: '1px solid var(--color-border, #cbd5e1)',
+                                color: 'var(--color-text-muted, #64748B)',
+                                background: 'var(--filterbar-bg, #F4F6FF)',
+                                border: '1px solid var(--admin-card-border, #E0E7FF)',
                                 padding: '2px 8px',
                                 borderRadius: 12,
                               }}
@@ -1238,9 +1426,9 @@ export default function AdminTestDetail() {
                                 fontWeight: 700,
                                 padding: '3px 10px',
                                 borderRadius: 12,
-                                background: 'rgba(16, 185, 129, 0.12)',
-                                color: '#059669',
-                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                background: 'rgba(22, 163, 74, 0.1)',
+                                color: '#16a34a',
+                                border: '1px solid rgba(22, 163, 74, 0.25)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 4,
@@ -1257,9 +1445,9 @@ export default function AdminTestDetail() {
                                 fontWeight: 700,
                                 padding: '3px 10px',
                                 borderRadius: 12,
-                                background: 'rgba(239, 68, 68, 0.12)',
+                                background: 'rgba(239, 68, 68, 0.1)',
                                 color: '#dc2626',
-                                border: '1px solid rgba(239, 68, 68, 0.35)',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 4,
@@ -1275,15 +1463,15 @@ export default function AdminTestDetail() {
                                 fontWeight: 700,
                                 padding: '3px 10px',
                                 borderRadius: 12,
-                                background: 'rgba(14, 124, 134, 0.15)',
-                                color: '#0E7C86',
-                                border: '1px solid rgba(14, 124, 134, 0.4)',
+                                background: 'rgba(62, 99, 221, 0.12)',
+                                color: 'var(--admin-indigo, #3E63DD)',
+                                border: '1px solid rgba(62, 99, 221, 0.3)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 6,
                               }}
                             >
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0E7C86', animation: 'pulse 2s infinite' }} />
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--admin-indigo, #3E63DD)' }} />
                               ACTIVE
                             </span>
                           ) : (
@@ -1294,9 +1482,9 @@ export default function AdminTestDetail() {
                                 fontWeight: 700,
                                 padding: '3px 10px',
                                 borderRadius: 12,
-                                background: 'var(--color-bg-subtle, #f1f5f9)',
-                                color: 'var(--color-text-muted, #475569)',
-                                border: '1px solid var(--color-border, #cbd5e1)',
+                                background: 'var(--filterbar-bg, #F4F6FF)',
+                                color: 'var(--color-text-muted, #64748B)',
+                                border: '1px solid var(--admin-card-border, #E0E7FF)',
                               }}
                             >
                               READY
@@ -1330,26 +1518,26 @@ export default function AdminTestDetail() {
                           gap: 12,
                           flexWrap: 'wrap',
                           marginBottom: 12,
-                          fontSize: '0.8rem',
+                          fontSize: '0.82rem',
                           fontWeight: 600,
-                          color: 'var(--color-text-muted, #475569)',
+                          color: 'var(--color-text-muted, #64748B)',
                         }}
                       >
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <span>👥</span>
-                          <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{candidateTotal}</strong>
+                          <strong style={{ color: 'var(--color-navy, #1E293B)' }}>{candidateTotal}</strong>
                           <span>{candidateTotal === 1 ? 'Candidate' : 'Candidates'}</span>
                         </span>
-                        <span className="room-metric-divider" aria-hidden="true">|</span>
+                        <span style={{ color: 'var(--admin-card-border, #E0E7FF)' }} aria-hidden="true">|</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ color: '#10B981' }}>✅</span>
-                          <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{room.submittedCount ?? 0}</strong>
+                          <span style={{ color: '#16a34a' }}>✅</span>
+                          <strong style={{ color: 'var(--color-navy, #1E293B)' }}>{room.submittedCount ?? 0}</strong>
                           <span>Submitted</span>
                         </span>
-                        <span className="room-metric-divider" aria-hidden="true">|</span>
+                        <span style={{ color: 'var(--admin-card-border, #E0E7FF)' }} aria-hidden="true">|</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ color: '#E74C3C' }}>⚠️</span>
-                          <strong style={{ color: 'var(--color-navy, #0f172a)' }}>{room.violationCount ?? 0}</strong>
+                          <span style={{ color: '#dc2626' }}>⚠️</span>
+                          <strong style={{ color: 'var(--color-navy, #1E293B)' }}>{room.violationCount ?? 0}</strong>
                           <span>{(room.violationCount ?? 0) === 1 ? 'Violation' : 'Violations'}</span>
                         </span>
                       </div>
@@ -1357,22 +1545,22 @@ export default function AdminTestDetail() {
                       {/* Credentials Box */}
                       <div
                         style={{
-                          background: 'var(--color-bg-subtle, #f1f5f9)',
-                          border: '1.5px solid var(--color-border, #cbd5e1)',
-                          borderRadius: 8,
-                          padding: '12px 16px',
+                          background: 'var(--filterbar-bg, #F4F6FF)',
+                          border: '1px solid var(--admin-card-border, #E0E7FF)',
+                          borderRadius: 10,
+                          padding: '12px 18px',
                           display: 'grid',
                           gridTemplateColumns: '1fr 1fr',
                           gap: 16,
-                          marginBottom: 12,
+                          marginBottom: 14,
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted, #64748B)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
                             Room Code
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                            <code style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary, #0E7C86)', letterSpacing: '1px', fontFamily: 'monospace' }}>
+                            <code style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--admin-indigo, #3E63DD)', letterSpacing: '1px', fontFamily: 'monospace' }}>
                               {room.roomCode}
                             </code>
                             <button
@@ -1395,11 +1583,11 @@ export default function AdminTestDetail() {
                         </div>
 
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted, #64748B)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
                             Room Password
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                            <code style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-navy, #0f172a)', letterSpacing: '1px', fontFamily: 'monospace' }}>
+                            <code style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #1E293B)', letterSpacing: '1px', fontFamily: 'monospace' }}>
                               {room.roomPassword}
                             </code>
                             <button
@@ -1425,15 +1613,15 @@ export default function AdminTestDetail() {
                       {/* Expiry Timestamp / Completion Indicator */}
                       <div style={{ fontSize: '0.8rem', marginBottom: 14, fontWeight: 600 }}>
                         {isEnded ? (
-                          <span style={{ color: '#059669', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <span>✓</span> Room Completed Successfully
                           </span>
                         ) : isLive && room.passwordValidUntil ? (
-                          <span style={{ color: 'var(--color-text-muted, #475569)' }}>
-                            ⏱️ <strong style={{ color: 'var(--color-navy, #0f172a)' }}>Valid Until:</strong> {new Date(room.passwordValidUntil).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })} ({new Date(room.passwordValidUntil).toLocaleDateString()})
+                          <span style={{ color: 'var(--color-text-muted, #64748B)' }}>
+                            ⏱️ <strong style={{ color: 'var(--color-navy, #1E293B)' }}>Valid Until:</strong> {new Date(room.passwordValidUntil).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })} ({new Date(room.passwordValidUntil).toLocaleDateString()})
                           </span>
                         ) : (
-                          <span style={{ color: 'var(--color-primary, #0E7C86)' }}>
+                          <span style={{ color: 'var(--admin-indigo, #3E63DD)' }}>
                             ⏳ Access window starts when test goes LIVE
                           </span>
                         )}
@@ -1454,7 +1642,7 @@ export default function AdminTestDetail() {
                                 : `Globussoft Test: ${test.title}\nRoom: ${room.roomName}\nDirect Invite Link: ${inviteLink}\nAccess Window: Starts when test goes LIVE (${test?.startTestWindowMinutes || 10} mins validity)`;
                               copyToClipboard(details, 'Room Invite Link');
                             }}
-                            className="btn btn-secondary"
+                            className="btn"
                             style={{
                               padding: '7px 14px',
                               fontSize: '0.8rem',
@@ -1462,9 +1650,11 @@ export default function AdminTestDetail() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: 6,
-                              border: '1.5px solid var(--color-border, #cbd5e1)',
-                              background: 'var(--color-bg-subtle, #f1f5f9)',
-                              color: 'var(--color-navy, #0f172a)',
+                              border: '1px solid var(--admin-card-border, #E0E7FF)',
+                              background: 'var(--admin-card-bg, #FFFFFF)',
+                              color: 'var(--filterbar-button-text, #1E293B)',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
                             }}
                           >
                             <span>📋</span> Copy Full Invite
@@ -1473,7 +1663,7 @@ export default function AdminTestDetail() {
                             type="button"
                             id={`qr-code-btn-${room._id}`}
                             onClick={() => handleOpenQrModal(room)}
-                            className="btn btn-secondary"
+                            className="btn"
                             style={{
                               padding: '7px 14px',
                               fontSize: '0.8rem',
@@ -1481,9 +1671,11 @@ export default function AdminTestDetail() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: 6,
-                              border: '1.5px solid var(--color-border, #cbd5e1)',
-                              background: 'var(--color-bg-subtle, #f1f5f9)',
-                              color: 'var(--color-navy, #0f172a)',
+                              border: '1px solid var(--admin-card-border, #E0E7FF)',
+                              background: 'var(--admin-card-bg, #FFFFFF)',
+                              color: 'var(--filterbar-button-text, #1E293B)',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
                             }}
                             title="View & Download Room QR Code"
                           >
@@ -1496,7 +1688,7 @@ export default function AdminTestDetail() {
                             type="button"
                             id={`view-room-candidates-btn-${room._id}`}
                             onClick={() => handleViewRoomCandidates(room)}
-                            className="btn btn-secondary"
+                            className="btn"
                             style={{
                               padding: '7px 14px',
                               fontSize: '0.8rem',
@@ -1504,9 +1696,11 @@ export default function AdminTestDetail() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: 6,
-                              border: '1.5px solid var(--color-border, #cbd5e1)',
-                              background: 'var(--color-bg-subtle, #f1f5f9)',
-                              color: 'var(--color-navy, #0f172a)',
+                              border: '1px solid var(--admin-card-border, #E0E7FF)',
+                              background: 'var(--admin-card-bg, #FFFFFF)',
+                              color: 'var(--filterbar-button-text, #1E293B)',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
                             }}
                           >
                             <span>👥</span> Candidates {candidateTotal !== undefined ? `(${candidateTotal})` : ''}
@@ -1516,7 +1710,16 @@ export default function AdminTestDetail() {
                               type="button"
                               onClick={() => handleDeleteRoom(room._id, room.roomName)}
                               className="btn btn-danger"
-                              style={{ padding: '7px 12px', fontSize: '0.8rem', fontWeight: 600 }}
+                              style={{
+                                padding: '7px 14px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                background: '#dc2626',
+                                borderColor: '#b91c1c',
+                                color: '#ffffff',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                              }}
                               title="Close Room (FR-3.2)"
                             >
                               Close Room
@@ -1534,32 +1737,88 @@ export default function AdminTestDetail() {
 
         {/* ── Start Test Modal ── */}
         {showStartModal && (
-          <div className="modal-backdrop" onClick={() => !starting && setShowStartModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title">Start Test (Go LIVE)</h3>
+          <div
+            className="modal-backdrop"
+            onClick={() => !starting && setShowStartModal(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+          >
+            <div
+              className="modal-container"
+              style={{
+                maxWidth: 480,
+                width: '100%',
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: '14px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  padding: '16px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <h3 className="modal-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)' }}>
+                  Start Test (Go LIVE)
+                </h3>
                 <button
                   type="button"
                   onClick={() => setShowStartModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748b)' }}
                 >
                   ✕
                 </button>
               </div>
-              <div className="modal-body">
-                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: 12 }}>
+              <div className="modal-body" style={{ padding: '20px 24px', backgroundColor: 'var(--admin-card-bg, #FFFFFF)' }}>
+                <p style={{ color: 'var(--color-navy, #1E293B)', fontSize: '0.9rem', marginBottom: 14 }}>
                   Are you ready to make <strong>"{test.title}"</strong> LIVE?
                 </p>
-                <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12, fontSize: '0.82rem', color: '#92400e' }}>
                   ⚠️ Candidates with valid room codes will be able to join and start their proctored test session immediately.
                 </div>
               </div>
-              <div className="modal-footer">
+              <div
+                className="modal-footer"
+                style={{
+                  padding: '14px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 12,
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setShowStartModal(false)}
-                  className="btn btn-secondary"
+                  className="btn"
                   disabled={starting}
+                  style={{
+                    backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--filterbar-button-text, #1E293B)',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontWeight: 600,
+                  }}
                 >
                   Cancel
                 </button>
@@ -1567,7 +1826,14 @@ export default function AdminTestDetail() {
                   type="button"
                   onClick={handleStartTest}
                   className="btn btn-primary"
-                  style={{ background: '#2ECC71' }}
+                  style={{
+                    background: '#16a34a',
+                    borderColor: '#15803d',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontWeight: 600,
+                  }}
                   disabled={starting}
                 >
                   {starting ? 'Starting...' : 'Confirm & Start Test'}
@@ -1579,32 +1845,86 @@ export default function AdminTestDetail() {
 
         {/* ── End Test Modal ── */}
         {showEndModal && (
-          <div className="modal-backdrop" onClick={() => !ending && setShowEndModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title" style={{ color: '#E74C3C' }}>End Test</h3>
+          <div
+            className="modal-backdrop"
+            onClick={() => !ending && setShowEndModal(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+          >
+            <div
+              className="modal-container"
+              style={{
+                maxWidth: 480,
+                width: '100%',
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: '14px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  padding: '16px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <h3 className="modal-title" style={{ color: '#dc2626', margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>End Test</h3>
                 <button
                   type="button"
                   onClick={() => setShowEndModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748b)' }}
                 >
                   ✕
                 </button>
               </div>
-              <div className="modal-body">
-                <p style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: 12 }}>
+              <div className="modal-body" style={{ padding: '20px 24px', backgroundColor: 'var(--admin-card-bg, #FFFFFF)' }}>
+                <p style={{ color: 'var(--color-navy, #1E293B)', fontSize: '0.9rem', marginBottom: 14 }}>
                   Are you sure you want to end <strong>"{test.title}"</strong>?
                 </p>
-                <div style={{ background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#991b1b' }}>
+                <div style={{ background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 8, padding: 12, fontSize: '0.82rem', color: '#991b1b' }}>
                   ⚠️ Ending the test will broadcast a <code>test:ended</code> event to all candidate browsers, forcing immediate auto-submission and triggering the final evaluation pass.
                 </div>
               </div>
-              <div className="modal-footer">
+              <div
+                className="modal-footer"
+                style={{
+                  padding: '14px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 12,
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setShowEndModal(false)}
-                  className="btn btn-secondary"
+                  className="btn"
                   disabled={ending}
+                  style={{
+                    backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--filterbar-button-text, #1E293B)',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontWeight: 600,
+                  }}
                 >
                   Cancel
                 </button>
@@ -1612,6 +1932,14 @@ export default function AdminTestDetail() {
                   type="button"
                   onClick={handleEndTest}
                   className="btn btn-danger"
+                  style={{
+                    background: '#dc2626',
+                    borderColor: '#b91c1c',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontWeight: 600,
+                  }}
                   disabled={ending}
                 >
                   {ending ? 'Ending...' : 'Confirm & End Test'}
@@ -1623,22 +1951,62 @@ export default function AdminTestDetail() {
 
         {/* ── Add Room Modal (FR-3.1) ── */}
         {showAddRoomModal && (
-          <div className="modal-backdrop" onClick={() => !addingRoom && setShowAddRoomModal(false)}>
-            <div className="modal-container" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title">Add Physical Room</h3>
+          <div
+            className="modal-backdrop"
+            onClick={() => !addingRoom && setShowAddRoomModal(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+          >
+            <div
+              className="modal-container"
+              style={{
+                maxWidth: 460,
+                width: '100%',
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: '14px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  padding: '16px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <h3 className="modal-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)' }}>
+                  Add Physical Room
+                </h3>
                 <button
                   type="button"
                   onClick={() => setShowAddRoomModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748b)' }}
                 >
                   ✕
                 </button>
               </div>
-              <form onSubmit={handleAddRoomSubmit}>
-                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div className="form-group">
-                    <label className="form-label">Room Name *</label>
+              <form onSubmit={handleAddRoomSubmit} style={{ margin: 0 }}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 24px', backgroundColor: 'var(--admin-card-bg, #FFFFFF)' }}>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Room Name *
+                    </label>
                     <input
                       type="text"
                       className="form-control"
@@ -1646,11 +2014,21 @@ export default function AdminTestDetail() {
                       value={roomFormData.roomName}
                       onChange={(e) => setRoomFormData((p) => ({ ...p, roomName: e.target.value }))}
                       required
+                      style={{
+                        backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
+                        borderRadius: '8px',
+                        padding: '9px 12px',
+                        fontSize: '0.9rem',
+                      }}
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Room Capacity (max 150)</label>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Room Capacity (max 150)
+                    </label>
                     <input
                       type="number"
                       className="form-control"
@@ -1659,20 +2037,46 @@ export default function AdminTestDetail() {
                       placeholder="e.g. 50 (Max: 150)"
                       value={roomFormData.capacity}
                       onChange={(e) => setRoomFormData((p) => ({ ...p, capacity: e.target.value }))}
+                      style={{
+                        backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
+                        borderRadius: '8px',
+                        padding: '9px 12px',
+                        fontSize: '0.9rem',
+                      }}
                     />
                   </div>
 
-                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted, #64748B)', margin: 0 }}>
                     💡 A 6-character Room Code and Password will be automatically generated.
                   </p>
                 </div>
 
-                <div className="modal-footer">
+                <div
+                  className="modal-footer"
+                  style={{
+                    padding: '14px 20px',
+                    backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                    borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 12,
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setShowAddRoomModal(false)}
-                    className="btn btn-secondary"
+                    className="btn"
                     disabled={addingRoom}
+                    style={{
+                      backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--filterbar-button-text, #1E293B)',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontWeight: 600,
+                    }}
                   >
                     Cancel
                   </button>
@@ -1680,6 +2084,14 @@ export default function AdminTestDetail() {
                     type="submit"
                     className="btn btn-primary"
                     disabled={addingRoom}
+                    style={{
+                      background: 'var(--admin-indigo, #3E63DD)',
+                      borderColor: 'var(--admin-indigo, #3E63DD)',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '8px 18px',
+                      fontWeight: 600,
+                    }}
                   >
                     {addingRoom ? 'Creating Room...' : 'Create Room'}
                   </button>
@@ -1694,12 +2106,37 @@ export default function AdminTestDetail() {
           <div
             className="modal-backdrop"
             onClick={handleCloseRoomCandidatesModal}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
           >
-            <div className="modal-container" style={{ maxWidth: 1060, width: '95%' }} onClick={(e) => e.stopPropagation()}>
+            <div
+              className="modal-container"
+              style={{
+                maxWidth: 1060,
+                width: '95%',
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: '14px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div
                 className="modal-header"
                 style={{
-                  padding: '16px 20px',
+                  padding: '16px 22px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -1708,16 +2145,27 @@ export default function AdminTestDetail() {
                 }}
               >
                 <div>
-                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0, fontSize: '1.1rem' }}>
+                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)' }}>
                     Candidates in Room {selectedRoomCandidates.room.roomName || selectedRoomCandidates.room.roomCode}
                   </h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <span className="badge badge-teal" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                    <span
+                      className="badge"
+                      style={{
+                        fontSize: '0.72rem',
+                        padding: '3px 8px',
+                        background: 'rgba(62, 99, 221, 0.1)',
+                        color: 'var(--admin-indigo, #3E63DD)',
+                        border: '1px solid rgba(62, 99, 221, 0.25)',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                      }}
+                    >
                       Code: {selectedRoomCandidates.room.roomCode}
                     </span>
                     {test?.status === 'LIVE' && (
-                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                      <span style={{ fontSize: '0.75rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
                         Live Sync Active
                       </span>
                     )}
@@ -1734,7 +2182,7 @@ export default function AdminTestDetail() {
                         top: '50%',
                         transform: 'translateY(-50%)',
                         fontSize: '0.8rem',
-                        color: 'var(--color-text-muted)',
+                        color: 'var(--color-text-muted, #64748B)',
                         pointerEvents: 'none',
                         lineHeight: 1,
                       }}
@@ -1750,10 +2198,13 @@ export default function AdminTestDetail() {
                       style={{
                         paddingLeft: 30,
                         paddingRight: candidateSearchQuery ? 26 : 10,
-                        fontSize: '0.8rem',
-                        height: 34,
+                        fontSize: '0.82rem',
+                        height: 36,
                         width: '100%',
-                        borderRadius: 6,
+                        borderRadius: 8,
+                        backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
                       }}
                     />
                     {candidateSearchQuery && (
@@ -1767,7 +2218,7 @@ export default function AdminTestDetail() {
                           transform: 'translateY(-50%)',
                           background: 'none',
                           border: 'none',
-                          color: 'var(--color-text-muted)',
+                          color: 'var(--color-text-muted, #64748B)',
                           cursor: 'pointer',
                           fontSize: '0.8rem',
                           padding: 0,
@@ -1783,48 +2234,48 @@ export default function AdminTestDetail() {
                   <button
                     type="button"
                     onClick={handleCloseRoomCandidatesModal}
-                    style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                    style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748b)' }}
                   >
                     ✕
                   </button>
                 </div>
               </div>
 
-              <div className="modal-body" style={{ maxHeight: 460, overflowY: 'auto', overflowX: 'auto', padding: '12px 16px' }}>
+              <div className="modal-body" style={{ maxHeight: 460, overflowY: 'auto', overflowX: 'auto', padding: '14px 18px', backgroundColor: 'var(--admin-card-bg, #FFFFFF)' }}>
                 {loadingCandidates ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
                     <LoadingDots size="md" />
                   </div>
                 ) : selectedRoomCandidates.list.length === 0 ? (
-                  <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 28 }}>
+                  <p style={{ color: 'var(--color-text-muted, #64748B)', textAlign: 'center', padding: 28 }}>
                     No candidates available.
                   </p>
                 ) : filteredRoomCandidates.length === 0 ? (
-                  <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 28 }}>
+                  <p style={{ color: 'var(--color-text-muted, #64748B)', textAlign: 'center', padding: 28 }}>
                     No candidates found.
                   </p>
                 ) : (
                   <table className="table" style={{ fontSize: '0.82rem', width: '100%', minWidth: 780, borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ verticalAlign: 'bottom' }}>
-                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center' }}> </th>
-                        <th style={{ lineHeight: 1.25 }}>
+                      <tr style={{ verticalAlign: 'bottom', borderBottom: '1.5px solid var(--admin-card-border, #E0E7FF)' }}>
+                        <th style={{ width: 36, paddingLeft: 10, paddingRight: 4, textAlign: 'center', color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}> </th>
+                        <th style={{ lineHeight: 1.25, color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>
                           Candidate<br />Name
                         </th>
-                        <th>Email</th>
-                        <th style={{ textAlign: 'center' }}>Questions</th>
-                        <th>Violations</th>
-                        <th>Status</th>
-                        <th style={{ lineHeight: 1.25 }}>
+                        <th style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>Email</th>
+                        <th style={{ textAlign: 'center', color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>Questions</th>
+                        <th style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>Violations</th>
+                        <th style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>Status</th>
+                        <th style={{ lineHeight: 1.25, color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>
                           Room<br />Joined
                         </th>
-                        <th style={{ lineHeight: 1.25 }}>
+                        <th style={{ lineHeight: 1.25, color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>
                           Test<br />Start
                         </th>
-                        <th style={{ lineHeight: 1.25 }}>
+                        <th style={{ lineHeight: 1.25, color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>
                           Submitted<br />At
                         </th>
-                        <th style={{ lineHeight: 1.25 }}>
+                        <th style={{ lineHeight: 1.25, color: 'var(--color-navy, #1E293B)', fontWeight: 700 }}>
                           Time<br />Taken
                         </th>
                       </tr>
@@ -1847,17 +2298,18 @@ export default function AdminTestDetail() {
                             onClick={() => handleInspectCandidate(c)}
                             className="room-candidate-table-row"
                             title="Click anywhere on row to inspect candidate"
+                            style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}
                           >
-                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', fontWeight: 600, textAlign: 'center', width: 36, paddingLeft: 10, paddingRight: 4 }}>
+                            <td style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.78rem', fontWeight: 600, textAlign: 'center', width: 36, paddingLeft: 10, paddingRight: 4 }}>
                               {idx + 1}
                             </td>
-                            <td style={{ fontWeight: 600, color: 'var(--color-navy)', whiteSpace: 'nowrap' }}>
+                            <td style={{ fontWeight: 600, color: 'var(--color-navy, #1E293B)', whiteSpace: 'nowrap' }}>
                               {c.name}
                             </td>
-                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                               {c.email}
                             </td>
-                            <td style={{ fontWeight: 600, color: 'var(--color-primary)', textAlign: 'center' }}>
+                            <td style={{ fontWeight: 600, color: 'var(--admin-indigo, #3E63DD)', textAlign: 'center' }}>
                               {c.questionsCompleted ?? 0}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>
@@ -1880,7 +2332,7 @@ export default function AdminTestDetail() {
                                   );
                                 })()
                               ) : (
-                                <span style={{ color: '#059669', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                <span style={{ color: '#16a34a', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                                   <span>✓</span> Clean
                                 </span>
                               )}
@@ -1904,16 +2356,36 @@ export default function AdminTestDetail() {
                                 </span>
                               ) : c.status === 'AUTO_SUBMITTED_TIME_UP' ? (
                                 <span
-                                  className="badge badge-teal"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '2px 8px' }}
+                                  className="badge"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '0.72rem',
+                                    padding: '2px 8px',
+                                    background: 'rgba(62, 99, 221, 0.1)',
+                                    color: 'var(--admin-indigo, #3E63DD)',
+                                    border: '1px solid rgba(62, 99, 221, 0.25)',
+                                  }}
                                 >
                                   <span style={{ fontSize: '0.85em', lineHeight: 1 }}>⏱</span>
                                   <span>Auto-Submitted</span>
                                 </span>
                               ) : c.status === 'IN_PROGRESS' || c.candidateStartTime || c.startedAt ? (
                                 <span
-                                  className="badge badge-primary"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '2px 8px' }}
+                                  className="badge"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '0.72rem',
+                                    padding: '2px 8px',
+                                    background: 'rgba(62, 99, 221, 0.1)',
+                                    color: 'var(--admin-indigo, #3E63DD)',
+                                    border: '1px solid rgba(62, 99, 221, 0.25)',
+                                  }}
                                 >
                                   <span style={{ fontSize: '0.85em', lineHeight: 1 }}>⏳</span>
                                   <span>In Progress</span>
@@ -1928,9 +2400,9 @@ export default function AdminTestDetail() {
                                     whiteSpace: 'nowrap',
                                     fontSize: '0.72rem',
                                     padding: '2px 8px',
-                                    background: 'var(--color-bg-subtle, #F1F5F9)',
+                                    background: 'var(--filterbar-bg, #F4F6FF)',
                                     color: 'var(--color-text-muted, #64748B)',
-                                    border: '1px solid var(--color-border, #CBD5E1)',
+                                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                                   }}
                                 >
                                   <span>⚪</span>
@@ -1938,16 +2410,16 @@ export default function AdminTestDetail() {
                                 </span>
                               )}
                             </td>
-                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                               {roomJoinedTime}
                             </td>
-                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                               {testStartTime}
                             </td>
-                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                               {submittedAtTime}
                             </td>
-                            <td style={{ color: 'var(--color-navy)', fontWeight: 600, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 600, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                               {timeTaken}
                             </td>
                           </tr>
@@ -1957,8 +2429,18 @@ export default function AdminTestDetail() {
                   </table>
                 )}
               </div>
-              <div className="modal-footer" style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              <div
+                className="modal-footer"
+                style={{
+                  padding: '12px 22px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted, #64748B)' }}>
                   {candidateSearchQuery.trim() ? (
                     <>
                       Showing <strong>{filteredRoomCandidates.length}</strong> of <strong>{selectedRoomCandidates.list.length}</strong> candidate{selectedRoomCandidates.list.length === 1 ? '' : 's'}
@@ -1972,7 +2454,15 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   onClick={handleCloseRoomCandidatesModal}
-                  className="btn btn-secondary"
+                  className="btn"
+                  style={{
+                    backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--filterbar-button-text, #1E293B)',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontWeight: 600,
+                  }}
                 >
                   Close
                 </button>
@@ -1983,32 +2473,84 @@ export default function AdminTestDetail() {
 
         {/* ── Edit Configuration Modal (BUG-36, BUG-38, BUG-39) ── */}
         {showEditModal && (
-          <div className="modal-backdrop" onClick={() => !editingConfig && setShowEditModal(false)}>
+          <div
+            className="modal-backdrop"
+            onClick={() => !editingConfig && setShowEditModal(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+          >
             <div
               className="modal-container"
-              style={{ maxWidth: 650, maxHeight: '90vh', overflowY: 'auto' }}
+              style={{
+                maxWidth: 650,
+                width: '100%',
+                maxHeight: '90vh',
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: '14px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div
+                className="modal-header"
+                style={{
+                  padding: '16px 22px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h3 className="modal-title">Edit Test Configuration</h3>
-                  <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>DRAFT</span>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)' }}>
+                    Edit Test Configuration
+                  </h3>
+                  <span
+                    className="badge"
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: 'rgba(62, 99, 221, 0.1)',
+                      color: 'var(--admin-indigo, #3E63DD)',
+                      border: '1px solid rgba(62, 99, 221, 0.25)',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    DRAFT
+                  </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748b)' }}
                   disabled={editingConfig}
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSaveConfig}>
-                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <form onSubmit={handleSaveConfig} style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 24px', maxHeight: '70vh', overflowY: 'auto', backgroundColor: 'var(--admin-card-bg, #FFFFFF)' }}>
                   {/* Test Title / Name */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Test Title *</label>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Test Title *
+                    </label>
                     <input
                       type="text"
                       id="edit-test-title"
@@ -2017,19 +2559,37 @@ export default function AdminTestDetail() {
                       value={editFormData.title}
                       onChange={(e) => setEditFormData((p) => ({ ...p, title: e.target.value }))}
                       required
+                      style={{
+                        backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
+                        borderRadius: '8px',
+                        padding: '9px 12px',
+                        fontSize: '0.9rem',
+                      }}
                     />
                   </div>
 
                   {/* Row 2: Test Type & Question Set (2-column grid matching Create modal) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600 }}>Test Type *</label>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                        Test Type *
+                      </label>
                       <select
                         id="edit-test-type"
                         className="form-select"
                         value={editFormData.testType}
                         onChange={handleEditTestTypeChange}
                         required
+                        style={{
+                          backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                          borderColor: 'var(--admin-card-border, #E0E7FF)',
+                          color: 'var(--color-text, #0f172a)',
+                          borderRadius: '8px',
+                          padding: '9px 12px',
+                          fontSize: '0.9rem',
+                        }}
                       >
                         {TEST_TYPES.map((t) => (
                           <option key={t.value} value={t.value}>{t.label}</option>
@@ -2037,8 +2597,8 @@ export default function AdminTestDetail() {
                       </select>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600, marginBottom: 6 }}>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
                         Question Folder *
                       </label>
                       <select
@@ -2057,6 +2617,14 @@ export default function AdminTestDetail() {
                           }));
                         }}
                         required
+                        style={{
+                          backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                          borderColor: 'var(--admin-card-border, #E0E7FF)',
+                          color: 'var(--color-text, #0f172a)',
+                          borderRadius: '8px',
+                          padding: '9px 12px',
+                          fontSize: '0.9rem',
+                        }}
                       >
                         <option value="">Select a Question Folder...</option>
                         {folders.filter((p) => !editFormData.testType || p.testType === editFormData.testType).map((p) => (
@@ -2066,14 +2634,14 @@ export default function AdminTestDetail() {
                         ))}
                       </select>
                       {folders.filter((p) => !editFormData.testType || p.testType === editFormData.testType).length === 0 ? (
-                        <p style={{ fontSize: '0.75rem', color: '#E74C3C', marginTop: 4 }}>
+                        <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: 4 }}>
                           No Folders found for {editFormData.testType}. Create a folder in Question Bank first.
                         </p>
                       ) : (() => {
                         const selFolder = folders.find((item) => item.poolId === editFormData.folderId);
                         if (selFolder && !selFolder.isValid) {
                           return (
-                            <div style={{ marginTop: 6, padding: '8px 10px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 6 }}>
+                            <div style={{ marginTop: 6, padding: '8px 12px', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: 8 }}>
                               <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0, lineHeight: 1.4 }}>
                                 ⚠️ {selFolder.validationError}
                               </p>
@@ -2081,13 +2649,13 @@ export default function AdminTestDetail() {
                           );
                         } else if (selFolder && selFolder.isValid) {
                           return (
-                            <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(14, 124, 134, 0.12)', border: '1px solid var(--color-primary)', borderRadius: 6 }}>
+                            <div style={{ marginTop: 6, padding: '8px 12px', background: 'rgba(62, 99, 221, 0.08)', border: '1px solid rgba(62, 99, 221, 0.25)', borderRadius: 8 }}>
                               {selFolder.setCount === 1 ? (
-                                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                                <p style={{ fontSize: '0.78rem', color: 'var(--admin-indigo, #3E63DD)', margin: 0, fontWeight: 600 }}>
                                   ✓ Folder contains 1 Question Set ({selFolder.questionCount} Qs). All candidates will receive this set.
                                 </p>
                               ) : (
-                                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', margin: 0, fontWeight: 600 }}>
+                                <p style={{ fontSize: '0.78rem', color: 'var(--admin-indigo, #3E63DD)', margin: 0, fontWeight: 600 }}>
                                   ✓ Folder contains {selFolder.setCount} Question Sets ({selFolder.questionCount} Qs each).
                                 </p>
                               )}
@@ -2101,8 +2669,10 @@ export default function AdminTestDetail() {
 
                   {/* Row 3: Duration (Minutes) * & Total Questions */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600 }}>Duration (Minutes) *</label>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                        Duration (Minutes) *
+                      </label>
                       <input
                         type="number"
                         id="edit-duration-minutes"
@@ -2112,13 +2682,23 @@ export default function AdminTestDetail() {
                         value={editFormData.durationMinutes}
                         onChange={(e) => setEditFormData((p) => ({ ...p, durationMinutes: e.target.value }))}
                         required
+                        style={{
+                          backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                          borderColor: 'var(--admin-card-border, #E0E7FF)',
+                          color: 'var(--color-text, #0f172a)',
+                          borderRadius: '8px',
+                          padding: '9px 12px',
+                          fontSize: '0.9rem',
+                        }}
                       />
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>Total Questions</label>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                        <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)', marginBottom: 0 }}>
+                          Total Questions
+                        </label>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted, #64748B)' }}>
                           (Auto-derived)
                         </span>
                       </div>
@@ -2130,21 +2710,28 @@ export default function AdminTestDetail() {
                         disabled
                         readOnly
                         style={{
-                          backgroundColor: 'var(--color-bg-subtle)',
+                          backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                          borderColor: 'var(--admin-card-border, #E0E7FF)',
                           cursor: 'not-allowed',
-                          color: 'var(--color-text-muted)',
+                          color: 'var(--color-text-muted, #64748B)',
                           fontWeight: 600,
+                          borderRadius: '8px',
+                          padding: '9px 12px',
+                          fontSize: '0.9rem',
+                          opacity: 0.85,
                         }}
                       />
-                      <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
+                      <small style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.72rem', display: 'block', marginTop: 2 }}>
                         Locked to Question Set's count ({editFormData.totalQuestions} Qs).
                       </small>
                     </div>
                   </div>
 
-                  {/* Row 4: Passing Criteria (Minimum Questions to Pass) - FEATURE-012 */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Passing Criteria (Minimum Questions to Pass) *</label>
+                  {/* Row 4: Passing Criteria */}
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Passing Criteria (Minimum Questions to Pass) *
+                    </label>
                     <input
                       type="number"
                       id="edit-passing-criteria"
@@ -2157,20 +2744,30 @@ export default function AdminTestDetail() {
                         setEditFormData((p) => ({ ...p, passingCriteria: val }));
                       }}
                       required
+                      style={{
+                        backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
+                        borderRadius: '8px',
+                        padding: '9px 12px',
+                        fontSize: '0.9rem',
+                      }}
                     />
-                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                    <small style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.75rem', marginTop: 2, display: 'block' }}>
                       Candidates must solve at least this many questions to qualify for the shortlist.
                     </small>
                     {Number(editFormData.passingCriteria) > Number(editFormData.totalQuestions) && Number(editFormData.totalQuestions) > 0 && (
-                      <small style={{ color: '#E74C3C', fontSize: '0.75rem', display: 'block', marginTop: 2 }}>
+                      <small style={{ color: '#ef4444', fontSize: '0.75rem', display: 'block', marginTop: 2 }}>
                         Cannot exceed Total Questions ({editFormData.totalQuestions}).
                       </small>
                     )}
                   </div>
 
-                  {/* Row 4: Join Window / Password Validity (Minutes) with helper subtext */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Join Window / Password Validity (Minutes)</label>
+                  {/* Join Window */}
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Join Window / Password Validity (Minutes)
+                    </label>
                     <input
                       type="number"
                       id="edit-start-window"
@@ -2180,16 +2777,26 @@ export default function AdminTestDetail() {
                       value={editFormData.startTestWindowMinutes}
                       onChange={(e) => setEditFormData((p) => ({ ...p, startTestWindowMinutes: e.target.value }))}
                       required
+                      style={{
+                        backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
+                        borderRadius: '8px',
+                        padding: '9px 12px',
+                        fontSize: '0.9rem',
+                      }}
                     />
-                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                    <small style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.75rem', marginTop: 2, display: 'block' }}>
                       Room passwords expire after this window from room creation.
                     </small>
                   </div>
 
-                  {/* Row 5: Supported Languages */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>Supported Languages</label>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+                  {/* Supported Languages */}
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Supported Languages
+                    </label>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
                       {PROGRAMMING_LANGUAGES.map((lang) => {
                         const isChecked = editFormData.supportedLanguages?.includes(lang);
                         return (
@@ -2198,20 +2805,29 @@ export default function AdminTestDetail() {
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: 6,
+                              gap: 8,
                               fontSize: '0.85rem',
+                              fontWeight: 600,
                               cursor: 'pointer',
-                              padding: '5px 12px',
-                              borderRadius: 6,
-                              border: isChecked ? '1.5px solid var(--color-primary)' : '1.5px solid var(--color-border)',
-                              background: isChecked ? 'rgba(14, 124, 134, 0.15)' : 'var(--color-bg-card)',
-                              color: 'var(--color-text)',
+                              padding: '7px 14px',
+                              borderRadius: 8,
+                              border: isChecked
+                                ? '1.5px solid var(--admin-indigo, #3E63DD)'
+                                : '1px solid var(--admin-card-border, #E0E7FF)',
+                              background: isChecked
+                                ? 'rgba(62, 99, 221, 0.12)'
+                                : 'var(--filterbar-bg, #F4F6FF)',
+                              color: isChecked
+                                ? 'var(--admin-indigo, #3E63DD)'
+                                : 'var(--color-navy, #1E293B)',
+                              transition: 'all 0.15s ease',
                             }}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleEditLanguageToggle(lang)}
+                              style={{ accentColor: 'var(--admin-indigo, #3E63DD)', cursor: 'pointer' }}
                             />
                             {lang.toUpperCase()}
                           </label>
@@ -2220,9 +2836,11 @@ export default function AdminTestDetail() {
                     </div>
                   </div>
 
-                  {/* Row 6: Candidate Instructions */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Candidate Instructions *</label>
+                  {/* Candidate Instructions */}
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-navy, #1E293B)' }}>
+                      Candidate Instructions *
+                    </label>
                     <textarea
                       id="edit-instructions"
                       className="form-control"
@@ -2230,16 +2848,43 @@ export default function AdminTestDetail() {
                       value={editFormData.instructions}
                       onChange={(e) => setEditFormData((p) => ({ ...p, instructions: e.target.value }))}
                       required
+                      style={{
+                        backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                        borderColor: 'var(--admin-card-border, #E0E7FF)',
+                        color: 'var(--color-text, #0f172a)',
+                        borderRadius: '8px',
+                        padding: '9px 12px',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.5,
+                      }}
                     />
                   </div>
                 </div>
 
-                <div className="modal-footer">
+                <div
+                  className="modal-footer"
+                  style={{
+                    padding: '14px 22px',
+                    backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                    borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 12,
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="btn btn-secondary"
+                    className="btn"
                     disabled={editingConfig}
+                    style={{
+                      backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--filterbar-button-text, #1E293B)',
+                      borderRadius: '8px',
+                      padding: '9px 18px',
+                      fontWeight: 600,
+                    }}
                   >
                     Cancel
                   </button>
@@ -2248,6 +2893,15 @@ export default function AdminTestDetail() {
                     id="save-config-btn"
                     className="btn btn-primary"
                     disabled={editingConfig}
+                    style={{
+                      background: 'var(--admin-indigo, #3E63DD)',
+                      borderColor: 'var(--admin-indigo, #3E63DD)',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '9px 22px',
+                      fontWeight: 600,
+                      boxShadow: '0 2px 4px rgba(62, 99, 221, 0.25)',
+                    }}
                   >
                     {editingConfig ? 'Saving Changes...' : 'Save Configuration'}
                   </button>
@@ -2256,18 +2910,55 @@ export default function AdminTestDetail() {
             </div>
           </div>
         )}
+
         {/* ── QR Code View & Download Modal (FEATURE-019) ── */}
         {selectedQrRoom && (
-          <div className="modal-backdrop" onClick={() => setSelectedQrRoom(null)}>
+          <div
+            className="modal-backdrop"
+            onClick={() => setSelectedQrRoom(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+          >
             <div
               className="modal-container"
-              style={{ maxWidth: 460, textAlign: 'center' }}
+              style={{
+                maxWidth: 460,
+                width: '100%',
+                backgroundColor: 'var(--admin-card-bg, #FFFFFF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: '14px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+                textAlign: 'center',
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header" style={{ textAlign: 'left' }}>
+              <div
+                className="modal-header"
+                style={{
+                  padding: '16px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <div>
-                  <h3 className="modal-title">Room Entry QR Code</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-navy, #1E293B)' }}>
+                    Room Entry QR Code
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748B)', margin: '2px 0 0 0' }}>
                     {selectedQrRoom.roomName || selectedQrRoom.roomCode} • {test?.title}
                   </p>
                 </div>
@@ -2275,19 +2966,19 @@ export default function AdminTestDetail() {
                   type="button"
                   id="close-qr-modal-x-btn"
                   onClick={() => setSelectedQrRoom(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748b)' }}
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '20px 24px' }}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '20px 24px', backgroundColor: 'var(--admin-card-bg, #FFFFFF)' }}>
                 {/* Info Strip */}
                 <div
                   style={{
                     width: '100%',
-                    background: 'var(--color-bg-subtle)',
-                    border: '1px solid var(--color-border)',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                     borderRadius: 8,
                     padding: '12px 16px',
                     fontSize: '0.85rem',
@@ -2298,14 +2989,14 @@ export default function AdminTestDetail() {
                   }}
                 >
                   <div>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 500 }}>Room Code: </span>
-                    <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
+                    <span style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.8rem', fontWeight: 500 }}>Room Code: </span>
+                    <span style={{ fontWeight: 700, color: 'var(--admin-indigo, #3E63DD)', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
                       {selectedQrRoom.roomCode || '—'}
                     </span>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 500 }}>Password: </span>
-                    <span style={{ fontWeight: 700, color: 'var(--color-navy)', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
+                    <span style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.8rem', fontWeight: 500 }}>Password: </span>
+                    <span style={{ fontWeight: 700, color: 'var(--color-navy, #1E293B)', fontFamily: 'monospace', fontSize: '1rem', marginLeft: 4 }}>
                       {selectedQrRoom.roomPassword || '—'}
                     </span>
                   </div>
@@ -2315,10 +3006,10 @@ export default function AdminTestDetail() {
                 <div
                   style={{
                     background: '#FFFFFF',
-                    border: '1px solid var(--color-border)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
                     borderRadius: 12,
                     padding: 16,
-                    boxShadow: 'var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08))',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -2330,7 +3021,7 @@ export default function AdminTestDetail() {
                   {generatingQr || !qrDataUrl ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                       <LoadingDots size="md" />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Generating QR Code...</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748B)' }}>Generating QR Code...</span>
                     </div>
                   ) : (
                     <img
@@ -2347,7 +3038,7 @@ export default function AdminTestDetail() {
                   id="qr-helper-text"
                   style={{
                     fontSize: '0.85rem',
-                    color: 'var(--color-text-muted)',
+                    color: 'var(--color-text-muted, #64748B)',
                     lineHeight: 1.45,
                     margin: 0,
                     padding: '0 8px',
@@ -2369,18 +3060,28 @@ export default function AdminTestDetail() {
                     }
                     style={{
                       flex: 1,
-                      fontSize: '0.78rem',
+                      fontSize: '0.8rem',
                       padding: '8px 12px',
-                      borderRadius: 6,
-                      border: '1px solid var(--color-input-border)',
-                      background: 'var(--color-input-bg)',
-                      color: 'var(--color-input-text)',
+                      borderRadius: 8,
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      background: 'var(--filterbar-bg, #F4F6FF)',
+                      color: 'var(--color-text, #0f172a)',
                     }}
                   />
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: '8px 14px', fontSize: '0.8rem', flexShrink: 0 }}
+                    className="btn"
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '0.8rem',
+                      flexShrink: 0,
+                      fontWeight: 600,
+                      background: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--filterbar-button-text, #1E293B)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                    }}
                     onClick={() => {
                       const inviteLink = selectedQrRoom.inviteToken
                         ? `${window.location.origin}/candidate/register?invite=${selectedQrRoom.inviteToken}`
@@ -2393,13 +3094,35 @@ export default function AdminTestDetail() {
                 </div>
               </div>
 
-              <div className="modal-footer" style={{ justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div
+                className="modal-footer"
+                style={{
+                  padding: '14px 20px',
+                  backgroundColor: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  justifyContent: 'space-between',
+                  display: 'flex',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                }}
+              >
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     type="button"
                     id="download-qr-btn"
                     className="btn btn-primary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 14px' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.82rem',
+                      padding: '8px 16px',
+                      background: 'var(--admin-indigo, #3E63DD)',
+                      borderColor: 'var(--admin-indigo, #3E63DD)',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                    }}
                     onClick={handleDownloadQr}
                     disabled={!qrDataUrl || generatingQr}
                   >
@@ -2408,8 +3131,19 @@ export default function AdminTestDetail() {
                   <button
                     type="button"
                     id="print-qr-btn"
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 14px' }}
+                    className="btn"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.82rem',
+                      padding: '8px 16px',
+                      background: 'var(--admin-card-bg, #FFFFFF)',
+                      border: '1px solid var(--admin-card-border, #E0E7FF)',
+                      color: 'var(--filterbar-button-text, #1E293B)',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                    }}
                     onClick={handlePrintQr}
                     disabled={!qrDataUrl || generatingQr}
                   >
@@ -2419,8 +3153,16 @@ export default function AdminTestDetail() {
                 <button
                   type="button"
                   id="close-qr-modal-btn"
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+                  className="btn"
+                  style={{
+                    fontSize: '0.82rem',
+                    padding: '8px 16px',
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    color: 'var(--filterbar-button-text, #1E293B)',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                  }}
                   onClick={() => setSelectedQrRoom(null)}
                 >
                   Close
