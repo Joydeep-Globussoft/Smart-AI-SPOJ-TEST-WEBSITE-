@@ -248,7 +248,7 @@ export default function AdminResults() {
 
   if (loading) {
     return (
-      <div className="app-layout">
+      <div className="app-layout" style={{ minHeight: '100vh', background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
         <AdminNavbar />
         <main className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
           <LoadingDots size="lg" />
@@ -258,35 +258,56 @@ export default function AdminResults() {
   }
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" style={{ minHeight: '100vh', background: 'var(--admin-canvas-bg, #EEF2FF)' }}>
       <AdminNavbar />
-      <main className="main-content">
+      <main className="main-content" style={{ padding: '24px 32px' }}>
         {/* Breadcrumb Navigation */}
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <Link to="/admin/tests" style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <Link to="/admin/tests" style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 600, textDecoration: 'none' }}>
             ← All Tests
           </Link>
-          <span style={{ color: 'var(--color-text-light)' }}>/</span>
-          <Link to={`/admin/tests/${testId}`} style={{ color: '#0E7C86', fontWeight: 500 }}>
+          <span style={{ color: 'var(--admin-card-border, #CBD5E1)' }}>/</span>
+          <Link to={`/admin/tests/${testId}`} style={{ color: 'var(--admin-indigo, #3E63DD)', fontWeight: 600, textDecoration: 'none' }}>
             {test?.title || 'Test'}
           </Link>
-          <span style={{ color: 'var(--color-text-light)' }}>/</span>
-          <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>Results &amp; Shortlist</span>
+          <span style={{ color: 'var(--admin-card-border, #CBD5E1)' }}>/</span>
+          <span style={{ color: 'var(--color-navy, #0F172A)', fontWeight: 700 }}>Results &amp; Shortlist</span>
         </div>
 
         {/* Top Header Card */}
-        <div className="card" style={{ marginBottom: 24, padding: '24px 28px' }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: 24,
+            padding: '24px 28px',
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: 14,
+            boxShadow: 'var(--admin-card-shadow)',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                <h1 style={{ fontSize: '1.7rem', color: 'var(--color-navy)', fontWeight: 800 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: '1.7rem', color: 'var(--color-navy, #0F172A)', fontWeight: 800, margin: 0 }}>
                   {test?.title} — Evaluation &amp; Shortlist
                 </h1>
                 <TestStatusBadge
                   status={test?.status}
-                  style={{ fontSize: '0.8rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: 6 }}
                 />
-                <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
+                <span
+                  className="badge badge-primary"
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    background: 'rgba(62, 99, 221, 0.12)',
+                    color: 'var(--admin-indigo, #3E63DD)',
+                    border: '1px solid rgba(62, 99, 221, 0.25)',
+                  }}
+                >
                   {test?.testType}
                 </span>
               </div>
@@ -297,9 +318,22 @@ export default function AdminResults() {
               <Link
                 to={`/admin/tests/${testId}/live`}
                 className="btn btn-secondary"
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  background: 'var(--admin-card-bg, #FFFFFF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  borderRadius: 8,
+                  color: 'var(--color-navy, #0F172A)',
+                  boxShadow: 'var(--admin-card-shadow)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
                 title={test?.status === 'LIVE' ? 'Open Live Dashboard' : 'View test proctoring summary & candidate roster'}
               >
-                📋 Test Summary Dashboard
+                <span>📋</span> Test Summary Dashboard
               </Link>
 
               {/* PDF Export with Globussoft Letterhead */}
@@ -307,10 +341,24 @@ export default function AdminResults() {
                 onClick={handleExportPdf}
                 className="btn btn-primary"
                 disabled={exportingPdf || totalShortlisted === 0}
-                style={{ background: '#0E7C86' }}
+                style={{
+                  background: 'var(--admin-indigo, #3E63DD)',
+                  borderColor: 'var(--admin-indigo, #3E63DD)',
+                  color: '#FFFFFF',
+                  padding: '8px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(62, 99, 221, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: (exportingPdf || totalShortlisted === 0) ? 'not-allowed' : 'pointer',
+                  opacity: (exportingPdf || totalShortlisted === 0) ? 0.6 : 1,
+                }}
                 title="Download shortlisted PDF"
               >
-                📄 {exportingPdf ? 'Generating PDF...' : 'Export Shortlist PDF'}
+                <span>📄</span> {exportingPdf ? 'Generating PDF...' : 'Export Shortlist PDF'}
               </button>
             </div>
           </div>
@@ -324,7 +372,7 @@ export default function AdminResults() {
               border: '1px solid #ef4444',
               color: '#fecaca',
               padding: '12px 18px',
-              borderRadius: 8,
+              borderRadius: 10,
               marginBottom: 20,
               fontSize: '0.85rem',
               display: 'flex',
@@ -342,7 +390,7 @@ export default function AdminResults() {
             <button
               onClick={handleRegenerateShortlist}
               className="btn btn-secondary"
-              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: 6 }}
               disabled={updatingThresholds}
             >
               🔄 Re-sync Roster
@@ -350,48 +398,135 @@ export default function AdminResults() {
           </div>
         )}
 
-        {/* ── Key Metrics Summary Bar ── */}
-        <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-          <div className="stat-card" style={{ borderLeft: '4px solid #0E7C86' }}>
-            <div className="stat-value" style={{ color: '#0E7C86' }}>{totalShortlisted}</div>
-            <div className="stat-label">Shortlisted Candidates</div>
+        {/* ── Key Metrics Summary Bar (4 KPI Cards) ── */}
+        <div className="stats-grid" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #0E7C86',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#0E7C86', fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.2 }}>
+              {totalShortlisted}
+            </div>
+            <div className="stat-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>
+              Shortlisted Candidates
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #2ECC71' }}>
-            <div className="stat-value" style={{ color: '#2ECC71' }}>{highestScore}</div>
-            <div className="stat-label">Top Score (Max 10.0)</div>
+
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #2ECC71',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#2ECC71', fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.2 }}>
+              {highestScore}
+            </div>
+            <div className="stat-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>
+              Top Score (Max 10.0)
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #3498db' }}>
-            <div className="stat-value" style={{ color: '#3498db' }}>{averageScore}</div>
-            <div className="stat-label">Average Score</div>
+
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #3498db',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <div className="stat-value" style={{ color: '#3498db', fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.2 }}>
+              {averageScore}
+            </div>
+            <div className="stat-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>
+              Average Score
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeft: '4px solid #8e44ad' }}>
-            <div className="stat-value" style={{ fontSize: '1.4rem', color: '#8e44ad' }}>
+
+          <div
+            className="stat-card"
+            style={{
+              background: 'var(--admin-card-bg, #FFFFFF)',
+              border: '1px solid var(--admin-card-border, #E0E7FF)',
+              borderLeft: '4px solid #8e44ad',
+              borderRadius: 12,
+              padding: '18px 20px',
+              boxShadow: 'var(--admin-card-shadow)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <div className="stat-value" style={{ fontSize: '1.5rem', color: '#8e44ad', fontWeight: 800, lineHeight: 1.2 }}>
               ≥ {shortlist?.passingCriteriaUsed ?? test?.passingCriteria} Qs
             </div>
-            <div className="stat-label">Passing Criteria Used</div>
+            <div className="stat-label" style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>
+              Passing Criteria Used
+            </div>
           </div>
         </div>
 
         {/* ── Dynamic Threshold Configuration Bar (FR-2.2, FR-2.3, FR-10.1) ── */}
-        <div className="card" style={{ padding: '18px 24px', marginBottom: 24 }}>
+        <div
+          className="card"
+          style={{
+            padding: '16px 24px',
+            marginBottom: 24,
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: 14,
+            boxShadow: 'var(--admin-card-shadow)',
+          }}
+        >
           <form onSubmit={handleUpdateThresholds} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
               <div>
-                <strong style={{ fontSize: '0.9rem', color: 'var(--color-navy)', display: 'block' }}>
+                <strong style={{ fontSize: '0.92rem', color: 'var(--color-navy, #0F172A)', fontWeight: 800, display: 'block' }}>
                   Adjust Shortlist Criteria
                 </strong>
-
               </div>
 
               {/* Passing Criteria Input (FR-2.2) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--admin-label, #5B6B8A)' }}>
                   Passing Criteria (Min Qs):
                 </label>
                 <input
                   type="number"
                   className="form-control"
-                  style={{ width: 80, padding: '4px 8px', fontSize: '0.85rem' }}
+                  style={{
+                    width: 75,
+                    padding: '6px 10px',
+                    fontSize: '0.85rem',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 8,
+                    color: 'var(--color-text, #0F172A)',
+                    fontWeight: 700,
+                  }}
                   min="0"
                   max="50"
                   value={passingCriteria}
@@ -402,13 +537,22 @@ export default function AdminResults() {
 
               {/* Malpractice Threshold Input (FR-2.3, FR-7.5) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--admin-label, #5B6B8A)' }}>
                   Max Malpractice Allowed:
                 </label>
                 <input
                   type="number"
                   className="form-control"
-                  style={{ width: 80, padding: '4px 8px', fontSize: '0.85rem' }}
+                  style={{
+                    width: 75,
+                    padding: '6px 10px',
+                    fontSize: '0.85rem',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 8,
+                    color: 'var(--color-text, #0F172A)',
+                    fontWeight: 700,
+                  }}
                   min="0"
                   placeholder="None"
                   disabled={test?.status !== 'ENDED'}
@@ -422,7 +566,16 @@ export default function AdminResults() {
               type="submit"
               className="btn btn-secondary"
               disabled={updatingThresholds}
-              style={{ fontSize: '0.85rem' }}
+              style={{
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                padding: '8px 18px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 8,
+                color: 'var(--color-navy, #0F172A)',
+                cursor: updatingThresholds ? 'not-allowed' : 'pointer',
+              }}
             >
               {updatingThresholds ? 'Applying...' : 'Apply & Regenerate Shortlist'}
             </button>
@@ -430,11 +583,23 @@ export default function AdminResults() {
         </div>
 
         {/* ── Official Shortlist Unified Table (FEATURE-023) ── */}
-        <div className="card">
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div
+          className="card"
+          style={{
+            padding: 0,
+            background: 'var(--admin-card-bg, #FFFFFF)',
+            border: '1px solid var(--admin-card-border, #E0E7FF)',
+            borderRadius: 14,
+            boxShadow: 'var(--admin-card-shadow)',
+            overflow: 'hidden',
+          }}
+        >
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
             <div>
-              <h3 className="card-title">Official Shortlist ({totalShortlisted})</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+              <h3 className="card-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)' }}>
+                Official Shortlist ({totalShortlisted})
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 4, marginBottom: 0 }}>
                 Generated on {shortlist?.generatedAt ? new Date(shortlist.generatedAt).toLocaleString() : '—'}
               </p>
             </div>
@@ -443,16 +608,24 @@ export default function AdminResults() {
               type="text"
               className="form-control"
               placeholder="Search candidate in shortlist..."
-              style={{ width: 260, fontSize: '0.8rem', padding: '6px 12px' }}
+              style={{
+                width: 260,
+                fontSize: '0.85rem',
+                padding: '8px 14px',
+                background: 'var(--filterbar-bg, #F4F6FF)',
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                borderRadius: 8,
+                color: 'var(--color-text, #0F172A)',
+              }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           {shortlistCandidates.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--admin-label, #5B6B8A)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📋</div>
-              <h4 style={{ color: 'var(--color-navy)', marginBottom: 4 }}>No candidates on the shortlist</h4>
+              <h4 style={{ color: 'var(--color-navy, #0F172A)', marginBottom: 4, fontWeight: 800 }}>No candidates on the shortlist</h4>
               <p style={{ fontSize: '0.85rem' }}>
                 {results.length === 0
                   ? 'Evaluations are still in progress or no submissions have been recorded.'
@@ -460,18 +633,18 @@ export default function AdminResults() {
               </p>
             </div>
           ) : (
-            <div className="table-container">
-              <table className="table">
+            <div className="table-container" style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%', marginBottom: 0 }}>
                 <thead>
-                  <tr>
-                    <th style={{ width: 80 }}>Rank</th>
-                    <th>Candidate Name</th>
-                    <th>Email</th>
-                    <th>Total Score (0–10)</th>
-                    <th>Questions Solved</th>
-                    <th>Malpractice Count</th>
-                    <th style={{ textAlign: 'center' }}>Status</th>
-                    <th style={{ textAlign: 'right' }}>Result</th>
+                  <tr style={{ background: 'var(--color-table-header-bg, #111827)', color: 'var(--color-table-header-text, #F9FAFB)' }}>
+                    <th style={{ width: 80, background: 'inherit', color: 'inherit' }}>Rank</th>
+                    <th style={{ background: 'inherit', color: 'inherit' }}>Candidate Name</th>
+                    <th style={{ background: 'inherit', color: 'inherit' }}>Email</th>
+                    <th style={{ background: 'inherit', color: 'inherit' }}>Total Score (0–10)</th>
+                    <th style={{ background: 'inherit', color: 'inherit' }}>Questions Solved</th>
+                    <th style={{ background: 'inherit', color: 'inherit' }}>Malpractice Count</th>
+                    <th style={{ textAlign: 'center', background: 'inherit', color: 'inherit' }}>Status</th>
+                    <th style={{ textAlign: 'right', background: 'inherit', color: 'inherit' }}>Result</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -482,21 +655,21 @@ export default function AdminResults() {
                     if (c.rank === 3) rankBadge = '🥉 #3';
 
                     return (
-                      <tr key={c.candidateId || c.rank}>
+                      <tr key={c.candidateId || c.rank} style={{ borderBottom: '1px solid var(--admin-card-border, #E0E7FF)' }}>
                         <td>
                           <strong
                             style={{
-                              color: c.rank <= 3 ? '#d97706' : 'var(--color-navy)',
+                              color: c.rank <= 3 ? '#d97706' : 'var(--color-navy, #0F172A)',
                               fontSize: '0.9rem',
                             }}
                           >
                             {rankBadge}
                           </strong>
                         </td>
-                        <td style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{c.name}</td>
-                        <td style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{c.email}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--color-navy, #0F172A)' }}>{c.name}</td>
+                        <td style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.85rem' }}>{c.email}</td>
                         <td>
-                          <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>
+                          <strong style={{ color: 'var(--admin-indigo, #3E63DD)', fontSize: '0.95rem', fontWeight: 800 }}>
                             {(c.score || 0).toFixed(2)}
                           </strong>
                         </td>
@@ -528,7 +701,7 @@ export default function AdminResults() {
                           )}
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                          <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
+                          <span className="badge badge-success" style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: 4 }}>
                             Shortlisted
                           </span>
                         </td>
@@ -536,7 +709,15 @@ export default function AdminResults() {
                           <button
                             onClick={() => handleOpenCandidateDetail(c)}
                             className="btn btn-secondary"
-                            style={{ padding: '5px 12px', fontSize: '0.8rem', fontWeight: 600 }}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              background: 'var(--filterbar-bg, #F4F6FF)',
+                              border: '1px solid var(--admin-card-border, #E0E7FF)',
+                              borderRadius: 6,
+                              color: 'var(--color-navy, #0F172A)',
+                            }}
                           >
                             Detail Evaluation
                           </button>
@@ -562,36 +743,80 @@ export default function AdminResults() {
 
         {/* ── Copy-Paste Audit Log Modal ── */}
         {selectedAuditSubmission && (
-          <div className="modal-backdrop" onClick={() => setSelectedAuditSubmission(null)}>
-            <div className="modal-container" style={{ maxWidth: 550 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title">
+          <div
+            className="modal-backdrop"
+            onClick={() => setSelectedAuditSubmission(null)}
+            style={{
+              zIndex: 1200,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+              background: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <div
+              className="modal-container"
+              style={{
+                maxWidth: 550,
+                width: '100%',
+                background: 'var(--admin-card-bg, #FFFFFF)',
+                borderRadius: 16,
+                border: '1px solid var(--admin-card-border, #E0E7FF)',
+                boxShadow: '0 20px 50px rgba(62, 99, 221, 0.15)',
+                overflow: 'hidden',
+                animation: 'modalSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderBottom: '1px solid var(--admin-card-border, #E0E7FF)',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <h3 className="modal-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', margin: 0 }}>
                   Clipboard Audit: {selectedAuditSubmission.candidateName}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setSelectedAuditSubmission(null)}
-                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.25rem',
+                    cursor: 'pointer',
+                    color: 'var(--admin-label, #5B6B8A)',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    lineHeight: 1,
+                  }}
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="modal-body" style={{ maxHeight: 350, overflowY: 'auto' }}>
+              <div className="modal-body" style={{ maxHeight: 350, overflowY: 'auto', padding: 20 }}>
                 {loadingAudit ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
                     <LoadingDots size="md" />
                   </div>
                 ) : auditEvents.length === 0 ? (
-                  <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 24 }}>
+                  <p style={{ color: 'var(--admin-label, #5B6B8A)', textAlign: 'center', padding: 24, margin: 0 }}>
                     No prohibited copy-paste events recorded for this candidate.
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {auditEvents.map((evt, idx) => (
-                      <div key={idx} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 6, padding: 10, fontSize: '0.8rem' }}>
-                        <div style={{ fontWeight: 600, color: '#b91c1c' }}>{evt.eventType || 'PASTE_ATTEMPT'}</div>
-                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: 2 }}>
+                      <div key={idx} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 8, padding: 12, fontSize: '0.82rem' }}>
+                        <div style={{ fontWeight: 700, color: '#b91c1c' }}>{evt.eventType || 'PASTE_ATTEMPT'}</div>
+                        <div style={{ color: 'var(--admin-label, #5B6B8A)', fontSize: '0.75rem', marginTop: 2 }}>
                           {new Date(evt.timestamp).toLocaleString()}
                         </div>
                       </div>
@@ -600,11 +825,27 @@ export default function AdminResults() {
                 )}
               </div>
 
-              <div className="modal-footer">
+              <div
+                className="modal-footer"
+                style={{
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  borderTop: '1px solid var(--admin-card-border, #E0E7FF)',
+                  padding: '14px 20px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setSelectedAuditSubmission(null)}
                   className="btn btn-secondary"
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    background: 'var(--admin-card-bg, #FFFFFF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 8,
+                    color: 'var(--color-navy, #0F172A)',
+                  }}
                 >
                   Close
                 </button>
