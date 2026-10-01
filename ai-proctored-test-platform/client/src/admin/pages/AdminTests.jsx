@@ -1734,7 +1734,7 @@ export default function AdminTests() {
                     let typeBadgeColor = 'var(--admin-indigo, #3E63DD)';
                     if (test.testType === 'AI_TEST') typeBadgeColor = '#8e44ad';
                     if (test.testType === 'REACT') typeBadgeColor = '#2563eb';
-                    if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#d97706';
+                    if (test.testType === 'JAVASCRIPT') typeBadgeColor = '#b45309';
                     if (test.testType === 'SPOJ') typeBadgeColor = 'var(--admin-indigo, #3E63DD)';
 
                     const questionSetName = test.questionSetPoolName || test.folderId?.name || test.questionSetId?.name || '—';

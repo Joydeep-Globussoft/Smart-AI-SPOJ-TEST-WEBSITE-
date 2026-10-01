@@ -82,6 +82,29 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
     return 'plaintext';
   };
 
+  const getLanguageBadgeStyle = (rawLang) => {
+    const lang = (rawLang || '').toUpperCase();
+    if (lang.includes('PYTHON') || lang === 'PY') {
+      return { background: '#1D4ED8', color: '#FFFFFF', border: '1px solid #1E40AF' };
+    }
+    if (lang.includes('JAVASCRIPT') || lang === 'JS') {
+      return { background: '#B45309', color: '#FFFFFF', border: '1px solid #92400E' };
+    }
+    if (lang.includes('REACT')) {
+      return { background: '#0369A1', color: '#FFFFFF', border: '1px solid #075985' };
+    }
+    if (lang.includes('AI_TEST') || lang.includes('AI TEST')) {
+      return { background: '#7E22CE', color: '#FFFFFF', border: '1px solid #6B21A8' };
+    }
+    if (lang.includes('JAVA')) {
+      return { background: '#B91C1C', color: '#FFFFFF', border: '1px solid #991B1B' };
+    }
+    if (lang.includes('CPP') || lang.includes('C++') || lang === 'C') {
+      return { background: '#4338CA', color: '#FFFFFF', border: '1px solid #3730A3' };
+    }
+    return { background: 'var(--admin-indigo, #3E63DD)', color: '#FFFFFF', border: '1px solid var(--admin-indigo-hover, #3354C4)' };
+  };
+
   if (!candidate) return null;
 
   // Metadata resolution
@@ -415,8 +438,18 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                   Submission Report — {formatQuestionTitle(inspectingQuestion, (inspectingQuestion.questionIndex || 1) - 1)}
                 </h3>
                 <span
-                  className="badge badge-primary"
-                  style={{ fontSize: '0.75rem', textTransform: 'uppercase', background: 'var(--admin-indigo, #3E63DD)', borderRadius: 4 }}
+                  className="badge"
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    padding: '3px 8px',
+                    borderRadius: 4,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    ...getLanguageBadgeStyle(inspectingQuestion.language || inspectingQuestion.testType),
+                  }}
                 >
                   {inspectingQuestion.language || inspectingQuestion.testType}
                 </span>

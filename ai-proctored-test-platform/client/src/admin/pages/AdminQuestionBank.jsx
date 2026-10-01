@@ -861,7 +861,7 @@ export default function AdminQuestionBank() {
       case 'SPOJ':
         return { background: 'rgba(14, 124, 134, 0.12)', color: 'var(--color-primary, #0e7c86)', border: '1px solid rgba(14, 124, 134, 0.3)' };
       case 'JAVASCRIPT':
-        return { background: 'rgba(234, 179, 8, 0.12)', color: '#ca8a04', border: '1px solid rgba(234, 179, 8, 0.3)' };
+        return { background: 'rgba(234, 179, 8, 0.12)', color: '#b45309', border: '1px solid rgba(234, 179, 8, 0.3)' };
       case 'REACT':
         return { background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)' };
       case 'AI_TEST':

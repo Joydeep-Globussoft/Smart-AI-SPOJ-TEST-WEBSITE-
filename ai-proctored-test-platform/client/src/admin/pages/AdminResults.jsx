@@ -298,7 +298,7 @@ export default function AdminResults() {
                   style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: 6 }}
                 />
                 <span
-                  className="badge badge-primary"
+                  className="badge"
                   style={{
                     fontSize: '0.75rem',
                     fontWeight: 700,

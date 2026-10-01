@@ -698,6 +698,7 @@ button.btn-warning:active {
 .badge-info { background: var(--badge-info-bg); color: var(--badge-info-text); }
 .badge-gray { background: var(--badge-secondary-bg); color: var(--badge-secondary-text); }
 .badge-teal { background: var(--badge-primary-bg); color: var(--badge-primary-text); border: 1px solid var(--badge-primary-border); }
+.badge-purple { background: var(--badge-purple-bg); color: var(--badge-purple-text); border: 1px solid var(--badge-purple-border); }
 
 .badge-live { background: var(--badge-success-bg); color: var(--badge-success-text); }
 .badge-draft { background: var(--badge-secondary-bg); color: var(--badge-secondary-text); }
