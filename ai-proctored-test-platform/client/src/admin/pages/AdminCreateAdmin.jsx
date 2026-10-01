@@ -598,7 +598,7 @@ export default function AdminCreateAdmin() {
                       letterSpacing: '0.05em',
                     }}
                   >
-                    <th style={{ padding: '10px 16px', fontWeight: 600, width: 44, textAlign: 'center' }}>#</th>
+                    <th style={{ padding: '10px 16px', fontWeight: 600, width: 44, textAlign: 'center' }}> </th>
                     <th style={{ padding: '10px 20px', fontWeight: 600 }}>Name</th>
                     <th style={{ padding: '10px 20px', fontWeight: 600 }}>Email</th>
                     <th style={{ padding: '10px 20px', fontWeight: 600 }}>Role</th>
@@ -657,7 +657,7 @@ export default function AdminCreateAdmin() {
                       letterSpacing: '0.05em',
                     }}
                   >
-                    <th style={{ padding: '10px 16px', fontWeight: 600, width: 44, textAlign: 'center' }}>#</th>
+                    <th style={{ padding: '10px 16px', fontWeight: 600, width: 44, textAlign: 'center' }}> </th>
                     <th style={{ padding: '10px 20px', fontWeight: 600 }}>Name</th>
                     <th style={{ padding: '10px 20px', fontWeight: 600 }}>Email</th>
                     <th style={{ padding: '10px 20px', fontWeight: 600 }}>Role</th>
