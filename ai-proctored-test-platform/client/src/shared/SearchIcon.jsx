@@ -1,13 +1,13 @@
 import React from 'react';
 
 /**
- * Shared SearchIcon Component (FEATURE-051)
- * Renders a modern search icon glyph: a magnifying glass inside a subtle rounded-square outline.
- * Theme-aware and responsive via props.
+ * Shared SearchIcon Component (FEATURE-051 / BUG-117)
+ * Renders a plain, standard magnifying glass search icon glyph.
+ * Theme-aware and responsive via props, with no surrounding box/border.
  */
 export default function SearchIcon({
   size = 15,
-  color = 'currentColor',
+  color = 'var(--color-text-muted, #64748B)',
   strokeWidth = 2,
   className = '',
   style = {},
@@ -33,12 +33,8 @@ export default function SearchIcon({
       aria-hidden="true"
       {...props}
     >
-      {/* Rounded-square outline box */}
-      <rect x="3" y="3" width="18" height="18" rx="5" ry="5" />
-      {/* Magnifying glass circle */}
-      <circle cx="10.8" cy="10.8" r="3.8" />
-      {/* Magnifying glass handle */}
-      <line x1="13.6" y1="13.6" x2="16.8" y2="16.8" />
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }

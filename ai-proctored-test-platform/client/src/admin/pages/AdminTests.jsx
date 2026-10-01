@@ -856,7 +856,7 @@ export default function AdminTests() {
               <div style={{ position: 'relative', width: '100%' }}>
                 <SearchIcon
                   size={15}
-                  color="var(--admin-indigo, #3E63DD)"
+                  color="var(--color-text-muted, #64748B)"
                   strokeWidth={2}
                   style={{
                     position: 'absolute',
@@ -864,7 +864,6 @@ export default function AdminTests() {
                     top: '50%',
                     transform: 'translateY(-50%)',
                     pointerEvents: 'none',
-                    opacity: 0.9,
                   }}
                 />
                 <input
