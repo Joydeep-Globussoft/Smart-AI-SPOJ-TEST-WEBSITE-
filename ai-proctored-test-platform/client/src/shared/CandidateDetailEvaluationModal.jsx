@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Editor from '@monaco-editor/react';
 import LoadingDots from './LoadingDots';
+import SearchIcon from './SearchIcon';
 import api from '../services/apiClient';
 import { formatQuestionTitle } from '../admin/pages/AdminQuestionBank';
 
@@ -320,7 +321,13 @@ export default function CandidateDetailEvaluationModal({ testId, candidate, onCl
                                 disabled={!hasCode && !hasEval}
                                 title={hasCode || hasEval ? 'Inspect submitted code and rubric' : 'No submission recorded'}
                               >
-                                {hasCode || hasEval ? '🔍 Inspect Code' : 'No Submission'}
+                                {hasCode || hasEval ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                    <SearchIcon size={12} color="currentColor" strokeWidth={2} /> Inspect Code
+                                  </span>
+                                ) : (
+                                  'No Submission'
+                                )}
                               </button>
                             </td>
                           </tr>

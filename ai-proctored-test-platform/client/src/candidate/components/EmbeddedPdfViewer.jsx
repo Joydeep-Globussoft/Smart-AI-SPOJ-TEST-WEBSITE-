@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import SearchIcon from '../../shared/SearchIcon';
 import api from '../../services/apiClient';
 
 // Configure PDF.js worker
@@ -474,7 +475,7 @@ export default function EmbeddedPdfViewer({
             }}
             title={zoomMode === 'fitWidth' ? 'Switch to Fit Page' : 'Switch to Fit Width'}
           >
-            🔍 {zoomMode === 'fitWidth' ? 'Fit Width' : 'Fit Page'}
+            <SearchIcon size={12} color="currentColor" strokeWidth={2.2} /> {zoomMode === 'fitWidth' ? 'Fit Width' : 'Fit Page'}
           </button>
 
           {/* Zoom In (+) */}

@@ -1711,7 +1711,9 @@ export default function AdminTests() {
                 {filteredTests.length === 0 ? (
                   <tr>
                     <td colSpan={13} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--admin-card-bg, #FFFFFF)' }}>
-                      <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
+                      <div style={{ marginBottom: 12 }}>
+                        <SearchIcon size={38} color="var(--color-text-muted, #64748B)" strokeWidth={1.5} />
+                      </div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
                       </h3>

@@ -4,6 +4,7 @@
 // FEATURE-025: Searchable combobox for Question Folder selection with live filtering & keyboard navigation
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
+import SearchIcon from './SearchIcon';
 import api from '../services/apiClient';
 
 const TEST_TYPES = [
@@ -555,8 +556,8 @@ export default function CreateTestModal({
                         No Folders found for {formData.testType}. Create a folder in Question Bank first.
                       </div>
                     ) : searchedFolders.length === 0 ? (
-                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)', textAlign: 'center' }}>
-                        🔍 No folders found matching "{folderSearchText}"
+                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <SearchIcon size={14} color="var(--color-text-muted, #64748b)" strokeWidth={2} /> No folders found matching "{folderSearchText}"
                       </div>
                     ) : (
                       searchedFolders.map((f, index) => {

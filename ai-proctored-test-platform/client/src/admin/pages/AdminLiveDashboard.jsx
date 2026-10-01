@@ -2393,7 +2393,9 @@ export default function AdminLiveDashboard() {
               maxWidth: 500,
             }}
           >
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
+            <div style={{ marginBottom: 12 }}>
+              <SearchIcon size={38} color="var(--color-text-muted, #64748B)" strokeWidth={1.5} />
+            </div>
             <h3 style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700, marginBottom: 8 }}>Test Not Found</h3>
             <p style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.9rem', marginBottom: 20 }}>
               The requested test could not be found or has been removed.
@@ -3438,7 +3440,7 @@ export default function AdminLiveDashboard() {
               >
                 <div>
                   <h3 className="modal-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                    <span>🔍</span> Candidate Inspection &amp; Evidence
+                    <SearchIcon size={18} color="var(--color-text-muted, #64748B)" strokeWidth={2} style={{ flexShrink: 0 }} /> Candidate Inspection &amp; Evidence
                   </h3>
                   <span style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 2, display: 'block' }}>
                     Live Proctoring &amp; Malpractice Review
@@ -3879,7 +3881,9 @@ export default function AdminLiveDashboard() {
                                     fontSize: '0.68rem', padding: '2px 8px', borderRadius: 4,
                                     fontWeight: 600,
                                   }}>
-                                    🔍 Click to Enlarge
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                      <SearchIcon size={11} color="currentColor" strokeWidth={2.2} /> Click to Enlarge
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -4222,7 +4226,9 @@ export default function AdminLiveDashboard() {
                           fontWeight: 600,
                         }}
                       >
-                        🔍 Click to Enlarge
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <SearchIcon size={11} color="currentColor" strokeWidth={2.2} /> Click to Enlarge
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -4288,7 +4294,9 @@ export default function AdminLiveDashboard() {
                     color: 'var(--color-navy, #0F172A)',
                   }}
                 >
-                  🔍 Inspect Candidate
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <SearchIcon size={13} color="currentColor" strokeWidth={2} /> Inspect Candidate
+                  </span>
                 </button>
 
                 <div style={{ display: 'flex', gap: 8 }}>
