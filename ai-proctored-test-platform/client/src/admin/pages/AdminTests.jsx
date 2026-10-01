@@ -10,6 +10,7 @@ import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import useAdminFilterState from '../../hooks/useAdminFilterState';
 import useScrollRestoration from '../../hooks/useScrollRestoration';
+import SearchIcon from '../../shared/SearchIcon';
 
 const TEST_TYPES = [
   { value: 'SPOJ', label: 'SPOJ (DSA / Competitive Coding)' },
@@ -853,15 +854,10 @@ export default function AdminTests() {
                 Search Tests
               </label>
               <div style={{ position: 'relative', width: '100%' }}>
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--admin-indigo, #3E63DD)"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <SearchIcon
+                  size={15}
+                  color="var(--admin-indigo, #3E63DD)"
+                  strokeWidth={2}
                   style={{
                     position: 'absolute',
                     left: 12,
@@ -870,10 +866,7 @@ export default function AdminTests() {
                     pointerEvents: 'none',
                     opacity: 0.9,
                   }}
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+                />
                 <input
                   type="text"
                   className="form-control"

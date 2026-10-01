@@ -12,6 +12,7 @@ import api from '../../services/apiClient';
 import { useAuth } from '../../hooks/useAuthContext';
 import useAdminFilterState from '../../hooks/useAdminFilterState';
 import useScrollRestoration from '../../hooks/useScrollRestoration';
+import SearchIcon from '../../shared/SearchIcon';
 import {
   initSocket, disconnectSocket, emitAdminJoin,
   onDashboardUpdate, offDashboardUpdate,
@@ -3271,22 +3272,37 @@ export default function AdminLiveDashboard() {
 
             {/* Table Filters */}
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search candidate..."
-                style={{
-                  width: 200,
-                  fontSize: '0.85rem',
-                  padding: '8px 14px',
-                  background: 'var(--filterbar-bg, #F4F6FF)',
-                  border: '1px solid var(--admin-card-border, #E0E7FF)',
-                  borderRadius: 8,
-                  color: 'var(--color-text, #0f172a)',
-                }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div style={{ position: 'relative', width: 210 }}>
+                <SearchIcon
+                  size={14}
+                  color="var(--admin-indigo, #3E63DD)"
+                  strokeWidth={2}
+                  style={{
+                    position: 'absolute',
+                    left: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    opacity: 0.9,
+                  }}
+                />
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search candidate..."
+                  style={{
+                    width: '100%',
+                    fontSize: '0.85rem',
+                    padding: '8px 14px 8px 30px',
+                    background: 'var(--filterbar-bg, #F4F6FF)',
+                    border: '1px solid var(--admin-card-border, #E0E7FF)',
+                    borderRadius: 8,
+                    color: 'var(--color-text, #0f172a)',
+                  }}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
 
               <select
                 className="form-select"

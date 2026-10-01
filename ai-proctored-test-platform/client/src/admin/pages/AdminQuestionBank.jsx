@@ -6,6 +6,7 @@ import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import useAdminFilterState from '../../hooks/useAdminFilterState';
 import useScrollRestoration from '../../hooks/useScrollRestoration';
+import SearchIcon from '../../shared/SearchIcon';
 
 const TEST_TYPES = [
   { value: 'SPOJ', label: 'SPOJ (DSA / Competitive)' },
@@ -1007,21 +1008,37 @@ export default function AdminQuestionBank() {
 
             {/* Folder Filters */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12, flexShrink: 0 }}>
-              <input
-                type="text"
-                id="search-folder-input"
-                className="form-control"
-                placeholder="🔍 Search folders..."
-                style={{
-                  fontSize: '0.8rem',
-                  padding: '6px 10px',
-                  background: 'var(--admin-subcard-bg, #F8FAFC)',
-                  borderColor: 'var(--admin-subcard-border, #E2E8F0)',
-                  color: 'var(--color-text)',
-                }}
-                value={folderSearch}
-                onChange={(e) => updateFilter('search', e.target.value)}
-              />
+              <div style={{ position: 'relative', width: '100%' }}>
+                <SearchIcon
+                  size={14}
+                  color="var(--admin-indigo, #3E63DD)"
+                  strokeWidth={2}
+                  style={{
+                    position: 'absolute',
+                    left: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    opacity: 0.9,
+                  }}
+                />
+                <input
+                  type="text"
+                  id="search-folder-input"
+                  className="form-control"
+                  placeholder="Search folders..."
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '6px 10px 6px 30px',
+                    background: 'var(--admin-subcard-bg, #F8FAFC)',
+                    borderColor: 'var(--admin-subcard-border, #E2E8F0)',
+                    color: 'var(--color-text)',
+                    width: '100%',
+                  }}
+                  value={folderSearch}
+                  onChange={(e) => updateFilter('search', e.target.value)}
+                />
+              </div>
               <select
                 id="filter-type-select"
                 className="form-select"

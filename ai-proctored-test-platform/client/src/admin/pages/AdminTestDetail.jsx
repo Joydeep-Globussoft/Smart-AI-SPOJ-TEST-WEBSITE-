@@ -9,6 +9,7 @@ import LoadingDots from '../../shared/LoadingDots';
 import api from '../../services/apiClient';
 import QRCode from 'qrcode';
 import useScrollRestoration from '../../hooks/useScrollRestoration';
+import SearchIcon from '../../shared/SearchIcon';
 import {
   initSocket,
   emitAdminJoin,
@@ -2175,20 +2176,19 @@ export default function AdminTestDetail() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                   {/* FEATURE-008: Candidate Name Search Input */}
                   <div style={{ position: 'relative', width: 240 }}>
-                    <span
+                    <SearchIcon
+                      size={14}
+                      color="var(--admin-indigo, #3E63DD)"
+                      strokeWidth={2}
                       style={{
                         position: 'absolute',
                         left: 10,
                         top: '50%',
                         transform: 'translateY(-50%)',
-                        fontSize: '0.8rem',
-                        color: 'var(--color-text-muted, #64748B)',
                         pointerEvents: 'none',
-                        lineHeight: 1,
+                        opacity: 0.9,
                       }}
-                    >
-                      🔍
-                    </span>
+                    />
                     <input
                       type="text"
                       className="form-control"

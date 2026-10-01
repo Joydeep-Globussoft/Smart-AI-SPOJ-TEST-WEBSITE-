@@ -10,6 +10,7 @@ import CandidateDetailEvaluationModal from '../../shared/CandidateDetailEvaluati
 import api from '../../services/apiClient';
 import useAdminFilterState from '../../hooks/useAdminFilterState';
 import useScrollRestoration from '../../hooks/useScrollRestoration';
+import SearchIcon from '../../shared/SearchIcon';
 
 const DEFAULT_FILTERS = {
   tab: 'shortlist',
@@ -604,22 +605,37 @@ export default function AdminResults() {
               </p>
             </div>
 
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search candidate in shortlist..."
-              style={{
-                width: 260,
-                fontSize: '0.85rem',
-                padding: '8px 14px',
-                background: 'var(--filterbar-bg, #F4F6FF)',
-                border: '1px solid var(--admin-card-border, #E0E7FF)',
-                borderRadius: 8,
-                color: 'var(--color-text, #0F172A)',
-              }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div style={{ position: 'relative', width: 260 }}>
+              <SearchIcon
+                size={14}
+                color="var(--admin-indigo, #3E63DD)"
+                strokeWidth={2}
+                style={{
+                  position: 'absolute',
+                  left: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  opacity: 0.9,
+                }}
+              />
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search candidate in shortlist..."
+                style={{
+                  width: '100%',
+                  fontSize: '0.85rem',
+                  padding: '8px 14px 8px 30px',
+                  background: 'var(--filterbar-bg, #F4F6FF)',
+                  border: '1px solid var(--admin-card-border, #E0E7FF)',
+                  borderRadius: 8,
+                  color: 'var(--color-text, #0F172A)',
+                }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
 
           {shortlistCandidates.length === 0 ? (
