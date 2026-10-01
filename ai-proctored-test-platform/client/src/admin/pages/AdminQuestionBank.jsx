@@ -1011,7 +1011,7 @@ export default function AdminQuestionBank() {
               <div style={{ position: 'relative', width: '100%' }}>
                 <SearchIcon
                   size={14}
-                  color="var(--color-text-muted, #64748B)"
+                  color="var(--admin-indigo, #3E63DD)"
                   strokeWidth={2}
                   style={{
                     position: 'absolute',

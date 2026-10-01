@@ -556,8 +556,8 @@ export default function CreateTestModal({
                         No Folders found for {formData.testType}. Create a folder in Question Bank first.
                       </div>
                     ) : searchedFolders.length === 0 ? (
-                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        <SearchIcon size={14} color="var(--color-text-muted, #64748b)" strokeWidth={2} /> No folders found matching "{folderSearchText}"
+                      <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--admin-label, #5B6B8A)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <SearchIcon size={14} color="var(--admin-indigo, #3E63DD)" strokeWidth={2} /> No folders found matching "{folderSearchText}"
                       </div>
                     ) : (
                       searchedFolders.map((f, index) => {

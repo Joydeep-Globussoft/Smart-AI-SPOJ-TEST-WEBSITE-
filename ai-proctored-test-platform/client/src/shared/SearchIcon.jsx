@@ -7,7 +7,7 @@ import React from 'react';
  */
 export default function SearchIcon({
   size = 15,
-  color = 'var(--color-text-muted, #64748B)',
+  color = 'var(--admin-indigo, #3E63DD)',
   strokeWidth = 2,
   className = '',
   style = {},

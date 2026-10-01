@@ -2394,7 +2394,7 @@ export default function AdminLiveDashboard() {
             }}
           >
             <div style={{ marginBottom: 12 }}>
-              <SearchIcon size={38} color="var(--color-text-muted, #64748B)" strokeWidth={1.5} />
+              <SearchIcon size={38} color="var(--admin-indigo, #3E63DD)" strokeWidth={1.5} />
             </div>
             <h3 style={{ color: 'var(--color-navy, #1E293B)', fontWeight: 700, marginBottom: 8 }}>Test Not Found</h3>
             <p style={{ color: 'var(--color-text-muted, #64748B)', fontSize: '0.9rem', marginBottom: 20 }}>
@@ -3277,7 +3277,7 @@ export default function AdminLiveDashboard() {
               <div style={{ position: 'relative', width: 210 }}>
                 <SearchIcon
                   size={14}
-                  color="var(--color-text-muted, #64748B)"
+                  color="var(--admin-indigo, #3E63DD)"
                   strokeWidth={2}
                   style={{
                     position: 'absolute',
@@ -3440,7 +3440,7 @@ export default function AdminLiveDashboard() {
               >
                 <div>
                   <h3 className="modal-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-navy, #0F172A)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                    <SearchIcon size={18} color="var(--color-text-muted, #64748B)" strokeWidth={2} style={{ flexShrink: 0 }} /> Candidate Inspection &amp; Evidence
+                    <SearchIcon size={18} color="var(--admin-indigo, #3E63DD)" strokeWidth={2} style={{ flexShrink: 0 }} /> Candidate Inspection &amp; Evidence
                   </h3>
                   <span style={{ fontSize: '0.8rem', color: 'var(--admin-label, #5B6B8A)', marginTop: 2, display: 'block' }}>
                     Live Proctoring &amp; Malpractice Review

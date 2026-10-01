@@ -856,7 +856,7 @@ export default function AdminTests() {
               <div style={{ position: 'relative', width: '100%' }}>
                 <SearchIcon
                   size={15}
-                  color="var(--color-text-muted, #64748B)"
+                  color="var(--admin-indigo, #3E63DD)"
                   strokeWidth={2}
                   style={{
                     position: 'absolute',
@@ -1712,7 +1712,7 @@ export default function AdminTests() {
                   <tr>
                     <td colSpan={13} style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--admin-card-bg, #FFFFFF)' }}>
                       <div style={{ marginBottom: 12 }}>
-                        <SearchIcon size={38} color="var(--color-text-muted, #64748B)" strokeWidth={1.5} />
+                        <SearchIcon size={38} color="var(--admin-indigo, #3E63DD)" strokeWidth={1.5} />
                       </div>
                       <h3 style={{ color: 'var(--color-navy)', marginBottom: 8, fontSize: '1.1rem' }}>
                         No tests match your filter criteria
